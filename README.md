@@ -18,8 +18,6 @@ python-mpv==0.3.9
 
 opencv-python==3.4.4.19
 
-opencv-contrib-python==4.0.0.21
-
 tqdm==4.28.1
 
  `pip3 install -r requirements.txt `

@@ -69,5 +69,9 @@ The png file 'logo.png' will be placed into the top left corner of the final web
 
 Processing will run multiple times until it generates a webm between 3.9 and 4.0MB in size, or it tries 10 times and creates a file under 4MB.
 
-Uses multiple pass processing and high quality settings by default so can take quite a while to generate output.
+Uses multiple pass processing and high quality settings by default so can take quite a while to generate output, as a ballpark for a 30 second full resolution clip: 
 
+- 1.5 minutes with two passes for simple source files
+- 5 minutes and 4 passes for 4k content.
+
+But these can increase dramatically if seeking deep into high bitrate high resolution streams.

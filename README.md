@@ -1,5 +1,7 @@
 # WebmGenerator
-UI and Automation to generate high quality VP8 webms in Python3 with ffmpeg and mpv
+UI and Automation to generate high quality VP8 webms in Python3 with ffmpeg and mpv.
+
+*A personal tool, still very sketchy.*
 
 ![User Interface](https://raw.githubusercontent.com/dfaker/WebmGenerator/master/ui.png "User Interface")
 

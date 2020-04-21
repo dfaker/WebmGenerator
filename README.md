@@ -1,5 +1,5 @@
 # WebmGenerator
-UI and Automation to generate high quality VP8 webms
+UI and Automation to generate high quality VP8 webms in Python3 with ffmpeg and mpv
 
 ![User Interface](https://raw.githubusercontent.com/dfaker/WebmGenerator/master/ui.png "User Interface")
 
@@ -9,6 +9,16 @@ UI and Automation to generate high quality VP8 webms
 - ffmpeg - https://www.ffmpeg.org/download.html
 
 Both of these should be placed into the same folder as the script.
+
+## Python dependencies:
+
+numpy==1.18.1
+python-mpv==0.3.9
+opencv-python==3.4.4.19
+opencv-contrib-python==4.0.0.21
+tqdm==4.28.1
+
+ `pip3 install -r requirements.txt `
 
 ## GUI controls:
 

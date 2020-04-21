@@ -65,7 +65,7 @@ Final files are output into the folder 'out' this will be created if it does not
 
 If a filter is provided the output files will be placed into a folder inside 'out' matching the name of the first filter that matched on that file.
 
-The png file 'logo.png' will be placed into the top left corner of the final webm, you can change this to be whatever traneparent png you like as long as you keep the filename.
+The png file 'logo.png' will be placed into the top left corner of the final webm, you can change this to be whatever transparent png you like as long as you keep the filename.
 
 Processing will run multiple times until it generates a webm between 3.9 and 4.0MB in size, or it tries 10 times and creates a file under 4MB.
 

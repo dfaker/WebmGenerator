@@ -39,6 +39,9 @@ Pressing **'R'** or clicking **End File Selection [R]** will stop queueing new e
 
 Selecting the player window and pressing **'C'** will activate crop mode, the window will be darkened, click twice to specify the top and bottom corners of your desired cropping rectangle, press **'C'** again to clear the crop.
 
+Playback will start a 2x normal speed, to reset the speed to 1x press backpsace with the player window selected.
+
+All other MPV controls remain as their defaults https://mpv.io/manual/master/.
 
 ## Command Examples:
 

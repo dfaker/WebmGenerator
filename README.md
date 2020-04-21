@@ -14,13 +14,13 @@ Both of these should be placed into the same folder as the script.
 
 ## Python dependencies:
 
-numpy==1.18.1
+numpy
 
-python-mpv==0.3.9
+python-mpv
 
-opencv-python==3.4.4.19
+opencv-python
 
-tqdm==4.28.1
+tqdm
 
  `pip3 install -r requirements.txt `
 

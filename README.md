@@ -14,7 +14,6 @@ Both of these should be placed into the same folder as the script.
 
 ## Python dependencies:
 
-- numpy
 - python-mpv
 - opencv-python
 - tqdm

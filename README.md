@@ -18,7 +18,16 @@ Both of these should be placed into the same folder as the script.
 - opencv-python
 - tqdm
 
- `pip3 install -r requirements.txt `
+ `pip3 install -r requirements.txt`
+
+## Installation Instructions
+
+ - Install Python 3 from https://www.python.org/
+ - Download or clone this repository
+ - In a command prompt navigate to the folder you cloned this respository into and run the command `pip3 install -r requirements.txt`
+ - Download the latest libmpv from https://sourceforge.net/projects/mpv-player-windows/files/libmpv/ extract it and copy the file 'mpv-1.dll' into the same folder you cloned this respository into. 
+ - Download the latest ffmpeg build from https://ffmpeg.zeranoe.com/builds/ place ffmpeg.exe into the same folder you cloned this respository into.
+ - Drop a file or folder onto main.py
 
 ## GUI controls:
 

@@ -61,7 +61,7 @@ All other MPV controls remain as their defaults https://mpv.io/manual/master/.
 
 ## Command Examples:
 
-Files or folders may be dragged and dropped directly onto the main.py file or:
+Files or folders may be dragged and dropped directly onto the main.py (the windows binary requires the file to be in the same folder as the .exe for now) file or:
 
 `main.py Z:\SomeFolder\TVSeries\`
 

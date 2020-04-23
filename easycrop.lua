@@ -178,9 +178,12 @@ local crop = function(p1, p2)
 
     mp.command(string.format("script-message easycrop %s %s %s %s", w, h, p1.x, p1.y) )
 
+    
 
     local ok, err = mp.command(string.format(
         "no-osd vf add @%s:crop=%s:%s:%s:%s", script_name, w, h, p1.x, p1.y))
+
+
 
     if not ok then
         mp.osd_message("Cropping failed")

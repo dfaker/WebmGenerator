@@ -22,6 +22,8 @@ Both of these should be placed into the same folder as the script.
 
 ## Installation Instructions
 
+Get the most recent windows build: https://github.com/dfaker/WebmGenerator/releases or
+
  - Install Python 3 from https://www.python.org/
  - Download or clone this repository
  - In a command prompt navigate to the folder you cloned this respository into and run the command `pip3 install -r requirements.txt`

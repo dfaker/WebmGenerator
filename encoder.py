@@ -80,8 +80,6 @@ def processClips(clips):
 
     filterString = '[0:v]'
 
-
-
     filterString = "movie='logo.png'[logo], movie='footer.png'[footer]"
 
     if cx!=0 and cy !=0 and cw!=0 and ch!=0:
@@ -125,7 +123,7 @@ def processClips(clips):
              ,"-b:v"  ,str(br*brmult)+'K' 
              ,"-ac"   ,"1" 
              ,"-an"
-
+             ,"-sn"
              ,"-filter_complex", filterString
              ,"-pix_fmt", "yuv420p"
              ,"-movflags", "faststart"
@@ -156,7 +154,8 @@ def processClips(clips):
              ,"-copyts"
              ,"-crf"  ,str(crf) 
              ,"-b:v"  ,str(br*brmult)+'K'
-             ,"-ac"   ,"1"            
+             ,"-ac"   ,"1"     
+             ,"-sn"
              ,"-c:a"  ,"libvorbis"
              ,"-b:a"  ,"32k"  
              ,"-filter_complex", filterString

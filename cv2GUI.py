@@ -29,9 +29,9 @@ class Cv2GUI():
     cv2.setMouseCallback("seeker", self._handleCV2Click)
 
     self.buttons = [
-      {'key':'q','text':'Queue Current Selection [Q]',  'color':(10,250,10)  },
+      {'key':'q','text':'Queue Current Clip [Q]',  'color':(10,250,10)  },
       {'key':'e','text':'Next File [E]',                'color':(10,250,10)  },
-      {'key':'r','text':'End File Selection [R]',       'color':(10,250,10)  },
+      {'key':'r','text':'Exit and Process [R]',       'color':(10,250,10)  },
       {'key':'t','text':'Toggle Logo [T]',              'color':(10,250,10)  },
       {'key':'y','text':'Toggle Footer [Y]',            'color':(10,250,10)  },
       {'key':'c','text':'Crop [C]',                     'color':(10,250,10)  },
@@ -66,6 +66,17 @@ class Cv2GUI():
     return xPercent*(ScrubSecconds)+scrubStart
 
   def _handleCV2Click(self,event, x, y, flags, param):
+
+    if self.draggingSeek:
+      percentInc=0.0
+      if x > self.imshape[1] - 10:
+        percentInc = 0.01
+      elif x<10:
+        percentInc = -0.01
+      if percentInc!=0.0:
+        self.scrubPercent = min(1,max(0,percentInc+self.scrubPercent))
+
+
     if event == cv2.EVENT_LBUTTONDOWN:
       if y<26:
         for button in self.buttons:

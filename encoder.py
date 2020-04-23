@@ -45,7 +45,7 @@ def monitorFFMPEGProgress(proc,desc,a,b):
             print('Encoding (Actual) {:01.2f}%    '.format( (total_seconds/abs(a-b))*100 ),end='\r')
       ln=b''
     ln+=c
-  print('Encoding Done')
+  print('\nEncoding Done')
 
 
 def processClips(clips):
@@ -106,7 +106,7 @@ def processClips(clips):
       print('Processing Pass 1 attempt',attempt)
       cmd = ["ffmpeg"
              ,"-y" 
-           
+             ,"-ss"   , "{:01.2f}".format(s) 
              ,"-i"    , src 
              ,"-ss"   , "{:01.2f}".format(s) 
              ,"-t"    , "{:01.2f}".format(dur)
@@ -120,7 +120,7 @@ def processClips(clips):
              ,"-slices", "8"
              ,"-passlogfile", tempname+".log"
              ,"-cpu-used", "0"
-
+             ,"-copyts"
              ,"-crf"  ,str(crf)
              ,"-b:v"  ,str(br*brmult)+'K' 
              ,"-ac"   ,"1" 
@@ -133,13 +133,13 @@ def processClips(clips):
              ,"-f"    ,"webm" 
              ,'nul']
 
-      print(' '.join(cmd))
+
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
-      print(proc.communicate())
+      proc.communicate()
 
       cmd = ["ffmpeg"
              ,"-y" 
-
+             ,"-ss"   , "{:01.2f}".format(s) 
              ,"-i"    , src
              ,"-ss"   , "{:01.2f}".format(s) 
              ,"-t"   , "{:01.2f}".format(dur)
@@ -153,7 +153,7 @@ def processClips(clips):
              ,"-slices", "8"
              ,"-passlogfile", tempname+".log"
              ,"-cpu-used", "0"
-
+             ,"-copyts"
              ,"-crf"  ,str(crf) 
              ,"-b:v"  ,str(br*brmult)+'K'
              ,"-ac"   ,"1"            
@@ -164,7 +164,7 @@ def processClips(clips):
              ,"-movflags", "faststart"
              ,"-pass" ,"2"
              ,tempname]
-      print(' '.join(cmd))
+
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
       monitorFFMPEGProgress(proc,'Encoding:',s,e)
       proc.communicate()

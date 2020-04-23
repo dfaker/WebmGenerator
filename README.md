@@ -16,7 +16,6 @@ Both of these should be placed into the same folder as the script.
 
 - python-mpv
 - opencv-python
-- tqdm
 
  `pip3 install -r requirements.txt`
 

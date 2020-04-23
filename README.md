@@ -33,6 +33,8 @@ Both of these should be placed into the same folder as the script.
 
 On start the program will span a new instance of mpv player and the cool 80s green UI panel.
 
+Drag the blue bar to seek in chunks on larger videos, short clips won't need this.
+
 Clicking and dragging on the black area in the Green UI panel will scrub through the video to select a range.
 
 Scrolling with the mousewheel will increase or decrease the duration of the selected clip.
@@ -44,6 +46,10 @@ Pressing **'Q'** or clicking **Queue Current [Q]** will queue the currently sele
 Pressing **'E'** or clicking **Next File [E]** will jump to the next file provided as input if multiple input files are provided.
 
 Pressing **'R'** or clicking **End File Selection [R]** will stop queueing new extracts and close the GUI, the script window will remain open and continue processing until all extracts are converted.
+
+Pressing **'T'** or clicking **Toggle Logo [T]** to toggle to toggle the top-left corner logo, replace logo.png to set your own.
+
+Pressing **'Y'** or clicking **Toggle Footer [Y]** to toggle to toggle the footer image overlayed at the bottom of the screen, replace footer.png to set your own.
 
 Selecting the player window and pressing **'C'** will activate crop mode, the window will be darkened, click twice to specify the top and bottom corners of your desired cropping rectangle, press **'C'** again to clear the crop.
 

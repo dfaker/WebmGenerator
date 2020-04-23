@@ -62,7 +62,7 @@ All other MPV controls remain as their defaults https://mpv.io/manual/master/.
 
 ## Command Examples:
 
-Files or folders may be dragged and dropped directly onto the webmGenerator.py (Or the webmGenerator.exe id you're using a windows build) file or:
+Running webmGenerator.py (Or the webmGenerator.exe id you're using a windows build) will open a file selection prompt, alteratively Files or folders may be dragged and dropped directly onto the webmGenerator.py file or:
 
 `webmGenerator.py Z:\SomeFolder\TVSeries\`
 

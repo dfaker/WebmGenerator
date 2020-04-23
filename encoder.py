@@ -127,14 +127,15 @@ def processClips(clips):
              ,"-an"
 
              ,"-filter_complex", filterString
-
+             ,"-pix_fmt", "yuv420p"
+             ,"-movflags", "faststart"
              ,"-pass" ,"1" 
              ,"-f"    ,"webm" 
              ,'nul']
 
       print(' '.join(cmd))
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
-      proc.communicate()
+      print(proc.communicate())
 
       cmd = ["ffmpeg"
              ,"-y" 
@@ -159,6 +160,8 @@ def processClips(clips):
              ,"-c:a"  ,"libvorbis"
              ,"-b:a"  ,"32k"  
              ,"-filter_complex", filterString
+             ,"-pix_fmt", "yuv420p"
+             ,"-movflags", "faststart"
              ,"-pass" ,"2"
              ,tempname]
       print(' '.join(cmd))

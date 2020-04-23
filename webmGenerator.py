@@ -6,6 +6,9 @@ import fileScan
 import interface
 import encoder
 
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+
 if getattr(sys, 'frozen', False):
   application_path = os.path.dirname(sys.executable)
 else:
@@ -14,7 +17,14 @@ else:
 os.chdir(application_path)
 os.environ["PATH"] = application_path + os.pathsep + os.environ["PATH"]
 
-videoFiles    = fileScan.gatherArgs(sys.argv[1:])
+args = sys.argv[1:]
+
+if len(args)==0:
+  Tk().withdraw()
+  filename = askopenfilename()
+  args.append(filename)
+
+videoFiles    = fileScan.gatherArgs(args)
 
 print(videoFiles)
 

@@ -29,7 +29,7 @@ Get the most recent windows build: https://github.com/dfaker/WebmGenerator/relea
  - In a command prompt navigate to the folder you cloned this respository into and run the command `pip3 install -r requirements.txt`
  - Download the latest libmpv from https://sourceforge.net/projects/mpv-player-windows/files/libmpv/ extract it and copy the file 'mpv-1.dll' into the same folder you cloned this respository into. 
  - Download the latest ffmpeg build from https://ffmpeg.zeranoe.com/builds/ place ffmpeg.exe into the same folder you cloned this respository into.
- - Drop a file or folder onto main.py
+ - Drop a file or folder onto webmGenerator.py
 
 ## GUI controls:
 
@@ -63,17 +63,17 @@ All other MPV controls remain as their defaults https://mpv.io/manual/master/.
 
 ## Command Examples:
 
-Files or folders may be dragged and dropped directly onto the main.py (the windows binary requires the file to be in the same folder as the .exe for now) file or:
+Files or folders may be dragged and dropped directly onto the webmGenerator.py (Or the webmGenerator.exe id you're using a windows build) file or:
 
-`main.py Z:\SomeFolder\TVSeries\`
+`webmGenerator.py Z:\SomeFolder\TVSeries\`
 
 Scans for all media files in the folder Z:\SomeFolder\TVSeries\ and queues them to be played for clipping into webms
 
-`main.py Z:\SomeFolder\TVSeries\video.mp4`
+`webmGenerator.py Z:\SomeFolder\TVSeries\video.mp4`
 
 Queues video.mp4 to be played for clipping into webms
 
-`main.py "EastWorld" Z:\SomeFolder\TVSeries\`
+`webmGenerator.py "EastWorld" Z:\SomeFolder\TVSeries\`
 
 Scans for all media files containing the phrase "EastWorld" in the folder Z:\SomeFolder\TVSeries\ and queues them to be played for clipping into webms
 

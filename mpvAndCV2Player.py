@@ -91,7 +91,7 @@ class MpvAndCV2Player():
         if bubble:
           self.seeker._handleCV2Keypress(ord(key))
         if key == 'q':
-          self.posA is not None and self.posB is not None:
+          if self.posA is not None and self.posB is not None:
             self.selected=True
         if key == 'r':
           self.endSelection=True

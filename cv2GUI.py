@@ -2,12 +2,22 @@
 import mpv
 import cv2
 import numpy as np
-from win32api import GetSystemMetrics
+
+from tkinter import Tk
+
+def get_curr_screen_width():
+    root = Tk()
+    root.update_idletasks()
+    root.attributes('-fullscreen', True)
+    root.state('iconic')
+    geometry = root.winfo_geometry()
+    root.destroy()
+    return int(geometry.split('x')[0])
 
 class Cv2GUI():
 
   def __init__(self,player):
-    self.imshape = (100,GetSystemMetrics(0)-10,3)
+    self.imshape = (100,get_curr_screen_width()-10,3)
     self.seeker = np.zeros(self.imshape,np.uint8)
     self.player = player
     self.font = cv2.FONT_HERSHEY_SIMPLEX

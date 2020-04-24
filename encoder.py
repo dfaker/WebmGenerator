@@ -49,8 +49,24 @@ def monitorFFMPEGProgress(proc,desc,a,b):
 
 
 def processClips(clips):
-  for (cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy) in clips:
+  t=len(clips)
+  for i,((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy)) in enumerate(clips):
     
+    desc = """
+Job: {i}/{t}
+Source file:{src}
+Category:{cat}
+Range: {s}s - {e}s
+Include Logo:{incudelogo}
+Include Footer:{includefooter}
+Crop: w={cw} h={ch} x={cx} y={cy}
+    """.format(i=i,t=t,cat=cat,src=src,
+               s=s,e=e,
+               incudelogo=incudelogo,
+               includefooter=includefooter,
+               cw=cw,ch=ch,cx=cx,cy=cy)
+
+    print(desc)
     cw,ch,cx,cy  = int(cw),int(ch),int(cx),int(cy)
 
     s = max(0,s)
@@ -73,8 +89,6 @@ def processClips(clips):
       outFilename=os.path.join('out',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
       tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
 
-    print('Current File:',outFilename)
-    print('Range',s,e)
     
     attempt=0
 
@@ -101,7 +115,8 @@ def processClips(clips):
 
     while 1:
       attempt+=1
-      print('Processing Pass 1 attempt',attempt)
+      print('Starting Pass 1 attempt {} @ {} (x{})'.format(attempt,br*brmult,brmult))
+
       cmd = ["ffmpeg"
              ,"-y" 
              ,"-ss"   , "{:01.2f}".format(s) 
@@ -131,7 +146,7 @@ def processClips(clips):
              ,"-f"    ,"webm" 
              ,'nul']
 
-
+      print('\nFFmpeg Phase 1\n',' '.join(cmd))
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
       proc.communicate()
 
@@ -164,6 +179,7 @@ def processClips(clips):
              ,"-pass" ,"2"
              ,tempname]
 
+      print('\nFFmpeg Phase 2\n',' '.join(cmd))
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
       monitorFFMPEGProgress(proc,'Encoding:',s,e)
       proc.communicate()

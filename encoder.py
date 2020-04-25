@@ -146,6 +146,7 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
 
 def processClips(clips):
   t=len(clips)
+  outFolder = datetime.now().strftime('Batch_%Y%m%d_%H%M%S')
   for i,((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) in enumerate(clips):
     
     fpsLimit,sizeLimit,audioBR,videoBrMax,maxVWidth,minVWidth = properties
@@ -189,7 +190,7 @@ Crop: w={cw} h={ch} x={cx} y={cy}
       targetSize_guide = (targetSize_max+targetSize_min)/2
       br = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
-    outFolder = datetime.now().strftime('Batch_%Y%m%d_%H%M%S')
+    
 
     outFilename=os.path.join('out',outFolder,os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
     tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")

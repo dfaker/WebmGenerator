@@ -42,12 +42,12 @@ class Cv2GUI():
     cv2.setMouseCallback("seeker", self._handleCV2Click)
 
     self.buttons = [
-      {'key':'q','text':'Queue Current Clip [Q]',  'color':self.colors.color_button  },
-      {'key':'e','text':'Next File [E]',           'color':self.colors.color_button  },
-      {'key':'r','text':'Exit and Process [R]',    'color':self.colors.color_button  },
-      {'key':'t','text':'Toggle Logo [T]',         'color':self.colors.color_button  },
-      {'key':'y','text':'Toggle Footer [Y]',       'color':self.colors.color_button  },
-      {'key':'c','text':'Crop [C]',                'color':self.colors.color_button  },
+      {'key':'q','text':'Queue Current Clip [Q]',  'help':'Add the currently selected clip section to the processing queue and restart this video to add more.'  },
+      {'key':'e','text':'Next File [E]',           'help':'Skip to the next file in the input queue, discarding the current clip selection.'  },
+      {'key':'r','text':'Exit and Process [R]',    'help':'Exit the clip extraction ui and start conversion.'  },
+      {'key':'t','text':'Toggle Logo [T]',         'help':'Toggle the upper left logo on or off, edit the file logo.png to change the image.'  },
+      {'key':'y','text':'Toggle Footer [Y]',       'help':'Toggle the footer image on or off, edit the file footer.png to change the image.'  },
+      {'key':'c','text':'Crop [C]',                'help':'Start cropping the video frame, click in the player window to set crop extents.'  },
     ]
 
     xorigin=5

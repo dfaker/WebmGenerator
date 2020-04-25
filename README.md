@@ -42,6 +42,7 @@ Scrolling with the mousewheel will increase or decrease the duration of the sele
 
 The player window will loop the currently selected time span.
 
+### Upper buttons
 Pressing **'Q'** or clicking **Queue Current [Q]** will queue the currently selected span to be converted into a webm and restart the current file.
 
 Pressing **'E'** or clicking **Next File [E]** will jump to the next file provided as input if multiple input files are provided.
@@ -52,7 +53,25 @@ Pressing **'T'** or clicking **Toggle Logo [T]** to toggle to toggle the top-lef
 
 Pressing **'Y'** or clicking **Toggle Footer [Y]** to toggle to toggle the footer image overlayed at the bottom of the screen, replace footer.png to set your own.
 
-Selecting the player window and pressing **'C'** will activate crop mode, the window will be darkened, click twice to specify the top and bottom corners of your desired cropping rectangle, press **'C'** again to clear the crop.
+
+
+Pressing **'C'** or clicking **Crop [C]** will activate crop mode, the window will be darkened, click twice to specify the top and bottom corners of your desired cropping rectangle, press **'C'** again to clear the crop.
+
+### Lower buttons
+
+Pressing **'1'** or clicking **FPS Limit 30 [1]** will cycle through FPS limits to apply, or turn FPS limiting off.
+
+Pressing **'2'** or clicking **Size Limit 4M [2]** will cycle through maximum file size limits or turn file size limits off.
+
+Pressing **'3'** or clicking **Audio Bitrate 64k [3]** will cycle through options for the audio bitrate to encode at.
+
+Pressing **'4'** or clicking **Max Video Bitrate None [4]** will cycle through the maximum video bitrate to stop at for small files.
+
+Pressing **'5'** or clicking **Max Video Width 1280 [5]** will cycle through the maximum video width to scale output to if larger.
+
+Pressing **'6'** or clicking **Min Video Width 0 [6]** will cycle through the minumum video width to scale output to if smaller.
+
+### Other controls
 
 Playback will start muted to unmute press **'m'** with the player window selected.
 

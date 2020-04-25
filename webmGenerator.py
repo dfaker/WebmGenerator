@@ -9,6 +9,7 @@ import encoder
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 
+
 if getattr(sys, 'frozen', False):
   application_path = os.path.dirname(sys.executable)
 else:
@@ -24,10 +25,9 @@ if len(args)==0:
   filename = askopenfilename()
   args.append(filename)
 
+print('Scanning args')
 videoFiles    = fileScan.gatherArgs(args)
-
-print(videoFiles)
-
+print('Starting selection UI')
 selectedClips = interface.selectClips(videoFiles)
-print(selectedClips)
+print('Starting processing')
 encoder.processClips(selectedClips)

@@ -3,55 +3,161 @@ import subprocess as sp
 import os
 from datetime import datetime
 
+
 maxWidth = 1280
-targetSize_max = 4194304
-targetSize_min = 3900000
+
+targetSizeAllowance = 0.98
 audio_mp = 8
-video_mp = 1024
+video_mp = 1024*1024
 crf=4
 threads = 2
 logo='logo.png'
 footer='footer.png'
 maxTriesBeforeAcceptingSmaller=10
 maxTries=15
+printFFmpegVerbose=False
 
 import json
 try:
-  config = json.loads(open('config.json','r'))
+  config         = json.loads(open('config.json','r'))
   maxWidth       = config.get('maxWidth',maxWidth) 
-  targetSize_max = config.get('targetSize_max',targetSize_max) 
-  targetSize_min = config.get('targetSize_min',targetSize_min) 
   crf            = config.get('crf',crf) 
   threads        = config.get('threads',threads)  
   maxTries       = config.get('maxTries',maxTries)  
   maxTriesBeforeAcceptingSmaller = config.get('maxTriesBeforeAcceptingSmaller',maxTriesBeforeAcceptingSmaller)
+  printFFmpegVerbose             = bool(config.get('printFFmpegVerbose',printFFmpegVerbose))
 except:
   pass
 
-def monitorFFMPEGProgress(proc,desc,a,b):
 
-  print('Encoding (Starting)\r')
+
+
+def monitorFFMPEGProgress(proc,desc,a,b,filename):
+  print('Encoding (Starting)',end='\r')
   ln=b''
+  percents = []
+  sizes    = []
+  percentComplete=0
   while 1:
     c = proc.stderr.read(1)
     if len(c)==0:
       break
     if c == b'\r':
+      if printFFmpegVerbose:
+        print(ln)
       for p in ln.split(b' '):
         if b'time=' in p:
           pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
           total_seconds = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
           if total_seconds>0:
-            print('Encoding (Actual) {:01.2f}%    '.format( (total_seconds/abs(a-b))*100 ),end='\r')
+            percentComplete = (total_seconds/abs(a-b))
+            print('Encoding (Actual) {:01.2f}%'.format(percentComplete*100) ,end='\r')
       ln=b''
     ln+=c
-  print('\nEncoding Done')
+  print('Encoding (Complete) {:01.2f}%'.format(percentComplete*100) ,end='\r')
+  return percentComplete
 
+def buildFilterString(incudelogo,includefooter,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth):
+
+  if fpsLimit is None or fpsLimit == 'None':
+    fpsLimit=None
+  else:
+    fpsLimit=float(fpsLimit)+0.1
+
+  if maxVWidth is None or maxVWidth == 'None':
+    maxVWidth=9999999
+  else:
+    maxVWidth = int(float(maxVWidth))
+
+  if minVWidth is None or minVWidth == 'None':
+    minVWidth=0
+  else:
+    minVWidth = int(float(minVWidth))
+
+  filterString = '[0:v]'
+
+  filterString = "movie='logo.png'[logo], movie='footer.png'[footer]"
+
+  if cx!=0 and cy !=0 and cw!=0 and ch!=0:
+    filterString += ",[0:v]crop={}:{}:{}:{}[cv]".format(cw,ch,cx,cy)
+  else:
+    filterString += ",[0:v]null[cv]"
+
+  filterString += ",[cv] scale='max({}\\,min({}\\,iw)):-1' [sv]".format(minVWidth,maxVWidth)
+
+  if incudelogo:
+    filterString += ",[sv][logo]overlay='5:5'[vlogo]"
+  else:
+    filterString += ",[logo]nullsink,[sv]null[vlogo]"
+
+  if includefooter:
+    filterString += ",[vlogo][footer]overlay='(W-w)/2:(H-h)'"
+  else:
+    filterString += ",[footer]nullsink,[vlogo]null"
+
+  if fpsLimit is not None:
+    filterString += ",select='eq(n,0)+if(gt(t-prev_selected_t,1/{}),1,0)".format(fpsLimit)
+
+  return filterString
+
+def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,threads,crf,filterString,outputFilename,audioBR):
+  command = [
+    "ffmpeg"
+   ,"-y" 
+   ,"-ss", "{:01.2f}".format(start) 
+   ,"-i", filename 
+   ,"-ss", "{:01.2f}".format(start) 
+   ,"-t", "{:01.2f}".format(duration)
+   ,"-c:v","libvpx" 
+   ,"-stats"
+   ,"-bufsize", "3000k"
+   ,"-threads", str(threads)
+   ,"-quality", "best" 
+   ,"-auto-alt-ref", "1" 
+   ,"-lag-in-frames", "16" 
+   ,"-slices", "8"
+   ,"-passlogfile", logName
+   ,"-cpu-used", "0"
+   ,"-copyts"
+   ,"-crf"  ,str(crf)
+   ,"-b:v",str(bitrate)
+   ,"-ac"   ,"1"
+   ,"-sn"
+  ]
+
+  if passNumber == 1 or audioBR == 'No Audio':
+    command.extend(["-an"])
+  else:
+    command.extend([
+      "-c:a"  ,"libvorbis"
+     ,"-b:a"  ,audioBR
+    ])
+
+  command.extend([
+     "-sn"
+    ,"-sws_flags", "bicubic+full_chroma_inp+accurate_rnd+full_chroma_inp"
+    ,"-filter_complex", filterString
+    ,"-pix_fmt",        "yuv420p"
+    ,"-movflags",       "faststart"
+    ,"-pass"            ,str(passNumber)
+    ,"-f"               ,"webm" 
+    ,outputFilename
+  ])
+
+  return command
 
 def processClips(clips):
   t=len(clips)
-  for i,((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy)) in enumerate(clips):
+  for i,((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) in enumerate(clips):
     
+    fpsLimit,sizeLimit,audioBR,videoBrMax,maxVWidth,minVWidth = properties
+
+    if videoBrMax is None or sizeLimit == 'None':
+      videoBrMax = None
+    else:
+      videoBrMax = sizeLimit.replace('M','')
+      videoBrMax = float(videoBrMax*video_mp)
+
     desc = """
 Job: {i}/{t}
 Source file:{src}
@@ -72,127 +178,98 @@ Crop: w={cw} h={ch} x={cx} y={cy}
     s = max(0,s)
     dur = abs(s-e)
 
-    br = int( ((3.8*video_mp)/dur) - ((32 / audio_mp)/dur) ) *8
-
-
-    brmult=1
-
-    os.path.exists('out') or os.mkdir('out')
-    if cat is not None:
-      os.path.exists(os.path.join('out',cat)) or os.mkdir(os.path.join('out',cat))
-    os.path.exists('temp') or os.mkdir('temp')
-
-    if cat is not None:
-      outFilename=os.path.join('out',cat,os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
-      tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
+    targetSize_max   = 4194304
+    if sizeLimit is None or sizeLimit == 'None':
+      targetSize_max=9999999999999999
+      targetSize_min=0
+      br = 544000000
     else:
-      outFilename=os.path.join('out',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
-      tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
+      targetSize_max = int(sizeLimit.replace('M',''))
+      targetSize_max = float(targetSize_max*video_mp)
+      targetSize_min   = targetSize_max*targetSizeAllowance
+      targetSize_guide = (targetSize_max+targetSize_min)/2
+      br = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
-    
+    outFolder = datetime.now().strftime('Batch_%Y%m%d_%H%M%S')
+
+    outFilename=os.path.join('out',outFolder,os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
+    tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
+
     attempt=0
-
-    filterString = '[0:v]'
-
-    filterString = "movie='logo.png'[logo], movie='footer.png'[footer]"
-
-    if cx!=0 and cy !=0 and cw!=0 and ch!=0:
-      filterString += ",[0:v]crop={}:{}:{}:{}[cv]".format(cw,ch,cx,cy)
-    else:
-      filterString += ",[0:v]null[cv]".format(cw,ch,cx,cy)
-
-    filterString += ",[cv] scale='min("+str(maxWidth)+"\\,iw):-1' [sv]"
-
-    if incudelogo:
-      filterString += ",[sv][logo]overlay='5:5'[vlogo]"
-    else:
-      filterString += ",[logo]nullsink,[sv]null[vlogo]"
-
-    if includefooter:
-      filterString += ",[vlogo][footer]overlay='(W-w)/2:(H-h)'"
-    else:
-      filterString += ",[footer]nullsink,[vlogo]null"
+    filterString = buildFilterString(incudelogo,includefooter,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth)
 
     while 1:
       attempt+=1
-      print('Starting Pass 1 attempt {} @ {} (x{})'.format(attempt,br*brmult,brmult))
+      
+      cmd = buildFFmpegCommand(passNumber=1,
+                               filename=src,
+                               logName=tempname+'.log',
+                               start=s,
+                               duration=dur,
+                               bitrate=br,
+                               threads=threads,
+                               crf=crf,
+                               filterString=filterString,
+                               outputFilename='nul',
+                               audioBR=audioBR)
 
-      cmd = ["ffmpeg"
-             ,"-y" 
-             ,"-ss"   , "{:01.2f}".format(s) 
-             ,"-i"    , src 
-             ,"-ss"   , "{:01.2f}".format(s) 
-             ,"-t"    , "{:01.2f}".format(dur)
-             ,"-c:v"  ,"libvpx" 
-             ,"-stats"
-             ,"-bufsize", "3000k"
-             ,"-threads", str(threads)
-             ,"-quality", "best" 
-             ,"-auto-alt-ref", "1" 
-             ,"-lag-in-frames", "16" 
-             ,"-slices", "8"
-             ,"-passlogfile", tempname+".log"
-             ,"-cpu-used", "0"
-             ,"-copyts"
-             ,"-crf"  ,str(crf)
-             ,"-b:v"  ,str(br*brmult)+'K' 
-             ,"-ac"   ,"1" 
-             ,"-an"
-             ,"-sn"
-             ,"-filter_complex", filterString
-             ,"-pix_fmt", "yuv420p"
-             ,"-movflags", "faststart"
-             ,"-pass" ,"1" 
-             ,"-f"    ,"webm" 
-             ,'nul']
+      print('Starting Pass 1 attempt {} @ bitrate {}'.format(attempt,br))
 
-      print('\nFFmpeg Phase 1\n',' '.join(cmd))
+      if printFFmpegVerbose:
+        print('\nFFmpeg Phase 1 Cmd\n',' '.join(cmd))
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
       proc.communicate()
 
-      cmd = ["ffmpeg"
-             ,"-y" 
-             ,"-ss"   , "{:01.2f}".format(s) 
-             ,"-i"    , src
-             ,"-ss"   , "{:01.2f}".format(s) 
-             ,"-t"   , "{:01.2f}".format(dur)
-             ,"-c:v"  ,"libvpx" 
-             ,"-stats"
-             ,"-bufsize", "3000k"
-             ,"-threads", str(threads)
-             ,"-quality", "best" 
-             ,"-auto-alt-ref", "1" 
-             ,"-lag-in-frames", "16" 
-             ,"-slices", "8"
-             ,"-passlogfile", tempname+".log"
-             ,"-cpu-used", "0"
-             ,"-copyts"
-             ,"-crf"  ,str(crf) 
-             ,"-b:v"  ,str(br*brmult)+'K'
-             ,"-ac"   ,"1"     
-             ,"-sn"
-             ,"-c:a"  ,"libvorbis"
-             ,"-b:a"  ,"32k"  
-             ,"-filter_complex", filterString
-             ,"-pix_fmt", "yuv420p"
-             ,"-movflags", "faststart"
-             ,"-pass" ,"2"
-             ,tempname]
+      cmd = buildFFmpegCommand(passNumber=2,
+                               filename=src,
+                               logName=tempname+'.log',
+                               start=s,
+                               duration=dur,
+                               bitrate=br,
+                               threads=threads,
+                               crf=crf,
+                               filterString=filterString,
+                               outputFilename=tempname,
+                               audioBR=audioBR)
 
-      print('\nFFmpeg Phase 2\n',' '.join(cmd))
+      print('Starting Pass 2 attempt {} @ bitrate {}'.format(attempt,br))
+      
+      os.path.exists('temp') or os.mkdir('temp')
+
+      if printFFmpegVerbose:
+        print('\nFFmpeg Phase 2 Cmd\n',' '.join(cmd))
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
-      monitorFFMPEGProgress(proc,'Encoding:',s,e)
+      monitorFFMPEGProgress(proc,'Encoding:',s,e,tempname)
+      
       proc.communicate()
 
       finalSize = os.stat(tempname).st_size
 
-      if targetSize_min<finalSize<targetSize_max or (finalSize<targetSize_max and attempt>10):
-        print("Complete.")
+      if targetSize_min<finalSize<targetSize_max or (br==videoBrMax) or (finalSize<targetSize_max and attempt>10):
+        print("Encoding Complete.")
+        os.path.exists('out') or os.mkdir('out')
+        os.path.exists(os.path.join('out',outFolder)) or os.mkdir(os.path.join('out',outFolder))
         os.rename(tempname,outFilename)
         break
-      else:        
+      else:
+        if finalSize>targetSize_max:
+          print('Encoding complete {:01.2f}%  [ {}B @ {} : {:01.2f}MB {:01.2f}% of size maximum]'.format( 
+              100, 
+              finalSize,
+              br,
+              finalSize/1048576 , 
+              ( finalSize / targetSize_max )*100 
+            ))
         if finalSize<targetSize_min:
-          print("File size too small",finalSize,targetSize_min-finalSize)
-        elif finalSize>targetSize_max:
-          print("File size too large",finalSize,finalSize-targetSize_max)
-        brmult= brmult+(1.0-(finalSize/( (targetSize_min+targetSize_max)/2.0 ) ))
+          print('Encoding complete {:01.2f}%  [ {}B @ {} : {:01.2f}MB {:01.2f}% of size minimum]'.format( 
+              100, 
+              finalSize,
+              br,
+              finalSize/1048576 , 
+              ( finalSize / targetSize_min )*100 
+            ))
+
+        lastbr=br
+        br =  br * (1/(finalSize/( (targetSize_min+targetSize_max)/2.0)))
+        br =  min(videoBrMax,br)
+        print("Setting new bitrate {} ({:+f}')".format(br,lastbr-br))

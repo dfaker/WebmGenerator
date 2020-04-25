@@ -19,17 +19,15 @@ printFFmpegVerbose=False
 
 import json
 try:
-  config         = json.loads(open('config.json','r'))
+  config         = json.loads(open('config.json','r').read())
   maxWidth       = config.get('maxWidth',maxWidth) 
   crf            = config.get('crf',crf) 
   threads        = config.get('threads',threads)  
   maxTries       = config.get('maxTries',maxTries)  
   maxTriesBeforeAcceptingSmaller = config.get('maxTriesBeforeAcceptingSmaller',maxTriesBeforeAcceptingSmaller)
   printFFmpegVerbose             = bool(config.get('printFFmpegVerbose',printFFmpegVerbose))
-except:
-  pass
-
-
+except Exception as e:
+  print(e)
 
 
 def monitorFFMPEGProgress(proc,desc,a,b,filename):
@@ -183,6 +181,7 @@ Crop: w={cw} h={ch} x={cx} y={cy}
       targetSize_max=9999999999999999
       targetSize_min=0
       br = 544000000
+      targetSize_guide = (targetSize_max+targetSize_min)/2
     else:
       targetSize_max = int(sizeLimit.replace('M',''))
       targetSize_max = float(targetSize_max*video_mp)
@@ -217,6 +216,9 @@ Crop: w={cw} h={ch} x={cx} y={cy}
 
       if printFFmpegVerbose:
         print('\nFFmpeg Phase 1 Cmd\n',' '.join(cmd))
+
+      os.path.exists('temp') or os.mkdir('temp')
+
       proc = sp.Popen(cmd,stderr=sp.PIPE,stdout=sp.PIPE)
       proc.communicate()
 
@@ -234,7 +236,7 @@ Crop: w={cw} h={ch} x={cx} y={cy}
 
       print('Starting Pass 2 attempt {} @ bitrate {}'.format(attempt,br))
       
-      os.path.exists('temp') or os.mkdir('temp')
+      
 
       if printFFmpegVerbose:
         print('\nFFmpeg Phase 2 Cmd\n',' '.join(cmd))
@@ -270,6 +272,6 @@ Crop: w={cw} h={ch} x={cx} y={cy}
             ))
 
         lastbr=br
-        br =  br * (1/(finalSize/( (targetSize_min+targetSize_max)/2.0)))
+        br =  br * (1/(finalSize/targetSize_guide))
         br =  min(videoBrMax,br)
-        print("Setting new bitrate {} ({:+f}')".format(br,lastbr-br))
+        print("Setting new bitrate {} ({:+f})".format(br,br-lastbr))

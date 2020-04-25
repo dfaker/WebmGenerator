@@ -123,7 +123,7 @@ class Cv2GUI():
             self.draggingEnd=True
           else:
             self.draggingSeek=True
-            
+
         else:
           self.draggingSeek=True
       elif 100<y<125:

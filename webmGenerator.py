@@ -53,6 +53,7 @@ def main():
   if threads>0:
     q.join()
   else:
+    q.put(None)
     encoder.processClips(q)
 
 

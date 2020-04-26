@@ -90,7 +90,7 @@ class Cv2GUI():
   def __init__(self,player):
     self.screenx,self.screeny = get_curr_screen_width()
 
-    self.seekerimshape = (126,1200-100,3)
+    self.seekerimshape = (126,self.screenx-100,3)
     self.seeker = np.zeros(self.seekerimshape,np.uint8)
 
     self.filtersimshape = (self.screeny-600,300,3)

@@ -154,7 +154,11 @@ def processClips(clipsQueue):
   outFolder = datetime.now().strftime('Batch_%Y%m%d_%H%M%S')
   i=-1
   while 1:
-    ((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) = clipsQueue.get()
+    job = clipsQueue.get()
+    if job is None:
+      clipsQueue.task_done()
+      return
+    ((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) = job
     i=i+1
 
     fpsLimit,sizeLimit,audioBR,videoBrMax,maxVWidth,minVWidth = properties

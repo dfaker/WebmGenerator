@@ -58,7 +58,7 @@ def monitorFFMPEGProgress(proc,desc,a,b,filename):
   print('Encoding (Complete) {:01.2f}%'.format(percentComplete*100) ,end='\r')
   return percentComplete
 
-def buildFilterString(incudelogo,includefooter,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth):
+def buildFilterString(incudelogo,extraFilters,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth):
 
   if fpsLimit is None or fpsLimit == 'None':
     fpsLimit=None
@@ -75,33 +75,34 @@ def buildFilterString(incudelogo,includefooter,cw,ch,cx,cy,fpsLimit,maxVWidth,mi
   else:
     minVWidth = int(float(minVWidth))
 
-  filterString = '[0:v]'
 
-  filterString = "movie='logo.png'[logo], movie='footer.png'[footer]"
+  filterString = "movie='logo.png'[logo]"
+
+  if extraFilters is not None:
+    filterString += ',[0:v]'+extraFilters+'[inFilters]'
+  else:
+    filterString += ',[0:v]null[inFilters]'
 
   if cx!=0 and cy !=0 and cw!=0 and ch!=0:
-    filterString += ",[0:v]crop={}:{}:{}:{}[cv]".format(cw,ch,cx,cy)
+    filterString += ",[inFilters]crop={}:{}:{}:{}[cropped]".format(cw,ch,cx,cy)
   else:
-    filterString += ",[0:v]null[cv]"
+    filterString += ",[inFilters]null[cropped]"
 
-  filterString += ",[cv] scale='max({}\\,min({}\\,iw)):-1' [sv]".format(minVWidth,maxVWidth)
+  filterString += ",[cropped] scale='max({}\\,min({}\\,iw)):-1'[scaled]".format(minVWidth,maxVWidth)
 
   if incudelogo:
-    filterString += ",[sv][logo]overlay='5:5'[vlogo]"
+    filterString += ",[scaled][logo]overlay='5:5'"
   else:
-    filterString += ",[logo]nullsink,[sv]null[vlogo]"
-
-  if includefooter:
-    filterString += ",[vlogo][footer]overlay='(W-w)/2:(H-h)'"
-  else:
-    filterString += ",[footer]nullsink,[vlogo]null"
+    filterString += ",[logo]nullsink,[scaled]null"
 
   if fpsLimit is not None:
     filterString += ",select='eq(n,0)+if(gt(t-prev_selected_t,1/{}),1,0)".format(fpsLimit)
 
   return filterString
 
-def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,threads,crf,filterString,outputFilename,audioBR):
+
+
+def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,threads,crf,filterString,outputFilename,audioBR,requiresTransparency):
   command = [
     "ffmpeg"
    ,"-y" 
@@ -113,9 +114,19 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
    ,"-stats"
    ,"-bufsize", "3000k"
    ,"-threads", str(threads)
-   ,"-quality", "best" 
-   ,"-auto-alt-ref", "1" 
-   ,"-lag-in-frames", "16" 
+   ,"-quality", "best"] 
+   
+  if requiresTransparency:
+    command.extend([
+      "-auto-alt-ref", "0"  
+    ])
+  else:
+    command.extend([
+      "-auto-alt-ref", "1"  
+    ])
+
+  command.extend([
+    "-lag-in-frames", "16" 
    ,"-slices", "8"
    ,"-passlogfile", logName
    ,"-cpu-used", "0"
@@ -124,7 +135,7 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
    ,"-b:v",str(bitrate)
    ,"-ac"   ,"1"
    ,"-sn"
-  ]
+  ])
 
   if passNumber == 1 or audioBR == 'No Audio':
     command.extend(["-an"])
@@ -138,8 +149,16 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
      "-sn"
     ,"-sws_flags", "bicubic+full_chroma_inp+accurate_rnd+full_chroma_inp"
     ,"-filter_complex", filterString
-    ,"-pix_fmt",        "yuv420p"
-    ,"-movflags",       "faststart"
+  ])
+
+  if requiresTransparency:
+    command.extend(["-pix_fmt","yuva420p"])
+  else:
+    command.extend(["-pix_fmt","yuv420p"])
+
+
+  command.extend([
+     "-movflags",       "faststart"
     ,"-pass"            ,str(passNumber)
     ,"-f"               ,"webm" 
     ,outputFilename
@@ -158,8 +177,12 @@ def processClips(clipsQueue):
     if job is None:
       clipsQueue.task_done()
       return
-    ((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) = job
+    ((cat,src,s,e),(incudelogo,extraFilters),(cw,ch,cx,cy),properties) = job
     i=i+1
+
+    requiresTransparency=False
+    if extraFilters is not None and 'colorkey' in extraFilters:
+      requiresTransparency=True
 
     fpsLimit,sizeLimit,audioBR,videoBrMax,maxVWidth,minVWidth = properties
 
@@ -175,12 +198,12 @@ Source file:{src}
 Category:{cat}
 Range: {s}s - {e}s
 Include Logo:{incudelogo}
-Include Footer:{includefooter}
+ExtraFilters:{extraFilters}
 Crop: w={cw} h={ch} x={cx} y={cy}
     """.format(i=i+1,t=t,cat=cat,src=src,
                s=s,e=e,
                incudelogo=incudelogo,
-               includefooter=includefooter,
+               extraFilters=extraFilters,
                cw=cw,ch=ch,cx=cx,cy=cy)
 
     print(desc)
@@ -208,8 +231,9 @@ Crop: w={cw} h={ch} x={cx} y={cy}
     tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
 
     attempt=0
-    filterString = buildFilterString(incudelogo,includefooter,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth)
+    filterString = buildFilterString(incudelogo,extraFilters,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth)
 
+    smallestFailedBr=float('inf')
     while 1:
       attempt+=1
       
@@ -223,7 +247,8 @@ Crop: w={cw} h={ch} x={cx} y={cy}
                                crf=crf,
                                filterString=filterString,
                                outputFilename='nul',
-                               audioBR=audioBR)
+                               audioBR=audioBR,
+                               requiresTransparency=requiresTransparency)
 
       print('Starting Pass 1 attempt {} @ bitrate {}'.format(attempt,br))
 
@@ -245,7 +270,8 @@ Crop: w={cw} h={ch} x={cx} y={cy}
                                crf=crf,
                                filterString=filterString,
                                outputFilename=tempname,
-                               audioBR=audioBR)
+                               audioBR=audioBR,
+                               requiresTransparency=requiresTransparency)
 
       print('Starting Pass 2 attempt {} @ bitrate {}'.format(attempt,br))
       
@@ -269,6 +295,8 @@ Crop: w={cw} h={ch} x={cx} y={cy}
         break
       else:
         if finalSize>targetSize_max:
+          if br<smallestFailedBr:
+            smallestFailedBr = br
           print('Encoding complete {:01.2f}%  [ {}B @ {} : {:01.2f}MB {:01.2f}% of size maximum]'.format( 
               100, 
               finalSize,
@@ -287,6 +315,6 @@ Crop: w={cw} h={ch} x={cx} y={cy}
 
         lastbr=br
         br =  br * (1/(finalSize/targetSize_guide))
-        br =  min(videoBrMax,br)
+        br =  min(min(videoBrMax,br),smallestFailedBr-1)
         print("Setting new bitrate {} ({:+f})".format(br,br-lastbr))
   

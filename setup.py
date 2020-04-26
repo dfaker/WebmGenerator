@@ -6,12 +6,21 @@ buildOptions = dict(packages = [],
                     include_files = [
                     'ffmpeg.exe'
                     ,'footer.png'
-                    ,'logo.png'
+                    ,('logo2.png','logo.png')
                     ,'colortheme.txt'
                     ,'easycrop.lua'
                     ,'mpv-1.dll'
                     ],
                     excludes = [
+                    'copyreg', 
+                    'distutils', 
+                    'email', 
+                    'future', 
+                    'pydoc_data',
+                    'setuptools', 
+                    'test', 
+                    'tests', 
+                    'test', 
                     "colorama",
                     "curses",
                     "email",

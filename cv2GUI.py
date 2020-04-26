@@ -5,7 +5,8 @@ import cv2
 import numpy as np
 import colortheme
 from tkinter import Tk
-from tkinter.filedialog import askopenfilename
+from videoFilter import VideoFilter
+
 
 def get_curr_screen_width():
     root = Tk()
@@ -18,72 +19,6 @@ def get_curr_screen_width():
     y = int(geometry.split('x')[1].split('+')[0])
     return x,y
 
-class VideoFilter():
-
-  def __init__(self,config,allowedWidth,parent):
-    self.config=config
-    self.name = self.config.get("name","Unamed Filter")
-    self.filter = self.config.get("filter",'null')
-    self.params = self.config.get("params",[])
-    self.preview=True
-    self.allowedWidth=allowedWidth
-    self.parent = parent
-    self.remove = False
-
-    self.values={}
-    for param in self.params:
-      if param['type'] == 'file':
-        Tk().withdraw()
-        filename = askopenfilename()
-        filename = os.path.relpath(filename, os.getcwd()).replace('\\','\\\\')
-        print(filename) 
-        self.values[param['n']] = filename
-      else:
-        self.values[param['n']] = param['d']
-
-    self.height = 100
-
-  def getRenderedImage(self):
-    image = np.zeros((self.height,self.allowedWidth,3),np.uint8)
-    image[:,:,:] = self.parent.colors.color_bg
-    image[0,:,:] = self.parent.colors.color_button_text
-    
-    cv2.putText(image, self.name, (5,15), self.parent.font, 0.4, self.parent.colors.color_button_text, 1, cv2.LINE_AA) 
-    cv2.putText(image, '[X]', (self.allowedWidth-25,15), self.parent.font, 0.4, self.parent.colors.color_button_text, 1, cv2.LINE_AA) 
-    return image
-
-  def handleClick(self,event, x, y, flags, param):
-    self.remove=True
-
-    return self.remove
-
-  def getFilterExpression(self):
-    filterExp = self.filter
-    filerExprams=[]
-    i=id(self)
-
-    formatDict={}
-
-    for param in self.params:
-      if '{'+param['n']+'}' in filterExp:
-        formatDict.update({'fn':i,param['n']:self.values[param['n']]})
-      else:
-        filerExprams.append(':{}={}'.format(param['n'],self.values[param['n']]) )
-
-    if len(formatDict)>0:
-      filterExp = filterExp.format( **formatDict )
-
-    filterExp
-    for i,e in enumerate(filerExprams):
-      if i==0:
-        filterExp+= '='+e[1:]
-      else:
-        filterExp+= e
-
-    print(filterExp)
-
-
-    return filterExp
 
 class Cv2GUI():
 
@@ -127,7 +62,6 @@ class Cv2GUI():
       {'key':'e','text':'Next File [E]',           'help':'Skip to the next file in the input queue, discarding the current clip selection.'  },
       {'key':'r','text':'Exit and Process [R]',    'help':'Exit the clip extraction ui and start conversion.'  },
       {'key':'t','text':'Toggle Logo [T]',         'help':'Toggle the upper left logo on or off, edit the file logo.png to change the image.'  },
-      {'key':'y','text':'Toggle Footer [Y]',       'help':'Toggle the footer image on or off, edit the file footer.png to change the image.'  },
       {'key':'u','text':'Filters [U]',             'help':'Open the filters panel.'  },
       {'key':'c','text':'Crop [C]',                'help':'Start cropping the video frame, click in the player window to set crop extents.'  },
     ]
@@ -136,42 +70,234 @@ class Cv2GUI():
     self.filterStack = []
     self.selectableFilters = [
       {
-        "name":"Image Overlay",
+        "name":"IOverlay",
         "filter":"null[vin{fn}],movie='{source}'[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
         "params":[
           {"n":"source", "d":'footer.png',"type":"file"},
-          {"n":"x",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x'},
-          {"n":"y",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y'},
+          {"n":"x",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x','inc':1},
+          {"n":"y",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y','inc':1},
         ]
       },
       {
-        "name":"Video Overlay",
+        "name":"VOverlay",
         "filter":"null[vin{fn}],movie='{source}',loop=-1:size={frames},setpts=N/FRAME_RATE/TB[pwm{fn}],[vin{fn}][pwm{fn}]overlay=shortest=0:x={x}:y={y}",
         "params":[
           {"n":"source", "d":'footer.png',"type":"file"},
-          {"n":"x",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x'},
-          {"n":"y",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y'},
+          {"n":"x",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x','inc':1},
+          {"n":"y",      "d":100,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y','inc':1},
           {"n":"frames", "d":100,  "type":"float","range":[0,999]},
         ]
       },
+
+
+
+
+
+      {
+        "name":"tonemap",
+        "filter":"zscale=transfer=linear,tonemap={mapping},zscale=transfer=bt709,format=yuv420p",
+        "params":[
+            {"n":"mapping", "d":"none","type":"cycle","cycle":[
+              "none",
+              "clip",
+              "linear",
+              "gamma",
+              "reinhard",
+              "hable",
+              "mobius",
+              ]
+            },
+          ]
+      },
+
+
+      {
+        "name":"curves",
+        "filter":"curves",
+        "params":[
+          {"n":"preset", "d":"none","type":"cycle","cycle":[
+            "none",
+            "color_negative",
+            "cross_process",
+            "darker",
+            "increase_contrast",
+            "lighter",
+            "linear_contrast",
+            "medium_contrast",
+            "negative",
+            "strong_contrast",
+            "vintage",
+            ]
+          }
+        ]
+      },
+
+      {
+        "name":"colorkey",
+        "filter":"colorkey",
+        "params":[
+          {"n":"color", "d":"Black","type":"cycle","cycle":[
+              "Black",
+              "Gray",
+              "White",
+              "Red",
+              "Green",
+              "Blue",
+              "Pink",
+              "Thistle",
+              "invert"
+            ]
+          },
+          {"n":"similarity",  "d":0.01, "type":"float", "range":None,     'inc':0.01},
+          {"n":"blend",           "d":0.0,  "type":"float", "range":None, 'inc':0.01},
+        ]
+      },
+
+
+
+      {
+        "name":"chromashift",
+        "filter":"chromashift",
+        "params":[
+
+          {"n":"cbh",           "d":0.0,  "type":"float", "range":None, 'inc':0.5},
+          {"n":"cbv",           "d":0.0,  "type":"float", "range":None, 'inc':0.5},
+          {"n":"crh",           "d":0.0,  "type":"float", "range":None, 'inc':0.5},
+          {"n":"crv",           "d":0.0,  "type":"float", "range":None, 'inc':0.5},
+
+        ]
+      },
+
+
+      {
+        "name":"addroi",
+        "filter":"addroi",
+        "params":[
+          {"n":"x",      "d":0,  "type":"int","range":None, 'inc':1},
+          {"n":"y",      "d":0,  "type":"int","range":None, 'inc':1},
+          {"n":"w",      "d":100,    "type":"int","range":None, 'inc':1},
+          {"n":"h",      "d":100,    "type":"int","range":None, 'inc':1},
+          {"n":"qoffset",  "d":0.01, "type":"float", "range":None,     'inc':0.01},
+        ]
+      },
+
+
+      {
+        "name":"v360",
+        "filter":"v360={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:interp={interp}",
+        "params":[
+          {"n":"in_proj", "d":"sg","type":"cycle","cycle":[
+              "sg",
+              "fisheye",
+              "dfisheye",
+              "ball",
+              "equirect",
+              "gnomonic",
+              "rectilinear",
+              "pannini",
+              "cylindrical",
+              "flat",
+            ]
+          },
+          {"n":"out_proj", "d":"rectilinear","type":"cycle","cycle":[
+              "sg",
+              "fisheye",
+              "dfisheye",
+              "ball",
+              "equirect",
+              "gnomonic",
+              "rectilinear",
+              "pannini",
+              "cylindrical",
+              "hequirect",
+              "flat",
+              "perspective",
+            ]
+          },
+          {"n":"in_stereo", "d":"sbs","type":"cycle","cycle":[
+              "sbs",
+              "2d",
+            ]
+          },
+          {"n":"out_stereo", "d":"2d","type":"cycle","cycle":[
+              "sbs",
+              "2d",
+            ]
+          },
+          {"n":"yaw",      "d":0.5,  "type":"float","range":None, 'inc':5},
+          {"n":"pitch",      "d":0.5,  "type":"float","range":None, 'inc':5},
+          {"n":"roll",      "d":0.5,  "type":"float","range":None, 'inc':5},
+          {"n":"d_fov",      "d":90.0,  "type":"float","range":None, 'inc':5},
+          {"n":"id_fov",      "d":180.0,  "type":"float","range":None, 'inc':5},
+          {"n":"interp", "d":"linear","type":"cycle","cycle":[
+              "linear",
+              "lagrange9",
+              "cubic",
+              "spline16",
+              "gaussian",
+            ]
+          },
+        ]
+      },
+
+
+
+      {
+        "name":"lenscorrection",
+        "filter":"format=gbrp,lenscorrection=cx={cx}:cy={cy}:k1={k1}:k2={k2},format=yuv420p",
+        "params":[
+          {"n":"cx",      "d":0.5,  "type":"float","range":None, 'inc':0.01},
+          {"n":"cy",      "d":0.5,  "type":"float","range":None, 'inc':0.01},
+          {"n":"k1",      "d":0,    "type":"float","range":None, 'inc':0.01},
+          {"n":"k2",      "d":0,    "type":"float","range":None, 'inc':0.01},
+        ]
+      },
+
+
+
+      {
+        "name":"colorbalance",
+        "filter":"colorbalance",
+        "params":[
+          {"n":"rs",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"gs",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"bs",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"rm",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"gm",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"bm",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"rh",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"gh",      "d":0,  "type":"float","range":None, 'inc':0.01},
+          {"n":"bh",      "d":0,  "type":"float","range":None, 'inc':0.01},
+        ]
+      },
+
+      {
+        "name":"unsharp",
+        "filter":"unsharp",
+        "params":[
+          {"n":"lx",      "d":5,  "type":"int","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x','inc':1},
+          {"n":"ly",      "d":5,  "type":"int","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y','inc':1},
+        ]
+      },
+
       {
         "name":"delogo",
         "filter":"delogo",
         "params":[
-          {"n":"x",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x'},
-          {"n":"y",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y'},
-          {"n":"w",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'x'},
-          {"n":"h",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'y'}
+          {"n":"x",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x','inc':1},
+          {"n":"y",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y','inc':1},
+          {"n":"w",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'x','inc':1},
+          {"n":"h",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'y','inc':1}
         ]
       },
       {
         "name":"drawbox",
         "filter":"drawbox",
         "params":[
-          {"n":"x",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x'},
-          {"n":"y",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y'},
-          {"n":"w",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'x'},
-          {"n":"h",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'y'},
+          {"n":"x",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x','inc':1},
+          {"n":"y",      "d":0,  "type":"float","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y','inc':1},
+          {"n":"w",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'x','inc':1},
+          {"n":"h",      "d":100,"type":"float","range":None, 'controlGroup':'Size',     'controlGroupAxis':'y','inc':1},
           {"n":"t", "d":"fill","type":"cycle","cycle":[
               "fill",
               "1",
@@ -197,51 +323,55 @@ class Cv2GUI():
         ]
       },
       {
-        "name":"Grey Edge Norm",
+        "name":"greyedge",
         "filter":"greyedge",
         "params":[
-          {"n":"difford", "d":1,"type":"float","range":[0,2]},
-          {"n":"minknorm","d":5,"type":"float","range":[0,20]},
-          {"n":"sigma",   "d":2,"type":"float","range":[0,1024.0]}
+          {"n":"difford", "d":1,"type":"float","range":[0,2],'inc':0.1},
+          {"n":"minknorm","d":5,"type":"float","range":[0,20],'inc':0.1},
+          {"n":"sigma",   "d":2,"type":"float","range":[0,1024.0],'inc':5}
         ]
       },
-      {"name":"Hist Equalizaion","filter":"histeq"},
+
       {"name":"rainbow","filter":"hue='H=2*PI*t*{speed}:s=2'",
         "params":[
-          {"n":"speed", "d":1,"type":"float","range":[0,180]},
+          {"n":"speed", "d":1,"type":"float","range":[0,180],'inc':0.1},
         ]
       },
       {
-        "name":"Rotate","filter":"rotate",
+        "name":"rotate","filter":"rotate",
         "params":[
-          {"n":"a", "d":0.785398,"type":"float","range":[0,6.28319]},
+          {"n":"a", "d":0.785398,"type":"float","range":[0,6.28319],'inc':0.0174533},
         ]
       },
+
+      {
+        "name":"xbr","filter":"xbr",
+        "params":[
+          {"n":"n", "d":"2","type":"cycle","cycle":[2,3,4]}
+        ]
+      },
+
       {
         "name":"Spin","filter":"rotate=a=t*{speed}",
         "params":[
-          {"n":"speed", "d":1,"type":"float","range":[0,180]},
+          {"n":"speed", "d":1,"type":"float","range":[0,180],'inc':0.1},
         ]
       },
       {
-        "name":"HSB Filter","filter":"hue",
+        "name":"hue","filter":"hue",
         "params":[
-          {"n":"h", "d":190,"type":"float","range":[0,360]},
-          {"n":"s", "d":2,"type":"float","range":[-10,10]},
-          {"n":"b", "d":0,"type":"float","range":[-10,10]},
+          {"n":"h", "d":0,"type":"float","range":[0,360],'inc':0.0174533},
+          {"n":"s", "d":2,"type":"float","range":[-10,10],'inc':0.2},
+          {"n":"b", "d":0,"type":"float","range":[-10,10],'inc':0.2},
         ]
       }, 
 
-      {"name":"Motion Interpolate","filter":"minterpolate='fps=60'"},
-      {"name":"Invert","filter":"negate"},
-      {"name":"Oscilloscope","filter":"oscilloscope"},
-      {"name":"Pseudo Color","filter":"pseudocolor"},
-      {"name":"Mirror","filter":"hflip"},
-      {"name":"Flip","filter":"vflip"},
-      {"name":"Random","filter":"random"},
-      {"name":"Sobel","filter":"sobel"},      
+      {"name":"hflip","filter":"hflip"},
+      {"name":"vflip","filter":"vflip"},
+
+     
       {
-        "name":"Clock Transpose","filter":"transpose",
+        "name":"transpose","filter":"transpose",
         "params":[
           {"n":"dir", "d":"cclock","type":"cycle","cycle":[
               "cclock_flip",
@@ -253,7 +383,7 @@ class Cv2GUI():
         ]
       }, 
       {
-        "name":"Yadif","filter":"yadif",
+        "name":"yadif","filter":"yadif",
         "params":[
           {"n":"mode",  "d":"send_frame","type":"cycle","cycle":[
             'send_frame',
@@ -275,12 +405,56 @@ class Cv2GUI():
           }
         ]
       },
-      {
-        "name":"Xbr Scale","filter":"xbr",
+
+      {"name":"deblock","filter":"deblock",
         "params":[
-          {"n":"n", "d":"2","type":"cycle","cycle":[2,3,4]}
+          {"n":"filter","d":"strong","type":"cycle","cycle":[
+            'weak ',
+            'strong',
+            ]
+          },
+          {"n":"block",      "d":8,  "type":"int","range":None,'inc':1},
+          {"n":"alpha", "d":0.098,"type":"float","range":[0,1],'inc':0.01},
+          {"n":"beta",  "d":0.05,"type":"float","range":[0,1],'inc':0.01},
+          {"n":"gamma", "d":0.05,"type":"float","range":[0,1],'inc':0.01},
+          {"n":"delta", "d":0.05,"type":"float","range":[0,1],'inc':0.01},
         ]
-      }
+      },
+
+      {"name":"deshake","filter":"deshake",
+       "params":[
+          {"n":"x",      "d":-1,  "type":"int","range":None, 'controlGroup':'Position', 'controlGroupAxis':'x','inc':1},
+          {"n":"y",      "d":-1,  "type":"int","range":None, 'controlGroup':'Position', 'controlGroupAxis':'y','inc':1},
+          {"n":"w",      "d":-1,  "type":"int","range":None, 'controlGroup':'Size',     'controlGroupAxis':'x','inc':1},
+          {"n":"h",      "d":-1,  "type":"int","range":None, 'controlGroup':'Size',     'controlGroupAxis':'y','inc':1},
+
+          {"n":"rx",      "d":16,  "type":"int","range":None, 'controlGroup':'Size',     'controlGroupAxis':'x','inc':1},
+          {"n":"ry",      "d":16,  "type":"int","range":None, 'controlGroup':'Size',     'controlGroupAxis':'y','inc':1},
+
+          {"n":"edge","d":"mirror","type":"cycle","cycle":[
+            'blank',
+            'original',
+            'clamp',
+            'mirror',
+            ]
+          },
+
+          {"n":"blocksize",      "d":8,  "type":"int","range":None,'inc':1},
+          {"n":"contrast",       "d":125,  "type":"int","range":None,'inc':1},
+          {"n":"search","d":"exhaustive","type":"cycle","cycle":[
+            'exhaustive',
+            'less'
+            ]
+          }
+
+
+
+        ]
+      },
+
+
+      
+
 
     ]
 
@@ -541,7 +715,6 @@ class Cv2GUI():
     self.player.recaulcateFilters(self.filterStack)
 
   def _handleCV2FilterClick(self,event, x, y, flags, param):
-    print(event, x, y, flags, param)
     if event == cv2.EVENT_LBUTTONDOWN or event == cv2.EVENT_LBUTTONDBLCLK:
       for ffilter in self.selectableFilters:
           bx,by,bw,bh = ffilter['position']
@@ -550,15 +723,15 @@ class Cv2GUI():
             self.filterStack.append(VideoFilter(ffilter,self.filtersimshape[1],self))
             self.recaulcateFilters()
 
-      yorigin=self.filteryOrigin
-      remove = False
-      for ffilter in self.filterStack:
-        if yorigin < y < yorigin + ffilter.height:
-          remove = ffilter.handleClick(event, x, y-yorigin, flags, param)
-        yorigin+=ffilter.height+15
-      if remove:
-        self.filterStack = [x for x in self.filterStack if x.remove==False]
-        self.recaulcateFilters()
+    yorigin=self.filteryOrigin
+    remove = False
+    for ffilter in self.filterStack:
+      if yorigin < y < yorigin + ffilter.height:
+        remove = ffilter.handleClick(event, x, y-yorigin, flags, param)
+      yorigin+=ffilter.height+15
+    if remove:
+      self.filterStack = [x for x in self.filterStack if x.remove==False]
+      self.recaulcateFilters()
 
 
   def updateFilters(self):

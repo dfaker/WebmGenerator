@@ -8,6 +8,20 @@ from cv2GUI import Cv2GUI
 class MpvAndCV2Player():
 
   def __init__(self,cat,filename,sessionProperties):
+
+
+    self.posA=None
+    self.posB=None
+
+    self.cropRect = (0,0,0,0)
+    self.active=False
+    self.totalDuration=None
+    self.currentTime=0
+    
+    self.selected=False
+    self.endSelection=False
+    
+
     self.player = mpv.MPV(input_default_bindings=True, osc=True)
     self.player.loop_playlist = 'inf'
     self.player.mute = 'yes'
@@ -34,22 +48,11 @@ class MpvAndCV2Player():
     self.player.register_key_binding("CLOSE_WIN", self._handleMpvKeypress)
 
   
-    self.posA=None
-    self.posB=None
 
-    self.cropRect = (0,0,0,0)
-    self.active=False
-    self.totalDuration=None
-    self.currentTime=0
-    
-    self.selected=False
-    self.endSelection=False
 
     self.toggleLogo()
     self.toggleLogo()
 
-    self.togglefooter()
-    self.togglefooter()
 
   def toggleLogo(self):
     self.sessionProperties.showLogo = not self.sessionProperties.showLogo
@@ -58,20 +61,18 @@ class MpvAndCV2Player():
     else:
       self.player.command('vf', 'del', "@logo:lavfi=\"movie='logo.png'[pwm],[vid1][pwm]overlay=5:5[vo]\"")
 
-  def togglefooter(self):
-    self.sessionProperties.showFooter = not self.sessionProperties.showFooter
-    if self.sessionProperties.showFooter:
-      self.player.command('vf', 'add',    "@footer:lavfi=\"movie='footer.png'[pwm],[vid1][pwm]overlay=(W-w)/2:(H-h)[vo]\"")
-    else:
-      self.player.command('vf', 'del', "@footer:lavfi=\"movie='footer.png'[pwm],[vid1][pwm]overlay=(W-w)/2:(H-h)/2[vo]\"")
-
+  def getFilterExpression(self,filterStack):
+    filterExp = ','.join([x.getFilterExpression() for x in filterStack])
+    if len(filterStack)==0:
+      return None
+    return filterExp
 
   def recaulcateFilters(self,filterStack):
 
     filterExp = ','.join([x.getFilterExpression() for x in filterStack])
     print(filterExp)
-
-    self.player.command('vf', 'del',    "@filterStack:lavfi=\"{}\"".format(filterExp))
+    if len(filterStack)==0:
+      self.player.command('vf', 'del',    "@filterStack:lavfi=\"{}\"".format(filterExp))
     if len(filterStack)>0:
       self.player.command('vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExp))
     self._handleMpvCropChange(*self.cropRect)
@@ -96,16 +97,10 @@ class MpvAndCV2Player():
       self.toggleLogo()
       self.toggleLogo()
 
-    if self.sessionProperties.showFooter:
-      self.togglefooter()
-      self.togglefooter()
-
   def _handleMpvKeypress(self,state,key,bubble=True):
     if state=='d-':
       if key == 't':
         self.toggleLogo()
-      if key == 'y':
-        self.togglefooter()
       if key == 'c':
         self.player.command('script-binding','easycrop/easy_crop')
       if key in ('q','e','r'):
@@ -137,7 +132,7 @@ class MpvAndCV2Player():
       result.append(
                     (
                       (self.category, self.filename , self.posA, self.posB)
-                      ,(self.sessionProperties.showLogo , self.sessionProperties.showFooter)
+                      ,(self.sessionProperties.showLogo , self.getFilterExpression(self.seeker.filterStack) )
                       ,self.cropRect
                       ,(
                          self.sessionProperties.fpsLimit

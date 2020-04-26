@@ -1,2 +1,2 @@
-python-mpv==0.3.9
+python-mpv==0.4.6
 opencv-python==3.4.4.19

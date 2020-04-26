@@ -66,6 +66,19 @@ class MpvAndCV2Player():
       self.player.command('vf', 'del', "@footer:lavfi=\"movie='footer.png'[pwm],[vid1][pwm]overlay=(W-w)/2:(H-h)/2[vo]\"")
 
 
+  def recaulcateFilters(self,filterStack):
+
+    filterExp = ','.join([x.getFilterExpression() for x in filterStack])
+    print(filterExp)
+
+    self.player.command('vf', 'del',    "@filterStack:lavfi=\"{}\"".format(filterExp))
+    if len(filterStack)>0:
+      self.player.command('vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExp))
+    self._handleMpvCropChange(*self.cropRect)
+
+  def seek(self,pos):
+    self.player.command('seek', pos, 'absolute', 'exact')
+
   def setABLoopRange(self,start,end,jumpAfterSet='End'):
       self.posA=start
       self.posB=end

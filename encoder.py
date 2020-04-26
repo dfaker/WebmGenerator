@@ -45,11 +45,14 @@ def monitorFFMPEGProgress(proc,desc,a,b,filename):
         print(ln)
       for p in ln.split(b' '):
         if b'time=' in p:
-          pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-          total_seconds = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-          if total_seconds>0:
-            percentComplete = (total_seconds/abs(a-b))
-            print('Encoding (Actual) {:01.2f}%'.format(percentComplete*100) ,end='\r')
+          try:
+            pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+            total_seconds = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+            if total_seconds>0:
+              percentComplete = (total_seconds/abs(a-b))
+              print('Encoding (Actual) {:01.2f}%'.format(percentComplete*100) ,end='\r')
+          except Exception as e:
+            print(e)
       ln=b''
     ln+=c
   print('Encoding (Complete) {:01.2f}%'.format(percentComplete*100) ,end='\r')
@@ -128,7 +131,7 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
   else:
     command.extend([
       "-c:a"  ,"libvorbis"
-     ,"-b:a"  ,audioBR
+     ,"-b:a"  , audioBR
     ])
 
   command.extend([
@@ -144,11 +147,16 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
 
   return command
 
-def processClips(clips):
-  t=len(clips)
+def processClips(clipsQueue):
+
+  t=clipsQueue.qsize()
+  
   outFolder = datetime.now().strftime('Batch_%Y%m%d_%H%M%S')
-  for i,((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) in enumerate(clips):
-    
+  i=-1
+  while 1:
+    ((cat,src,s,e),(incudelogo,includefooter),(cw,ch,cx,cy),properties) = clipsQueue.get()
+    i=i+1
+
     fpsLimit,sizeLimit,audioBR,videoBrMax,maxVWidth,minVWidth = properties
 
     if videoBrMax is None or sizeLimit == 'None':
@@ -165,7 +173,7 @@ Range: {s}s - {e}s
 Include Logo:{incudelogo}
 Include Footer:{includefooter}
 Crop: w={cw} h={ch} x={cx} y={cy}
-    """.format(i=i,t=t,cat=cat,src=src,
+    """.format(i=i+1,t=t,cat=cat,src=src,
                s=s,e=e,
                incudelogo=incudelogo,
                includefooter=includefooter,
@@ -253,6 +261,7 @@ Crop: w={cw} h={ch} x={cx} y={cy}
         os.path.exists('out') or os.mkdir('out')
         os.path.exists(os.path.join('out',outFolder)) or os.mkdir(os.path.join('out',outFolder))
         os.rename(tempname,outFilename)
+        clipsQueue.task_done()
         break
       else:
         if finalSize>targetSize_max:
@@ -276,3 +285,4 @@ Crop: w={cw} h={ch} x={cx} y={cy}
         br =  br * (1/(finalSize/targetSize_guide))
         br =  min(videoBrMax,br)
         print("Setting new bitrate {} ({:+f})".format(br,br-lastbr))
+  

@@ -6,7 +6,7 @@ buildOptions = dict(packages = [],
                     include_files = [
                     'ffmpeg.exe'
                     ,'footer.png'
-                    ,('2logo.png','logo.png')
+                    ,'logo.png'
                     ,'colortheme.txt'
                     ,'easycrop.lua'
                     ,'mpv-1.dll'

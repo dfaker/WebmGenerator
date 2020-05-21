@@ -20,7 +20,7 @@ class MpvAndCV2Player():
     
     self.selected=False
     self.endSelection=False
-    
+
 
     self.player = mpv.MPV(input_default_bindings=True, osc=True)
     self.player.loop_playlist = 'inf'
@@ -62,15 +62,20 @@ class MpvAndCV2Player():
       self.player.command('vf', 'del', "@logo:lavfi=\"movie='logo.png'[pwm],[vid1][pwm]overlay=5:5[vo]\"")
 
   def getFilterExpression(self,filterStack):
-    filterExp = ','.join([x.getFilterExpression() for x in filterStack])
-    if len(filterStack)==0:
-      return None
-    return filterExp
+
+    filterExppre  = ','.join([x.getFilterExpression() for x in filterStack if not x.isPostScaleFilter])
+    filterExpPost = ','.join([x.getFilterExpression() for x in filterStack if x.isPostScaleFilter])
+    
+    if len(filterExppre)==0:
+      filterExppre=None
+
+    if len(filterExpPost)==0:
+      filterExpPost=None
+
+    return filterExppre,filterExpPost
 
   def recaulcateFilters(self,filterStack):
-
-    filterExp = ','.join([x.getFilterExpression() for x in filterStack])
-    print(filterExp)
+    filterExp = ','.join([x.getFilterExpression(preview=True) for x in filterStack])
     if len(filterStack)==0:
       self.player.command('vf', 'del',    "@filterStack:lavfi=\"{}\"".format(filterExp))
     if len(filterStack)>0:

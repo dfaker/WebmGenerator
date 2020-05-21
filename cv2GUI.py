@@ -167,69 +167,98 @@ class Cv2GUI():
 
         ]
       },
-
-
       {
         "name":"addroi",
-        "filter":"addroi",
+        "filter":"addroi=x='{xf}*iw':y={yf}*ih:w={wf}*iw:h={hf}*ih:qoffset={qoffset}",
+        "filterPreview":"drawbox=color=Blue@0.25:x='{xf}*iw+({qoffset}*0)':y={yf}*ih:w={wf}*iw:h={hf}*ih:t=fill",
         "params":[
-          {"n":"x",      "d":0,  "type":"int","range":None, 'inc':1},
-          {"n":"y",      "d":0,  "type":"int","range":None, 'inc':1},
-          {"n":"w",      "d":100,    "type":"int","range":None, 'inc':1},
-          {"n":"h",      "d":100,    "type":"int","range":None, 'inc':1},
-          {"n":"qoffset",  "d":0.01, "type":"float", "range":None,     'inc':0.01},
-        ]
+          {"n":"xf",      "d":0,      "type":"float",  "range":[0,1],   'inc':0.01},
+          {"n":"yf",      "d":0,      "type":"float",  "range":[0,1],   'inc':0.01},
+          {"n":"wf",      "d":0.1,    "type":"float",  "range":[0,1],  'inc':0.01},
+          {"n":"hf",      "d":0.1,    "type":"float",  "range":[0,1],  'inc':0.01},
+          {"n":"qoffset",  "d":-0.5, "type":"float",   "range":[-1,1], 'inc':0.01},
+        ],
+        "postScale":True,
       },
 
 
       {
-        "name":"v360",
-        "filter":"v360={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:interp={interp}",
+        "name":"v360-d",
+        "filter":"v360={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:w={w}:h={h}:interp={interp}:in_trans={in_trans}:out_trans={out_trans}:h_flip={h_flip}:ih_flip={ih_flip}:iv_flip={iv_flip}:alpha_mask=1",
         "params":[
-          {"n":"in_proj", "d":"sg","type":"cycle","cycle":[
+          {"n":"in_proj", "d":"hequirect","type":"cycle","cycle":[
               "sg",
               "fisheye",
-              "dfisheye",
               "ball",
               "equirect",
-              "gnomonic",
-              "rectilinear",
-              "pannini",
-              "cylindrical",
-              "flat",
-            ]
-          },
-          {"n":"out_proj", "d":"rectilinear","type":"cycle","cycle":[
-              "sg",
-              "fisheye",
-              "dfisheye",
-              "ball",
-              "equirect",
-              "gnomonic",
-              "rectilinear",
-              "pannini",
-              "cylindrical",
               "hequirect",
-              "flat",
-              "perspective",
+              "rectilinear",
+              "pannini",
+              "cylindrical",
+
+
             ]
           },
+
+
+
+          {"n":"out_proj", "d":"flat","type":"cycle","cycle":[
+              "sg",
+              "fisheye",
+              "ball",
+              "flat",
+              "rectilinear",
+              "pannini",
+              "cylindrical",
+            ]
+          },
+
+          {"n":"in_trans", "d":"0","type":"cycle","cycle":[
+              "1","0",
+            ]
+          },
+          {"n":"out_trans", "d":"0","type":"cycle","cycle":[
+              "1","0",
+            ]
+          },
+
+          {"n":"h_flip", "d":"0","type":"cycle","cycle":[
+              "1","0",
+            ]
+          },
+          {"n":"ih_flip", "d":"0","type":"cycle","cycle":[
+              "1","0",
+            ]
+          },
+          {"n":"iv_flip", "d":"0","type":"cycle","cycle":[
+              "1","0",
+            ]
+          },
+
           {"n":"in_stereo", "d":"sbs","type":"cycle","cycle":[
               "sbs",
               "2d",
+              "tb"
             ]
           },
           {"n":"out_stereo", "d":"2d","type":"cycle","cycle":[
               "sbs",
               "2d",
+              "tb"
             ]
           },
-          {"n":"yaw",      "d":0.5,  "type":"float","range":None, 'inc':5},
-          {"n":"pitch",      "d":0.5,  "type":"float","range":None, 'inc':5},
-          {"n":"roll",      "d":0.5,  "type":"float","range":None, 'inc':5},
-          {"n":"d_fov",      "d":90.0,  "type":"float","range":None, 'inc':5},
-          {"n":"id_fov",      "d":180.0,  "type":"float","range":None, 'inc':5},
-          {"n":"interp", "d":"linear","type":"cycle","cycle":[
+
+          {"n":"w",      "d":1280.0,  "type":"float","range":None, 'inc':1},
+          {"n":"h",      "d":1280.0,  "type":"float","range":None, 'inc':1},
+
+          {"n":"yaw",      "d":0.0,  "type":"float","range":None, 'inc':1},
+          {"n":"pitch",      "d":0.0,  "type":"float","range":None, 'inc':1},
+          {"n":"roll",      "d":0.0,  "type":"float","range":None, 'inc':1},
+          
+          {"n":"d_fov",      "d":90.0,  "type":"float","range":None, 'inc':1},
+          {"n":"id_fov",      "d":180.0,  "type":"float","range":None, 'inc':1},
+
+          {"n":"interp", "d":"cubic","type":"cycle","cycle":[
               "linear",
               "lagrange9",
               "cubic",
@@ -240,7 +269,7 @@ class Cv2GUI():
         ]
       },
 
-
+     
 
       {
         "name":"lenscorrection",
@@ -452,8 +481,33 @@ class Cv2GUI():
         ]
       },
 
+      {
+        "name":"crop",
+        "filter":"crop",
+        "params":[
+          {"n":"x",      "d":0,  "type":"int","range":None, 'inc':10},
+          {"n":"y",      "d":0,  "type":"int","range":None, 'inc':10},
+          {"n":"w",      "d":100,    "type":"int","range":None, 'inc':10},
+          {"n":"h",      "d":100,    "type":"int","range":None, 'inc':10},
+        ]
+      },
 
-      
+      {
+        "name":"drawtext",
+        "filter":"drawtext",
+        "params":[
+          {"n":"text",    "d":"'Text'","type":"string"},
+          {"n":"fontfile","d":"'C\\\\:\\\\Windows\\\\Fonts\\\\Arial.ttf'","type":"string"},
+
+          {"n":"x",       "d":1,  "type":"int","range":None,'inc':1},
+          {"n":"y",       "d":1,  "type":"int","range":None,'inc':1},
+        
+
+
+          {"n":"fontsize","d":16,  "type":"int","range":None,'inc':0.1},
+          {"n":"alpha",   "d":1,  "type":"float","range":None,'inc':0.1},
+        ]
+      },
 
 
     ]

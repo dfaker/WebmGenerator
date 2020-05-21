@@ -15,7 +15,7 @@ logo='logo.png'
 footer='footer.png'
 maxTriesBeforeAcceptingSmaller=10
 maxTries=15
-printFFmpegVerbose=False
+printFFmpegVerbose=True
 
 import json
 try:
@@ -58,7 +58,7 @@ def monitorFFMPEGProgress(proc,desc,a,b,filename):
   print('Encoding (Complete) {:01.2f}%'.format(percentComplete*100) ,end='\r')
   return percentComplete
 
-def buildFilterString(incudelogo,extraFilters,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth):
+def buildFilterString(incudelogo,extraFiltersPre,extraFiltersPost,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth):
 
   if fpsLimit is None or fpsLimit == 'None':
     fpsLimit=None
@@ -78,10 +78,11 @@ def buildFilterString(incudelogo,extraFilters,cw,ch,cx,cy,fpsLimit,maxVWidth,min
 
   filterString = "movie='logo.png'[logo]"
 
-  if extraFilters is not None:
-    filterString += ',[0:v]'+extraFilters+'[inFilters]'
+  if extraFiltersPre is not None:
+    filterString += ',[0:v]'+extraFiltersPre+'[inFilters]'
   else:
     filterString += ',[0:v]null[inFilters]'
+
 
   if cx!=0 and cy !=0 and cw!=0 and ch!=0:
     filterString += ",[inFilters]crop={}:{}:{}:{}[cropped]".format(cw,ch,cx,cy)
@@ -96,7 +97,14 @@ def buildFilterString(incudelogo,extraFilters,cw,ch,cx,cy,fpsLimit,maxVWidth,min
     filterString += ",[logo]nullsink,[scaled]null"
 
   if fpsLimit is not None:
-    filterString += ",select='eq(n,0)+if(gt(t-prev_selected_t,1/{}),1,0)".format(fpsLimit)
+    filterString += ",select='eq(n,0)+if(gt(t-prev_selected_t,1/{}),1,0)'[fpscap]".format(fpsLimit)
+  else:
+    filterString += ',null[fpscap]'
+
+  if extraFiltersPost is not None:
+    filterString += ',[fpscap]'+extraFiltersPost+',sidedata=mode=delete'
+  else:
+    filterString += ',[fpscap]null,sidedata=mode=delete'
 
   return filterString
 
@@ -108,6 +116,7 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
    ,"-y" 
    ,"-ss", "{:01.2f}".format(start) 
    ,"-i", filename 
+   ,"-map_metadata", "-1"
    ,"-ss", "{:01.2f}".format(start) 
    ,"-t", "{:01.2f}".format(duration)
    ,"-c:v","libvpx" 
@@ -161,6 +170,8 @@ def buildFFmpegCommand(passNumber,filename,logName,start,duration,bitrate,thread
      "-movflags",       "faststart"
     ,"-pass"            ,str(passNumber)
     ,"-f"               ,"webm" 
+
+    ,"-map_metadata", "-1"
     ,outputFilename
   ])
 
@@ -177,11 +188,11 @@ def processClips(clipsQueue):
     if job is None:
       clipsQueue.task_done()
       return
-    ((cat,src,s,e),(incudelogo,extraFilters),(cw,ch,cx,cy),properties) = job
+    ((cat,src,s,e),(incudelogo,(extraFiltersPre,extraFiltersPost)),(cw,ch,cx,cy),properties) = job
     i=i+1
 
     requiresTransparency=False
-    if extraFilters is not None and 'colorkey' in extraFilters:
+    if extraFiltersPre is not None and 'colorkey' in extraFiltersPre:
       requiresTransparency=True
 
     fpsLimit,sizeLimit,audioBR,videoBrMax,maxVWidth,minVWidth = properties
@@ -198,12 +209,14 @@ Source file:{src}
 Category:{cat}
 Range: {s}s - {e}s
 Include Logo:{incudelogo}
-ExtraFilters:{extraFilters}
+ExtraFiltersPre:{extraFiltersPre}
+extraFiltersPost:{extraFiltersPost}
 Crop: w={cw} h={ch} x={cx} y={cy}
     """.format(i=i+1,t=t,cat=cat,src=src,
                s=s,e=e,
                incudelogo=incudelogo,
-               extraFilters=extraFilters,
+               extraFiltersPre=extraFiltersPre,
+               extraFiltersPost=extraFiltersPost,
                cw=cw,ch=ch,cx=cx,cy=cy)
 
     print(desc)
@@ -231,9 +244,31 @@ Crop: w={cw} h={ch} x={cx} y={cy}
     tempname = os.path.join('temp',os.path.splitext(os.path.basename(src))[0]+'.'+str(int(s))+'.'+str(int(e))+".webm")
 
     attempt=0
-    filterString = buildFilterString(incudelogo,extraFilters,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth)
+    filterString = buildFilterString(incudelogo,extraFiltersPre,extraFiltersPost,cw,ch,cx,cy,fpsLimit,maxVWidth,minVWidth)
 
     smallestFailedBr=float('inf')
+
+    largestFailedUnderMinimum=None
+    smallestFailedOverMaximum=None
+
+
+    cmd = buildFFmpegCommand(passNumber=2,
+                             filename=src,
+                             logName=tempname+'.log',
+                             start=s,
+                             duration=dur,
+                             bitrate=br,
+                             threads=threads,
+                             crf=crf,
+                             filterString=filterString,
+                             outputFilename=tempname,
+                             audioBR=audioBR,
+                             requiresTransparency=requiresTransparency)
+    
+    print('Ffmpeg command')
+    print(' '.join(cmd))
+    print('')
+
     while 1:
       attempt+=1
       
@@ -291,12 +326,21 @@ Crop: w={cw} h={ch} x={cx} y={cy}
         os.path.exists('out') or os.mkdir('out')
         os.path.exists(os.path.join('out',outFolder)) or os.mkdir(os.path.join('out',outFolder))
         os.rename(tempname,outFilename)
+        try:
+          sp.Popen(['mkvpropedit',outFilename,'--edit','track:1','--delete','projection-type'])#,'--delete','stereo-mode'
+        except Exception as e:
+          print('mkvpropedit not installed skipping projection removal',e)
         clipsQueue.task_done()
         break
       else:
         if finalSize>targetSize_max:
+
+          if smallestFailedOverMaximum is None or br<smallestFailedOverMaximum:
+            smallestFailedOverMaximum=br
+
           if br<smallestFailedBr:
             smallestFailedBr = br
+
           print('Encoding complete {:01.2f}%  [ {}B @ {} : {:01.2f}MB {:01.2f}% of size maximum]'.format( 
               100, 
               finalSize,
@@ -305,6 +349,10 @@ Crop: w={cw} h={ch} x={cx} y={cy}
               ( finalSize / targetSize_max )*100 
             ))
         if finalSize<targetSize_min:
+
+          if largestFailedUnderMinimum is None or br>largestFailedUnderMinimum:
+            largestFailedUnderMinimum=br
+
           print('Encoding complete {:01.2f}%  [ {}B @ {} : {:01.2f}MB {:01.2f}% of size minimum]'.format( 
               100, 
               finalSize,
@@ -314,7 +362,13 @@ Crop: w={cw} h={ch} x={cx} y={cy}
             ))
 
         lastbr=br
+
+
         br =  br * (1/(finalSize/targetSize_guide))
         br =  min(min(videoBrMax,br),smallestFailedBr-1)
+        
+        if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
+          br = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
+
         print("Setting new bitrate {} ({:+f})".format(br,br-lastbr))
   

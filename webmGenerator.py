@@ -20,7 +20,6 @@ else:
 os.chdir(application_path)
 os.environ["PATH"] = application_path + os.pathsep + os.environ["PATH"]
 
-
 threads=0
 
 def main():
@@ -55,8 +54,6 @@ def main():
   else:
     q.put(None)
     encoder.processClips(q)
-
-
 
 try:
   main()

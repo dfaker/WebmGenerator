@@ -12,15 +12,26 @@ class VideoFilter():
     self.config=config
     self.name = self.config.get("name","Unamed Filter")
     self.filter = self.config.get("filter",'null')
+    
+    self.isPostScaleFilter = self.config.get("postScale",False)
+
+    self.previewFilter = self.config.get("filterPreview",self.filter)
     self.params = self.config.get("params",[])
+
     self.enabled=True
-    self.preview=True
     self.allowedWidth=allowedWidth
     self.parent = parent
     self.remove = False
+    self.persist = False
 
     self.values={}
+    self.ranges={}
     for param in self.params:
+      self.ranges[param['n']] = param.get("range")
+      if self.ranges[param['n']] is None:
+        self.ranges[param['n']] = [float('-inf'),float('inf')]
+
+
       if param['type'] == 'file':
         Tk().withdraw()
         filename = askopenfilename()
@@ -60,6 +71,7 @@ class VideoFilter():
 
       paramStart = paramStart+bh+9
 
+
     cv2.putText(image, self.name, (5,15), self.parent.font, 0.4, self.parent.colors.color_button_text, 1, cv2.LINE_AA) 
     cv2.putText(image, '[{}] [X]'.format('Enabled' if self.enabled else 'Disabled'), (self.allowedWidth-95,15), self.parent.font, 0.4, self.parent.colors.color_button_text, 1, cv2.LINE_AA) 
     return image
@@ -74,34 +86,44 @@ class VideoFilter():
           self.parent.recaulcateFilters()
 
     for param in self.params:
+      rangeLim = self.ranges[param['n']]
       if param['top']<y<param['bottom']:
         if event==cv2.EVENT_MOUSEWHEEL:
+          
           increment = 0
           increment = (flags/7864320)*param.get('inc',1.0)
 
           if param['type'] == 'cycle':
+            
             inc=0
             if flags>0:
               inc = 1
             else:
               inc = -1
+            
             self.values[param['n']] = param['cycle'][(param['cycle'].index(self.values[param['n']])+inc)%len(param['cycle'])]
             self.parent.recaulcateFilters()
           elif param['type'] == 'int':
-            if increment>0:
-              self.values[param['n']] = self.values[param['n']]+1
-            else:
-              self.values[param['n']] = self.values[param['n']]-1
+            
+            increment= int((flags/7864320)*param.get('inc',1.0))
+            
+            self.values[param['n']] =  min(max( self.values[param['n']]+inc ,rangeLim[0]),rangeLim[1])
+            self.parent.recaulcateFilters()
           elif param['type'] == 'float':
-            self.values[param['n']] = self.values[param['n']]+increment
+            self.values[param['n']] = min(max( self.values[param['n']]+increment ,rangeLim[0]),rangeLim[1])
             self.parent.recaulcateFilters()
 
     return self.remove
 
-  def getFilterExpression(self):
+  def getFilterExpression(self,preview=False):
     if not self.enabled:
       return 'null'
-    filterExp = self.filter
+    
+    if preview:
+      filterExp=self.previewFilter
+    else:
+      filterExp=self.filter
+
     filerExprams=[]
     i=id(self)
 
@@ -109,11 +131,11 @@ class VideoFilter():
 
     for param in self.params:
       if '{'+param['n']+'}' in filterExp:
-        formatDict.update({'fn':i,param['n']:self.values[param['n']]})
+        formatDict.update({'fn':i,param['n']:self.values[param['n']]},)
       else:
         if param['type'] == 'float':
           filerExprams.append(':{}={:01.2f}'.format(param['n'],self.values[param['n']]) )
-        if param['type'] == 'int':
+        elif param['type'] == 'int':
           filerExprams.append(':{}={}'.format(param['n'],int(self.values[param['n']])))
         else:
           filerExprams.append(':{}={}'.format(param['n'],self.values[param['n']]) )
@@ -121,7 +143,6 @@ class VideoFilter():
     if len(formatDict)>0:
       filterExp = filterExp.format( **formatDict )
 
-    filterExp
     for i,e in enumerate(filerExprams):
       if i==0:
         filterExp+= '='+e[1:]

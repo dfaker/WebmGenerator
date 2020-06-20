@@ -35,6 +35,6 @@ Both of these should be placed into the same folder as the script.
 
 ![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)
 
-###Encoding
+### Encoding
 
 ![Encoding](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/06%20-%20Encoding.png)

@@ -28,7 +28,7 @@ Initially the application appears as above, in the left hand panel you have a Sl
 Below that are:
 
 - A volume control for playback.
-- A status line 00.00s 0.00% (-0.00s) showing you how many combine seconds you have selected, the percentage to your target duration you're at, and how far above or below you are in seconds.
+- A status line `00.00s 0.00% (-0.00s)` showing you how many combine seconds you have selected, the percentage to your target duration you're at, and how far above or below you are in seconds.
 - A progress indicator to show you how far from hitting target length you are, it turns red when the total of your selected clips exceeds your target length.
 
 Below that is your source videos frame, you can click Load Videos to load one or more source videos for cutting, or quickly clear all of your subclip selections to start your cut process again.

@@ -10,6 +10,8 @@ Both of these should be placed into the same folder as the script.
 ## Python dependencies:
 
 - python-mpv
+- pygubu
+- numpy
 
  `pip3 install -r requirements.txt`
 
@@ -28,7 +30,7 @@ Initially the application appears as above, in the left hand panel you have a Sl
 Below that are:
 
 - A volume control for playback.
-- A status line `00.00s 0.00% (-0.00s)` showing you how many combine seconds you have selected, the percentage to your target duration you're at, and how far above or below you are in seconds.
+- A status line `00.00s 0.00% (-0.00s)` showing you how many combine seconds you have selected, the percentage to your target duration you're at, and how many seconds are being deducted from the total by the `Target Trim` what we expect adding a 0.25 second crossfade between the clips will deduct.
 - A progress indicator to show you how far from hitting target length you are, it turns red when the total of your selected clips exceeds your target length.
 
 Below that is your source videos frame, you can click Load Videos to load one or more source videos for cutting, or quickly clear all of your subclip selections to start your cut process again.
@@ -57,6 +59,7 @@ Scrolling the mousewheel on the timeline will zoom in and out, the grey bar at t
 
 ![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
 
+The above image shows both the presence of the timeline markers added with `Add interest mark` and multiple subclips that have already been added and resized, Not that with these three sections selected the final output duration is at 74.69 seconds, because this is over the selected `Target Length` the progress bar is red.
 
 ### Filtering
 

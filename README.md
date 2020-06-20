@@ -37,10 +37,6 @@ Below that is your source videos frame, you can click Load Videos to load one or
 
 ![Subclip Selection](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/02%20-%20UI-Clip%20Addition.png)
 
-### Markers and Size Targeting
-
-![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
-
 Once a clip is loaded the bottom dark grey panel cahnges into a video timeline, you can left click anywhere in it or click and drag to scrub though the video.
 
 Right clicking brings up a context menu that allows you to:
@@ -50,6 +46,11 @@ Right clicking brings up a context menu that allows you to:
 - `Add interest mark` - Adds a visual indicator at a time position, no effect on the output but is useful when watching through and decing representative scenes.
 - `Nudge to lowest error` - Attempts to move the start and end markers (no more than 1 or 2 seconds back and forth) to find a 'perfect loop' for making looping videos, will process in the background and update the subclip under where you right clicked when complete.
 - `Run scene change detection` - Starts a background process that searches for any scene transtions in the video and places visual markers on the timeline, this can take quite a while for long clips.
+
+### Markers and Size Targeting
+
+![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
+
 
 ### Filtering
 

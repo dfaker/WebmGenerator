@@ -44,8 +44,14 @@ Right clicking brings up a context menu that allows you to:
 - `Add new subclip` - A new subclip to be cut out will be added to the timeline centered around the point you right clicked, initially it wll have the same duration as you set in `Slice Length`
 - `Delete subclip` - Removes the subclip under where you right clicked.
 - `Add interest mark` - Adds a visual indicator at a time position, no effect on the output but is useful when watching through and decing representative scenes.
-- `Nudge to lowest error` - Attempts to move the start and end markers (no more than 1 or 2 seconds back and forth) to find a 'perfect loop' for making looping videos, will process in the background and update the subclip under where you right clicked when complete.
+- `Nudge to lowest error +- #s` - Attempts to move the start and end markers (no more than 1 or 2 seconds back and forth) to find a 'perfect loop' for making looping videos, will process in the background and update the subclip under where you right clicked when complete.
 - `Run scene change detection` - Starts a background process that searches for any scene transtions in the video and places visual markers on the timeline, this can take quite a while for long clips.
+
+Once a clip has been added you can drag the blue and red start and end markers to change the start and end points of the subclip, the player will seek to whatever position your drag the start or end point to.
+
+The green central bar between the markers may also be dragged to move the whole time window back and forth while keeping the same subclip duration.
+
+Scrolling the mousewheel on the timeline will zoom in and out, the grey bar at the top of the timeline window may then be used to scrub your zoomed view through the clip to view earlier or later sections.
 
 ### Markers and Size Targeting
 

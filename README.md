@@ -1,5 +1,8 @@
 # WebmGenerator
 
+A tool for cutting, filtering and joining video clips, supports webm, mp4 and high qualuty gif outputs, includes realtime effect filtering and transition effects between scenes.
+
+A large v2 release moving to a more standardised user interface, adds the ability to track the output size of video clip in order to reach some time limit and introduces options to merge clips together into a sequence at the end including cross-filtering transition effects.
 
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/

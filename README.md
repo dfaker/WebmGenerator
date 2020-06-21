@@ -19,8 +19,12 @@ Both of these should be placed into the same folder as the script.
 - numpy
 
  `pip3 install -r requirements.txt`
+ 
+ Alternatively windows users may use one of the recent bundled releases.
 
 ## Usage
+
+to start run or drop video files directly onto `webmGenerator.py`.
 
 ### Initial Interface
 

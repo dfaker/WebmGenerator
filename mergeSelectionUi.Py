@@ -492,9 +492,10 @@ class MergeSelectionUi(ttk.Frame):
                                      td=totalTime,
                                      tdext=totalTime-timeTrimmedByFade
                                     ))
-    for sv in self.sequencedClips[:1]:
-      basename = ''.join(x for x in os.path.basename(sv.filename).rpartition('.')[0] if x in string.printable[:-41])
-      self.filenamePrefixVar.set(basename)
+    if self.filenamePrefixVar.get()=='Sequence':
+      for sv in self.sequencedClips[:1]:
+        basename = ''.join(x for x in os.path.basename(sv.filename).rpartition('.')[0] if x in string.printable[:-41])
+        self.filenamePrefixVar.set(basename)
 
   def setController(self,controller):
     self.controller=controller

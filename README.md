@@ -30,9 +30,9 @@ to start run or drop video files directly onto `webmGenerator.py`.
 
 ![Initial Interface](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/01%20-%20UI-Initial-Interface.png)
 
-Initially the application in the **Cuts** tab, in the left-hand panel you have a Slice settings frame:
+Initially the application opens in the **Cuts** tab, in the left-hand panel you have a Slice settings frame:
 
-- Set `Slice Length` to control the length of sub clips when they're initially added, you can always resize them later.
+- Set `Slice Length` - To set the length of sub clips when they're initially added, you can always resize them later.
 - Set the `Target Length` - The final duration you want to hit.
 - Set the `Target Trim` - The expected overlap of clips if you use a transition effect to cross-cut between them, if you expect to use hard cuts set this to zero.
 

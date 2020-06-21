@@ -519,6 +519,7 @@ class MergeSelectionUi(ttk.Frame):
     self.sequencedClips.append(
       SequencedVideoEntry(self.sequenceContainer,self,clip),
     )
+    self.scrolledframeInputCustContainer.reposition()
     self.scrolledframeSequenceContainer.reposition()
     self.updatedPredictedDuration()
 
@@ -533,6 +534,7 @@ class MergeSelectionUi(ttk.Frame):
       for c in self.sequencedClips:
         c.pack(expand='false', fill='y', side='left')
 
+    self.scrolledframeInputCustContainer.reposition()
     self.scrolledframeSequenceContainer.reposition()
       
   def removeSequencedClip(self,clip):

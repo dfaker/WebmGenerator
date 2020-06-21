@@ -103,7 +103,7 @@ The bottom frame the configuration for the output clips:
 - `Output filename prefix` - the name that will be added to the start of the final video's filename, this is automatically guessed from the input videos if possible.
 - `Output format` - Allows the selection of output format between mpv, webm and gif.
 - `Size Match Strategy` - How to handle input videos of difference sizes.
-- `Maximum File Size` - The maximum size the output is allowed to be in MB, if the final video is larger than this encoding will be attempted again at a reduced quality, if set to zero any output size no matter how large is allowed.
+- `Maximum File Size` - The maximum size the output is allowed to be in MB, if the final video is larger than this encoding will be attempted again at a reduced quality (or reduced size for .gifs), if set to zero any output size no matter how large is allowed.
 - `Maximum Width` - The maximum output width of the final video, if the output is larger it'll be scaled down, if smaller it'll be left untouched.
 - `Transition Duration` - Low long the transition effects between clips will last, if you want hard cuts set this to zero.
 - `Transition style` - The look of the transition effects between clips, examples can be seen at https://trac.ffmpeg.org/wiki/Xfade

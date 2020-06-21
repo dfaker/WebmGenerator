@@ -1,5 +1,13 @@
 
 from tkinter import Tk
+import os
+
+try:
+  scriptPath = os.path.dirname(os.path.abspath(__file__))
+  os.add_dll_directory(scriptPath)
+except Exception as e:
+  print(e,scriptPath)
+
 
 from cutselectionUi import CutselectionUi
 from filterSelectionUi import FilterSelectionUi
@@ -10,7 +18,7 @@ from cutselectionController import CutselectionController
 from filterSelectionController import FilterSelectionController
 from mergeSelectionController import MergeSelectionController
 
-import os
+
 
 from videoManager   import VideoManager
 from ffmpegService import FFmpegService  

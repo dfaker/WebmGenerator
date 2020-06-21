@@ -65,6 +65,19 @@ The above image shows both the presence of the timeline markers added with `Add 
 
 ![Filtering](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/04%20-%20Filtering.png)
 
+Once all subclips have been defined you may want to use the filtering tab to add visual filters, denoising or cropping.
+
+The right hand pane shows you a real-time video preview of what your output will look like with the selected filters applied.
+
+the left hand pane shows:
+- A subclip navigation block with the current subclip name timespan and where it is in the order of selected clips, the two arrows to the left and right of this block allow you to page through the subclips you've selected.
+- Clear, Copy and Paste buttons that will either, remove all filters from the current clip, copy all of the filters on the current subclip to a clipboard for later pasting, and paste the currently copied filters onto a new clip.
+- A filter selection frame with a dropdown of avalaible filters and a button to add the selected filter to the current subclip.
+
+Below that is the stack of filters applied to the current subclip, this clip has had a `hue` adjustment added and a pre-configired `libpostproc` filter for denoising and deblocking poorly encoded video.
+
+Each of the filters may be Removed, Enabled, or moved up and down the filtering order with the buttons that appear below its title, if the filter has any input options they will be displayed as input fields below these buttons, the hue filter in the image for example has been configered to shift the 'h' hue value by 0.42 and increase the 's' saturation value by 3.4.
+
 ### Sequencing and Transitions
 
 ![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)

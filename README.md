@@ -1,10 +1,8 @@
 # WebmGenerator
-UI and Automation to generate high quality VP8 webms in Python3 with ffmpeg and mpv.
 
-*A personal tool, still very sketchy.*
+A tool for cutting, filtering and joining video clips, supports webm, mp4 and high quality gif outputs, includes realtime effect filtering and transition effects between scenes.
 
-![User Interface](https://raw.githubusercontent.com/dfaker/WebmGenerator/master/ui.png "User Interface")
-
+A large v2 release moving to a more standardized user interface, adds the ability to track the output size of video clip in order to reach some time limit and introduces options to merge clips together into a sequence at the end including cross-filtering transition effects.
 
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/
@@ -15,99 +13,101 @@ Both of these should be placed into the same folder as the script.
 ## Python dependencies:
 
 - python-mpv
-- opencv-python
+- pygubu
+- numpy
 
  `pip3 install -r requirements.txt`
 
-## Installation Instructions
+## Usage
 
-Get the most recent windows build: https://github.com/dfaker/WebmGenerator/releases or
+### Initial Interface
 
- - Install Python 3 from https://www.python.org/
- - Download or clone this repository
- - In a command prompt navigate to the folder you cloned this respository into and run the command `pip3 install -r requirements.txt`
- - Download the latest libmpv from https://sourceforge.net/projects/mpv-player-windows/files/libmpv/ extract it and copy the file 'mpv-1.dll' into the same folder you cloned this respository into. 
- - Download the latest ffmpeg build from https://ffmpeg.zeranoe.com/builds/ place ffmpeg.exe into the same folder you cloned this respository into.
- - Drop a file or folder onto webmGenerator.py
+![Initial Interface](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/01%20-%20UI-Initial-Interface.png)
 
-## GUI controls:
+Initially the application in the **Cuts** tab, in the left-hand panel you have a Slice settings frame:
 
-On start the program will span a new instance of mpv player and the cool 80s green UI panel.
+- Set `Slice Length` to control the length of sub clips when they're initially added, you can always resize them later.
+- Set the `Target Length` - The final duration you want to hit.
+- Set the `Target Trim` - The expected overlap of clips if you use a transition effect to cross-cut between them, if you expect to use hard cuts set this to zero.
 
-Drag the blue bar to seek in chunks on larger videos, short clips won't need this.
+Below that are:
 
-Clicking and dragging on the black area in the Green UI panel will scrub through the video to select a range.
+- A volume control for playback.
+- A status line `00.00s 0.00% (-0.00s)` showing you how many combine seconds you have selected, the percentage to your target duration you're at, and how many seconds are being deducted from the total by the `Target Trim` what we expect adding a 0.25 second cross fade between the clips will deduct.
+- A progress indicator to show you how far from hitting target length you are, it turns red when the total of your selected clips exceeds your target length.
 
-Scrolling with the mousewheel will increase or decrease the duration of the selected clip.
+Below that is your source videos frame, you can click Load Videos to load one or more source videos for cutting, or quickly clear all of your sub clip selections to start your cut process again.
 
-The player window will loop the currently selected time span.
+### Sub clip Selection
 
-### Upper buttons
-Pressing **'Q'** or clicking **Queue Current [Q]** will queue the currently selected span to be converted into a webm and restart the current file.
+![Sub clip Selection](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/02%20-%20UI-Clip%20Addition.png)
 
-Pressing **'E'** or clicking **Next File [E]** will jump to the next file provided as input if multiple input files are provided.
+Once a clip is loaded the bottom dark gray panel changes into a video timeline, you can left click anywhere in it or click and drag to scrub though the video.
 
-Pressing **'R'** or clicking **End File Selection [R]** will stop queueing new extracts and close the GUI, the script window will remain open and continue processing until all extracts are converted.
+Right clicking brings up a context menu that allows you to:
 
-Pressing **'T'** or clicking **Toggle Logo [T]** to toggle to toggle the top-left corner logo, replace logo.png to set your own.
+- `Add new subclip` - A new subclip to be cut out will be added to the timeline centered around the point you right clicked, initially it will have the same duration as you set in `Slice Length`
+- `Delete subclip` - Removes the subclip under where you right clicked.
+- `Add interest mark` - Adds a visual indicator at a time position, no effect on the output but is useful when watching through and decing representative scenes.
+- `Nudge to the lowest error +- #s` - Attempts to move the start and end markers (no more than 1 or 2 seconds back and forth) to find a 'perfect loop' for making looping videos, will process in the background and update the subclip under where you right clicked when complete.
+- `Run scene change detection` - Starts a background process that searches for any scene transitions in the video and places visual markers on the timeline, this can take quite a while for long clips.
 
-Pressing **'Y'** or clicking **Toggle Footer [Y]** to toggle to toggle the footer image overlayed at the bottom of the screen, replace footer.png to set your own.
+Once a clip has been added you can drag the blue and red start and end markers to change the start and end points of the subclip, the player will seek to whatever position your drag the start or end point to.
 
+The green central bar between the markers may also be dragged to move the whole time window back and forth while keeping the same subclip duration.
 
+Scrolling the mouse wheel on the timeline will zoom in and out, the gray bar at the top of the timeline window may then be used to scrub your zoomed view through the clip to view earlier or later sections.
 
-Pressing **'C'** or clicking **Crop [C]** will activate crop mode, the window will be darkened, click twice to specify the top and bottom corners of your desired cropping rectangle, press **'C'** again to clear the crop.
+### Markers and Size Targeting
 
-### Lower buttons
+![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
 
-Pressing **'1'** or clicking **FPS Limit 30 [1]** will cycle through FPS limits to apply, or turn FPS limiting off.
+The above image shows both the presence of the timeline markers added with `Add interest mark` and multiple sub clips that have already been added and resized, Not that with these three sections selected the final output duration is at 74.69 seconds, because this is over the selected `Target Length` the progress bar is red.
 
-Pressing **'2'** or clicking **Size Limit 4M [2]** will cycle through maximum file size limits or turn file size limits off.
+### Filtering
 
-Pressing **'3'** or clicking **Audio Bitrate 64k [3]** will cycle through options for the audio bitrate to encode at.
+![Filtering](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/04%20-%20Filtering.png)
 
-Pressing **'4'** or clicking **Max Video Bitrate None [4]** will cycle through the maximum video bitrate to stop at for small files.
+Once all subclips have been defined you may want to use the **Filters** tab to add visual filters, denoising or cropping.
 
-Pressing **'5'** or clicking **Max Video Width 1280 [5]** will cycle through the maximum video width to scale output to if larger.
+The right-hand pane shows you a real-time video preview of what your output will look like with the selected filters applied.
 
-Pressing **'6'** or clicking **Min Video Width 0 [6]** will cycle through the minumum video width to scale output to if smaller.
+The left-hand pane shows:
+- A sub clip navigation block with the current subclip name timespan and where it is in the order of selected clips, the two arrows to the left and right of this block allow you to page through the subclips you've selected.
+- Clear, Copy and Paste buttons that will either, remove all filters from the current clip, copy all the filters on the current subclip to a clipboard for later pasting, and paste the currently copied filters onto a new clip.
+- A filter selection frame with a drop down of available filters and a button to add the selected filter to the current subclip.
 
-### Other controls
+Below that is the stack of filters applied to the current subclip, this clip has had a `hue` adjustment added and a pre-configired `libpostproc` filter for denoising and deblocking poorly encoded video.
 
-Playback will start muted to unmute press **'m'** with the player window selected.
+Each of the filters may be Removed, Enabled, or moved up and down the filtering order with the buttons that appear below its title, if the filter has any input options they will be displayed as input fields below these buttons, the hue filter in the image for example has been configured to shift the 'h' hue value by 0.42 and increase the 's' saturation value by 3.4.
 
-Playback will start a 2x normal speed, to reset the speed to 1x press **backpsace** with the player window selected.
+### Sequencing and Transitions
 
-All other MPV controls remain as their defaults https://mpv.io/manual/master/.
+![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)
 
-## Command Examples:
+Finally, is the **Merge** tab, If you've not visited it during the current clipping session it'll automatically add all current clips into the sequence on first visit.
 
-Running webmGenerator.py (Or the webmGenerator.exe id you're using a windows build) will open a file selection prompt, alteratively Files or folders may be dragged and dropped directly onto the webmGenerator.py file or:
+The top `Avlaible Cuts` frame shows all of your currently selected sub clips along with a preview of what they'll look like with their applied filters, the button below each is used to add them in to the lower `Sequence` frame.
 
-`webmGenerator.py Z:\SomeFolder\TVSeries\`
+The `Merge style` drop down allows you to switch between joining all the selected clips together, or outputting them as individual isolated clips.
 
-Scans for all media files in the folder Z:\SomeFolder\TVSeries\ and queues them to be played for clipping into webms
+The `Sequence` panel is the order in which your selected sub clips will appear in the output, the left and right arrow buttons move the sub clips back and forwards in the final video order, the Remove button removes the clip from the planned sequence entirely while keeping it available in the top `Avlaible Cuts` for re-adding later.
 
-`webmGenerator.py Z:\SomeFolder\TVSeries\video.mp4`
+The bottom frame the configuration for the output clips:
+- `Output filename prefix` - the name that will be added to the start of the final video's filename, this is automatically guessed from the input videos if possible.
+- `Output format` - Allows the selection of output format between mpv, webm and gif.
+- `Size Match Strategy` - How to handle input videos of difference sizes.
+- `Maximum File Size` - The maximum size the output is allowed to be in MB, if the final video is larger than this encoding will be attempted again at a reduced quality, if set to zero any output size no matter how large is allowed.
+- `Maximum Width` - The maximum output width of the final video, if the output is larger it'll be scaled down, if smaller it'll be left untouched.
+- `Transition Duration` - Low long the transition effects between clips will last, if you want hard cuts set this to zero.
+- `Transition style` - The look of the transition effects between clips, examples can be seen at https://trac.ffmpeg.org/wiki/Xfade
+- `Speed Adjustment` - Will perform a speed-up on the final clip while keeping the sound realistic, a minimum and maximum of 0.5x and 2x are possible but generally becomes distracting over 0.12x
 
-Queues video.mp4 to be played for clipping into webms
+### Encoding
 
-`webmGenerator.py "EastWorld" Z:\SomeFolder\TVSeries\`
+![Encoding](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/06%20-%20Encoding.png)
 
-Scans for all media files containing the phrase "EastWorld" in the folder Z:\SomeFolder\TVSeries\ and queues them to be played for clipping into webms
+When you have a sequence you're happy with, you can click 'Encode' to start the encoding process, the progress of the encoding run will be displayed at the bottom as a progress bar, submitted encoding jobs are processed sequentially.
 
-## Notes
-
-Final files are output into the folder 'out' this will be created if it does not exist.
-
-If a filter is provided the output files will be placed into a folder inside 'out' matching the name of the first filter that matched on that file.
-
-The png file 'logo.png' will be placed into the top left corner of the final webm, you can change this to be whatever transparent png you like as long as you keep the filename.
-
-Processing will run multiple times until it generates a webm between 3.9 and 4.0MB in size, or it tries 10 times and creates a file under 4MB.
-
-Uses multiple pass processing and high quality settings by default so can take quite a while to generate output, as a ballpark for a 30 second full resolution clip: 
-
-- 1.5 minutes with two passes for simple source files
-- 5 minutes and 4 passes for 4k content.
-
-But these can increase dramatically if seeking deep into high bitrate high resolution streams.
+The tool will first make the cuts and apply filters to the subclips and save them in a temporary folder called `tempVideoFiles` this is cleared down after every exit.
+After all the clips are cut and filtered they will be joined and if they pass the `Maximum File Size` limit, if any they, will be saved to a folder in the same directory as the script called `finalVideos`, if there is a size limit in place the final encoding step will be repeated using the same `tempVideoFiles` at a lower quality.

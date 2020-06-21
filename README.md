@@ -21,7 +21,7 @@ Both of these should be placed into the same folder as the script.
 
 ![Initial Interface](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/01%20-%20UI-Initial-Interface.png)
 
-Initially the application appears as above, in the left hand panel you have a Slice settings frame:
+Initially the application in the **Cuts** tab, in the left hand panel you have a Slice settings frame:
 
 - Set `Slice Length` to control the length of subclips when they're initially added, you can always resize them later.
 - Set the `Target Length` - The final duration you want to hit.
@@ -65,7 +65,7 @@ The above image shows both the presence of the timeline markers added with `Add 
 
 ![Filtering](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/04%20-%20Filtering.png)
 
-Once all subclips have been defined you may want to use the filtering tab to add visual filters, denoising or cropping.
+Once all subclips have been defined you may want to use the **Filters** tab to add visual filters, denoising or cropping.
 
 The right hand pane shows you a real-time video preview of what your output will look like with the selected filters applied.
 
@@ -82,6 +82,29 @@ Each of the filters may be Removed, Enabled, or moved up and down the filtering 
 
 ![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)
 
+Finally is the **Merge** tab, If you've not visited it during the current clipping session it'll automatically add all current clips into the sequence on first visit.
+
+The top `Avlaible Cuts` frame shows all of your currently selected subclips along with a preview of what they'll look like with their applied filters, the button below each is used to add them in to the lower `Sequence` frame.
+
+The `Merge style` dropdown allows you to switch between joining all of the selected clips together, or outputing them as individual isolated clips.
+
+The `Sequence` panel is the order in which your selected subclips will appear in the output, the left and right arrow buttons move the subclips back and forwards in the final video order, the Remove button removes the clip from the planned sequence entierly while keeping it avaliable in the top `Avlaible Cuts` for re-adding later.
+
+The bottom frame the the configuration for the output clips:
+- `Output filename prefix` - the name that will be added to the start of the final video's filename, this is automatically guessed from the input videos if possible.
+- `Output format` - Allows the selection of output format between mpv,webm and gif.
+- `Size Match Strategy` - How to handle input videos of difference sizes.
+- `Maximum File Size` - The maximim size the output is allowed to be in MB, if the final video is larger than this encoding will be attempted again at a reduced quality, if set to zero any output size no matter how large is allowed.
+- `Maximum Width` - The maximum output width of the final video, if the output is larger it'll be scaled down, if smaller it'll be left untouched.
+- `Transition Duration` - Low long the transition effects between clips will last, if you want hard cuts set this to zero.
+- `Transition style` - The look of the transition effects between clips, examples can be seen at https://trac.ffmpeg.org/wiki/Xfade
+- `Speed Adjustment` - Will perform a speed-up on the final clip while keeping the sound realistic, a minimum and maximum of 0.5x and 2x are possible but generally becomes distracting over 0.12x
+
 ### Encoding
 
 ![Encoding](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/06%20-%20Encoding.png)
+
+When you have a sequence you're happy with, you can click 'Encode' to start the encoding process, the progress of the encoding run will be displayed at the bottom as a progress bar, submitted encoding jobs are processed sequentially.
+
+The tool will first make the cuts and apply filters to the subclips and save them in a temporary folder called `tempVideoFiles` this is cleared down after every exit.
+After all of the clips are cut and filtered they will be joined and if they pass the `Maximum File Size` limit, if any they, will be saved to a folder in the same directory as the script called `finalVideos`, if there is a size limit in place the final encoding step will be repeated using the same `tempVideoFiles` at a lower quality.

@@ -1,14 +1,18 @@
 
-from tkinter import Tk
+from tkinter import Tk,Menu
 import tkinter.ttk as ttk
+import webbrowser
+from tkinter.filedialog import askopenfilename,asksaveasfilename
 
 class WebmGeneratorUi:
 
-  def __init__(self,master=None):
+  def __init__(self,controller,master=None):
 
     bg='#181e37'
     lbg='#2f344b'
     fg='#69dbdb'
+
+    self.controller = controller
 
     self.style = ttk.Style()
     self.style.theme_use('clam')
@@ -30,7 +34,24 @@ class WebmGeneratorUi:
 
     self.master.title('WebmGenerator')
     self.master.minsize(1525,800)
+
+    self.menubar = Menu(self.master)
     
+    self.filemenu = Menu(self.menubar, tearoff=0)
+    self.filemenu.add_command(label="New Project",  command=self.newProject)
+    self.filemenu.add_command(label="Open Project", command=self.openProject)
+    self.filemenu.add_command(label="Save Project", command=self.saveProject)
+    self.filemenu.add_separator()
+    self.filemenu.add_command(label="Exit", command=self.exitProject)
+    self.menubar.add_cascade(label="File",  menu=self.filemenu)
+
+    self.helpmenu = Menu(self.menubar, tearoff=0)
+    self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
+    self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+
+    self.master.config(menu=self.menubar)
+
+
     self.notebook = ttk.Notebook(self.master)
     self.notebook.pack(expand=1, fill='both')
 
@@ -42,11 +63,29 @@ class WebmGeneratorUi:
     self.statusProgress = ttk.Progressbar(self.statusFrame)
     self.statusProgress.pack(expand=0,side='right', fill='x')
 
-
-
     self.statusFrame.pack(expand=0, fill='x')
 
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
+
+  def newProject(self):
+    self.controller.newProject()
+
+  def openProject(self):
+    filename = askopenfilename(title='Open WebmGenerator Project',filetypes=[('WebmGenerator Project','*.webgproj')])
+    self.controller.openProject(filename)
+
+  def saveProject(self):
+    filename = asksaveasfilename(title='Save WebmGenerator Project',filetypes=[('WebmGenerator Project','*.webgproj')])
+    if filename is not None:
+      if not filename.endswith('.webgproj'):
+        filename = filename+'.webgproj'
+      self.controller.saveProject(filename)
+
+  def exitProject(self):
+    exit()
+
+  def openDocs(self):
+    webbrowser.open('https://github.com/dfaker/WebmGenerator/blob/master/README.md', new=2)
 
   def updateGlobalStatus(self,message,percentage):
     print(message,percentage)

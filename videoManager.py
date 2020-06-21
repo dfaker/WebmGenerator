@@ -7,6 +7,19 @@ class VideoManager:
     self.subClipCounter=0
 
 
+  def getStateForSave(self):
+    return {'subclips':self.subclips.copy(),'interestMarks':self.interestMarks.copy(),'subClipCounter':self.subClipCounter}
+
+  def loadStateFromSave(self,data):
+    self.subclips       = data['subclips']
+    self.interestMarks  = data['interestMarks']
+    self.subClipCounter = data['subClipCounter']
+
+  def reset(self):
+    self.subclips = {}
+    self.interestMarks = {}
+    self.subClipCounter=0
+    
   def addNewInterestMark(self,filename,point,kind='manual'):
     self.interestMarks.setdefault(filename,set()).add((point,kind))
 

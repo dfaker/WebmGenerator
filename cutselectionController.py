@@ -17,10 +17,25 @@ class CutselectionController:
     self.currentTotalDuration=None
     self.currentLoop_a=None
     self.currentLoop_b=None
-
-
     self.loadFiles(initialFiles)
 
+  def reset(self):
+    for file in self.files:
+      self.removeVideoFile(file)
+    self.currentlyPlayingFileName=None
+    self.currentTimePos=None
+    self.currentTotalDuration=None
+    self.currentLoop_a=None
+    self.currentLoop_b=None
+    self.ui.updateFileListing(self.files)
+
+  def getStateForSave(self):
+    return {'loadedFiles':self.files[:]}
+
+  def loadStateFromSave(self,data):
+    for file in self.files:
+      self.removeVideoFile(file)
+    self.loadFiles(data['loadedFiles'])
 
   def initialisePlayer(self):
     playerFrameWid = self.ui.getPlayerFrameWid()

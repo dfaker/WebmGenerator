@@ -1,6 +1,7 @@
 
 from tkinter import Tk
 import os
+import json
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
@@ -34,7 +35,7 @@ class WebmGeneratorController:
     
     self.root.protocol("WM_DELETE_WINDOW", self.close_ui)
 
-    self.webmMegeneratorUi = WebmGeneratorUi(self.root)
+    self.webmMegeneratorUi = WebmGeneratorUi(self,self.root)
 
     self.cutselectionUi = CutselectionUi(self.root)
     self.filterSselectionUi = FilterSelectionUi(self.root)
@@ -61,6 +62,29 @@ class WebmGeneratorController:
                                                              self.ffmpegService,
                                                              self.filterSelectionController
                                                              )
+
+
+  def newProject(self):
+    self.cutselectionController.reset()
+    self.videoManager.reset()
+
+  def openProject(self,filename):
+    if filename is not None:
+      with open(filename,'r') as loadFile:
+        saveData = json.loads(loadFile.read())
+
+        self.newProject()
+        
+        self.cutselectionController.loadStateFromSave(saveData)
+        self.videoManager.loadStateFromSave(saveData)
+
+  def saveProject(self,filename):
+    if filename is not None:
+      saveData = {}
+      saveData.update(self.cutselectionController.getStateForSave())
+      saveData.update(self.videoManager.getStateForSave())
+      with open(filename,'w') as saveFile:
+        saveFile.write(json.dumps(saveData))
 
   def close_ui(self):
     print('self.cutselectionController.close_ui()')

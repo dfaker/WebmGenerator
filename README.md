@@ -24,7 +24,7 @@ Both of these should be placed into the same folder as the script.
 
 ## Usage
 
-to start run or drop video files directly onto `webmGenerator.py`.
+to start run `webmGenerator.py` or drop video files directly onto `webmGenerator.py`.
 
 ### Initial Interface
 

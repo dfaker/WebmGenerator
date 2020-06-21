@@ -4,10 +4,10 @@ import os
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
+  os.environ["PATH"] = os.path.dirname(__file__) + os.pathsep + os.environ["PATH"]
   os.add_dll_directory(scriptPath)
 except Exception as e:
   print(e,scriptPath)
-
 
 from cutselectionUi import CutselectionUi
 from filterSelectionUi import FilterSelectionUi

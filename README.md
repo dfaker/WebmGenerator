@@ -26,7 +26,7 @@ Both of these should be placed into the same folder as the script.
 
 to start run `webmGenerator.py` or drop video files directly onto `webmGenerator.py`.
 
-### Initial Interface
+### Starting up - Initial Interface
 
 ![Initial Interface](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/01%20-%20UI-Initial-Interface.png)
 
@@ -44,7 +44,7 @@ Below that are:
 
 Below that is your source videos frame, you can click Load Videos to load one or more source videos for cutting, or quickly clear all of your sub clip selections to start your cut process again.
 
-### Sub clip Selection
+### Cutting the Clips - Subclip Selection
 
 ![Sub clip Selection](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/02%20-%20UI-Clip%20Addition.png)
 
@@ -64,13 +64,13 @@ The green central bar between the markers may also be dragged to move the whole 
 
 Scrolling the mouse wheel on the timeline will zoom in and out, the gray bar at the top of the timeline window may then be used to scrub your zoomed view through the clip to view earlier or later sections.
 
-### Markers and Size Targeting
+### Cutting More - Markers and Size Targeting
 
 ![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
 
 The above image shows both the presence of the timeline markers added with `Add interest mark` and multiple sub clips that have already been added and resized, Not that with these three sections selected the final output duration is at 74.69 seconds, because this is over the selected `Target Length` the progress bar is red.
 
-### Filtering
+### Add Effects - Filtering
 
 ![Filtering](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/04%20-%20Filtering.png)
 
@@ -87,7 +87,7 @@ Below that is the stack of filters applied to the current subclip, this clip has
 
 Each of the filters may be Removed, Enabled, or moved up and down the filtering order with the buttons that appear below its title, if the filter has any input options they will be displayed as input fields below these buttons, the hue filter in the image for example has been configured to shift the 'h' hue value by 0.42 and increase the 's' saturation value by 3.4.
 
-### Sequencing and Transitions
+### Join - Sequencing and Transitions
 
 ![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)
 
@@ -109,7 +109,7 @@ The bottom frame the configuration for the output clips:
 - `Transition style` - The look of the transition effects between clips, examples can be seen at https://trac.ffmpeg.org/wiki/Xfade
 - `Speed Adjustment` - Will perform a speed-up on the final clip while keeping the sound realistic, a minimum and maximum of 0.5x and 2x are possible but generally becomes distracting over 0.12x
 
-### Encoding
+### Make that Video - Encoding
 
 ![Encoding](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/06%20-%20Encoding.png)
 

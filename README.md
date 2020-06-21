@@ -22,7 +22,7 @@ Both of these should be placed into the same folder as the script.
 
 ### Initial Interface
 
-![Initial Interface](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/01%20-%20UI-Initial-Interface.png)
+![Initial Interface](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/01%20-%20UI-Initial-Interface.png)
 
 Initially the application in the **Cuts** tab, in the left-hand panel you have a Slice settings frame:
 
@@ -40,7 +40,7 @@ Below that is your source videos frame, you can click Load Videos to load one or
 
 ### Sub clip Selection
 
-![Sub clip Selection](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/02%20-%20UI-Clip%20Addition.png)
+![Sub clip Selection](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/02%20-%20UI-Clip%20Addition.png)
 
 Once a clip is loaded the bottom dark gray panel changes into a video timeline, you can left click anywhere in it or click and drag to scrub though the video.
 
@@ -60,13 +60,13 @@ Scrolling the mouse wheel on the timeline will zoom in and out, the gray bar at 
 
 ### Markers and Size Targeting
 
-![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
+![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
 
 The above image shows both the presence of the timeline markers added with `Add interest mark` and multiple sub clips that have already been added and resized, Not that with these three sections selected the final output duration is at 74.69 seconds, because this is over the selected `Target Length` the progress bar is red.
 
 ### Filtering
 
-![Filtering](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/04%20-%20Filtering.png)
+![Filtering](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/04%20-%20Filtering.png)
 
 Once all subclips have been defined you may want to use the **Filters** tab to add visual filters, denoising or cropping.
 
@@ -83,7 +83,7 @@ Each of the filters may be Removed, Enabled, or moved up and down the filtering 
 
 ### Sequencing and Transitions
 
-![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)
+![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)
 
 Finally, is the **Merge** tab, If you've not visited it during the current clipping session it'll automatically add all current clips into the sequence on first visit.
 
@@ -105,7 +105,7 @@ The bottom frame the configuration for the output clips:
 
 ### Encoding
 
-![Encoding](https://github.com/dfaker/WebmGenerator/blob/version2-tk/DocumentationImages/06%20-%20Encoding.png)
+![Encoding](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/06%20-%20Encoding.png)
 
 When you have a sequence you're happy with, you can click 'Encode' to start the encoding process, the progress of the encoding run will be displayed at the bottom as a progress bar, submitted encoding jobs are processed sequentially.
 

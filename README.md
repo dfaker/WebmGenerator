@@ -70,7 +70,7 @@ The above image shows both the presence of the timeline markers added with `Add 
 
 ![Filtering](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/04%20-%20Filtering.png)
 
-Once all subclips have been defined you may want to use the **Filters** tab to add visual filters, denoising or cropping.
+Once all subclips have been defined you may want to use the **Filters** tab to add visual filters, denoising or cropping, but this tab can be skipped if you don't need any filters applied.
 
 The right-hand pane shows you a real-time video preview of what your output will look like with the selected filters applied.
 

@@ -156,6 +156,14 @@ class MergeSelectionUi(ttk.Frame):
     self.labelframeInputCutSelection.config(height='80', text='Avalaible Cuts', width='500')
     self.labelframeInputCutSelection.pack(expand='false', fill='x', padx='5', pady='5', side='top')
 
+    self.addAddClipsFrame = ttk.Frame(self.frameMergeSelection)
+
+    self.addAllClipsbutton = ttk.Button(self.addAddClipsFrame,text='⯆ Add all clips in timeline order ⯆')
+    self.addAllClipsbutton.config(command=self.addAllClipsInTimelineOrder)
+    self.addAllClipsbutton.pack(expand='true', fill='x', padx='5', pady='0', side='top')
+
+    self.addAddClipsFrame.pack(expand='true', fill='x', padx='5', pady='0', side='top')
+
     self.mergeStyleFrame = ttk.Frame(self.frameMergeSelection)
 
     self.mergestyleLabel = ttk.Label(self.mergeStyleFrame,text='Merge Style')
@@ -169,6 +177,8 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyleCombo.pack(expand='true', fill='x', side='right')
 
     self.mergeStyleFrame.pack(expand='true', fill='x', padx='5', pady='5', side='top')
+
+
 
     self.labelframeSequenceFrame = ttk.Labelframe(self.frameMergeSelection)
     self.scrolledframeSequenceContainer = ScrolledFrame(self.labelframeSequenceFrame, scrolltype='horizontal')
@@ -184,6 +194,9 @@ class MergeSelectionUi(ttk.Frame):
     self.labelSequenceSummary.pack(expand='true', fill='x', side='top')
     self.frameSequenceSummary.config(height='200', width='200')
     self.frameSequenceSummary.pack(expand='true', fill='x', side='top')
+    
+    self.frameTransitionSettings = ttk.Frame(self.labelframeSequenceFrame)
+
     self.frameEncodeSettings = ttk.Frame(self.labelframeSequenceFrame)
     self.frameSequenceValues = ttk.Frame(self.frameEncodeSettings)
 
@@ -212,7 +225,6 @@ class MergeSelectionUi(ttk.Frame):
       'mp4:x264',
       'webm:VP8',
       'webm:VP9',
-      'mkv:AV1',
       'gif',      
     ]
     self.outputFormatVar.set(self.outputFormats[0])
@@ -252,7 +264,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameOutputFormat = ttk.Frame(self.frameSequenceValues)
     self.labelOutputFormat = ttk.Label(self.frameOutputFormat)
-    self.labelOutputFormat.config(anchor='e', padding='2', text='Size Match Strategy', width='25')
+    self.labelOutputFormat.config(anchor='e', padding='2', text='Otuput format', width='25')
     self.labelOutputFormat.pack(side='left')  
     self.comboboxOutputFormat= ttk.OptionMenu(self.frameOutputFormat,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
     self.comboboxOutputFormat.pack(expand='true', fill='x', side='top')
@@ -300,7 +312,8 @@ class MergeSelectionUi(ttk.Frame):
     self.entryMaximumWidth.pack(expand='true', fill='both', side='left')
     self.frameMaximumWidth.config(height='200', width='300')
     self.frameMaximumWidth.pack(expand='true', fill='x', side='top')
-    self.frameTransDuration = ttk.Frame(self.frameSequenceValues)
+
+    self.frameTransDuration = ttk.Frame(self.frameTransitionSettings)
     self.labelTransDuration = ttk.Label(self.frameTransDuration)
     self.labelTransDuration.config(anchor='e', padding='2', text='Transition Duration', width='25')
     self.labelTransDuration.pack(side='left')
@@ -314,7 +327,8 @@ class MergeSelectionUi(ttk.Frame):
     self.entryTransDuration.pack(expand='true', fill='both', side='left')
     self.frameTransDuration.config(height='200', width='300')
     self.frameTransDuration.pack(expand='true', fill='x', side='top')
-    self.frameTransStyle = ttk.Frame(self.frameSequenceValues)
+
+    self.frameTransStyle = ttk.Frame(self.frameTransitionSettings)
     self.labelTransStyle = ttk.Label(self.frameTransStyle)
     self.labelTransStyle.config(anchor='e', padding='2', text='Transition Style', width='25')
     self.labelTransStyle.pack(side='left')
@@ -356,6 +370,10 @@ class MergeSelectionUi(ttk.Frame):
     self.buttonSequenceEncode.pack(expand='true', fill='both', side='top')
     self.frameSequenceActions.config(height='200', width='200')
     self.frameSequenceActions.pack(expand='false', fill='y', side='right')
+
+    self.frameTransitionSettings.config(height='200', padding='5', relief='groove', width='200')
+    self.frameTransitionSettings.pack(fill='x', ipadx='3', side='top')
+
     self.frameEncodeSettings.config(height='200', padding='5', relief='groove', width='200')
     self.frameEncodeSettings.pack(fill='x', ipadx='3', side='top')
     self.labelframeSequenceFrame.config(height='200', text='Sequence', width='200')
@@ -566,13 +584,11 @@ class MergeSelectionUi(ttk.Frame):
       self.scrolledframeSequenceContainer.reposition()
       self.updatedPredictedDuration()
 
-      if len(self.selectableVideos)==1:
-        self.clearSequence()
-        self.addClipToSequence(list(self.selectableVideos.values())[0])
-      elif len(self.selectableVideos)>0 and len(self.sequencedClips)==0:
-        self.clearSequence()
-        for clip in sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s)):
-          self.addClipToSequence(clip)
+
+  def addAllClipsInTimelineOrder(self):
+    self.clearSequence()
+    for clip in sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s)):
+      self.addClipToSequence(clip)
 
 
 

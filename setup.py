@@ -70,5 +70,6 @@ setup(name='WebmGenerator',
 # doesn't get lowercased again (possibly only with case insensitive paths)
 # this renames Tkinter->tkinter.
 import os
-for tkinterfolder in os.path.join('build','*','lib','Tkinter'):
+import glob
+for tkinterfolder in glob.glob(os.path.join('build','*','lib','Tkinter')):
   os.rename(tkinterfolder,tkinterfolder.replace('Tkinter','tkinter'))

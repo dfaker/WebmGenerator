@@ -351,18 +351,40 @@ class FFmpegService():
         processed={}
         fileSequence=[]
 
+        clipDimensions = []
+
         for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
           expectedTimes.append(e-s)
+          videoDimensions = sp.Popen(['ffprobe'
+                        ,'-v'
+                        ,'error'
+                        ,'-select_streams'
+                        ,'v:0'
+                        ,'-show_entries'
+                        ,'stream=height,width'
+                        ,'-of'
+                        ,'csv=s=x:p=0',clipfilename],stdout=sp.PIPE).communicate()[0].strip()
+          videow,videoh = videoDimensions.split(b'x')
+          videoh=int(videoh)
+          videow=int(videow)
+          clipDimensions.append((videow,videoh))
+
+        largestclipDimensions = sorted(clipDimensions,key=lambda x:x[0]*x[1],reverse=True)[0]
 
         expectedTimes.append(sum(expectedTimes))
         totalExpectedEncodedSeconds = sum(expectedTimes)
         totalEncodedSeconds = 0
 
-
-
-        for i,(etime,(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,seqClips)):
+        for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
           if filterexp=='':
-            filterexp='null'
+            filterexp='null'  
+
+          #Black Bars
+          #scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2
+          
+          #Crop
+          #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
+
           filterexp+=",scale='max({}\\,min({}\\,iw)):-2'".format(0,options.get('maximumWidth',1280))
           filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 

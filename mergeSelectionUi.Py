@@ -231,8 +231,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameSizeStrategies = [
       'Rescale to largest with black bars',
-      'Rescale to largest and center crop smaller',
-      'Rescale to smallest and center crop larger',      
+      'Rescale to largest and center crop smaller',    
     ]
     self.frameSizeStrategyVar.set(self.frameSizeStrategies[0])
 

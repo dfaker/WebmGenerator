@@ -1,3 +1,4 @@
+
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.filedialog import askopenfilenames
@@ -166,8 +167,8 @@ class CutselectionUi(ttk.Frame):
 
         self.entryLoopMode.pack(side="right")
         self.frameLoopMode.config(height="200", width="200")
-        #self.frameLoopMode.pack(fill="x", pady="2", side="top")
-
+        self.frameLoopMode.pack(fill="x", pady="2", side="top")
+        self.loopModeVar.trace("w", self.updateLoopMode)
 
         self.frameVolume = ttk.Frame(self.labelFrameSlice)
 
@@ -291,6 +292,9 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<ButtonRelease-1>",   self.videomousePress)
         self.frameVideoPlayerFrame.bind("<Motion>",            self.videomousePress)
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
+
+    def updateLoopMode(self,*args):
+      self.controller.updateLoopMode(self.loopModeVar.get())
 
     def videoMousewheel(self,e):
       self.controller.seekRelative(e.delta/20)

@@ -18,6 +18,41 @@ class CutselectionController:
     self.currentLoop_a=None
     self.currentLoop_b=None
     self.loadFiles(initialFiles)
+    self.loopMode='Loop current'
+
+    self.currentLoopCycleStart = None
+    self.currentLoopCycleEnd   = None
+
+  def updateLoopMode(self,loopMode):
+    self.loopMode=loopMode
+    self.currentLoop_a=None
+    self.currentLoop_b=None
+    if self.loopMode == 'Loop all':
+      self.player.ab_loop_a=-1
+      self.player.ab_loop_b=-1
+
+  def checkLoopCycleJump(self):
+    if self.loopMode == 'Loop all':
+      if (self.currentLoopCycleStart is None or
+          self.currentLoopCycleEnd is None or 
+          self.currentTimePos < self.currentLoopCycleStart or
+          self.currentTimePos > self.currentLoopCycleEnd):
+        subclipranges = self.videoManager.getRangesForClip(self.currentlyPlayingFileName)
+        if len(subclipranges)>0:
+          subclipranges = sorted(subclipranges,key=lambda x:x[1][1])
+          jumpRangeFound=False
+          for i,(s,e) in subclipranges:
+            if e>self.currentTimePos:
+              self.currentLoopCycleStart=s
+              self.currentLoopCycleEnd=e
+              jumpRangeFound=True
+              break
+          else:
+              self.currentLoopCycleStart  = subclipranges[0][1][0]
+              self.currentLoopCycleEnd    = subclipranges[0][1][1]
+              jumpRangeFound=True
+          if jumpRangeFound:
+            self.seekTo(self.currentLoopCycleStart)
 
   def reset(self):
     for file in self.files:
@@ -27,6 +62,8 @@ class CutselectionController:
     self.currentTotalDuration=None
     self.currentLoop_a=None
     self.currentLoop_b=None
+    self.currentLoopCycleStart = None
+    self.currentLoopCycleEnd   = None
     self.ui.updateFileListing(self.files)
 
   def getStateForSave(self):
@@ -52,10 +89,8 @@ class CutselectionController:
   def close_ui(self):
     self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
     self.player.unobserve_property('duration', self.handleMpvDurationChange)
-      
     for file in self.files:
       self.removeVideoFile(file)
-
     try:
       self.ui.destroy()
       del self.ui.master
@@ -63,11 +98,10 @@ class CutselectionController:
     except:
       pass
 
-    self.player.terminate()
-
   def handleMpvTimePosChange(self,name,value):
     if value is not None:
       self.currentTimePos = value
+      self.checkLoopCycleJump()
       if self.currentTotalDuration is not None:
         self.ui.update()
 
@@ -113,7 +147,8 @@ class CutselectionController:
     return vx1,vy1
 
   def seekRelative(self,amount):
-    self.player.command('seek',str(amount),'relative')
+    if self.currentTotalDuration is not None:
+      self.player.command('seek',str(amount),'relative')
 
   def jumpBack(self):
     self.player.command('seek','-10','relative')
@@ -179,6 +214,9 @@ class CutselectionController:
 
     self.videoManager.updatePointForClip(filename,rid,pos,seconds)
     self.updateProgressStatistics()
+    self.currentLoopCycleStart  = None
+    self.currentLoopCycleEnd    = None
+
 
   def clearallSubclips(self):
     self.videoManager.clearallSubclips()
@@ -218,6 +256,8 @@ class CutselectionController:
   def removeSubclip(self,point):
     self.videoManager.removeSubclip(self.currentlyPlayingFileName,point)
     self.updateProgressStatistics()
+    self.currentLoopCycleStart  = None
+    self.currentLoopCycleEnd    = None
 
   def updateProgressStatistics(self):
     totalExTrim=0.0
@@ -227,8 +267,6 @@ class CutselectionController:
       totalTrim   += (self.ui.targetTrim*2)
     self.ui.updateProgressStatitics(totalExTrim,totalTrim)
 
-  def swicthLoopMode(self,loopMode):
-    self.loopMode=loopMode
 
   def lowestErrorLoopCallback(self,filename,rid,mse,finals,finale):
     self.videoManager.updateDetailsForRangeId(filename,rid,finals,finale)
@@ -254,14 +292,15 @@ class CutselectionController:
     self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback)
 
   def setLoopPos(self,start,end):
-    if (self.currentLoop_a is None or 
-        self.currentLoop_a != start or
-        self.currentLoop_b is None or 
-        self.currentLoop_b != end):
-      self.currentLoop_a = start
-      self.currentLoop_b = end
-      self.player.ab_loop_a=self.currentLoop_a
-      self.player.ab_loop_b=self.currentLoop_b
+    if self.loopMode == 'Loop current':
+      if (self.currentLoop_a is None or 
+          self.currentLoop_a != start or
+          self.currentLoop_b is None or 
+          self.currentLoop_b != end):
+        self.currentLoop_a = start
+        self.currentLoop_b = end
+        self.player.ab_loop_a=self.currentLoop_a
+        self.player.ab_loop_b=self.currentLoop_b
 
 if __name__ == '__main__':
   import webmGenerator

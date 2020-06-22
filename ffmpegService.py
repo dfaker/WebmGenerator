@@ -21,119 +21,69 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     if not os.path.exists(finalOutName):
       break
 
-  ffmpegcommand=[]
-  ffmpegcommand+=['ffmpeg' ,'-y']
-  ffmpegcommand+=inputsList
+  preffmpegcommand=[]
+  preffmpegcommand+=['ffmpeg' ,'-y']
+  preffmpegcommand+=inputsList
 
-  ffmpegcommand+=['-filter_complex',filtercommand]
-  ffmpegcommand+=['-map','[outv]','-map','[outa]']
-  ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
+  preffmpegcommand+=['-filter_complex',filtercommand]
+  preffmpegcommand+=['-map','[outv]','-map','[outa]']
+  preffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
              ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
              ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
-             ,"-threads", str(4),"-crf"  ,'4',"-b:v","16M"
-             ,"-qmin","0","-qmax","10","-ac","2","-sn",finalOutName]
+             ,"-threads", str(4),"-crf"  ,'4']
 
-  print(' '.join(ffmpegcommand))
+  
 
   statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
   packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
-
-  proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-
-  etime=totalExpectedEncodedSeconds
-  currentEncodedTotal=0
-  ln=b''
+  br = 16777216
+  temptotalencoded=totalEncodedSeconds
+  passn=0
   while 1:
-      c = proc.stderr.read(1)
-      if len(c)==0:
-        break
-      if c == b'\r':
-        print(ln)
-        for p in ln.split(b' '):
-          if b'time=' in p:
-            try:
-              pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-              currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-              if currentEncodedTotal>0:
-                statusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-                packageglobalStatusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-            except Exception as e:
-              print(e)
-        ln=b''
-      ln+=c
-  totalEncodedSeconds+=etime
-  statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  statusCallback('Encoding complete '+finalOutName,1)
-  packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  packageglobalStatusCallback('Encoding complete '+finalOutName,1)
+    passn+=1
+    totalEncodedSeconds=temptotalencoded
+    ffmpegcommand = preffmpegcommand + ["-b:v",str(br),"-qmin","0","-qmax","10","-ac","2","-sn",finalOutName]
+    
+    print(' '.join(ffmpegcommand))
 
-def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
-  pass
+    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
 
-def  mkvav1Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
-  
-  fileN=0
-  while 1:
-    fileN+=1
-    finalOutName = '{}_{}.mp4'.format(filenamePrefix,fileN)
-    finalOutName = os.path.join(outputPathName,finalOutName)
-    if not os.path.exists(finalOutName):
+    etime=totalExpectedEncodedSeconds
+    currentEncodedTotal=0
+    ln=b''
+    while 1:
+        c = proc.stderr.read(1)
+        if len(c)==0:
+          break
+        if c == b'\r':
+          print(ln)
+          for p in ln.split(b' '):
+            if b'time=' in p:
+              try:
+                pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+                currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                if currentEncodedTotal>0:
+                  statusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
+                  packageglobalStatusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
+              except Exception as e:
+                print(e)
+          ln=b''
+        ln+=c
+    totalEncodedSeconds+=etime
+    statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+    statusCallback('Encoding complete '+finalOutName,1)
+
+    finalSize = os.stat(finalOutName).st_size
+    print(finalSize,options.get('maximumSize')*(1024*1024))
+    
+    if options.get('maximumSize') == 0 or finalSize<=options.get('maximumSize')*(1024*1024) or passn>10:
       break
-  
-  ffmpegcommand=[]
-  ffmpegcommand+=['ffmpeg' ,'-y']
-  ffmpegcommand+=inputsList
+    br =  br * (1/(finalSize/(options.get('maximumSize')*(1024*1024*0.98))))
 
-  ffmpegcommand+=['-filter_complex',filtercommand]
-  ffmpegcommand+=['-map','[outv]','-map','[outa]']
-  ffmpegcommand+=["-shortest"
-                 ,"-copyts"
-                 ,"-start_at_zero"
-                 ,"-c:v","libaom-av1" 
-                 ,"-c:a"  ,"libvorbis"
-                 ,"-stats"
-                 ,"-pix_fmt","yuv420p"
-                 ,"-bufsize", "3000k"
-                 ,"-threads", str(4)
-                 ,"-crf"  ,'4'
-                 ,"-b:v","0"
-                 ,"-ac"   ,"2"
-                 ,"-sn",finalOutName]
-
-  print(' '.join(ffmpegcommand))
-
-  statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-  packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-  proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-
-  etime=totalExpectedEncodedSeconds
-  currentEncodedTotal=0
-  ln=b''
-  while 1:
-      c = proc.stderr.read(1)
-      if len(c)==0:
-        break
-      if c == b'\r':
-        print(ln)
-        for p in ln.split(b' '):
-          if b'time=' in p:
-            try:
-              pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-              currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-              if currentEncodedTotal>0:
-                statusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-                packageglobalStatusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-            except Exception as e:
-              print(e)
-        ln=b''
-      ln+=c
-  totalEncodedSeconds+=etime
-  statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  statusCallback('Encoding complete '+finalOutName,1)
   packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   packageglobalStatusCallback('Encoding complete '+finalOutName,1)
+
 
 def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
   fileN=0
@@ -283,8 +233,6 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder
-  ,'webm:VP9':webmvp9Encoder
-  ,'mkv:AV1':mkvav1Encoder
   ,'mp4:x264':mp4x264Encoder
   ,'gif':gifEncoder
 }

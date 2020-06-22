@@ -77,7 +77,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     finalSize = os.stat(finalOutName).st_size
     print(finalSize,options.get('maximumSize')*(1024*1024))
     
-    if options.get('maximumSize') == 0 or finalSize<=options.get('maximumSize')*(1024*1024) or passn>10:
+    if options.get('maximumSize') == 0 or finalSize<options.get('maximumSize')*(1024*1024) or passn>20:
       break
     br =  br * (1/(finalSize/(options.get('maximumSize')*(1024*1024*0.98))))
 

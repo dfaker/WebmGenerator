@@ -11,7 +11,65 @@ import copy
 
 packageglobalStatusCallback=print
 
+def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,dependentValueName='BR'):
+  val = initialDependentValue
+  targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
+  smallestFailedOverMaximum=None
+  largestFailedUnderMinimum=None
+  passCount=0
+  passReason='Initial Pass'
+  while 1:
+    val=int(val)
+    passCount+=1
+    finalSize = encoderFunction(val,passCount,passReason)
+    if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts*2:
+      break
+    elif finalSize<sizeLimitMin:
+      passReason='File too small, {} increase'.format(dependentValueName)
+      if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
+        largestFailedUnderMinimum=val
+    elif finalSize>sizeLimitMax:
+      passReason='File too large, {} decrease'.format(dependentValueName)
+      if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
+        smallestFailedOverMaximum=val
+    print(val,finalSize,targetSizeMedian)
+    val =  val * (1/(finalSize/targetSizeMedian))
+    if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
+      val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
+
+
+def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback):
+  currentEncodedTotal=0
+  ln=b''
+  while 1:
+    c = proc.stderr.read(1)
+    if len(c)==0:
+      break
+    if c == b'\r':
+      print(ln)
+      for p in ln.split(b' '):
+        if b'time=' in p:
+          try:
+            pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+            currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+            if currentEncodedTotal>0:
+              statusCallback('Encoding '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+          except Exception as e:
+            print(e)
+      ln=b''
+    ln+=c
+  statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+
+
 def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+
+  if options.get('maximumSize') == 0.0:
+    sizeLimitMax = float('inf')
+    sizeLimitMin = float('-inf')
+  else:
+    sizeLimitMax = options.get('maximumSize')*1024*1024
+    sizeLimitMin = sizeLimitMax*0.85
+    
 
   fileN=0
   while 1:
@@ -20,72 +78,59 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     finalOutName = os.path.join(outputPathName,finalOutName)
     if not os.path.exists(finalOutName):
       break
-
-  preffmpegcommand=[]
-  preffmpegcommand+=['ffmpeg' ,'-y']
-  preffmpegcommand+=inputsList
-
-  preffmpegcommand+=['-filter_complex',filtercommand]
-  preffmpegcommand+=['-map','[outv]','-map','[outa]']
-  preffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-             ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
-             ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
-             ,"-threads", str(4),"-crf"  ,'4']
-
   
+  def encoderStatusCallback(text,percentage):
+    statusCallback(text,percentage)
+    packageglobalStatusCallback(text,percentage)
 
-  statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-  packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-  br = 16777216
-  temptotalencoded=totalEncodedSeconds
-  passn=0
-  while 1:
-    passn+=1
-    totalEncodedSeconds=temptotalencoded
-    ffmpegcommand = preffmpegcommand + ["-b:v",str(br),"-qmin","0","-qmax","10","-ac","2","-sn",finalOutName]
+  def encoderFunction(br,passNumber,passReason):
     
+    ffmpegcommand=[]
+    ffmpegcommand+=['ffmpeg' ,'-y']
+    ffmpegcommand+=inputsList
+    ffmpegcommand+=['-filter_complex',filtercommand]
+    ffmpegcommand+=['-map','[outv]','-map','[outa]']
+    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
+                   ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
+                   ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
+                   ,"-threads", str(4),"-crf"  ,'4']
+    
+    if sizeLimitMax == 0.0:
+      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
+    else:
+      ffmpegcommand+=["-b:v",str(br)]
+
+    ffmpegcommand+=["-ac","2","-sn",finalOutName]
+
     print(' '.join(ffmpegcommand))
-
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-
-    etime=totalExpectedEncodedSeconds
-    currentEncodedTotal=0
-    ln=b''
-    while 1:
-        c = proc.stderr.read(1)
-        if len(c)==0:
-          break
-        if c == b'\r':
-          print(ln)
-          for p in ln.split(b' '):
-            if b'time=' in p:
-              try:
-                pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-                currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-                if currentEncodedTotal>0:
-                  statusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-                  packageglobalStatusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-              except Exception as e:
-                print(e)
-          ln=b''
-        ln+=c
-    totalEncodedSeconds+=etime
-    statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-    statusCallback('Encoding complete '+finalOutName,1)
-
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
     finalSize = os.stat(finalOutName).st_size
-    print(finalSize,options.get('maximumSize')*(1024*1024))
-    
-    if options.get('maximumSize') == 0 or finalSize<options.get('maximumSize')*(1024*1024) or passn>20:
-      break
-    br =  br * (1/(finalSize/(options.get('maximumSize')*(1024*1024*0.98))))
+    return finalSize
 
-  packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  packageglobalStatusCallback('Encoding complete '+finalOutName,1)
+  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+
+  initialBr = 16777216
+  encodeTargetingSize(encoderFunction=encoderFunction,
+                      outputFilename=finalOutName,
+                      initialDependentValue=initialBr,
+                      sizeLimitMin=sizeLimitMin,
+                      sizeLimitMax=sizeLimitMax,
+                      maxAttempts=10)
+
+  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+finalOutName,1)
 
 
 def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+
+  if options.get('maximumSize') == 0.0:
+    sizeLimitMax = float('inf')
+    sizeLimitMin = float('-inf')
+  else:
+    sizeLimitMax = options.get('maximumSize')*1024*1024
+    sizeLimitMin = sizeLimitMax*0.85
+
   fileN=0
   while 1:
     fileN+=1
@@ -93,64 +138,64 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     finalOutName = os.path.join(outputPathName,finalOutName)
     if not os.path.exists(finalOutName):
       break
-  
-  ffmpegcommand=[]
-  ffmpegcommand+=['ffmpeg' ,'-y']
-  ffmpegcommand+=inputsList
 
-  ffmpegcommand+=['-filter_complex',filtercommand]
-  ffmpegcommand+=['-map','[outv]','-map','[outa]']
-  ffmpegcommand+=["-shortest"
-                 ,"-copyts"
-                 ,"-start_at_zero"
-                 ,"-c:v","libx264" 
-                 ,"-c:a"  ,"libvorbis"
-                 ,"-stats"
-                 ,"-pix_fmt","yuv420p"
-                 ,"-bufsize", "3000k"
-                 ,"-threads", str(4)
-                 ,"-crf"  ,'17'
-                 ,"-preset", "slow"
-                 ,"-tune", "film"
-                 ,"-movflags","+faststart"
-                 ,"-ac"   ,"2"
-                 ,"-sn",finalOutName]
+  def encoderStatusCallback(text,percentage):
+    statusCallback(text,percentage)
+    packageglobalStatusCallback(text,percentage)
 
-  print(' '.join(ffmpegcommand))
+  def encoderFunction(br,passNumber,passReason):
 
-  statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-  packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+    ffmpegcommand=[]
+    ffmpegcommand+=['ffmpeg' ,'-y']
+    ffmpegcommand+=inputsList
 
-  proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+    ffmpegcommand+=['-filter_complex',filtercommand]
+    ffmpegcommand+=['-map','[outv]','-map','[outa]']
+    ffmpegcommand+=["-shortest"
+                   ,"-copyts"
+                   ,"-start_at_zero"
+                   ,"-c:v","libx264" 
+                   ,"-c:a"  ,"libvorbis"
+                   ,"-stats"
+                   ,"-pix_fmt","yuv420p"
+                   ,"-bufsize", "3000k"
+                   ,"-threads", str(4)
+                   ,"-crf"  ,'17'
+                   ,"-preset", "slow"
+                   ,"-tune", "film"
+                   ,"-movflags","+faststart"
+                   ,"-ac"   ,"2"
+                   ,"-sn",finalOutName]
 
-  etime=totalExpectedEncodedSeconds
-  currentEncodedTotal=0
-  ln=b''
-  while 1:
-      c = proc.stderr.read(1)
-      if len(c)==0:
-        break
-      if c == b'\r':
-        print(ln)
-        for p in ln.split(b' '):
-          if b'time=' in p:
-            try:
-              pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-              currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-              if currentEncodedTotal>0:
-                statusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-                packageglobalStatusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-            except Exception as e:
-              print(e)
-        ln=b''
-      ln+=c
-  totalEncodedSeconds+=etime
-  statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  statusCallback('Encoding complete '+finalOutName,1)
-  packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  packageglobalStatusCallback('Encoding complete '+finalOutName,1)
+    print(' '.join(ffmpegcommand))
+
+    encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
+    finalSize = os.stat(finalOutName).st_size
+    return finalSize
+
+
+  initialBr = 16777216
+  encodeTargetingSize(encoderFunction=encoderFunction,
+                      outputFilename=finalOutName,
+                      initialDependentValue=initialBr,
+                      sizeLimitMin=sizeLimitMin,
+                      sizeLimitMax=sizeLimitMax,
+                      maxAttempts=10)
+
+  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+finalOutName,1)
 
 def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+
+  if options.get('maximumSize') == 0.0:
+    sizeLimitMax = float('inf')
+    sizeLimitMin = float('-inf')
+  else:
+    sizeLimitMax = options.get('maximumSize')*1024*1024
+    sizeLimitMin = sizeLimitMax*0.85
+
   fileN=0
   while 1:
     fileN+=1
@@ -158,28 +203,20 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     finalOutName = os.path.join(outputPathName,finalOutName)
     if not os.path.exists(finalOutName):
       break
-  
 
-  ffmpegcommand=[]
-  ffmpegcommand+=['ffmpeg' ,'-y']
-  ffmpegcommand+=inputsList
-
+  def encoderStatusCallback(text,percentage):
+    statusCallback(text,percentage)
+    packageglobalStatusCallback(text,percentage)
 
 
-  encodePass = 0
-  widthReduction=0
-  inittotalEncodedSeconds = totalEncodedSeconds
-  initffmpegcommand = copy.copy(ffmpegcommand)
-  while 1:
-    totalEncodedSeconds=inittotalEncodedSeconds
-    tempFiltercommand = copy.copy(filtercommand)
-    if widthReduction>0:
-      tempFiltercommand += ',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\',split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,options.get('maximumWidth',1280)-widthReduction)
-    else:
-      tempFiltercommand += ',[outv]fps=fps=24,mpdecimate,split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'
+  def encoderFunction(width,passNumber,passReason):
 
-    ffmpegcommand =  copy.copy(initffmpegcommand)
-    ffmpegcommand+=['-filter_complex',tempFiltercommand]
+    giffiltercommand = filtercommand+',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\',split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
+
+    ffmpegcommand=[]
+    ffmpegcommand+=['ffmpeg' ,'-y']
+    ffmpegcommand+=inputsList
+    ffmpegcommand+=['-filter_complex',giffiltercommand]
     ffmpegcommand+=['-map','[outvgif]']
     ffmpegcommand+=["-vsync", '0'
                    ,"-shortest" 
@@ -189,47 +226,23 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
                    ,"-an"
                    ,"-sn",finalOutName]
 
-    print(' '.join(ffmpegcommand))
-
-    statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-    packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+    encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
+    finalSize = os.stat(finalOutName).st_size
+    return finalSize
 
-    etime=totalExpectedEncodedSeconds
-    currentEncodedTotal=0
-    ln=b''
-    while 1:
-        c = proc.stderr.read(1)
-        if len(c)==0:
-          break
-        if c == b'\r':
-          print(ln)
-          for p in ln.split(b' '):
-            if b'time=' in p:
-              try:
-                pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-                currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-                if currentEncodedTotal>0:
-                  statusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-                  packageglobalStatusCallback('Encoding final '+finalOutName, (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds )
-              except Exception as e:
-                print(e)
-          ln=b''
-        ln+=c
-    totalEncodedSeconds+=etime
-    statusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-    packageglobalStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-    finalSize = os.stat(finalOutName).st_size/(1024*1024)
-    print(finalSize,options.get('maximumSize'))
-    if options.get('maximumSize') == 0 or finalSize<=options.get('maximumSize') or options.get('maximumWidth',1280)-widthReduction < 150:
-      break
-    else:
-      widthReduction+=25
-
-  statusCallback('Encoding complete '+finalOutName,1)  
-  packageglobalStatusCallback('Encoding complete '+finalOutName,1)
-
+  initialWidth = options.get('maximumWidth',1280)
+  encodeTargetingSize(encoderFunction=encoderFunction,
+                      outputFilename=finalOutName,
+                      initialDependentValue=initialWidth,
+                      sizeLimitMin=sizeLimitMin,
+                      sizeLimitMax=sizeLimitMax,
+                      maxAttempts=10,
+                      dependentValueName='Width')
+  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+finalOutName,1)
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder

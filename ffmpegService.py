@@ -1,15 +1,29 @@
 
-import threading
-from queue import Queue
-import os
-import subprocess as sp
 from datetime import datetime
-import time
+from queue import Queue
+import copy
 import hashlib
 import numpy as np
-import copy
+import os
+import string
+import subprocess as sp
+import threading
+import time
 
 packageglobalStatusCallback=print
+
+def idfunc(s):return s
+
+getShortPathName = idfunc
+
+try:
+  import win32api
+  getShortPathName=win32api.GetShortPathName
+except Exception as e:
+  print(e)
+
+def cleanFilenameForFfmpeg(filename):
+  return getShortPathName(os.path.normpath(filename))
 
 def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,dependentValueName='BR'):
   val = initialDependentValue
@@ -275,21 +289,22 @@ class FFmpegService():
             duration = sp.Popen(['ffprobe' 
                         ,'-v', 'error' 
                         ,'-show_entries'
-                          ,'format=duration'
+                        ,'format=duration'
                         ,'-of'
                         ,'default=noprint_wrappers=1:nokey=1'
-                        ,filename],stdout=sp.PIPE).communicate()[0].strip()
+                        ,cleanFilenameForFfmpeg(filename)],stdout=sp.PIPE).communicate()[0].strip()
+            print(duration)
             duration = float(duration)
             timestamp = duration*pc
 
 
-          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',filename, '-filter_complex',filters+',scale={w}:{h}'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
+          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
           print(' '.join(cmd))
           proc = sp.Popen(cmd,stdout=sp.PIPE)
           outs,errs = proc.communicate()
           self.postCompletedImageFrame(requestKey,outs)
         except Exception as e:
-          print(e)
+          print(imageWorker,e)
 
 
     self.imageWorkers=[]
@@ -311,7 +326,6 @@ class FFmpegService():
         expectedTimes = []
         processed={}
         fileSequence=[]
-
         clipDimensions = []
 
         for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
@@ -324,7 +338,7 @@ class FFmpegService():
                         ,'-show_entries'
                         ,'stream=height,width'
                         ,'-of'
-                        ,'csv=s=x:p=0',clipfilename],stdout=sp.PIPE).communicate()[0].strip()
+                        ,'csv=s=x:p=0',cleanFilenameForFfmpeg(clipfilename)],stdout=sp.PIPE).communicate()[0].strip()
           videow,videoh = videoDimensions.split(b'x')
           videoh=int(videoh)
           videow=int(videow)
@@ -359,6 +373,7 @@ class FFmpegService():
           m.update(filterexp.encode('utf8'))
           filterHash = m.hexdigest()[:10]
 
+          basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
 
           outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber)
           outname = os.path.join( tempPathname,outname )
@@ -377,7 +392,7 @@ class FFmpegService():
 
             proc = sp.Popen(['ffmpeg','-y'
                               ,'-ss', str(start)
-                              ,'-i', clipfilename
+                              ,'-i', cleanFilenameForFfmpeg(clipfilename)
                               ,'-t', str(end-start)
                               ,'-filter_complex', filterexp
                               ,'-c:v', 'libx264'
@@ -535,7 +550,7 @@ class FFmpegService():
 
           startCmd = ["ffmpeg"
                     ,'-ss',str(start-searchDistance)
-                    ,"-i", filename 
+                    ,"-i", cleanFilenameForFfmpeg(filename)  
                     ,'-s', '{}x{}'.format(od,od)
                     ,'-ss',str(start-searchDistance)
                     ,'-t', str(searchDistance*2)
@@ -549,7 +564,7 @@ class FFmpegService():
                     ,"-"]
           endCmd = ["ffmpeg"
                     ,'-ss',str(end-searchDistance)
-                    ,"-i", filename 
+                    ,"-i", cleanFilenameForFfmpeg(filename) 
                     ,'-s', '{}x{}'.format(od,od)
                     ,'-ss',str(end-searchDistance)
                     ,'-t', str(searchDistance*2)
@@ -592,7 +607,7 @@ class FFmpegService():
           expectedLength = options.get('duration',0)
           self.globalStatusCallback('Starting scene change detection ',0/expectedLength)
           proc = sp.Popen(
-            ['ffmpeg','-i',filename,'-filter_complex', 'select=gt(scene\\,0.3),showinfo', '-f', 'null', 'NUL']
+            ['ffmpeg','-i',cleanFilenameForFfmpeg(filename),'-filter_complex', 'select=gt(scene\\,0.3),showinfo', '-f', 'null', 'NUL']
             ,stderr=sp.PIPE)
           ln=b''
           while 1:

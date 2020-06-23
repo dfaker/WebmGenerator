@@ -4,6 +4,19 @@ selectableFilters = [
   {"name":"normalize",
    "filter":"normalize"},
 
+  {
+    "name":"minterpolate","filter":"minterpolate",
+    "params":[
+      {"n":"fps", "d":60,"type":"float","range":[1,None],'inc':1},
+      {"n":"mi_mode", "d":"mci","type":"cycle","cycle":['mci','dup','blend']},
+      {"n":"me_mode", "d":"bidir","type":"cycle","cycle":['bidir','bilat']},
+      {"n":"me", "d":"esa","type":"cycle","cycle":['esa','bilat','tss','tdls','ntss','fss','ds','']},
+      {"n":"mb_size", "d":16,"type":"float","range":[1,None],'inc':1},
+
+
+
+    ]
+  }, 
 
   {"name":"libpostproc+temportaldenoiser",
    "filter":"pp=default/tmpnoise|1|2|3"},

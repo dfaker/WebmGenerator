@@ -146,11 +146,14 @@ class MergeSelectionUi(ttk.Frame):
     self.frameMergeSelection = self
     self.labelframeInputCutSelection = ttk.Labelframe(self.frameMergeSelection)
     self.scrolledframeInputCustContainer = ScrolledFrame(self.labelframeInputCutSelection, scrolltype='horizontal')
-    self.selectableVideosContainer = self.scrolledframeInputCustContainer.innerframe
 
 
-    self.scrolledframeInputCustContainer.innerframe.config(padding='0')
-    self.scrolledframeInputCustContainer.configure(usemousewheel=True)
+    self.selectableVideosContainer = ttk.Frame(self.scrolledframeInputCustContainer.innerframe)
+
+    self.selectableVideosContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+
+    self.scrolledframeInputCustContainer.innerframe.config(padding='5')
+    self.scrolledframeInputCustContainer.configure(usemousewheel=False)
     self.scrolledframeInputCustContainer.pack(anchor='n', expand='true', fill='x', padx='5', pady='5', side='top')
 
     self.labelframeInputCutSelection.config(height='80', text='Avalaible Cuts', width='500')
@@ -182,11 +185,16 @@ class MergeSelectionUi(ttk.Frame):
 
     self.labelframeSequenceFrame = ttk.Labelframe(self.frameMergeSelection)
     self.scrolledframeSequenceContainer = ScrolledFrame(self.labelframeSequenceFrame, scrolltype='horizontal')
-    self.sequenceContainer = self.scrolledframeSequenceContainer.innerframe
+    self.scrolledframeSequenceContainer.innerframe
+
+    self.sequenceContainer = ttk.Frame(self.scrolledframeSequenceContainer.innerframe)
+
+    self.sequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
 
     self.sequencedClips = []
 
-    self.scrolledframeSequenceContainer.configure(usemousewheel=True)
+    self.scrolledframeSequenceContainer.configure(usemousewheel=False)
+    self.scrolledframeSequenceContainer.innerframe.config(padding='5')
     self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
     self.frameSequenceSummary = ttk.Frame(self.labelframeSequenceFrame)
     self.labelSequenceSummary = ttk.Label(self.frameSequenceSummary)
@@ -535,8 +543,10 @@ class MergeSelectionUi(ttk.Frame):
     self.sequencedClips.append(
       SequencedVideoEntry(self.sequenceContainer,self,clip),
     )
-    self.scrolledframeInputCustContainer.reposition()
-    self.scrolledframeSequenceContainer.reposition()
+    self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
+    self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+    self.scrolledframeInputCustContainer._scrollBothNow()
+    self.scrolledframeSequenceContainer._scrollBothNow()
     self.updatedPredictedDuration()
 
   def moveSequencedClip(self,clip,move):
@@ -552,11 +562,17 @@ class MergeSelectionUi(ttk.Frame):
 
     self.scrolledframeInputCustContainer.reposition()
     self.scrolledframeSequenceContainer.reposition()
+    self.scrolledframeInputCustContainer._scrollBothNow()
+    self.scrolledframeSequenceContainer._scrollBothNow()
       
   def removeSequencedClip(self,clip):
     currentIndex = self.sequencedClips.index(clip)
-    self.sequencedClips.pop(currentIndex).destroy()
-    self.scrolledframeSequenceContainer.reposition()
+    removedClip = self.sequencedClips.pop(currentIndex)
+    removedClip.pack_forget()
+    removedClip.destroy()
+    self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+    self.scrolledframeInputCustContainer._scrollBothNow()
+    self.scrolledframeSequenceContainer._scrollBothNow()
     self.updatedPredictedDuration()
 
   def tabSwitched(self,tabName):
@@ -577,10 +593,12 @@ class MergeSelectionUi(ttk.Frame):
       for rid in unusedRids:
         self.selectableVideos[rid].destroy()
         del self.selectableVideos[rid]
-
-      self.scrolledframeInputCustContainer.reposition()
-      self.scrolledframeSequenceContainer.reposition()
       self.updatedPredictedDuration()
+    self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
+    self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+
+    self.scrolledframeInputCustContainer._scrollBothNow()
+    self.scrolledframeSequenceContainer._scrollBothNow()
 
 
   def addAllClipsInTimelineOrder(self):

@@ -216,6 +216,7 @@ class MergeSelectionUi(ttk.Frame):
     self.transDurationVar     = tk.StringVar()
     self.transStyleVar        = tk.StringVar()
     self.speedAdjustmentVar   = tk.StringVar() 
+    self.audioChannelsVar     = tk.StringVar()
 
 
     self.filenamePrefixVar.trace('w',self.valueChange)
@@ -226,6 +227,7 @@ class MergeSelectionUi(ttk.Frame):
     self.transDurationVar.trace('w',self.valueChange)
     self.transStyleVar.trace('w',self.valueChange)
     self.speedAdjustmentVar.trace('w',self.valueChange)
+    self.audioChannelsVar.trace('w',self.valueChange)
 
     self.filenamePrefixVar.set('Sequence')
 
@@ -255,7 +257,9 @@ class MergeSelectionUi(ttk.Frame):
     ,'diagbr','hlslice','hrslice','vuslice','vdslice']
     self.transStyleVar.set('fade')
     self.speedAdjustmentVar.set(1.0)
-    
+
+    self.audioChannelsOptions = ['Stereo','Mono','No audio']
+    self.audioChannelsVar.set(self.audioChannelsOptions[0])    
 
     self.frameFilenamePrefix = ttk.Frame(self.frameSequenceValues)
     self.labelFilenamePrefix = ttk.Label(self.frameFilenamePrefix)
@@ -296,7 +300,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameMaximumSize = ttk.Frame(self.frameSequenceValues)
     self.labelMaximumSize = ttk.Label(self.frameMaximumSize)
-    self.labelMaximumSize.config(anchor='e', padding='2', text='Maximum File Size', width='25')
+    self.labelMaximumSize.config(anchor='e', padding='2', text='Maximum File Size (MB)', width='25')
     self.labelMaximumSize.pack(side='left')
     self.entryMaximumSize = ttk.Spinbox(self.frameMaximumSize, from_=0, to=float('inf'), increment=0.1)
     self.entryMaximumSize.config(textvariable=self.maximumSizeVar)
@@ -305,6 +309,8 @@ class MergeSelectionUi(ttk.Frame):
     self.entryMaximumSize.pack(expand='true', fill='both', side='left')
     self.frameMaximumSize.config(height='200', width='300')
     self.frameMaximumSize.pack(expand='true', fill='x', side='top')
+
+
     self.frameMaximumWidth = ttk.Frame(self.frameSequenceValues)
     self.labelMaximumWidth = ttk.Label(self.frameMaximumWidth)
     self.labelMaximumWidth.config(anchor='e', padding='2', text='Maximum Width', width='25')
@@ -318,6 +324,16 @@ class MergeSelectionUi(ttk.Frame):
     self.entryMaximumWidth.pack(expand='true', fill='both', side='left')
     self.frameMaximumWidth.config(height='200', width='300')
     self.frameMaximumWidth.pack(expand='true', fill='x', side='top')
+
+    self.frameAudioChannels = ttk.Frame(self.frameSequenceValues)
+    self.labelAudioChannels = ttk.Label(self.frameAudioChannels)
+    self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels', width='25')
+    self.labelAudioChannels.pack(side='left')
+    self.entryAudioChannels = ttk.OptionMenu(self.frameAudioChannels,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
+    self.entryAudioChannels.config(width='100')
+    self.entryAudioChannels.pack(expand='true', fill='both', side='left')
+    self.frameAudioChannels.config(height='200', width='300')
+    self.frameAudioChannels.pack(expand='true', fill='x', side='top')
 
     self.frameTransDuration = ttk.Frame(self.frameTransitionSettings)
     self.labelTransDuration = ttk.Label(self.frameTransDuration)
@@ -444,6 +460,11 @@ class MergeSelectionUi(ttk.Frame):
     except:
       pass
 
+    try:
+      self.audioChannels = self.audioChannelsVar.get()
+    except:
+      pass
+
     self.updatedPredictedDuration()
   
   def encodeCurrent(self):
@@ -461,7 +482,8 @@ class MergeSelectionUi(ttk.Frame):
           'transDuration':self.transDurationValue,
           'transStyle':self.transStyleValue,
           'speedAdjustment':self.speedAdjustmentValue,
-          'outputFormat':self.outputFormatValue
+          'outputFormat':self.outputFormatValue,
+          'audioChannels':self.audioChannels
         }
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe)

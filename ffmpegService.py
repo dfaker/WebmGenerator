@@ -76,14 +76,21 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
 
 
 def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+  
+  audio_mp  = 8
+  video_mp  = 1024*1024
+  initialBr = 16777216
+  dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
 
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')
     sizeLimitMin = float('-inf')
+    initialBr    = 16777216
   else:
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
-    
+    targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
+    initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
   fileN=0
   while 1:
@@ -124,7 +131,8 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
   encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
-  initialBr = 16777216
+
+
   encodeTargetingSize(encoderFunction=encoderFunction,
                       outputFilename=finalOutName,
                       initialDependentValue=initialBr,
@@ -138,12 +146,20 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
 def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
 
+  audio_mp  = 8
+  video_mp  = 1024*1024
+  initialBr = 16777216
+  dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
+
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')
     sizeLimitMin = float('-inf')
+    initialBr    = 16777216
   else:
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
+    targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
+    initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
   fileN=0
   while 1:
@@ -189,8 +205,6 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     finalSize = os.stat(finalOutName).st_size
     return finalSize
 
-
-  initialBr = 16777216
   encodeTargetingSize(encoderFunction=encoderFunction,
                       outputFilename=finalOutName,
                       initialDependentValue=initialBr,
@@ -431,66 +445,76 @@ class FFmpegService():
             statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
             self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
 
-
-        inputsList = []
-
-        for vi,v in enumerate(fileSequence):
-          inputsList.extend(['-i',v])
-
         fadeDuration=0.25
-        
         try:
           fadeDuration= float(options.get('transDuration',0.5))
         except Exception as e:
           print('invalid fade duration',e)
 
-        transition = options.get('transStyle','smoothleft')
-        offset=fadeDuration*2
-        expectedFadeDurations = expectedTimes[:-1]
+        print(fadeDuration)
 
-        videoSplits=[]
-        transitionFilters=[]
-        audioSplits=[]
-        crossfades=[]
-        crossfadeOut=''
+        if fadeDuration > 0.0:
+          inputsList = []
 
-        splitTemplate='[{i}:v]split[vid{i}a][vid{i}b];'
-        xFadeTemplate='[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
-        fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
-        asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
-        crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
+          for vi,v in enumerate(fileSequence):
+            inputsList.extend(['-i',v])
 
-        for i,dur in enumerate(expectedFadeDurations):
-          n=0 if i==len(expectedFadeDurations)-1 else i+1
-          o=dur-offset
-          preo=offset          
-          videoSplits.append(splitTemplate.format(i=i))
-          transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
-          audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
-          audioSplits.append(asplitTemplate.format(i=i,preo=preo,dur=dur))
-          crossfades.append(crossfadeTemplate.format(i=i,preo=preo,dur=dur,n=n,o=o))
-          crossfadeOut+='[fadet{i}][audf{i}]'.format(i=i)
-        crossfadeOut+='concat=n={}:v=1:a=1[concatOutV][concatOutA]'.format(len(expectedFadeDurations))
 
-        try:
-          speedAdjustment= float(options.get('speedAdjustment',1.0))
-        except Exception as e:
-          print('invalid speed Adjustment',e)
 
-        if speedAdjustment==1.0:
-          crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
-        else:
+          transition = options.get('transStyle','smoothleft')
+          offset=fadeDuration*2
+          expectedFadeDurations = expectedTimes[:-1]
+
+          videoSplits=[]
+          transitionFilters=[]
+          audioSplits=[]
+          crossfades=[]
+          crossfadeOut=''
+
+          splitTemplate='[{i}:v]split[vid{i}a][vid{i}b];'
+          xFadeTemplate='[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
+          fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
+          asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
+          crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
+
+          for i,dur in enumerate(expectedFadeDurations):
+            n=0 if i==len(expectedFadeDurations)-1 else i+1
+            o=dur-offset
+            preo=offset          
+            videoSplits.append(splitTemplate.format(i=i))
+            transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
+            audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
+            audioSplits.append(asplitTemplate.format(i=i,preo=preo,dur=dur))
+            crossfades.append(crossfadeTemplate.format(i=i,preo=preo,dur=dur,n=n,o=o))
+            crossfadeOut+='[fadet{i}][audf{i}]'.format(i=i)
+          crossfadeOut+='concat=n={}:v=1:a=1[concatOutV][concatOutA]'.format(len(expectedFadeDurations))
+
           try:
-            vfactor=1/speedAdjustment
-            afactor=speedAdjustment
-            crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outv],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
+            speedAdjustment= float(options.get('speedAdjustment',1.0))
           except Exception as e:
-            print(e)
+            print('invalid speed Adjustment',e)
+
+          if speedAdjustment==1.0:
             crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
+          else:
+            try:
+              vfactor=1/speedAdjustment
+              afactor=speedAdjustment
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outv],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
+            except Exception as e:
+              print(e)
+              crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
 
-        filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
-
+          filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
+        else:
+          inputsList   = []
+          filterInputs = ''
+          for vi,v in enumerate(fileSequence):
+            inputsList.extend(['-i',v])
+            filterInputs += '[{i}:v][{i}:a]'.format(i=vi)
+          filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outv][outa]'.format(len(inputsList)//2)
         
+        print(filtercommand)
 
         os.path.exists(outputPathName) or os.mkdir(outputPathName)
 

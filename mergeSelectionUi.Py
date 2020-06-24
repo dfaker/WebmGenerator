@@ -516,11 +516,10 @@ class MergeSelectionUi(ttk.Frame):
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe)
           self.encoderProgress.append(encodeProgressWidget)
-
           self.controller.encode(self.encodeRequestId,
                                  'CONCAT',
                                  encodeSequence,
-                                 options,
+                                 options.copy(),
                                  self.filenamePrefixValue,
                                  encodeProgressWidget.updateStatus) 
           self.labelframeEncodeProgress.reposition()

@@ -109,8 +109,14 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
     ffmpegcommand+=inputsList
-    ffmpegcommand+=['-filter_complex',filtercommand]
-    ffmpegcommand+=['-map','[outv]','-map','[outa]']
+
+    if options.get('audioChannels') == 'No audio':
+      ffmpegcommand+=['-filter_complex',filtercommand+',[outa]anullsink']
+      ffmpegcommand+=['-map','[outv]']
+    else:
+      ffmpegcommand+=['-filter_complex',filtercommand]
+      ffmpegcommand+=['-map','[outv]','-map','[outa]']  
+
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
@@ -121,7 +127,14 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand+=["-b:v",str(br)]
 
-    ffmpegcommand+=["-ac","2","-sn",finalOutName]
+    if options.get('audioChannels') == 'No audio':
+      ffmpegcommand+=["-an"]    
+    elif options.get('audioChannels') == 'Stereo':
+      ffmpegcommand+=["-ac","2"]    
+    else:
+      ffmpegcommand+=["-ac","1"]
+
+    ffmpegcommand+=["-sn",finalOutName]
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
@@ -179,13 +192,17 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     ffmpegcommand+=['ffmpeg' ,'-y']
     ffmpegcommand+=inputsList
 
-    ffmpegcommand+=['-filter_complex',filtercommand]
-    ffmpegcommand+=['-map','[outv]','-map','[outa]']
+    if options.get('audioChannels') == 'No audio':
+      ffmpegcommand+=['-filter_complex',filtercommand+',[outa]anullsink']
+      ffmpegcommand+=['-map','[outv]']
+    else:
+      ffmpegcommand+=['-filter_complex',filtercommand]
+      ffmpegcommand+=['-map','[outv]','-map','[outa]']  
+
     ffmpegcommand+=["-shortest"
                    ,"-copyts"
                    ,"-start_at_zero"
                    ,"-c:v","libx264" 
-                   ,"-c:a"  ,"libvorbis"
                    ,"-stats"
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", "3000k"
@@ -193,9 +210,19 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-crf"  ,'17'
                    ,"-preset", "slow"
                    ,"-tune", "film"
-                   ,"-movflags","+faststart"
-                   ,"-ac"   ,"2"
-                   ,"-sn",finalOutName]
+                   ,"-movflags","+faststart"]
+
+    if options.get('audioChannels') == 'No audio':
+      ffmpegcommand+=["-an"]
+    elif options.get('audioChannels') == 'Stereo':
+      ffmpegcommand+=["-c:a"  ,"libvorbis"]
+      ffmpegcommand+=["-ac","2"]
+    else:
+      ffmpegcommand+=["-c:a"  ,"libvorbis"]
+      ffmpegcommand+=["-ac","1"]
+
+
+    ffmpegcommand += ["-sn",finalOutName]
 
     print(' '.join(ffmpegcommand))
 

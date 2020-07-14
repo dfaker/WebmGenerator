@@ -476,9 +476,6 @@ selectableFilters = [
       {"n":"boxborderw",       "d":1,  "type":"int","range":None, 'rectProp':'y','inc':1},
       
       {"n":"box", "d":"1","type":"cycle","cycle":[0,1]},
-      {"n":"text_shaping", "d":"1","type":"cycle","cycle":[0,1]},
-
-
 
       {"n":"fontcolor", "d":"White","type":"cycle","cycle":[
           "Black",

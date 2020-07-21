@@ -90,7 +90,7 @@ class CutselectionUi(ttk.Frame):
         self.frameSliceSettings = ttk.Frame(self.frameUpperFrame)
         self.labelFrameSlice = ttk.Labelframe(self.frameSliceSettings)
 
-        self.sliceLength = 5.0
+        self.sliceLength = 10.0
         self.sliceLengthVar = tk.StringVar()
         self.sliceLengthVar.trace("w", self.sliceLengthChangeCallback)
 
@@ -98,7 +98,7 @@ class CutselectionUi(ttk.Frame):
         self.targetLengthVar = tk.StringVar()
         self.targetLengthVar.trace("w", self.targetLengthChangeCallback)
 
-        self.targetTrim = 0.25
+        self.targetTrim = 0.5
         self.targetTrimVar = tk.StringVar()
         self.targetTrimVar.trace("w", self.targetTrimChangeCallback)
 

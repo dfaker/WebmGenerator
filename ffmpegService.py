@@ -9,6 +9,7 @@ import string
 import subprocess as sp
 import threading
 import time
+import ffmpegInfoParser
 
 packageglobalStatusCallback=print
 
@@ -215,10 +216,10 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     if options.get('audioChannels') == 'No audio':
       ffmpegcommand+=["-an"]
     elif options.get('audioChannels') == 'Stereo':
-      ffmpegcommand+=["-c:a"  ,"libvorbis"]
+      ffmpegcommand+=["-c:a"  ,"aac"]
       ffmpegcommand+=["-ac","2"]
     else:
-      ffmpegcommand+=["-c:a"  ,"libvorbis"]
+      ffmpegcommand+=["-c:a"  ,"aac"]
       ffmpegcommand+=["-ac","1"]
 
 
@@ -327,16 +328,8 @@ class FFmpegService():
           w,h=size
           if type(timestamp) != float and '%' in timestamp:
             pc = float(timestamp.replace('%',''))/100.0
-            duration = sp.Popen(['ffprobe' 
-                        ,'-v', 'error' 
-                        ,'-show_entries'
-                        ,'format=duration'
-                        ,'-of'
-                        ,'default=noprint_wrappers=1:nokey=1'
-                        ,cleanFilenameForFfmpeg(filename)],stdout=sp.PIPE).communicate()[0].strip()
-            print(duration)
-            duration = float(duration)
-            timestamp = duration*pc
+            videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(filename))
+            timestamp = videoInfo.duration*pc
 
 
           cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
@@ -371,18 +364,9 @@ class FFmpegService():
 
         for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
           expectedTimes.append(e-s)
-          videoDimensions = sp.Popen(['ffprobe'
-                        ,'-v'
-                        ,'error'
-                        ,'-select_streams'
-                        ,'v:0'
-                        ,'-show_entries'
-                        ,'stream=height,width'
-                        ,'-of'
-                        ,'csv=s=x:p=0',cleanFilenameForFfmpeg(clipfilename)],stdout=sp.PIPE).communicate()[0].strip()
-          videow,videoh = videoDimensions.split(b'x')
-          videoh=int(videoh)
-          videow=int(videow)
+          videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+          videoh=videoInfo.height
+          videow=videoInfo.width
           clipDimensions.append((videow,videoh))
 
         largestclipDimensions = sorted(clipDimensions,key=lambda x:x[0]*x[1],reverse=True)[0]
@@ -485,8 +469,6 @@ class FFmpegService():
 
           for vi,v in enumerate(fileSequence):
             inputsList.extend(['-i',v])
-
-
 
           transition = options.get('transStyle','smoothleft')
           offset=fadeDuration*2

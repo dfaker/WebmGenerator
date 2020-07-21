@@ -467,7 +467,7 @@ selectableFilters = [
     "filter":"drawtext",
     "params":[
       {"n":"text",    "d":"Text","type":"string"},
-      {"n":"fontfile",    "d":"font.ttf","type":"string"},
+      {"n":"fontfile",    "d":"font.otf","type":"string"},
 
       {"n":"x",       "d":1,  "type":"int","range":None, 'rectProp':'x','inc':1},
       {"n":"y",       "d":1,  "type":"int","range":None, 'rectProp':'y','inc':1},

@@ -34,6 +34,7 @@ class WebmGeneratorUi:
 
     self.master.title('WebmGenerator')
     self.master.minsize(1525,800)
+    self.master.state('zoomed')
 
     self.menubar = Menu(self.master)
     

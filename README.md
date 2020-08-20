@@ -20,7 +20,7 @@ Both of these should be placed into the same folder as the script.
 
  `pip3 install -r requirements.txt`
  
- Alternatively windows users may use one of the recent bundled releases.
+ Alternatively **windows users may use one of the recent bundled releases: https://github.com/dfaker/WebmGenerator/releases.**
 
 ## Usage
 

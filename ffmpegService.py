@@ -57,22 +57,25 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
   currentEncodedTotal=0
   ln=b''
   while 1:
-    c = proc.stderr.read(1)
-    if len(c)==0:
-      break
-    if c == b'\r':
-      print(ln)
-      for p in ln.split(b' '):
-        if b'time=' in p:
-          try:
-            pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-            currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-            if currentEncodedTotal>0:
-              statusCallback('Encoding '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-          except Exception as e:
-            print(e)
-      ln=b''
-    ln+=c
+    try:
+      c = proc.stderr.read(1)
+      if len(c)==0:
+        break
+      if c == b'\r':
+        print(ln)
+        for p in ln.split(b' '):
+          if b'time=' in p:
+            try:
+              pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+              currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+              if currentEncodedTotal>0:
+                statusCallback('Encoding '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+            except Exception as e:
+              print(e)
+        ln=b''
+      ln+=c
+    except Exception as e:
+      print(e)
   statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
 
 
@@ -355,188 +358,191 @@ class FFmpegService():
       runNumber=int(time.time())
 
       while 1:
-        requestId,mode,seqClips,options,filenamePrefix,statusCallback = self.encodeRequestQueue.get()
-
-        expectedTimes = []
-        processed={}
-        fileSequence=[]
-        clipDimensions = []
-
-        for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
-          expectedTimes.append(e-s)
-          videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
-          videoh=videoInfo.height
-          videow=videoInfo.width
-          clipDimensions.append((videow,videoh))
-
-        largestclipDimensions = sorted(clipDimensions,key=lambda x:x[0]*x[1],reverse=True)[0]
-
-        expectedTimes.append(sum(expectedTimes))
-        totalExpectedEncodedSeconds = sum(expectedTimes)
-        totalEncodedSeconds = 0
-
-        for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
-          if filterexp=='':
-            filterexp='null'  
-
-          #Black Bars
-          #scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2
-          
-          #Crop
-          #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
-
-          filterexp+=",scale='max({}\\,min({}\\,iw)):-2'".format(0,options.get('maximumWidth',1280))
-          filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
-
-          key = (rid,clipfilename,start,end,filterexp)
-
-          basename = os.path.basename(clipfilename)
-
-          os.path.exists(tempPathname) or os.mkdir(tempPathname)
-
-          m = hashlib.md5()
-          m.update(filterexp.encode('utf8'))
-          filterHash = m.hexdigest()[:10]
-
-          basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
-
-          outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber)
-          outname = os.path.join( tempPathname,outname )
-
-          if os.path.exists(outname):
-            processed[key]=outname
-            fileSequence.append(processed[key])
-            totalEncodedSeconds+=etime
-            statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-            self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-
-          elif key not in processed:
-            statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
-            self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
-            
-
-            proc = sp.Popen(['ffmpeg','-y'
-                              ,'-ss', str(start)
-                              ,'-i', cleanFilenameForFfmpeg(clipfilename)
-                              ,'-t', str(end-start)
-                              ,'-filter_complex', filterexp
-                              ,'-c:v', 'libx264'
-                              ,'-crf', '0'
-                              ,'-ac', '1',outname],stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-            
-            currentEncodedTotal=0
-            ln=b''
-            while 1:
-                c = proc.stderr.read(1)
-                if len(c)==0:
-                  break
-                if c == b'\r':
-                  print(ln)
-                  for p in ln.split(b' '):
-                    if b'time=' in p:
-                      try:
-                        pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-                        currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-                        if currentEncodedTotal>0:
-                          statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
-                          self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
-                      except Exception as e:
-                        print(e)
-                  ln=b''
-                ln+=c
-            totalEncodedSeconds+=etime
-            statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-            self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-            processed[key]=outname
-            fileSequence.append(outname)
-          else:
-            fileSequence.append(processed[key])
-            totalEncodedSeconds+=etime
-            statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-            self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-
-        fadeDuration=0.25
         try:
-          fadeDuration= float(options.get('transDuration',0.5))
-        except Exception as e:
-          print('invalid fade duration',e)
+          requestId,mode,seqClips,options,filenamePrefix,statusCallback = self.encodeRequestQueue.get()
 
-        print(fadeDuration)
+          expectedTimes = []
+          processed={}
+          fileSequence=[]
+          clipDimensions = []
 
-        if fadeDuration > 0.0:
-          inputsList = []
+          for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
+            expectedTimes.append(e-s)
+            videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+            videoh=videoInfo.height
+            videow=videoInfo.width
+            clipDimensions.append((videow,videoh))
 
-          for vi,v in enumerate(fileSequence):
-            inputsList.extend(['-i',v])
+          largestclipDimensions = sorted(clipDimensions,key=lambda x:x[0]*x[1],reverse=True)[0]
 
-          transition = options.get('transStyle','smoothleft')
-          offset=fadeDuration*2
-          expectedFadeDurations = expectedTimes[:-1]
+          expectedTimes.append(sum(expectedTimes))
+          totalExpectedEncodedSeconds = sum(expectedTimes)
+          totalEncodedSeconds = 0
 
-          videoSplits=[]
-          transitionFilters=[]
-          audioSplits=[]
-          crossfades=[]
-          crossfadeOut=''
+          for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
+            if filterexp=='':
+              filterexp='null'  
 
-          splitTemplate='[{i}:v]split[vid{i}a][vid{i}b];'
-          xFadeTemplate='[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
-          fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
-          asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
-          crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
+            #Black Bars
+            #scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2
+            
+            #Crop
+            #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
 
-          for i,dur in enumerate(expectedFadeDurations):
-            n=0 if i==len(expectedFadeDurations)-1 else i+1
-            o=dur-offset
-            preo=offset          
-            videoSplits.append(splitTemplate.format(i=i))
-            transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
-            audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
-            audioSplits.append(asplitTemplate.format(i=i,preo=preo,dur=dur))
-            crossfades.append(crossfadeTemplate.format(i=i,preo=preo,dur=dur,n=n,o=o))
-            crossfadeOut+='[fadet{i}][audf{i}]'.format(i=i)
-          crossfadeOut+='concat=n={}:v=1:a=1[concatOutV][concatOutA]'.format(len(expectedFadeDurations))
+            filterexp+=",scale='max({}\\,min({}\\,iw)):-2'".format(0,options.get('maximumWidth',1280))
+            filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 
+            key = (rid,clipfilename,start,end,filterexp)
+
+            basename = os.path.basename(clipfilename)
+
+            os.path.exists(tempPathname) or os.mkdir(tempPathname)
+
+            m = hashlib.md5()
+            m.update(filterexp.encode('utf8'))
+            filterHash = m.hexdigest()[:10]
+
+            basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
+
+            outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber)
+            outname = os.path.join( tempPathname,outname )
+
+            if os.path.exists(outname):
+              processed[key]=outname
+              fileSequence.append(processed[key])
+              totalEncodedSeconds+=etime
+              statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+              self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+
+            elif key not in processed:
+              statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
+              self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
+              
+
+              proc = sp.Popen(['ffmpeg','-y'
+                                ,'-ss', str(start)
+                                ,'-i', cleanFilenameForFfmpeg(clipfilename)
+                                ,'-t', str(end-start)
+                                ,'-filter_complex', filterexp
+                                ,'-c:v', 'libx264'
+                                ,'-crf', '0'
+                                ,'-ac', '1',outname],stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+              
+              currentEncodedTotal=0
+              ln=b''
+              while 1:
+                  c = proc.stderr.read(1)
+                  if len(c)==0:
+                    break
+                  if c == b'\r':
+                    print(ln)
+                    for p in ln.split(b' '):
+                      if b'time=' in p:
+                        try:
+                          pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+                          currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                          if currentEncodedTotal>0:
+                            statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                            self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                        except Exception as e:
+                          print(e)
+                    ln=b''
+                  ln+=c
+              totalEncodedSeconds+=etime
+              statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+              self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+
+              processed[key]=outname
+              fileSequence.append(outname)
+            else:
+              fileSequence.append(processed[key])
+              totalEncodedSeconds+=etime
+              statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+              self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+
+          fadeDuration=0.25
           try:
-            speedAdjustment= float(options.get('speedAdjustment',1.0))
+            fadeDuration= float(options.get('transDuration',0.5))
           except Exception as e:
-            print('invalid speed Adjustment',e)
+            print('invalid fade duration',e)
 
-          if speedAdjustment==1.0:
-            crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
-          else:
+          print(fadeDuration)
+
+          if fadeDuration > 0.0:
+            inputsList = []
+
+            for vi,v in enumerate(fileSequence):
+              inputsList.extend(['-i',v])
+
+            transition = options.get('transStyle','smoothleft')
+            offset=fadeDuration*2
+            expectedFadeDurations = expectedTimes[:-1]
+
+            videoSplits=[]
+            transitionFilters=[]
+            audioSplits=[]
+            crossfades=[]
+            crossfadeOut=''
+
+            splitTemplate='[{i}:v]split[vid{i}a][vid{i}b];'
+            xFadeTemplate='[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
+            fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
+            asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
+            crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
+
+            for i,dur in enumerate(expectedFadeDurations):
+              n=0 if i==len(expectedFadeDurations)-1 else i+1
+              o=dur-offset
+              preo=offset          
+              videoSplits.append(splitTemplate.format(i=i))
+              transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
+              audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
+              audioSplits.append(asplitTemplate.format(i=i,preo=preo,dur=dur))
+              crossfades.append(crossfadeTemplate.format(i=i,preo=preo,dur=dur,n=n,o=o))
+              crossfadeOut+='[fadet{i}][audf{i}]'.format(i=i)
+            crossfadeOut+='concat=n={}:v=1:a=1[concatOutV][concatOutA]'.format(len(expectedFadeDurations))
+
             try:
-              vfactor=1/speedAdjustment
-              afactor=speedAdjustment
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outv],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
+              speedAdjustment= float(options.get('speedAdjustment',1.0))
             except Exception as e:
-              print(e)
+              print('invalid speed Adjustment',e)
+
+            if speedAdjustment==1.0:
               crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
+            else:
+              try:
+                vfactor=1/speedAdjustment
+                afactor=speedAdjustment
+                crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outv],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
+              except Exception as e:
+                print(e)
+                crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
 
-          filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
-        else:
-          inputsList   = []
-          filterInputs = ''
-          for vi,v in enumerate(fileSequence):
-            inputsList.extend(['-i',v])
-            filterInputs += '[{i}:v][{i}:a]'.format(i=vi)
-          filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outv][outa]'.format(len(inputsList)//2)
-        
-        print(filtercommand)
+            filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
+          else:
+            inputsList   = []
+            filterInputs = ''
+            for vi,v in enumerate(fileSequence):
+              inputsList.extend(['-i',v])
+              filterInputs += '[{i}:v][{i}:a]'.format(i=vi)
+            filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outv][outa]'.format(len(inputsList)//2)
+          
+          print(filtercommand)
 
-        os.path.exists(outputPathName) or os.mkdir(outputPathName)
+          os.path.exists(outputPathName) or os.mkdir(outputPathName)
 
-        outputFormat  = options.get('outputFormat','webm:VP8')
-        finalEncoder  = encoderMap.get(outputFormat,encoderMap.get('webm:VP8'))
-        finalEncoder(inputsList, 
-                     outputPathName,
-                     filenamePrefix, 
-                     filtercommand, 
-                     options, 
-                     totalEncodedSeconds, 
-                     totalExpectedEncodedSeconds, 
-                     statusCallback)
+          outputFormat  = options.get('outputFormat','webm:VP8')
+          finalEncoder  = encoderMap.get(outputFormat,encoderMap.get('webm:VP8'))
+          finalEncoder(inputsList, 
+                       outputPathName,
+                       filenamePrefix, 
+                       filtercommand, 
+                       options, 
+                       totalEncodedSeconds, 
+                       totalExpectedEncodedSeconds, 
+                       statusCallback)
+        except Exception as e:
+          print(e)
 
     self.encodeWorkers=[]
     for _ in range(encodeWorkerCount):
@@ -547,116 +553,119 @@ class FFmpegService():
     self.statsRequestQueue = Queue()
     def statsWorker():
       while 1:
-        filename,requestType,options,callback = self.statsRequestQueue.get()
-        if requestType == 'MSESearchImprove':
-          print('error seatch srtart')
-          filename = options.get('filename')
-          start = options.get('start')
-          end   = options.get('end')
-          searchDistance=options.get('secondsChange')
+        try:
+          filename,requestType,options,callback = self.statsRequestQueue.get()
+          if requestType == 'MSESearchImprove':
+            print('error seatch srtart')
+            filename = options.get('filename')
+            start = options.get('start')
+            end   = options.get('end')
+            searchDistance=options.get('secondsChange')
 
-          halfclipDur = (end-start)/2
+            halfclipDur = (end-start)/2
 
-          if searchDistance>halfclipDur:
-            searchDistance=halfclipDur
+            if searchDistance>halfclipDur:
+              searchDistance=halfclipDur
 
-          cropRect = options.get('cropRect')
-          rid = options.get('rid')
-          
-
-
-          od=224
-          nbytes = 3 * od * od
-          frameDistance=0.01
-
-          if cropRect is None:
-            videofilter = "scale={}:{}".format(od,od)
-          else:
-            x,y,w,h = cropRect
-            videofilter = "crop={}:{}:{}:{},scale={}:{}".format(x,y,w,h,od,od)
-
-          popen_params = {
-            "bufsize": 10 ** 5,
-            "stdout": sp.PIPE,
-            #"stderr": sp.DEVNULL,
-          }
-
-          startCmd = ["ffmpeg"
-                    ,'-ss',str(start-searchDistance)
-                    ,"-i", cleanFilenameForFfmpeg(filename)  
-                    ,'-s', '{}x{}'.format(od,od)
-                    ,'-ss',str(start-searchDistance)
-                    ,'-t', str(searchDistance*2)
-                    ,"-filter_complex", videofilter
-                    ,"-copyts"
-                    ,"-f","image2pipe"
-                    ,"-an"
-                    ,"-pix_fmt","bgr24"
-                    ,"-vcodec","rawvideo"
-                    ,"-vsync", "vfr"
-                    ,"-"]
-          endCmd = ["ffmpeg"
-                    ,'-ss',str(end-searchDistance)
-                    ,"-i", cleanFilenameForFfmpeg(filename) 
-                    ,'-s', '{}x{}'.format(od,od)
-                    ,'-ss',str(end-searchDistance)
-                    ,'-t', str(searchDistance*2)
-                    ,"-filter_complex", videofilter
-                    ,"-copyts"
-                    ,"-f","image2pipe"
-                    ,"-an"
-                    ,"-pix_fmt","bgr24"
-                    ,"-vcodec","rawvideo"
-                    ,"-vsync", "vfr"
-                    ,"-"]
-
-          startFrames = np.frombuffer(sp.Popen(startCmd,**popen_params).stdout.read(), dtype="uint8")
-          endFrames   = np.frombuffer(sp.Popen(endCmd,**popen_params).stdout.read(), dtype="uint8")
-
-          startFrames.shape = (-1,od,od,3)
-          endFrames.shape = (-1,od,od,3)
-
-          distances = []
-          sframeDistance = ((searchDistance*2)/startFrames.shape[0])
-          eframeDistance = ((searchDistance*2)/endFrames.shape[0])
-
-          for si,frame in enumerate(startFrames):
+            cropRect = options.get('cropRect')
+            rid = options.get('rid')
             
-            self.globalStatusCallback('Finding closest frame match',si/startFrames.shape[0])
 
-            mse = ((startFrames[si] - endFrames)**2).mean(axis=(1,2,3))
-            argmin = np.argmin(mse)  
-            matchStart = (start-searchDistance)+(si*sframeDistance)
-            matchEnd   = (end-searchDistance)+(argmin*eframeDistance)
-            distances.append( (mse[argmin],matchStart,matchEnd) )
-            print(mse[argmin],matchStart,matchEnd)
 
-          finalmse,finals,finale = sorted(distances)[0]
-          print(finalmse,finals,finale)
-          self.globalStatusCallback('Found closest matches, updating',1)
-          callback(filename,rid,mse,finals,finale)
+            od=224
+            nbytes = 3 * od * od
+            frameDistance=0.01
 
-        elif requestType == 'SceneChangeSearch':
-          expectedLength = options.get('duration',0)
-          self.globalStatusCallback('Starting scene change detection ',0/expectedLength)
-          proc = sp.Popen(
-            ['ffmpeg','-i',cleanFilenameForFfmpeg(filename),'-filter_complex', 'select=gt(scene\\,0.3),showinfo', '-f', 'null', 'NUL']
-            ,stderr=sp.PIPE)
-          ln=b''
-          while 1:
-            c=proc.stderr.read(1)
-            if len(c)==0:
-              break
-            if c in b'\r\n':
-              if b'pts_time' in ln:
-                for e in ln.split(b' '):
-                  if b'pts_time' in e:
-                    ts = float(e.split(b':')[-1])
-                    self.globalStatusCallback('Scene change detection ',ts/expectedLength)
-                    callback(filename,ts)
-              ln=b''
+            if cropRect is None:
+              videofilter = "scale={}:{}".format(od,od)
             else:
-              ln+=c
+              x,y,w,h = cropRect
+              videofilter = "crop={}:{}:{}:{},scale={}:{}".format(x,y,w,h,od,od)
+
+            popen_params = {
+              "bufsize": 10 ** 5,
+              "stdout": sp.PIPE,
+              #"stderr": sp.DEVNULL,
+            }
+
+            startCmd = ["ffmpeg"
+                      ,'-ss',str(start-searchDistance)
+                      ,"-i", cleanFilenameForFfmpeg(filename)  
+                      ,'-s', '{}x{}'.format(od,od)
+                      ,'-ss',str(start-searchDistance)
+                      ,'-t', str(searchDistance*2)
+                      ,"-filter_complex", videofilter
+                      ,"-copyts"
+                      ,"-f","image2pipe"
+                      ,"-an"
+                      ,"-pix_fmt","bgr24"
+                      ,"-vcodec","rawvideo"
+                      ,"-vsync", "vfr"
+                      ,"-"]
+            endCmd = ["ffmpeg"
+                      ,'-ss',str(end-searchDistance)
+                      ,"-i", cleanFilenameForFfmpeg(filename) 
+                      ,'-s', '{}x{}'.format(od,od)
+                      ,'-ss',str(end-searchDistance)
+                      ,'-t', str(searchDistance*2)
+                      ,"-filter_complex", videofilter
+                      ,"-copyts"
+                      ,"-f","image2pipe"
+                      ,"-an"
+                      ,"-pix_fmt","bgr24"
+                      ,"-vcodec","rawvideo"
+                      ,"-vsync", "vfr"
+                      ,"-"]
+
+            startFrames = np.frombuffer(sp.Popen(startCmd,**popen_params).stdout.read(), dtype="uint8")
+            endFrames   = np.frombuffer(sp.Popen(endCmd,**popen_params).stdout.read(), dtype="uint8")
+
+            startFrames.shape = (-1,od,od,3)
+            endFrames.shape = (-1,od,od,3)
+
+            distances = []
+            sframeDistance = ((searchDistance*2)/startFrames.shape[0])
+            eframeDistance = ((searchDistance*2)/endFrames.shape[0])
+
+            for si,frame in enumerate(startFrames):
+              
+              self.globalStatusCallback('Finding closest frame match',si/startFrames.shape[0])
+
+              mse = ((startFrames[si] - endFrames)**2).mean(axis=(1,2,3))
+              argmin = np.argmin(mse)  
+              matchStart = (start-searchDistance)+(si*sframeDistance)
+              matchEnd   = (end-searchDistance)+(argmin*eframeDistance)
+              distances.append( (mse[argmin],matchStart,matchEnd) )
+              print(mse[argmin],matchStart,matchEnd)
+
+            finalmse,finals,finale = sorted(distances)[0]
+            print(finalmse,finals,finale)
+            self.globalStatusCallback('Found closest matches, updating',1)
+            callback(filename,rid,mse,finals,finale)
+
+          elif requestType == 'SceneChangeSearch':
+            expectedLength = options.get('duration',0)
+            self.globalStatusCallback('Starting scene change detection ',0/expectedLength)
+            proc = sp.Popen(
+              ['ffmpeg','-i',cleanFilenameForFfmpeg(filename),'-filter_complex', 'select=gt(scene\\,0.3),showinfo', '-f', 'null', 'NUL']
+              ,stderr=sp.PIPE)
+            ln=b''
+            while 1:
+              c=proc.stderr.read(1)
+              if len(c)==0:
+                break
+              if c in b'\r\n':
+                if b'pts_time' in ln:
+                  for e in ln.split(b' '):
+                    if b'pts_time' in e:
+                      ts = float(e.split(b':')[-1])
+                      self.globalStatusCallback('Scene change detection ',ts/expectedLength)
+                      callback(filename,ts)
+                ln=b''
+              else:
+                ln+=c
+        except Exception as e:
+          print(e)
 
     self.statsWorkers=[]
     for _ in range(statsWorkerCount):

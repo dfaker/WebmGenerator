@@ -233,7 +233,7 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
     self.frameSequenceSummary = ttk.Frame(self.labelframeSequenceFrame)
     self.labelSequenceSummary = ttk.Label(self.frameSequenceSummary)
-    self.labelSequenceSummary.config(anchor='center', text='Number of Subclips: 0 Total subclip duration 0s Output Duration 0s')
+    self.labelSequenceSummary.config(anchor='center', text='Number of Subclips: 0 Total subclip duration 0s Output Duraion 0s')
     self.labelSequenceSummary.pack(expand='false', fill='x', side='top')
     self.frameSequenceSummary.config(height='200', width='200')
     self.frameSequenceSummary.pack(expand='false', fill='x', side='top')
@@ -569,14 +569,15 @@ class MergeSelectionUi(ttk.Frame):
       totalTime+=(sv.e-sv.s)
       timeTrimmedByFade+=self.transDurationValue*2 
 
-    self.labelSequenceSummary.config(text='Number of Subclips: {n} Total subclip duration {td}s Output Duration {tdext}s'.format(
+    self.labelSequenceSummary.config(text='Number of Subclips: {n} Total subclip duration {td}s Output Duraion {tdext}s'.format(
                                      n=len(self.sequencedClips),
                                      td=totalTime,
                                      tdext=totalTime-timeTrimmedByFade
                                     ))
-    if self.filenamePrefixVar.get()=='Sequence':
-      for sv in self.sequencedClips[:1]:
-        basename = ''.join(x for x in os.path.basename(sv.filename).rpartition('.')[0] if x in string.printable[:-41])
+    if self.filenamePrefixVar.get().strip() in ('','Sequence'):
+      usableChars = string.ascii_letters+string.digits+'-_'
+      for sv in self.sequencedClips[:1]:        
+        basename = ''.join(x for x in os.path.basename(sv.filename).rpartition('.')[0] if x in usableChars)
         self.filenamePrefixVar.set(basename)
 
   def setController(self,controller):

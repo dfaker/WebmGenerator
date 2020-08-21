@@ -243,6 +243,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameEncodeSettings = ttk.Frame(self.labelframeSequenceFrame)
     self.frameSequenceValues = ttk.Frame(self.frameEncodeSettings)
 
+    self.automaticFileNamingVar  = tk.BooleanVar() 
     self.filenamePrefixVar    = tk.StringVar()
     self.outputFormatVar      = tk.StringVar()
     self.frameSizeStrategyVar = tk.StringVar()
@@ -254,6 +255,7 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsVar     = tk.StringVar()
 
 
+    self.automaticFileNamingVar.trace('w',self.valueChange)
     self.filenamePrefixVar.trace('w',self.valueChange)
     self.outputFormatVar.trace('w',self.valueChange)
     self.frameSizeStrategyVar.trace('w',self.valueChange)
@@ -264,6 +266,8 @@ class MergeSelectionUi(ttk.Frame):
     self.speedAdjustmentVar.trace('w',self.valueChange)
     self.audioChannelsVar.trace('w',self.valueChange)
 
+
+    self.automaticFileNamingVar.set(True)
     self.filenamePrefixVar.set('Sequence')
 
     self.outputFormats = [
@@ -295,6 +299,18 @@ class MergeSelectionUi(ttk.Frame):
 
     self.audioChannelsOptions = ['Stereo','Mono','No audio']
     self.audioChannelsVar.set(self.audioChannelsOptions[0])    
+
+
+    self.frameAutomaticFileNaming = ttk.Frame(self.frameSequenceValues)
+    self.labelAutomaticFileNaming = ttk.Label(self.frameAutomaticFileNaming)
+    self.labelAutomaticFileNaming.config(anchor='e', padding='2', text='Automatically name output files', width='25')
+    self.labelAutomaticFileNaming.pack(side='left')
+    self.entryAutomaticFileNaming = ttk.Checkbutton(self.frameAutomaticFileNaming,text='',onvalue=True, offvalue=False)
+    self.entryAutomaticFileNaming.config(width='100',variable=self.automaticFileNamingVar)
+    self.entryAutomaticFileNaming.pack(expand='true', fill='both', side='left')
+    self.frameAutomaticFileNaming.config(height='200', width='300')
+    self.frameAutomaticFileNaming.pack(expand='true', fill='x', side='top')
+
 
     self.frameFilenamePrefix = ttk.Frame(self.frameSequenceValues)
     self.labelFilenamePrefix = ttk.Label(self.frameFilenamePrefix)
@@ -452,6 +468,18 @@ class MergeSelectionUi(ttk.Frame):
 
   def valueChange(self,*args):
     try:
+      self.automaticFileNamingValue = self.automaticFileNamingVar.get()
+      if self.automaticFileNamingValue:
+        self.entryFilenamePrefix.state(["disabled"]) 
+        self.labelFilenamePrefix.state(["disabled"]) 
+      else:
+        self.entryFilenamePrefix.state(["!disabled"]) 
+        self.labelFilenamePrefix.state(["!disabled"]) 
+
+    except:
+      pass
+
+    try:
       self.filenamePrefixValue = self.filenamePrefixVar.get()
     except:
       pass
@@ -519,11 +547,18 @@ class MergeSelectionUi(ttk.Frame):
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe)
         self.encoderProgress.append(encodeProgressWidget)
 
+        outputPrefix = self.filenamePrefixValue
+        if self.automaticFileNamingValue:
+          try:
+            outputPrefix = self.convertFilenameToBaseName(self.sequencedClips[0].filename)
+          except:
+            pass
+
         self.controller.encode(self.encodeRequestId,
                                'CONCAT',
                                encodeSequence,
                                options,
-                               self.filenamePrefixValue,
+                               outputPrefix,
                                encodeProgressWidget.updateStatus) 
         self.labelframeEncodeProgress.reposition()
     if self.mergeStyleVar.get() == 'Individual Files':
@@ -546,11 +581,15 @@ class MergeSelectionUi(ttk.Frame):
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe)
           self.encoderProgress.append(encodeProgressWidget)
+          outputPrefix = self.filenamePrefixValue
+          if self.automaticFileNamingValue:
+            outputPrefix = self.convertFilenameToBaseName(clip.filename)
+
           self.controller.encode(self.encodeRequestId,
                                  'CONCAT',
                                  encodeSequence,
                                  options.copy(),
-                                 self.filenamePrefixValue,
+                                 outputPrefix,
                                  encodeProgressWidget.updateStatus) 
           self.labelframeEncodeProgress.reposition()
 
@@ -575,10 +614,13 @@ class MergeSelectionUi(ttk.Frame):
                                      tdext=totalTime-timeTrimmedByFade
                                     ))
     if self.filenamePrefixVar.get().strip() in ('','Sequence'):
-      usableChars = string.ascii_letters+string.digits+'-_'
       for sv in self.sequencedClips[:1]:        
-        basename = ''.join(x for x in os.path.basename(sv.filename).rpartition('.')[0] if x in usableChars)
-        self.filenamePrefixVar.set(basename)
+        self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+
+  def convertFilenameToBaseName(self,filename):
+    usableChars = string.ascii_letters+string.digits+'-_'
+    basename = ''.join(x for x in os.path.basename(filename).rpartition('.')[0] if x in usableChars)
+    return basename
 
   def setController(self,controller):
     self.controller=controller

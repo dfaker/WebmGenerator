@@ -10,9 +10,13 @@ print(threading.current_thread())
 print(mpv)
 
 initialFiles = sys.argv[1:]
-webmGenerator = WebmGeneratorController(initialFiles)
-webmGenerator()
-del webmGenerator
+try:
+  webmGenerator = WebmGeneratorController(initialFiles)
+  webmGenerator()
+  del webmGenerator
+except Exception as e:
+  print(e)
+  input('ENTER TO QUIT>>>')
 
 print('DONE')
 sys.exit('QUIT')

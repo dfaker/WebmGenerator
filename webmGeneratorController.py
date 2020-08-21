@@ -2,6 +2,7 @@
 from tkinter import Tk
 import os
 import json
+import mimetypes
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +31,7 @@ class WebmGeneratorController:
 
     self.tempFolder='tempVideoFiles'
 
-    self.initialFiles = initialFiles
+    self.initialFiles = self.cleanInitialFiles(initialFiles)
     self.root = Tk()
     
     self.root.protocol("WM_DELETE_WINDOW", self.close_ui)
@@ -49,7 +50,7 @@ class WebmGeneratorController:
     self.ffmpegService = FFmpegService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus)
 
     self.cutselectionController = CutselectionController(self.cutselectionUi,
-                                                         initialFiles,
+                                                         self.initialFiles,
                                                          self.videoManager,
                                                          self.ffmpegService)
 
@@ -62,6 +63,23 @@ class WebmGeneratorController:
                                                              self.ffmpegService,
                                                              self.filterSelectionController
                                                              )
+
+  def cleanInitialFiles(self,files):
+    finalFiles = []
+    for f in files:
+      if os.path.isfile(f):
+        g = mimetypes.guess_type(f)
+        if g is not None and g[0] is not None and 'video' in g[0]:
+          finalFiles.append(f)
+      elif os.path.isdir(f):
+        for r,dl,fl in os.walk(f):
+          for nf in fl:
+            p = os.path.join(r,nf)
+            if os.path.isfile(p):
+              g = mimetypes.guess_type(p)
+              if g is not None and g[0] is not None and 'video' in g[0]:
+                finalFiles.append(p)
+    return finalFiles
 
 
   def newProject(self):

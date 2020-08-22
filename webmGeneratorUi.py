@@ -34,7 +34,16 @@ class WebmGeneratorUi:
 
     self.master.title('WebmGenerator')
     self.master.minsize(1525,800)
-    self.master.state('zoomed')
+    
+
+    try:
+      self.master.state('zoomed')
+    except (TclError):
+      try:
+        m = self.master.maxsize()
+        self.master.geometry('{}x{}+0+0'.format(*m))
+      except Exception as e:
+        print(e)
 
     self.menubar = Menu(self.master)
     

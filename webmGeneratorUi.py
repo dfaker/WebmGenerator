@@ -38,7 +38,8 @@ class WebmGeneratorUi:
 
     try:
       self.master.state('zoomed')
-    except (TclError):
+    except Exception as e:
+      print(e)
       try:
         m = self.master.maxsize()
         self.master.geometry('{}x{}+0+0'.format(*m))

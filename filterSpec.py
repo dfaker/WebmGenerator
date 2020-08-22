@@ -12,6 +12,46 @@ colours = [
 ]
 
 selectableFilters = [
+
+  {
+        "name": "crop",
+        "filter": "crop",
+        "params": [
+            {
+                "n": "x",
+                "d": 0,
+                "type": "int",
+                "range": None,
+                "rectProp": "x",
+                "inc": 10,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "int",
+                "range": None,
+                "rectProp": "y",
+                "inc": 10,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "int",
+                "range": None,
+                "rectProp": "w",
+                "inc": 10,
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "int",
+                "range": None,
+                "rectProp": "h",
+                "inc": 10,
+            },
+        ],
+    },
+
     {
         "name": "subtitles",
         "filter": "subtitles",
@@ -661,44 +701,6 @@ selectableFilters = [
         ],
     },
     
-    {
-        "name": "crop",
-        "filter": "crop",
-        "params": [
-            {
-                "n": "x",
-                "d": 0,
-                "type": "int",
-                "range": None,
-                "rectProp": "x",
-                "inc": 10,
-            },
-            {
-                "n": "y",
-                "d": 0,
-                "type": "int",
-                "range": None,
-                "rectProp": "y",
-                "inc": 10,
-            },
-            {
-                "n": "w",
-                "d": 100,
-                "type": "int",
-                "range": None,
-                "rectProp": "w",
-                "inc": 10,
-            },
-            {
-                "n": "h",
-                "d": 100,
-                "type": "int",
-                "range": None,
-                "rectProp": "h",
-                "inc": 10,
-            },
-        ],
-    },
     
     {
         "name": "drawtext",

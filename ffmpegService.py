@@ -366,7 +366,9 @@ class FFmpegService():
           fileSequence=[]
           clipDimensions = []
 
+          print(requestId,mode,seqClips,options,filenamePrefix,statusCallback)
           for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
+            print(i,(rid,clipfilename,s,e,filterexp))
             expectedTimes.append(e-s)
             videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
             videoh=videoInfo.height
@@ -380,6 +382,7 @@ class FFmpegService():
           totalEncodedSeconds = 0
 
           for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
+            print(i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)))
             if filterexp=='':
               filterexp='null'  
 
@@ -543,6 +546,8 @@ class FFmpegService():
                        statusCallback)
         except Exception as e:
           print(e)
+          import traceback
+          traceback.print_exc()
 
     self.encodeWorkers=[]
     for _ in range(encodeWorkerCount):

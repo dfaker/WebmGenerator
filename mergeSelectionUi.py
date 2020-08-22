@@ -285,7 +285,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.maximumSizeVar.set('0.0')
     self.maximumWidthVar.set('1280')
-    self.transDurationVar.set('0.5')       
+    self.transDurationVar.set('0.0')       
 
     self.transStyles = ['fade','wipeleft','wiperight','wipeup'
     ,'wipedown','slideleft','slideright','slideup','slidedown'

@@ -33,9 +33,15 @@ def getVideoInfo(filename,filters=None):
 
       elif state=='Video':
         if errElem.endswith(b'fps'):
-          stats['fps']=float(errElem.split(b' ')[0])
+          try:
+            stats['fps']=float(errElem.split(b' ')[0])
+          except Exception as e:
+            print(e)
         elif errElem.endswith(b'tbr'):
-          stats['tbr']=float(errElem.split(b' ')[0])
+          try:
+            stats['tbr']=float(errElem.split(b' ')[0])
+          except Exception as e:
+            print(e)
         if b'x' in errElem:
           try:
             w,h = errElem.split(b' ')[0].split(b'x')

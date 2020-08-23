@@ -519,7 +519,7 @@ class FFmpegService():
                 crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outv],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
               except Exception as e:
                 print(e)
-                crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
+                crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outa]'
 
             filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
           else:
@@ -528,8 +528,13 @@ class FFmpegService():
             for vi,v in enumerate(fileSequence):
               inputsList.extend(['-i',v])
               filterInputs += '[{i}:v][{i}:a]'.format(i=vi)
-            filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outv][outa]'.format(len(inputsList)//2)
+            filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outvpre][outa]'.format(len(inputsList)//2)
           
+          if os.path.exists('post-filters.txt'):
+            filtercommand += open('post-filters.txt','r').read()
+          else:
+            filtercommand += ',[outvpre]null[outv]'
+
           print(filtercommand)
 
           os.path.exists(outputPathName) or os.mkdir(outputPathName)

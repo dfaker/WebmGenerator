@@ -22,6 +22,8 @@ Both of these should be placed into the same folder as the script.
 
  `pip3 install -r requirements.txt`
  
+ For Linux users tkinter may not be installed, to install it in ubuntu for example run: `sudo apt-get install python3-tk`
+ 
  Alternatively **windows users may use one of the recent bundled releases: https://github.com/dfaker/WebmGenerator/releases.**
 
 ## Usage

@@ -26,7 +26,7 @@ except Exception as e:
 def cleanFilenameForFfmpeg(filename):
   return getShortPathName(os.path.normpath(filename))
 
-def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,dependentValueName='BR'):
+def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR'):
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
   smallestFailedOverMaximum=None
@@ -36,7 +36,13 @@ def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,siz
   while 1:
     val=int(val)
     passCount+=1
-    finalSize = encoderFunction(val,passCount,passReason)
+
+    if twoPassMode:
+      _         = encoderFunction(val,passCount,passReason,passPhase=1)
+      finalSize = encoderFunction(val,passCount,passReason,passPhase=2)
+    else:
+      finalSize = encoderFunction(val,passCount,passReason)
+    
     if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts*2:
       break
     elif finalSize<sizeLimitMin:
@@ -96,19 +102,23 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
+
+
   fileN=0
   while 1:
     fileN+=1
     finalOutName = '{}_{}.webm'.format(filenamePrefix,fileN)
     finalOutName = os.path.join(outputPathName,finalOutName)
+    outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
     if not os.path.exists(finalOutName):
       break
+
   
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason):
+  def encoderFunction(br,passNumber,passReason,passPhase=0):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -121,30 +131,46 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
       ffmpegcommand+=['-filter_complex',filtercommand]
       ffmpegcommand+=['-map','[outv]','-map','[outa]']  
 
+
+    if passPhase==1:
+      ffmpegcommand+=['-pass', '1', '-passlogfile', outLogFilename ]
+    elif passPhase==2:
+      ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
+
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
-                   ,"-threads", str(4),"-crf"  ,'4']
+                   ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
+                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"]
     
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
     else:
       ffmpegcommand+=["-b:v",str(br)]
 
-    if options.get('audioChannels') == 'No audio':
+    if options.get('audioChannels') == 'No audio' or passPhase==1:
       ffmpegcommand+=["-an"]    
     elif options.get('audioChannels') == 'Stereo':
       ffmpegcommand+=["-ac","2"]    
     else:
       ffmpegcommand+=["-ac","1"]
 
-    ffmpegcommand+=["-sn",finalOutName]
+    ffmpegcommand+=["-sn"]
+
+    if passPhase==1:
+      ffmpegcommand += ['-f', 'null', os.devnull]
+    else:
+      ffmpegcommand += [finalOutName]
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
-    finalSize = os.stat(finalOutName).st_size
-    return finalSize
+    
+    if passPhase==1:
+      return 0
+    else:
+      finalSize = os.stat(finalOutName).st_size
+      return finalSize
 
   encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
@@ -153,6 +179,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
   encodeTargetingSize(encoderFunction=encoderFunction,
                       outputFilename=finalOutName,
                       initialDependentValue=initialBr,
+                      twoPassMode=True,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
                       maxAttempts=10)
@@ -190,7 +217,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason):
+  def encoderFunction(br,passNumber,passReason,passPhase=0):
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -268,7 +295,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     packageglobalStatusCallback(text,percentage)
 
 
-  def encoderFunction(width,passNumber,passReason):
+  def encoderFunction(width,passNumber,passReason,passPhase=0):
 
     giffiltercommand = filtercommand+',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\',split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
 

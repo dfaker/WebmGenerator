@@ -24,6 +24,7 @@ from mergeSelectionController import MergeSelectionController
 
 from videoManager   import VideoManager
 from ffmpegService import FFmpegService  
+from youtubeDLService import YTDLService
 
 class WebmGeneratorController:
   
@@ -46,13 +47,15 @@ class WebmGeneratorController:
     self.webmMegeneratorUi.addPane(self.filterSselectionUi,'Filters')
     self.webmMegeneratorUi.addPane(self.mergeSelectionUi,'Merge')
 
-    self.videoManager = VideoManager()
+    self.videoManager  = VideoManager()
     self.ffmpegService = FFmpegService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus)
+    self.ytdlService   = YTDLService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus)
 
     self.cutselectionController = CutselectionController(self.cutselectionUi,
                                                          self.initialFiles,
                                                          self.videoManager,
-                                                         self.ffmpegService)
+                                                         self.ffmpegService,
+                                                         self.ytdlService)
 
     self.filterSelectionController = FilterSelectionController(self.filterSselectionUi,
                                                          self.videoManager,

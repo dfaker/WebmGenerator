@@ -4,11 +4,13 @@ import math
 
 class CutselectionController:
 
-  def __init__(self,ui,initialFiles,videoManager,ffmpegService):
+  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService):
     self.ui = ui
     self.ui.setController(self)
     self.videoManager = videoManager
     self.ffmpegService = ffmpegService
+    self.ytdlService   = ytdlService
+
     self.initialisePlayer()
     self.files=[]
     
@@ -181,6 +183,13 @@ class CutselectionController:
         self.player.command('stop')
         self.currentlyPlayingFileName=None
     self.updateProgressStatistics()
+
+  def returnYTDLDownlaodedVideo(self,filename):
+    print(filename)
+    self.loadFiles([filename.decode('utf8')])
+
+  def loadVideoYTdl(self,url):
+    self.ytdlService.loadUrl(url,self.returnYTDLDownlaodedVideo)
 
   def loadFiles(self,fileList):
     for file in fileList:

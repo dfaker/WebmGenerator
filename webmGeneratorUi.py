@@ -68,11 +68,11 @@ class WebmGeneratorUi:
 
     self.statusFrame = ttk.Frame(self.master)
 
-    self.statusLabel = ttk.Label(self.statusFrame,text='Idle no background task',width=60)
-    self.statusLabel.pack(expand=0, fill='x',side='left')
+    self.statusLabel = ttk.Label(self.statusFrame,text='Idle no background task')
+    self.statusLabel.pack(expand=1, fill='x',side='left')
 
     self.statusProgress = ttk.Progressbar(self.statusFrame)
-    self.statusProgress.pack(expand=0,side='right', fill='x')
+    self.statusProgress.pack(expand=1,side='right', fill='x')
 
     self.statusFrame.pack(expand=0, fill='x')
 

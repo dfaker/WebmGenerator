@@ -2,6 +2,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.filedialog import askopenfilenames
+from tkinter import simpledialog
 from pygubu.widgets.scrolledframe import ScrolledFrame
 from timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 import os
@@ -207,6 +208,12 @@ class CutselectionUi(ttk.Frame):
         self.buttonLoadVideos.config(style="small.TButton")
         self.buttonLoadVideos.config(command=self.loadVideoFiles)
         self.buttonLoadVideos.pack(fill="x", side="top")
+
+        self.buttonLoadYTdl = ttk.Button(self.labelframeSourceVideos)
+        self.buttonLoadYTdl.config(text="Load youtube-dl supported url")
+        self.buttonLoadYTdl.config(style="small.TButton")
+        self.buttonLoadYTdl.config(command=self.loadVideoYTdl)
+        self.buttonLoadYTdl.pack(fill="x", side="top")
 
         self.buttonClearSubclips = ttk.Button(self.labelframeSourceVideos)
         self.buttonClearSubclips.config(text="Clear all subclips")
@@ -429,6 +436,11 @@ class CutselectionUi(ttk.Frame):
         for preview in previewsToRemove:
             preview.destroy()
         self.controller.removeVideoFile(filename)
+
+    def loadVideoYTdl(self):
+      url = simpledialog.askstring(title="Download video from URL",prompt="Download a video from a youtube-dl supported url")
+      if url is not None and len(url)>0:
+        self.controller.loadVideoYTdl(url)
 
     def loadVideoFiles(self):
         fileList = askopenfilenames()

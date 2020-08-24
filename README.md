@@ -16,9 +16,13 @@ Both of these should be placed into the same folder as the script.
 
 ## Python dependencies:
 
+To run with python 3 directly these packages are used:
+
 - python-mpv
 - pygubu
 - numpy
+
+pip can install them all for you with a single command:
 
  `pip3 install -r requirements.txt`
  

@@ -9,6 +9,7 @@ os.environ['TK_LIBRARY'] =  os.path.expandvars(r'%USERPROFILE%\AppData\Local\Pro
 buildOptions = dict(packages = ["os"], 
                     include_files = [
                     'ffmpeg.exe'
+                    ,'youtube-dl.exe'
                     ,'screenspacetools.lua'
                     ,'mpv-1.dll'
                     ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tcl86t.dll')

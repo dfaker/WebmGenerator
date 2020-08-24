@@ -13,7 +13,7 @@ A large v2 release moving to a more standardized user interface, adds the abilit
 - ffmpeg - https://www.ffmpeg.org/download.html
 - youtube-dl - https://ytdl-org.github.io/youtube-dl/ (optional)
 
-Both of these should be placed into the same folder as the script.
+All of these should be placed into the same folder as the script or on the PATH.
 
 ## Python dependencies:
 

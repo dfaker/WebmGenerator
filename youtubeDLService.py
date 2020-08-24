@@ -20,6 +20,7 @@ class YTDLService():
         l = b''
         self.globalStatusCallback('Downloading {}'.format(url),0)
         finalName = b''
+        fileOutout=False
         while 1:
           c=proc.stdout.read(1)
           l+=c
@@ -35,7 +36,9 @@ class YTDLService():
             if b'[ffmpeg] Merging formats into' in l:
               finalName = l.split(b'"')[-2].strip()
               self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
-              callback(finalName)
+              if not fileOutout:
+                callback(finalName)
+                fileOutout = True
               print('Done',finalName)
             if b'[download]' in l and b'%' in l:
               pc = b'0'
@@ -47,7 +50,9 @@ class YTDLService():
               print(finalName,int(float(pc)) == 100)
               if int(float(pc)) == 100 and len(finalName)>0:
                 self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
-                callback(finalName)
+                if not fileOutout:
+                  callback(finalName)
+                  fileOutout = True
 
             l=b''
 

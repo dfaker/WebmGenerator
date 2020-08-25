@@ -300,8 +300,14 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsOptions = ['Stereo','Mono','No audio']
     self.audioChannelsVar.set(self.audioChannelsOptions[0])    
 
+    self.frameSequenceValuesLeft = ttk.Frame(self.frameSequenceValues)
+    self.frameSequenceValuesLeft.pack(expand='true', fill='x', side='left')
 
-    self.frameAutomaticFileNaming = ttk.Frame(self.frameSequenceValues)
+    self.frameSequenceValuesRight = ttk.Frame(self.frameSequenceValues)
+    self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
+
+
+    self.frameAutomaticFileNaming = ttk.Frame(self.frameSequenceValuesLeft)
     self.labelAutomaticFileNaming = ttk.Label(self.frameAutomaticFileNaming)
     self.labelAutomaticFileNaming.config(anchor='e', padding='2', text='Automatically name output files', width='25')
     self.labelAutomaticFileNaming.pack(side='left')
@@ -312,7 +318,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameAutomaticFileNaming.pack(expand='true', fill='x', side='top')
 
 
-    self.frameFilenamePrefix = ttk.Frame(self.frameSequenceValues)
+    self.frameFilenamePrefix = ttk.Frame(self.frameSequenceValuesRight)
     self.labelFilenamePrefix = ttk.Label(self.frameFilenamePrefix)
     self.labelFilenamePrefix.config(anchor='e', padding='2', text='Output filename prefix', width='25')
     self.labelFilenamePrefix.pack(side='left')
@@ -323,7 +329,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameFilenamePrefix.pack(expand='true', fill='x', side='top')
 
 
-    self.frameOutputFormat = ttk.Frame(self.frameSequenceValues)
+    self.frameOutputFormat = ttk.Frame(self.frameSequenceValuesLeft)
     self.labelOutputFormat = ttk.Label(self.frameOutputFormat)
     self.labelOutputFormat.config(anchor='e', padding='2', text='Otuput format', width='25')
     self.labelOutputFormat.pack(side='left')  
@@ -332,7 +338,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameOutputFormat.config(height='200', width='300')
     self.frameOutputFormat.pack(expand='true', fill='x', side='top')
 
-    self.frameSizeStrategy = ttk.Frame(self.frameSequenceValues)
+    self.frameSizeStrategy = ttk.Frame(self.frameSequenceValuesRight)
     self.labelSizeStrategy = ttk.Label(self.frameSizeStrategy)
     self.labelSizeStrategy.config(anchor='e', padding='2', text='Size Match Strategy', width='25')
     self.labelSizeStrategy.pack(side='left')
@@ -344,7 +350,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSizeStrategy.pack(expand='true', fill='x', side='top')
 
 
-    self.frameMaximumSize = ttk.Frame(self.frameSequenceValues)
+    self.frameMaximumSize = ttk.Frame(self.frameSequenceValuesLeft)
     self.labelMaximumSize = ttk.Label(self.frameMaximumSize)
     self.labelMaximumSize.config(anchor='e', padding='2', text='Maximum File Size (MB)', width='25')
     self.labelMaximumSize.pack(side='left')
@@ -357,7 +363,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameMaximumSize.pack(expand='true', fill='x', side='top')
 
 
-    self.frameMaximumWidth = ttk.Frame(self.frameSequenceValues)
+    self.frameMaximumWidth = ttk.Frame(self.frameSequenceValuesRight)
     self.labelMaximumWidth = ttk.Label(self.frameMaximumWidth)
     self.labelMaximumWidth.config(anchor='e', padding='2', text='Maximum Width', width='25')
     self.labelMaximumWidth.pack(side='left')
@@ -371,7 +377,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameMaximumWidth.config(height='200', width='300')
     self.frameMaximumWidth.pack(expand='true', fill='x', side='top')
 
-    self.frameAudioChannels = ttk.Frame(self.frameSequenceValues)
+    self.frameAudioChannels = ttk.Frame(self.frameSequenceValuesLeft)
     self.labelAudioChannels = ttk.Label(self.frameAudioChannels)
     self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels', width='25')
     self.labelAudioChannels.pack(side='left')
@@ -380,6 +386,21 @@ class MergeSelectionUi(ttk.Frame):
     self.entryAudioChannels.pack(expand='true', fill='both', side='left')
     self.frameAudioChannels.config(height='200', width='300')
     self.frameAudioChannels.pack(expand='true', fill='x', side='top')
+
+
+    self.frameSpeedChange = ttk.Frame(self.frameSequenceValuesRight)
+    self.labelSpeedChange = ttk.Label(self.frameSpeedChange)
+    self.labelSpeedChange.config(anchor='e', padding='2', text='Speed adjustment', width='25')
+    self.labelSpeedChange.pack(side='left')
+    self.entrySpeedChange = ttk.Spinbox(self.frameSpeedChange, 
+                                         from_=0.5, 
+                                         to=2.0, 
+                                         increment=0.01,
+                                         textvariable=self.speedAdjustmentVar)
+    self.entrySpeedChange.config(width='100')
+    self.entrySpeedChange.pack(expand='true', fill='both', side='left')
+    self.frameSpeedChange.config(height='200', width='300')
+    self.frameSpeedChange.pack(expand='true', fill='x', side='top')
 
     self.frameTransDuration = ttk.Frame(self.frameTransitionSettings)
     self.labelTransDuration = ttk.Label(self.frameTransDuration)
@@ -407,23 +428,6 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameTransStyle.config(height='200', width='300')
     self.frameTransStyle.pack(expand='true', fill='x', side='top')
-
-
-
-    self.frameSpeedChange = ttk.Frame(self.frameSequenceValues)
-    self.labelSpeedChange = ttk.Label(self.frameSpeedChange)
-    self.labelSpeedChange.config(anchor='e', padding='2', text='Speed adjustment', width='25')
-    self.labelSpeedChange.pack(side='left')
-    self.entrySpeedChange = ttk.Spinbox(self.frameSpeedChange, 
-                                         from_=0.5, 
-                                         to=2.0, 
-                                         increment=0.01,
-                                         textvariable=self.speedAdjustmentVar)
-    self.entrySpeedChange.config(width='100')
-    self.entrySpeedChange.pack(expand='true', fill='both', side='left')
-    self.frameSpeedChange.config(height='200', width='300')
-    self.frameSpeedChange.pack(expand='true', fill='x', side='top')
-
 
     self.frameSequenceValues.config(height='200', padding='2', width='200')
     self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')

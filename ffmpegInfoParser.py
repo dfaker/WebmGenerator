@@ -9,10 +9,11 @@ class VideoInfo:
   tbr: float
   height:int
   width:int
+  hasaudio:bool
 
 def getVideoInfo(filename,filters=None):
   state=None
-  stats= dict(filename=filename)
+  stats= dict(filename=filename,duration=0,hasaudio=False)
   if filters is None:
     proc = sp.Popen(['ffmpeg','-i',filename],stdout=sp.PIPE,stderr=sp.PIPE)
   else:
@@ -22,14 +23,17 @@ def getVideoInfo(filename,filters=None):
   for errLine in errs.split(b'\n'):
     for errElem in [x.strip() for x in errLine.split(b',')]:
       if errElem.startswith(b'Duration:'):
-        timeParts = [float(x) for x in errElem.split()[-1].split(b':')]
-        stats['duration'] = sum([t*m for t,m in zip(timeParts[::-1],[1,60,60*60,60*60*60])])
-
+        try:
+          timeParts = [float(x) for x in errElem.split()[-1].split(b':')]
+          stats['duration'] = sum([t*m for t,m in zip(timeParts[::-1],[1,60,60*60,60*60*60])])
+        except Exception as e:
+          print(e)
       elif errElem.startswith(b'Stream'):
         if b'Video:' in errElem:
           state='Video'
         elif b'Audio:' in errElem:
           state = 'Audio'
+          stats['hasaudio'] = True
 
       elif state=='Video':
         if errElem.endswith(b'fps'):
@@ -54,3 +58,6 @@ def getVideoInfo(filename,filters=None):
             pass
 
   return VideoInfo(**stats)
+
+if __name__ == '__main__':
+  import webmGenerator

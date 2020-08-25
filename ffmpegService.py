@@ -392,12 +392,14 @@ class FFmpegService():
           processed={}
           fileSequence=[]
           clipDimensions = []
+          infoOut={}
 
           print(requestId,mode,seqClips,options,filenamePrefix,statusCallback)
           for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
             print(i,(rid,clipfilename,s,e,filterexp))
             expectedTimes.append(e-s)
             videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+            infoOut[rid] = videoInfo
             videoh=videoInfo.height
             videow=videoInfo.width
             clipDimensions.append((videow,videoh))
@@ -448,15 +450,29 @@ class FFmpegService():
               statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
               self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
               
+              if infoOut[rid].hasaudio:
+                comvcmd = ['ffmpeg','-y'                                
+                          ,'-ss', str(start)
+                          ,'-i', cleanFilenameForFfmpeg(clipfilename)
+                          ,'-t', str(end-start)
+                          ,'-filter_complex', filterexp
+                          ,'-c:v', 'libx264'
+                          ,'-crf', '0'
+                          ,'-ac', '1',outname]
+              else:
+                comvcmd = ['ffmpeg','-y'
+                          ,'-f', 'lavfi', '-i', 'anullsrc'                                
+                          ,'-ss', str(start)
+                          ,'-i', cleanFilenameForFfmpeg(clipfilename)
+                          ,'-t', str(end-start)
+                          ,'-filter_complex', filterexp
+                          ,'-c:v', 'libx264'
+                          ,'-crf', '0'
+                          ,'-map', '0:a', '-map', '1:v' 
+                          ,'-shortest'
+                          ,'-ac', '1',outname]
 
-              proc = sp.Popen(['ffmpeg','-y'
-                                ,'-ss', str(start)
-                                ,'-i', cleanFilenameForFfmpeg(clipfilename)
-                                ,'-t', str(end-start)
-                                ,'-filter_complex', filterexp
-                                ,'-c:v', 'libx264'
-                                ,'-crf', '0'
-                                ,'-ac', '1',outname],stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+              proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
               
               currentEncodedTotal=0
               ln=b''

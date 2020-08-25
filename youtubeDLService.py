@@ -45,7 +45,8 @@ class YTDLService():
               for tc in l.split(b' '):
                 if b'%' in tc:
                   pc = tc.replace(b'%',b'')
-              self.globalStatusCallback('Downloading {}'.format(url),float(pc)/100)
+              desc = l.decode('utf8').replace('[download]','').strip()
+              self.globalStatusCallback('Downloading {} {}'.format(url,desc),float(pc)/100)
 
               print(finalName,int(float(pc)) == 100)
               if int(float(pc)) == 100 and len(finalName)>0:

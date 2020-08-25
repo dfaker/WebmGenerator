@@ -6,6 +6,12 @@
 
 A tool for cutting, filtering and joining video clips, supports webm, mp4 and high quality gif outputs, includes realtime effect filtering and transition effects between scenes.
 
+- Webm, Mp4 and Gif outputs
+- Interactive clip selection powered by mpv
+- full suite of filters from crop to tone mapping and VR to 2D projection.
+- Automatic bitrate adjustment for file size targeting.
+- Save single extracted clips or join multiple clips into custom edits with transition effects.
+
 A large v2 release moving to a more standardized user interface, adds the ability to track the output size of video clip in order to reach some time limit and introduces options to merge clips together into a sequence at the end including cross-filtering transition effects.
 
 ## External dependencies:

@@ -21,6 +21,11 @@ class EncodeProgress(ttk.Frame):
   def updateStatus(self,status,percent):
     self.labelEncodeProgressLabel.config(text=status)
     self.progressbarEncodeProgressLabel['value']=percent*100
+    if percent >= 1:
+      self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
+    else:
+      self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
+
     self.winfo_toplevel().title('webmGenerator: encoding: {:0.2f}%'.format(percent*100))
 
 

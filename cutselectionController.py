@@ -186,7 +186,7 @@ class CutselectionController:
 
   def returnYTDLDownlaodedVideo(self,filename):
     print(filename)
-    self.loadFiles([filename.decode('utf8')])
+    self.loadFiles([filename])
 
   def loadVideoYTdl(self,url):
     self.ytdlService.loadUrl(url,self.returnYTDLDownlaodedVideo)

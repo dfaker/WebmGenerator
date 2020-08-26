@@ -24,7 +24,11 @@ class WebmGeneratorUi:
                            activehighlightcolor=bg,
                            relief='flat')
     self.style.configure("Red.Horizontal.TProgressbar", 
-                           background='red')
+                           background='red',lightcolor='red',darkcolor='red',border=0,relief='flat')
+    self.style.configure("Blue.Horizontal.TProgressbar", 
+                           background='blue',lightcolor='blue',darkcolor='blue',border=0,relief='flat')
+    self.style.configure("Green.Horizontal.TProgressbar", 
+                           background='green',lightcolor='green',darkcolor='green',border=0,relief='flat')
 
     self.style.configure('small.TButton', padding=0)
     self.style.configure('smallextra.TButton', padding=-20)
@@ -72,7 +76,9 @@ class WebmGeneratorUi:
     self.statusLabel.pack(expand=True, fill='both',side='left')
 
     self.statusProgress = ttk.Progressbar(self.statusFrame)
+    self.statusProgress['value'] = 0
     self.statusProgress.pack(expand=1,side='right', fill='x')
+    self.statusProgress.config(style="Green.Horizontal.TProgressbar")
 
     self.statusFrame.pack(expand=0, fill='x',side='bottom')
 

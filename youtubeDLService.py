@@ -3,6 +3,7 @@ import subprocess as sp
 import os
 import threading
 from queue import Queue
+import traceback
 
 class YTDLService():
 
@@ -17,7 +18,7 @@ class YTDLService():
           tempPathname='tempVideoFiles'
           os.path.exists(tempPathname) or os.mkdir(tempPathname)
           outfolder = os.path.join(tempPathname,'%(title)s.%(ext)s')
-          proc = sp.Popen(['youtube-dl',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)
+          proc = sp.Popen(['youtube-dl','--restrict-filenames',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)
           l = b''
           self.globalStatusCallback('Downloading {}'.format(url),0)
           finalName = b''
@@ -46,7 +47,7 @@ class YTDLService():
                 for tc in l.split(b' '):
                   if b'%' in tc:
                     pc = tc.replace(b'%',b'')
-                desc = l.decode('utf8').replace('[download]','').strip()
+                desc = l.replace(b'[download]',b'').strip()
                 self.globalStatusCallback('Downloading {} {}'.format(url,desc),float(pc)/100)
 
                 print(finalName,int(float(pc)) == 100)
@@ -55,11 +56,13 @@ class YTDLService():
 
               l=b''
           if len(finalName)>0:
+            finalName = finalName.decode('utf8')
             callback(finalName)
           else:
             self.globalStatusCallback('Download failed {}'.format(url),1.0)
         except Exception as e:
           print(e)
+          traceback.print_exc()
           self.globalStatusCallback('Download failed {}'.format(url),1.0)
 
 

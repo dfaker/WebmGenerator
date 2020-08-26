@@ -5,7 +5,7 @@ import os
 import string 
 
 class EncodeProgress(ttk.Frame):
-  def __init__(self, master=None, *args, **kwargs):
+  def __init__(self, master=None, *args, encodeRequestId=None, **kwargs):
     ttk.Frame.__init__(self, master)
     self.frameEncodeProgressWidget = self
     self.labelEncodeProgressLabel = ttk.Label(self.frameEncodeProgressWidget)
@@ -176,7 +176,7 @@ class MergeSelectionUi(ttk.Frame):
     self.mergestyleLabel.pack(expand='false', fill='x', side='left')
 
     self.mergeStyleVar = tk.StringVar()
-    self.mergeStyles   = ['Sequence','Individual Files','Grid']
+    self.mergeStyles   = ['Individual Files','Grid','Sequence']
 
     self.mergeStyleVar.set(self.mergeStyles[0])
     
@@ -562,7 +562,7 @@ class MergeSelectionUi(ttk.Frame):
           'audioChannels':self.audioChannels
         }
 
-        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe)
+        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
         self.encoderProgress.append(encodeProgressWidget)
 
         outputPrefix = self.filenamePrefixValue
@@ -597,7 +597,7 @@ class MergeSelectionUi(ttk.Frame):
             'outputFormat':self.outputFormatValue
           }
 
-          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe)
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
           self.encoderProgress.append(encodeProgressWidget)
           outputPrefix = self.filenamePrefixValue
           if self.automaticFileNamingValue:

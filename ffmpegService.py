@@ -43,7 +43,7 @@ def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,siz
     else:
       finalSize = encoderFunction(val,passCount,passReason)
     
-    if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts*2:
+    if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts+2:
       break
     elif finalSize<sizeLimitMin:
       passReason='File too small, {} increase'.format(dependentValueName)
@@ -107,7 +107,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
   fileN=0
   while 1:
     fileN+=1
-    finalOutName = '{}_{}.webm'.format(filenamePrefix,fileN)
+    finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
     finalOutName = os.path.join(outputPathName,finalOutName)
     outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
     if not os.path.exists(finalOutName):
@@ -208,7 +208,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
   fileN=0
   while 1:
     fileN+=1
-    finalOutName = '{}_{}.mp4'.format(filenamePrefix,fileN)
+    finalOutName = '{}_WmG_{}.mp4'.format(filenamePrefix,fileN)
     finalOutName = os.path.join(outputPathName,finalOutName)
     if not os.path.exists(finalOutName):
       break
@@ -285,7 +285,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
   fileN=0
   while 1:
     fileN+=1
-    finalOutName = '{}_{}.gif'.format(filenamePrefix,fileN)    
+    finalOutName = '{}_WmG_{}.gif'.format(filenamePrefix,fileN)    
     finalOutName = os.path.join(outputPathName,finalOutName)
     if not os.path.exists(finalOutName):
       break

@@ -33,7 +33,7 @@ class WebmGeneratorUi:
     self.master=master
 
     self.master.title('WebmGenerator')
-    self.master.minsize(1525,800)
+    self.master.minsize(1024,900)
     
 
     try:
@@ -64,18 +64,19 @@ class WebmGeneratorUi:
 
 
     self.notebook = ttk.Notebook(self.master)
-    self.notebook.pack(expand=1, fill='both')
+    
 
-    self.statusFrame = ttk.Frame(self.master)
+    self.statusFrame = ttk.Frame(self.master,height='20')
 
     self.statusLabel = ttk.Label(self.statusFrame,text='Idle no background task')
-    self.statusLabel.pack(expand=1, fill='x',side='left')
+    self.statusLabel.pack(expand=True, fill='both',side='left')
 
     self.statusProgress = ttk.Progressbar(self.statusFrame)
     self.statusProgress.pack(expand=1,side='right', fill='x')
 
-    self.statusFrame.pack(expand=0, fill='x')
+    self.statusFrame.pack(expand=0, fill='x',side='bottom')
 
+    self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
 
   def newProject(self):

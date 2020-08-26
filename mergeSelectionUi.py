@@ -300,12 +300,30 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsOptions = ['Stereo','Mono','No audio']
     self.audioChannelsVar.set(self.audioChannelsOptions[0])    
 
+    self.frameSequenceActions = ttk.Frame(self.frameEncodeSettings)
+    self.buttonSequenceClear = ttk.Button(self.frameSequenceActions)
+    self.buttonSequenceClear.config(text='Clear Sequence')
+    self.buttonSequenceClear.config(command=self.clearSequence)
+    self.buttonSequenceClear.pack(side='top')
+    self.buttonSequenceEncode = ttk.Button(self.frameSequenceActions)
+    self.buttonSequenceEncode.config(text='Encode')
+    self.buttonSequenceEncode.config(command=self.encodeCurrent)
+    self.buttonSequenceEncode.pack(expand='true', fill='both', side='top')
+    self.frameSequenceActions.config(height='200', width='200')
+    self.frameSequenceActions.pack(expand='false', fill='both', side='right')
+
+    self.frameTransitionSettings.config(height='200', padding='5', relief='groove', width='200')
+    self.frameTransitionSettings.pack(fill='x', ipadx='3', side='top')
+
+    self.frameEncodeSettings.config(height='200', padding='5', relief='groove', width='200')
+    self.frameEncodeSettings.pack(fill='x', ipadx='3', side='top')
+
     self.frameSequenceValuesLeft = ttk.Frame(self.frameSequenceValues)
-    self.frameSequenceValuesLeft.pack(expand='true', fill='x', side='left')
-
     self.frameSequenceValuesRight = ttk.Frame(self.frameSequenceValues)
-    self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
 
+
+
+    # two column menu below
 
     self.frameAutomaticFileNaming = ttk.Frame(self.frameSequenceValuesLeft)
     self.labelAutomaticFileNaming = ttk.Label(self.frameAutomaticFileNaming)
@@ -344,7 +362,6 @@ class MergeSelectionUi(ttk.Frame):
     self.labelSizeStrategy.pack(side='left')
     
     self.comboboxSizeStrategy = ttk.OptionMenu(self.frameSizeStrategy,self.frameSizeStrategyVar,self.frameSizeStrategyVar.get(),*self.frameSizeStrategies)
-    self.comboboxSizeStrategy.config(width='5')
     self.comboboxSizeStrategy.pack(expand='true', fill='x', side='top')
     self.frameSizeStrategy.config(height='200', width='100')
     self.frameSizeStrategy.pack(expand='true', fill='x', side='top')
@@ -382,7 +399,7 @@ class MergeSelectionUi(ttk.Frame):
     self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels', width='25')
     self.labelAudioChannels.pack(side='left')
     self.entryAudioChannels = ttk.OptionMenu(self.frameAudioChannels,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
-    self.entryAudioChannels.config(width='5')
+    
     self.entryAudioChannels.pack(expand='true', fill='both', side='left')
     self.frameAudioChannels.config(height='200', width='300')
     self.frameAudioChannels.pack(expand='true', fill='x', side='top')
@@ -433,27 +450,11 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
 
 
-
-    self.frameSequenceActions = ttk.Frame(self.frameEncodeSettings)
-    self.buttonSequenceClear = ttk.Button(self.frameSequenceActions)
-    self.buttonSequenceClear.config(text='Clear Sequence')
-    self.buttonSequenceClear.config(command=self.clearSequence)
-    self.buttonSequenceClear.pack(side='top')
-    self.buttonSequenceEncode = ttk.Button(self.frameSequenceActions)
-    self.buttonSequenceEncode.config(text='Encode')
-    self.buttonSequenceEncode.config(command=self.encodeCurrent)
-    self.buttonSequenceEncode.pack(expand='true', fill='both', side='top')
-    self.frameSequenceActions.config(height='200', width='200')
-    self.frameSequenceActions.pack(expand='false', fill='both', side='right')
-
-    self.frameTransitionSettings.config(height='200', padding='5', relief='groove', width='200')
-    self.frameTransitionSettings.pack(fill='x', ipadx='3', side='top')
-
-    self.frameEncodeSettings.config(height='200', padding='5', relief='groove', width='200')
-    self.frameEncodeSettings.pack(fill='x', ipadx='3', side='top')
     self.labelframeSequenceFrame.config(height='200', text='Output Plan', width='200')
     self.labelframeSequenceFrame.pack(expand='true',fill='both', padx='5', pady='5', side='top')
 
+    self.frameSequenceValuesLeft.pack(expand='true', fill='x', side='left')
+    self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
 
 
 

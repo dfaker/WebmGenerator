@@ -176,7 +176,9 @@ class MergeSelectionUi(ttk.Frame):
     self.mergestyleLabel.pack(expand='false', fill='x', side='left')
 
     self.mergeStyleVar = tk.StringVar()
-    self.mergeStyles   = ['Individual Files','Grid','Sequence']
+    self.mergeStyles   = ['Individual Files - Output each individual subclip as a separate file.',                          
+                          'Sequence - Join the subclips into a sequence.',
+                          'Grid - Expeimental still under development.',]
 
     self.mergeStyleVar.set(self.mergeStyles[0])
     
@@ -544,7 +546,7 @@ class MergeSelectionUi(ttk.Frame):
     self.updatedPredictedDuration()
   
   def encodeCurrent(self):
-    if self.mergeStyleVar.get() == 'Sequence':
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Sequence':
       encodeSequence = []
       self.encodeRequestId+=1
       for clip in self.sequencedClips:
@@ -579,7 +581,7 @@ class MergeSelectionUi(ttk.Frame):
                                outputPrefix,
                                encodeProgressWidget.updateStatus) 
         self.labelframeEncodeProgress.reposition()
-    if self.mergeStyleVar.get() == 'Individual Files':
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Individual Files':
       
       for clip in self.sequencedClips:
         encodeSequence = []
@@ -612,7 +614,7 @@ class MergeSelectionUi(ttk.Frame):
           self.labelframeEncodeProgress.reposition()
 
   def mergeStyleChanged(self,*args):
-    if self.mergeStyleVar.get()=='Grid':
+    if self.mergeStyleVar.get().split('-')[0].strip()=='Grid':
       self.scrolledframeSequenceContainer.pack_forget()
       self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
     else:

@@ -141,7 +141,8 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
                    ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
-                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"]
+                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
+                   ,"-tune","ssim"]
     
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
@@ -554,12 +555,12 @@ class FFmpegService():
               print('invalid speed Adjustment',e)
 
             if speedAdjustment==1.0:
-              crossfadeOut += ',[concatOutV]null[outv],[concatOutA]anull[outa]'
+              crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outa]'
             else:
               try:
                 vfactor=1/speedAdjustment
                 afactor=speedAdjustment
-                crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outv],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
+                crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
               except Exception as e:
                 print(e)
                 crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outa]'

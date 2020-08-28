@@ -1,15 +1,17 @@
 
-import sys
-from webmGeneratorController import WebmGeneratorController
-import threading
-from tkinter import Tk
-import tkinter.ttk as ttk
-import traceback
-
-initialFiles = sys.argv[1:]
 try:
+  import sys
+  from webmGeneratorController import WebmGeneratorController
+  import threading
+  from tkinter import Tk
+  import tkinter.ttk as ttk
+  import traceback
+
+  initialFiles = sys.argv[1:]
+
   webmGenerator = WebmGeneratorController(initialFiles)
   webmGenerator()
+
   del webmGenerator
 except Exception as e:
   print(e)

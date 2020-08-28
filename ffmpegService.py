@@ -32,28 +32,31 @@ def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,siz
   smallestFailedOverMaximum=None
   largestFailedUnderMinimum=None
   passCount=0
+  lastFailReason=''
   passReason='Initial Pass'
   while 1:
     val=int(val)
     passCount+=1
 
     if twoPassMode:
+      passReason='Stats Pass {} {}'.format(passCount+1,lastFailReason)
       _         = encoderFunction(val,passCount,passReason,passPhase=1)
+      passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
       finalSize = encoderFunction(val,passCount,passReason,passPhase=2)
     else:
+      passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
       finalSize = encoderFunction(val,passCount,passReason)
     
-    if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts+4:
+    if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts+2:
       break
     elif finalSize<sizeLimitMin:
-      passReason='File too small, {} increase'.format(dependentValueName)
+      lastFailReason = 'File too small, {} increase'.format(dependentValueName)
       if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
         largestFailedUnderMinimum=val
     elif finalSize>sizeLimitMax:
-      passReason='File too large, {} decrease'.format(dependentValueName)
+      lastFailReason = 'File too large, {} decrease'.format(dependentValueName)
       if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
         smallestFailedOverMaximum=val
-
     print(val,finalSize,targetSizeMedian)
     val =  val * (1/(finalSize/targetSizeMedian))
     if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
@@ -79,16 +82,21 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
                 if passNumber == 0:
                   statusCallback('Encoding '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
                 elif passNumber == 1:
-                  pass
+                  statusCallback('Encoding '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
                 elif passNumber == 2:
-                  pass
+                  statusCallback('Encoding '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
             except Exception as e:
               print(e)
         ln=b''
       ln+=c
     except Exception as e:
       print(e)
-  statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+  if passNumber == 0:
+    statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+  elif passNumber == 1:
+    statusCallback('Complete '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+  elif passNumber == 2:
+    statusCallback('Complete '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
 
 
 def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
@@ -171,7 +179,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase)
     
     if passPhase==1:
       return 0
@@ -279,7 +287,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase)
     
     if passPhase==1:
       return 0
@@ -340,7 +348,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0)
     finalSize = os.stat(finalOutName).st_size
     return finalSize
 

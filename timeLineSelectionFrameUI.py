@@ -179,11 +179,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         for rid,(sts,ens) in ranges:
           st=self.secondsToXcoord(sts)
           en=self.secondsToXcoord(ens)
-          if st-self.handleWidth<e.x<st+0:
+          if st-self.handleWidth<e.x<st+2:
             self.clickTarget = (rid,'s',sts,ens)
             self.controller.pause()
             break
-          elif en-0<e.x<en+self.handleWidth:
+          elif en-2<e.x<en+self.handleWidth:
             self.clickTarget = (rid,'e',sts,ens)
 
             self.controller.pause()

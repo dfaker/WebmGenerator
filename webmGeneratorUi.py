@@ -23,6 +23,10 @@ class WebmGeneratorUi:
                            highlightcolor=bg,
                            activehighlightcolor=bg,
                            relief='flat')
+
+    self.style.configure("SelectedColumn.TFrame", 
+                          background='blue',lightcolor='blue',darkcolor='blue')
+
     self.style.configure("Red.Horizontal.TProgressbar", 
                            background='red',lightcolor='red',darkcolor='red',border=0,relief='flat')
     self.style.configure("Blue.Horizontal.TProgressbar", 

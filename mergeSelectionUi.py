@@ -98,19 +98,23 @@ class GridColumn(ttk.Frame):
     ttk.Frame.__init__(self, master)
     self.master=master
     self.controller=controller
-    self.selected  =False
+    self.config(relief='raised',padding='4')
 
-    self.selectColumn = ttk.Button(self,text='Select Column',command=self.selectColumn)
-    self.selectColumn.pack(expand='false', fill='x', side='bottom')
 
-    self.removeColumn = ttk.Button(self,text='Remove Column',command=self.removeColumn)
-    self.removeColumn.pack(expand='false', fill='x', side='bottom')
+
+    self.selectColumnBtn = ttk.Button(self,text='Select Column',command=self.selectColumn)
+    self.selectColumnBtn.pack(expand='false', fill='x', side='bottom')
+
+    self.removeColumnBtn = ttk.Button(self,text='Remove Column',command=self.removeColumn)
+    self.removeColumnBtn.pack(expand='false', fill='x', side='bottom')
+
+    self.pack(expand='false', fill='y', side='left')
 
   def selectColumn(self):
-    pass
+    self.controller.selectColumn(self)
 
   def removeColumn(self):
-    pass
+    self.controller.removeColumn(self)
 
 
 class SelectableVideoEntry(ttk.Frame):
@@ -163,6 +167,7 @@ class SelectableVideoEntry(ttk.Frame):
     self.controller.addClipToSequence(self)
 
 class MergeSelectionUi(ttk.Frame):
+
   def __init__(self, master=None, *args, **kwargs):
     ttk.Frame.__init__(self, master)
 
@@ -200,7 +205,7 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeInputCustContainer.configure(usemousewheel=False)
     self.scrolledframeInputCustContainer.pack(anchor='n', expand='true', fill='x', padx='5', pady='5', side='top')
 
-    self.labelframeInputCutSelection.config(height='80', text='Avalaible Cuts', width='500')
+    self.labelframeInputCutSelection.config(height='0', text='Avalaible Cuts', width='500')
     self.labelframeInputCutSelection.pack(expand='false', fill='x', padx='5', pady='5', side='top')
 
     self.addAddClipsFrame = ttk.Frame(self.frameMergeSelection)
@@ -211,19 +216,23 @@ class MergeSelectionUi(ttk.Frame):
 
     self.addAddClipsFrame.pack(expand='false', fill='x', padx='5', pady='0', side='top')
 
-
     self.labelframeSequenceFrame = ttk.Labelframe(self.frameMergeSelection)
 
     self.outputPlanningContainer = ttk.Frame(self.labelframeSequenceFrame)
-    self.outputPlanningContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+    self.outputPlanningContainer.pack(expand='false', fill='both', padx='0', pady='0', side='top')
 
     self.gridSequenceContainer = ttk.Frame(self.outputPlanningContainer)
     self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
-    self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column')
+
+
+    self.gridColumnContainer = ttk.Frame(self.gridSequenceContainer)
+    self.gridColumnContainer.pack(expand='true', fill='x', padx='5', pady='5', side='top')
+
+    self.gridColumns = []
+
+    self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column', command=self.addColumn)
     self.gridSequenceContainerAddColumn.pack(expand='false', fill='x', padx='5', pady='5', side='bottom')
     self.gridSequenceContainer.pack_forget()
-
-
 
     self.scrolledframeSequenceContainer = ScrolledFrame(self.outputPlanningContainer, scrolltype='horizontal')
 
@@ -232,17 +241,17 @@ class MergeSelectionUi(ttk.Frame):
 
     self.mergeStyleVar.trace('w',self.mergeStyleChanged)
     
-
     self.sequencedClips = []
 
     self.scrolledframeSequenceContainer.configure(usemousewheel=False)
     self.scrolledframeSequenceContainer.innerframe.config(padding='5')
     self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
+
     self.frameSequenceSummary = ttk.Frame(self.labelframeSequenceFrame)
     self.labelSequenceSummary = ttk.Label(self.frameSequenceSummary)
     self.labelSequenceSummary.config(anchor='center', text='Number of Subclips: 0 Total subclip duration 0s Output Duration 0s')
     self.labelSequenceSummary.pack(expand='false', fill='x', side='top')
-    self.frameSequenceSummary.config(height='200', width='200')
+    self.frameSequenceSummary.config(height='100', width='200')
     self.frameSequenceSummary.pack(expand='false', fill='x', side='top')
     
     self.frameTransitionSettings = ttk.Frame(self.labelframeSequenceFrame)
@@ -479,6 +488,28 @@ class MergeSelectionUi(ttk.Frame):
     self.mainwindow = self.frameMergeSelection
     self.encodeRequestId=0
     self.selectableVideos={}
+    self.selectedColumn = None
+
+  def addColumn(self):
+    column = GridColumn(self.gridColumnContainer,self)
+    self.gridColumns.append({'column':column,'clips':[]})
+
+  def selectColumn(self,col):
+    selectedCol = [x for x in self.gridColumns if x['column'] == col][0]
+    if self.selectedColumn is not None:
+      self.selectedColumn['column'].config(style="TFrame")
+      self.selectedColumn = None
+    self.selectedColumn = selectedCol
+    self.selectedColumn['column'].config(style="SelectedColumn.TFrame")
+
+
+  def removeColumn(self,col):
+    colToRemove = [x for x in self.gridColumns if x['column'] == col][0]
+    self.gridColumns.remove(colToRemove)
+    col.pack_forget()
+    if self.selectedColumn == colToRemove:
+      self.selectedColumn = None
+
 
   def clearSequence(self):
     for sv in self.sequencedClips:

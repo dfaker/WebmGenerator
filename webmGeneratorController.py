@@ -1,15 +1,19 @@
 
-from tkinter import Tk
 import os
-import json
-import mimetypes
+
+scriptPath = os.path.dirname(os.path.abspath(__file__))
+os.environ["PATH"] = os.path.dirname(__file__) + os.pathsep + os.environ["PATH"]
 
 try:
-  scriptPath = os.path.dirname(os.path.abspath(__file__))
-  os.environ["PATH"] = os.path.dirname(__file__) + os.pathsep + os.environ["PATH"]
   os.add_dll_directory(scriptPath)
+except AttributeError:
+  pass
 except Exception as e:
   print(e,scriptPath)
+
+from tkinter import Tk
+import json
+import mimetypes
 
 from cutselectionUi import CutselectionUi
 from filterSelectionUi import FilterSelectionUi
@@ -19,8 +23,6 @@ from webmGeneratorUi import WebmGeneratorUi
 from cutselectionController import CutselectionController
 from filterSelectionController import FilterSelectionController
 from mergeSelectionController import MergeSelectionController
-
-
 
 from videoManager   import VideoManager
 from ffmpegService import FFmpegService  

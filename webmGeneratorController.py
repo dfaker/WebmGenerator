@@ -1,11 +1,13 @@
 
 import os
-
-scriptPath = os.path.dirname(os.path.abspath(__file__))
-os.environ["PATH"] = os.path.dirname(__file__) + os.pathsep + os.environ["PATH"]
+import sys
 
 try:
+  scriptPath = os.path.dirname(os.path.abspath(__file__))
+  scriptPath_frozen = os.path.dirname(os.path.abspath(sys.executable))
+  os.environ["PATH"] = scriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
   os.add_dll_directory(scriptPath)
+  os.add_dll_directory(scriptPath_frozen)
 except AttributeError:
   pass
 except Exception as e:

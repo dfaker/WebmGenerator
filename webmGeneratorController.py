@@ -36,7 +36,7 @@ class WebmGeneratorController:
 
     self.tempFolder='tempVideoFiles'
 
-    self.initialFiles = self.cleanInitialFiles(initialFiles)
+    self.initialFiles = self.cleanInitialFiles(initialFiles+['tempDownloadedVideoFiles'])
     self.root = Tk()
     
     self.root.protocol("WM_DELETE_WINDOW", self.close_ui)

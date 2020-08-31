@@ -1,6 +1,8 @@
 
 import mpv
 import math
+import os
+
 
 class CutselectionController:
 
@@ -174,6 +176,15 @@ class CutselectionController:
     return self.currentTotalDuration
 
   def removeVideoFile(self,filename):
+    deleteFile = False
+    _,justFilename = os.path.split(filename)
+    localNameifDownloaded = os.path.join('tempDownloadedVideoFiles',justFilename)
+    if os.path.isfile(localNameifDownloaded) and os.path.samefile( filename,localNameifDownloaded ):
+      response = self.ui.confirmWithMessage('Also remove downloaded video?','{} was downlaoded with youtube-dl, do you also want to delete the downloaded file?'.format(justFilename),icon='warning')
+      print(response)
+      if response=='yes':
+        deleteFile=True
+
     self.files = [x for x in self.files if x != filename]
     self.videoManager.removeVideo(filename)
     if self.currentlyPlayingFileName == filename:
@@ -183,6 +194,8 @@ class CutselectionController:
         self.player.command('stop')
         self.currentlyPlayingFileName=None
     self.updateProgressStatistics()
+    if deleteFile:
+      os.remove(filename)
 
   def returnYTDLDownlaodedVideo(self,filename):
     print(filename)

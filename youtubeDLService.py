@@ -15,7 +15,7 @@ class YTDLService():
       while 1:
         try:
           url,callback = self.downloadRequestQueue.get()
-          tempPathname='tempVideoFiles'
+          tempPathname='tempDownloadedVideoFiles'
           os.path.exists(tempPathname) or os.mkdir(tempPathname)
           outfolder = os.path.join(tempPathname,'%(title)s.%(ext)s')
           proc = sp.Popen(['youtube-dl','--restrict-filenames',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)

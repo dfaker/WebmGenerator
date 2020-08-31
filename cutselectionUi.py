@@ -2,6 +2,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.filedialog import askopenfilenames
+from tkinter import messagebox
 from tkinter import simpledialog
 from pygubu.widgets.scrolledframe import ScrolledFrame
 from timeLineSelectionFrameUI import TimeLineSelectionFrameUI
@@ -333,6 +334,9 @@ class CutselectionUi(ttk.Frame):
         self.mouseRectDragging=False
         self.controller.clearVideoRect()
 
+    def confirmWithMessage(self,messageTitle,message,icon='warning'):
+      return messagebox.askquestion(messageTitle,message,icon=icon)
+
     def jumpBack(self):
       self.controller.jumpBack()
 
@@ -431,11 +435,12 @@ class CutselectionUi(ttk.Frame):
         self.controller.clearallSubclips()
 
     def removeVideoFile(self, filename):
+        self.controller.removeVideoFile(filename)
         previewsToRemove = [x for x in self.previews if x.filename == filename]
         self.previews = [x for x in self.previews if x.filename != filename]
         for preview in previewsToRemove:
             preview.destroy()
-        self.controller.removeVideoFile(filename)
+        
 
     def loadVideoYTdl(self):
       url = simpledialog.askstring(title="Download video from URL",prompt="Download a video from a youtube-dl supported url")

@@ -93,6 +93,7 @@ class WebmGeneratorUi:
 
   def newProject(self):
     self.controller.newProject()
+    self.notebook.select(0)
 
   def openProject(self):
     filename = askopenfilename(title='Open WebmGenerator Project',filetypes=[('WebmGenerator Project','*.webgproj')])

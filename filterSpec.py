@@ -52,9 +52,116 @@ selectableFilters = [
         ],
     },
 
+    {
+        "name": "posterizeArea",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},elbg=codebook_length={strength}:nb_steps={nb_steps}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "params": [
+            {
+                "n": "strength",
+                "d": 10,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },         
+            {
+                "n": "nb_steps",
+                "d": 1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },       
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            }
+        ],
+    },
+
+  {
+        "name": "gaussianBlurArea",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},gblur={strength}:steps={steps}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "params": [
+            {
+                "n": "strength",
+                "d": 20,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },
+            {
+                "n": "steps",
+                "d": 1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },             
+            {
+
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            }
+        ],
+    },
+
 
     {
-        "name": "blurArea",
+        "name": "boxBlurArea",
         "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},boxblur={strength}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
         "params": [
             {

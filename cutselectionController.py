@@ -180,7 +180,7 @@ class CutselectionController:
     _,justFilename = os.path.split(filename)
     localNameifDownloaded = os.path.join('tempDownloadedVideoFiles',justFilename)
     if os.path.isfile(localNameifDownloaded) and os.path.samefile( filename,localNameifDownloaded ):
-      response = self.ui.confirmWithMessage('Also remove downloaded video?','{} was downlaoded with youtube-dl, do you also want to delete the downloaded file?'.format(justFilename),icon='warning')
+      response = self.ui.confirmWithMessage('Also remove downloaded video?','Video "{}" was downloaded with youtube-dl, do you also want to delete the temporary file?'.format(justFilename),icon='warning')
       print(response)
       if response=='yes':
         deleteFile=True

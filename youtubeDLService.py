@@ -15,6 +15,22 @@ class YTDLService():
       while 1:
         try:
           url,callback = self.downloadRequestQueue.get()
+
+          if url == 'UPDATE':
+            self.globalStatusCallback('youtube-dl upgrade',0.0)
+            print(url)
+            proc = sp.Popen(['youtube-dl','--update'],stdout=sp.PIPE)
+            l = b''
+            while 1:
+              c=proc.stdout.read(1)
+              l+=c
+              if len(c)==0:
+                break
+              if c in (b'\n',b'\r'):
+                self.globalStatusCallback('youtube-dl upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),0.0)
+            self.globalStatusCallback('youtube-dl upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),1.0)
+            continue
+
           tempPathname='tempDownloadedVideoFiles'
           os.path.exists(tempPathname) or os.mkdir(tempPathname)
           outfolder = os.path.join(tempPathname,'%(title)s.%(ext)s')
@@ -73,6 +89,10 @@ class YTDLService():
 
   def loadUrl(self,url,callback):
     self.downloadRequestQueue.put((url,callback))
+
+  def update(self):
+    self.downloadRequestQueue.put(('UPDATE',None))
+
 
 
 if __name__ == '__main__':

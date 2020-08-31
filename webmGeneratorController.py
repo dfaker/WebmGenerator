@@ -111,6 +111,9 @@ class WebmGeneratorController:
       with open(filename,'w') as saveFile:
         saveFile.write(json.dumps(saveData))
 
+  def updateYoutubeDl(self):
+    self.ytdlService.update()
+
   def close_ui(self):
     print('self.cutselectionController.close_ui()')
     self.cutselectionController.close_ui()

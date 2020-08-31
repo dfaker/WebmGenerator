@@ -61,6 +61,8 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Open Project", command=self.openProject)
     self.filemenu.add_command(label="Save Project", command=self.saveProject)
     self.filemenu.add_separator()
+    self.filemenu.add_command(label="Update youtube-dl", command=self.updateYoutubeDl)
+    self.filemenu.add_separator()
     self.filemenu.add_command(label="Exit", command=self.exitProject)
     self.menubar.add_cascade(label="File",  menu=self.filemenu)
 
@@ -102,6 +104,9 @@ class WebmGeneratorUi:
       if not filename.endswith('.webgproj'):
         filename = filename+'.webgproj'
       self.controller.saveProject(filename)
+
+  def updateYoutubeDl(self):
+    self.controller.updateYoutubeDl()
 
   def exitProject(self):
     exit()

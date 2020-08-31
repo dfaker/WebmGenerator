@@ -83,6 +83,8 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
+    else:
+      print(param)
 
     self.entryFilterValueValue.pack(side='right')
     self.frameFilterValuePair.config(height='200', width='200')

@@ -3,7 +3,7 @@ import tkinter.ttk as ttk
 from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import string 
-
+import mpv
 class EncodeProgress(ttk.Frame):
   def __init__(self, master=None, *args, encodeRequestId=None, **kwargs):
     ttk.Frame.__init__(self, master)
@@ -37,6 +37,7 @@ class SequencedVideoEntry(ttk.Frame):
     self.s=sourceClip.s
     self.e=sourceClip.e
     self.controller=controller
+    self.player = None
     
     self.filename=sourceClip.filename
     self.filterexp=sourceClip.filterexp
@@ -64,6 +65,11 @@ class SequencedVideoEntry(ttk.Frame):
     self.frameOrderingButtons.config(height='200', width='200')
     self.frameOrderingButtons.pack(side='top')
 
+    self.buttonSequenceEntryPreview = ttk.Button(self.frameSequenceVideoEntry)
+    self.buttonSequenceEntryPreview.config(text='Preview')
+    self.buttonSequenceEntryPreview.config(command=self.preview)
+    self.buttonSequenceEntryPreview.pack(expand='true', fill='x', side='top')
+
     self.buttonSequenceEntryREmove = ttk.Button(self.frameSequenceVideoEntry)
     self.buttonSequenceEntryREmove.config(text='Remove')
     self.buttonSequenceEntryREmove.config(command=self.remove)
@@ -71,6 +77,30 @@ class SequencedVideoEntry(ttk.Frame):
 
     self.frameSequenceVideoEntry.config(height='200', padding='2', relief='groove', width='200')
     self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
+
+  def preview(self):
+    if self.player is not None:
+      self.player.terminate()
+
+    self.player = mpv.MPV(loop='inf',
+                          mute=True,
+                          volume=0,
+                          autofit_larger='1280')
+
+    self.player.play(self.filename)
+    
+
+    self.player.ab_loop_a = self.s
+    self.player.ab_loop_b = self.e
+    self.player.start = self.s
+    self.player.time_pos  = self.s
+
+    self.player.register_key_binding("CLOSE_WIN", "quit")
+    
+    def quit(key_state, key_name, key_char):
+      self.player.terminate()
+            
+    self.player.register_key_binding("CLOSE_WIN", quit)
 
   def moveForwards(self):
     self.controller.moveSequencedClip(self,1)    
@@ -128,6 +158,7 @@ class SelectableVideoEntry(ttk.Frame):
     self.filename=filename
     self.filterexp=filterexp
     self.basename = os.path.basename(filename)[:14]
+    self.player=None
 
     self.frameInputCutWidget = self
     self.labelInputCutName = ttk.Label(self.frameInputCutWidget)
@@ -143,12 +174,16 @@ class SelectableVideoEntry(ttk.Frame):
 
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
+    self.buttonInputPreview = ttk.Button(self.frameInputCutWidget)
+    self.buttonInputPreview.config(text='preview')
+    self.buttonInputPreview.config(command=self.preview)
+    self.buttonInputPreview.pack(expand='true', fill='x', side='top')
+    
     self.buttonInputCutAdd = ttk.Button(self.frameInputCutWidget)
     self.buttonInputCutAdd.config(text='Add to Sequence')
     self.buttonInputCutAdd.config(command=self.addClipToSequence)
-
-    
     self.buttonInputCutAdd.pack(expand='true', fill='both', side='top')
+
     self.frameInputCutWidget.config(padding='2', relief='groove', width='200')
     self.frameInputCutWidget.pack(anchor='nw', expand='false', fill='y', side='left')
 
@@ -165,6 +200,31 @@ class SelectableVideoEntry(ttk.Frame):
 
   def addClipToSequence(self):
     self.controller.addClipToSequence(self)
+
+  def preview(self):
+    if self.player is not None:
+      self.player.terminate()
+
+    self.player = mpv.MPV(loop='inf',
+                          mute=True,
+                          volume=0,
+                          autofit_larger='1280')
+
+    self.player.play(self.filename)
+    
+
+    self.player.ab_loop_a = self.s
+    self.player.ab_loop_b = self.e
+    self.player.start = self.s
+    self.player.time_pos  = self.s
+
+    self.player.register_key_binding("CLOSE_WIN", "quit")
+    
+    def quit(key_state, key_name, key_char):
+      self.player.terminate()
+            
+    self.player.register_key_binding("CLOSE_WIN", quit)
+
 
 class MergeSelectionUi(ttk.Frame):
 

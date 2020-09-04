@@ -35,8 +35,10 @@ class WebmGeneratorController:
   def __init__(self,initialFiles):
 
     self.tempFolder='tempVideoFiles'
+    self.tempDownloadFolder='tempDownloadedVideoFiles'
+    self.lastSaveFile=None
 
-    self.initialFiles = self.cleanInitialFiles(initialFiles+['tempDownloadedVideoFiles'])
+    self.initialFiles = self.cleanInitialFiles(initialFiles+[self.tempDownloadFolder])
     self.root = Tk()
     
     self.root.protocol("WM_DELETE_WINDOW", self.close_ui)
@@ -92,29 +94,39 @@ class WebmGeneratorController:
   def newProject(self):
     self.cutselectionController.reset()
     self.videoManager.reset()
+    self.lastSaveFile = None
 
   def openProject(self,filename):
     if filename is not None:
       with open(filename,'r') as loadFile:
         saveData = json.loads(loadFile.read())
-
         self.newProject()
-        
+        self.lastSaveFile = filename
         self.cutselectionController.loadStateFromSave(saveData)
         self.videoManager.loadStateFromSave(saveData)
 
+  def getSaveData(self):
+    saveData = {}
+    saveData.update(self.cutselectionController.getStateForSave())
+    saveData.update(self.videoManager.getStateForSave())    
+
   def saveProject(self,filename):
     if filename is not None:
-      saveData = {}
-      saveData.update(self.cutselectionController.getStateForSave())
-      saveData.update(self.videoManager.getStateForSave())
+      saveData = self.getSaveData()
       with open(filename,'w') as saveFile:
         saveFile.write(json.dumps(saveData))
+        self.lastSaveFile = filename
 
   def updateYoutubeDl(self):
     self.ytdlService.update()
 
   def close_ui(self):
+    if self.lastSaveFile is not None:
+      lastSaveData = json.loads(open(self.lastSaveFile,'r').read())
+      newSaveData  = self.getSaveData()
+      if newSaveData != lastSaveData:
+        print('SaveDifferences?')
+
     print('self.cutselectionController.close_ui()')
     self.cutselectionController.close_ui()
     print('self.cutselectionController.close_ui()')
@@ -126,8 +138,15 @@ class WebmGeneratorController:
     except Exception as e:
       print(e)
 
-    for f in os.listdir(self.tempFolder):
-      os.remove(os.path.join(self.tempFolder,f))
+    if os.path.exists(self.tempFolder):
+      for f in os.listdir(self.tempFolder):
+        os.remove(os.path.join(self.tempFolder,f))
+
+    if os.path.exists(self.tempDownloadFolder):
+      for f in os.listdir(self.tempDownloadFolder):
+        if f.endswith('.part'):
+          os.remove(os.path.join(self.tempDownloadFolder,f))
+
 
   def __call__(self):
     self.webmMegeneratorUi.run()

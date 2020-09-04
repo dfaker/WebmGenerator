@@ -30,7 +30,7 @@ class EncodeProgress(ttk.Frame):
 
 
 class SequencedVideoEntry(ttk.Frame):
-  def __init__(self, master,controller,sourceClip, *args, **kwargs):
+  def __init__(self, master,controller,sourceClip, *args,direction='LEFT_RIGHT',**kwargs):
     ttk.Frame.__init__(self, master)
 
     self.rid=sourceClip.rid
@@ -49,34 +49,41 @@ class SequencedVideoEntry(ttk.Frame):
     self.labelSequenceVideoName.config(text='{} ({:0.2f}-{:0.2f}) {:0.2f}s'.format(self.basename,self.s,self.e,self.e-self.s))
     self.labelSequenceVideoName.pack(side='top')
     self.frameOrderingButtons = ttk.Frame(self.frameSequenceVideoEntry)
-    self.buttonSequencePushEntryBack = ttk.Button(self.frameOrderingButtons)
-    self.buttonSequencePushEntryBack.config(text='⯇', width='2')
-    self.buttonSequencePushEntryBack.config(command=self.moveBack)
-    self.buttonSequencePushEntryBack.pack(expand='true', fill='both', side='left')
+
+    if direction == 'LEFT_RIGHT':
+      self.buttonSequencePushEntryBack = ttk.Button(self.frameOrderingButtons)
+      self.buttonSequencePushEntryBack.config(text='⯇', width='2')
+      self.buttonSequencePushEntryBack.config(command=self.moveBack)
+      self.buttonSequencePushEntryBack.pack(expand='true', fill='both', side='left')
     
     self.canvasSequencePreview = ttk.Label(self.frameOrderingButtons)
     self.canvasSequencePreview.config(image=self.previewImage)
-
     self.canvasSequencePreview.pack(side='left')
-    self.buttonSequencePushEntryForwards = ttk.Button(self.frameOrderingButtons)
-    self.buttonSequencePushEntryForwards.config(text='⯈', width='2')
-    self.buttonSequencePushEntryForwards.config(command=self.moveForwards)
-    self.buttonSequencePushEntryForwards.pack(expand='true', fill='both', side='left')
+
+    if direction == 'LEFT_RIGHT':
+      self.buttonSequencePushEntryForwards = ttk.Button(self.frameOrderingButtons)
+      self.buttonSequencePushEntryForwards.config(text='⯈', width='2')
+      self.buttonSequencePushEntryForwards.config(command=self.moveForwards)
+      self.buttonSequencePushEntryForwards.pack(expand='true', fill='both', side='left')
+    
     self.frameOrderingButtons.config(height='200', width='200')
     self.frameOrderingButtons.pack(side='top')
-
     self.buttonSequenceEntryPreview = ttk.Button(self.frameSequenceVideoEntry)
-    self.buttonSequenceEntryPreview.config(text='Preview')
+    self.buttonSequenceEntryPreview.config(text='Preview ⯈')
     self.buttonSequenceEntryPreview.config(command=self.preview)
     self.buttonSequenceEntryPreview.pack(expand='true', fill='x', side='top')
 
     self.buttonSequenceEntryREmove = ttk.Button(self.frameSequenceVideoEntry)
-    self.buttonSequenceEntryREmove.config(text='Remove')
+    self.buttonSequenceEntryREmove.config(text='Remove ✖')
     self.buttonSequenceEntryREmove.config(command=self.remove)
     self.buttonSequenceEntryREmove.pack(expand='true', fill='both', side='top')
 
     self.frameSequenceVideoEntry.config(height='200', padding='2', relief='groove', width='200')
-    self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
+
+    if direction == 'LEFT_RIGHT':
+      self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
+    elif direction == 'UP_DOWN':
+      self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='top')
 
   def preview(self):
     if self.player is not None:
@@ -132,10 +139,10 @@ class GridColumn(ttk.Frame):
 
 
 
-    self.selectColumnBtn = ttk.Button(self,text='Select Column',command=self.selectColumn)
+    self.selectColumnBtn = ttk.Button(self,text='Select Column ✔',command=self.selectColumn)
     self.selectColumnBtn.pack(expand='false', fill='x', side='bottom')
 
-    self.removeColumnBtn = ttk.Button(self,text='Remove Column',command=self.removeColumn)
+    self.removeColumnBtn = ttk.Button(self,text='Remove Column ✖',command=self.removeColumn)
     self.removeColumnBtn.pack(expand='false', fill='x', side='bottom')
 
     self.pack(expand='false', fill='y', side='left')
@@ -175,12 +182,12 @@ class SelectableVideoEntry(ttk.Frame):
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
     self.buttonInputPreview = ttk.Button(self.frameInputCutWidget)
-    self.buttonInputPreview.config(text='preview')
+    self.buttonInputPreview.config(text='preview ⯈')
     self.buttonInputPreview.config(command=self.preview)
     self.buttonInputPreview.pack(expand='true', fill='x', side='top')
     
     self.buttonInputCutAdd = ttk.Button(self.frameInputCutWidget)
-    self.buttonInputCutAdd.config(text='Add to Sequence')
+    self.buttonInputCutAdd.config(text='Add to Sequence ⯆')
     self.buttonInputCutAdd.config(command=self.addClipToSequence)
     self.buttonInputCutAdd.pack(expand='true', fill='both', side='top')
 
@@ -290,7 +297,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.gridColumns = []
 
-    self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column', command=self.addColumn)
+    self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column ✚', command=self.addColumn)
     self.gridSequenceContainerAddColumn.pack(expand='false', fill='x', padx='5', pady='5', side='bottom')
     self.gridSequenceContainer.pack_forget()
 
@@ -752,13 +759,22 @@ class MergeSelectionUi(ttk.Frame):
     self.controller.requestPreviewFrame(rid,filename,timestamp,filterexp,(-1,100),self.previewFrameCallback)
 
   def addClipToSequence(self,clip):
-    self.sequencedClips.append(
-      SequencedVideoEntry(self.sequenceContainer,self,clip),
-    )
-    self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
-    self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
-    self.scrolledframeInputCustContainer._scrollBothNow()
-    self.scrolledframeSequenceContainer._scrollBothNow()
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      if self.selectedColumn == None:
+        pass
+      else:
+        self.selectedColumn['clips'].append(
+          SequencedVideoEntry(self.selectedColumn['column'],self,clip,direction='UP_DOWN'),
+        )
+
+    else:
+      self.sequencedClips.append(
+        SequencedVideoEntry(self.sequenceContainer,self,clip),
+      )
+      self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
+      self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+      self.scrolledframeInputCustContainer._scrollBothNow()
+      self.scrolledframeSequenceContainer._scrollBothNow()
     self.updatedPredictedDuration()
 
   def moveSequencedClip(self,clip,move):
@@ -778,14 +794,17 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeSequenceContainer._scrollBothNow()
       
   def removeSequencedClip(self,clip):
-    currentIndex = self.sequencedClips.index(clip)
-    removedClip = self.sequencedClips.pop(currentIndex)
-    removedClip.pack_forget()
-    removedClip.destroy()
-    self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
-    self.scrolledframeInputCustContainer._scrollBothNow()
-    self.scrolledframeSequenceContainer._scrollBothNow()
-    self.updatedPredictedDuration()
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      pass
+    else:
+      currentIndex = self.sequencedClips.index(clip)
+      removedClip = self.sequencedClips.pop(currentIndex)
+      removedClip.pack_forget()
+      removedClip.destroy()
+      self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+      self.scrolledframeInputCustContainer._scrollBothNow()
+      self.scrolledframeSequenceContainer._scrollBothNow()
+      self.updatedPredictedDuration()
 
   def tabSwitched(self,tabName):
     if str(self) == tabName:

@@ -11,7 +11,11 @@ import threading
 import time
 import ffmpegInfoParser
 
+filesPlannedForCreation = set()
+fileExistanceLock = threading.Lock()
+
 packageglobalStatusCallback=print
+
 
 def idfunc(s):return s
 
@@ -119,13 +123,15 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
 
   fileN=0
-  while 1:
-    fileN+=1
-    finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
-    finalOutName = os.path.join(outputPathName,finalOutName)
-    outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
-    if not os.path.exists(finalOutName):
-      break
+  with fileExistanceLock:
+    while 1:
+      fileN+=1
+      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
+      finalOutName = os.path.join(outputPathName,finalOutName)
+      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
+      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
+        filesPlannedForCreation.add(finalOutName)
+        break
 
   
   def encoderStatusCallback(text,percentage):
@@ -156,7 +162,8 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
                    ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-tune","ssim"]
+                   ,"-tune","ssim","-deadline","best",'-slices','8'
+                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
@@ -221,13 +228,15 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
   fileN=0
-  while 1:
-    fileN+=1
-    finalOutName = '{}_WmG_{}.mp4'.format(filenamePrefix,fileN)
-    finalOutName = os.path.join(outputPathName,finalOutName)
-    outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
-    if not os.path.exists(finalOutName):
-      break
+  with fileExistanceLock:
+    while 1:
+      fileN+=1
+      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
+      finalOutName = os.path.join(outputPathName,finalOutName)
+      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
+      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
+        filesPlannedForCreation.add(finalOutName)
+        break
 
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
@@ -316,12 +325,15 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     sizeLimitMin = sizeLimitMax*0.85
 
   fileN=0
-  while 1:
-    fileN+=1
-    finalOutName = '{}_WmG_{}.gif'.format(filenamePrefix,fileN)    
-    finalOutName = os.path.join(outputPathName,finalOutName)
-    if not os.path.exists(finalOutName):
-      break
+  with fileExistanceLock:
+    while 1:
+      fileN+=1
+      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
+      finalOutName = os.path.join(outputPathName,finalOutName)
+      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
+      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
+        filesPlannedForCreation.add(finalOutName)
+        break
 
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
@@ -372,7 +384,7 @@ encoderMap = {
 
 class FFmpegService():
 
-  def __init__(self,globalStatusCallback=print(),imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1):
+  def __init__(self,globalStatusCallback=print(),imageWorkerCount=2,encodeWorkerCount=3,statsWorkerCount=1):
     
 
     self.cache={}

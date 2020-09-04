@@ -252,7 +252,11 @@ class CutselectionUi(ttk.Frame):
 
         self.frameVideoControls = ttk.Frame(self.frameVideoPlayerAndControls)
 
-        self.buttonvideoJumpBack = ttk.Button(self.frameVideoControls,text='<<', style="small.TButton")
+        self.buttonvideoPrevClip= ttk.Button(self.frameVideoControls,text='Prev Clip', style="small.TButton")
+        self.buttonvideoPrevClip.config(command=self.prevClip)
+        self.buttonvideoPrevClip.pack(expand="true", fill='x', side="left")
+
+        self.buttonvideoJumpBack = ttk.Button(self.frameVideoControls,text='<< Jump', style="small.TButton")
         self.buttonvideoJumpBack.config(command=self.jumpBack)
         self.buttonvideoJumpBack.pack(expand="true", fill='x', side="left")
 
@@ -264,9 +268,13 @@ class CutselectionUi(ttk.Frame):
         self.buttonvideoInterestMark.config(command=self.addNewInterestMarkNow)
         self.buttonvideoInterestMark.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoJumpFwd = ttk.Button(self.frameVideoControls,text='>>', style="small.TButton")
+        self.buttonvideoJumpFwd = ttk.Button(self.frameVideoControls,text='Jump >>', style="small.TButton")
         self.buttonvideoJumpFwd.config(command=self.jumpFwd)
         self.buttonvideoJumpFwd.pack(expand="true", fill='x', side="left")
+
+        self.buttonvideoNextClip= ttk.Button(self.frameVideoControls,text='Next Clip', style="small.TButton")
+        self.buttonvideoNextClip.config(command=self.nextClip)
+        self.buttonvideoNextClip.pack(expand="true", fill='x', side="left")
 
 
         self.frameVideoControls.pack(expand="false", fill="x", side="top")
@@ -300,6 +308,12 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<ButtonRelease-1>",   self.videomousePress)
         self.frameVideoPlayerFrame.bind("<Motion>",            self.videomousePress)
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
+
+    def prevClip(self):
+      self.controller.jumpClips(-1)
+
+    def nextClip(self):
+      self.controller.jumpClips(1)
 
     def updateLoopMode(self,*args):
       self.controller.updateLoopMode(self.loopModeVar.get())

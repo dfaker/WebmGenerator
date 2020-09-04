@@ -52,6 +52,11 @@ selectableFilters = [
         ],
     },
 
+  {
+        "name": "invert",
+        "filter": "ngeative"
+    },
+
     {
         "name": "posterizeArea",
         "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},elbg=codebook_length={strength}:nb_steps={nb_steps}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",

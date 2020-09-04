@@ -33,11 +33,15 @@ class YTDLService():
 
           tempPathname='tempDownloadedVideoFiles'
           os.path.exists(tempPathname) or os.mkdir(tempPathname)
-          outfolder = os.path.join(tempPathname,'%(title)s.%(ext)s')
-          proc = sp.Popen(['youtube-dl','--restrict-filenames',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)
+          outfolder = os.path.join(tempPathname,'%(id)s-%(title)s.%(ext)s')
+          proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)
           l = b''
           self.globalStatusCallback('Downloading {}'.format(url),0)
           finalName = b''
+          
+          seenFiles = set()
+          emittedFiles = set()
+
           while 1:
             c=proc.stdout.read(1)
             l+=c
@@ -49,31 +53,47 @@ class YTDLService():
               
               if b'[download] Destination:' in l:
                 finalName = l.replace(b'[download] Destination: ',b'').strip()
+                seenFiles.add(finalName)
                 print(finalName)
               if b'[ffmpeg] Merging formats into' in l:
                 finalName = l.split(b'"')[-2].strip()
+                seenFiles.add(finalName)
                 self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
                 print('Done',finalName)
               if b'[download]' in l and b' has already been downloaded and merged' in l:
                 finalName = l.replace(b' has already been downloaded and merged',b'').replace(b'[download] ',b'').strip()
+                seenFiles.add(finalName)
                 self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
 
               if b'[download]' in l and b'%' in l:
-                pc = b'0'
-                for tc in l.split(b' '):
-                  if b'%' in tc:
-                    pc = tc.replace(b'%',b'')
-                desc = l.replace(b'[download]',b'').strip()
-                self.globalStatusCallback('Downloading {} {}'.format(url,desc),float(pc)/100)
+                try:
+                  pc = b'0'
+                  for tc in l.split(b' '):
+                    if b'%' in tc:
+                      pc = tc.replace(b'%',b'')
+                  desc = l.replace(b'[download]',b'').strip().decode('utf8',errors='ignore')
+                  self.globalStatusCallback('Downloading {} {}'.format(url,desc),float(pc)/100)
 
-                print(finalName,int(float(pc)) == 100)
-                if int(float(pc)) == 100 and len(finalName)>0:
-                  self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
+                  print(finalName,int(float(pc)) == 100)
+                  if int(float(pc)) == 100 and len(finalName)>0:
+                    self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
+                except Exception as e:
+                  print(e)
+                  traceback.print_exc()
 
+              if finalName is not None:
+                for seenfilename in seenFiles:
+                  if seenfilename not in emittedFiles and len(seenfilename)>0 and seenfilename != finalName:
+                    emitName = seenfilename.decode('utf8')
+                    callback(emitName)
+                    emittedFiles.add(seenfilename)
               l=b''
-          if len(finalName)>0:
-            finalName = finalName.decode('utf8')
-            callback(finalName)
+          if len(seenFiles)>0:
+            for seenfilename in seenFiles:
+              if seenfilename not in emittedFiles and len(seenfilename)>0:
+                emitName = seenfilename.decode('utf8')
+                callback(emitName)
+                emittedFiles.add(seenfilename)
           else:
             self.globalStatusCallback('Download failed {}'.format(url),1.0)
         except Exception as e:

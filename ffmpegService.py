@@ -246,7 +246,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=["-max_muxing_queue_size", "9999"]
+
     ffmpegcommand+=inputsList
 
     if options.get('audioChannels') == 'No audio' or passPhase==1:

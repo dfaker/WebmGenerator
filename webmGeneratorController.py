@@ -108,7 +108,8 @@ class WebmGeneratorController:
   def getSaveData(self):
     saveData = {}
     saveData.update(self.cutselectionController.getStateForSave())
-    saveData.update(self.videoManager.getStateForSave())    
+    saveData.update(self.videoManager.getStateForSave())
+    return saveData  
 
   def saveProject(self,filename):
     if filename is not None:

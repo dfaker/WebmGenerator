@@ -231,7 +231,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
   with fileExistanceLock:
     while 1:
       fileN+=1
-      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
+      finalOutName = '{}_WmG_{}.mp4'.format(filenamePrefix,fileN)
       finalOutName = os.path.join(outputPathName,finalOutName)
       outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
       if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
@@ -246,6 +246,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
+    ffmpegcommand+=["-max_muxing_queue_size", "9999"]
     ffmpegcommand+=inputsList
 
     if options.get('audioChannels') == 'No audio' or passPhase==1:
@@ -265,18 +266,22 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-start_at_zero"
                    ,"-c:v","libx264" 
                    ,"-stats"
+                   ,"-max_muxing_queue_size", "9999"
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", "3000k"
                    ,"-threads", str(4)
                    ,"-crf"  ,'17'
-                   ,"-preset", "slow"
+                   ,"-preset", "slower"
                    ,"-tune", "film"
                    ,"-movflags","+faststart"]
 
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
     else:
-      ffmpegcommand+=["-b:v",str(br)]
+      ffmpegcommand+= ["-b:v", str(br), "-maxrate", str(br)]
+      """
+      
+      """
 
     if options.get('audioChannels') == 'No audio' or passPhase==1:
       ffmpegcommand+=["-an"]
@@ -328,7 +333,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
   with fileExistanceLock:
     while 1:
       fileN+=1
-      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
+      finalOutName = '{}_WmG_{}.gif'.format(filenamePrefix,fileN)
       finalOutName = os.path.join(outputPathName,finalOutName)
       outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
       if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
@@ -524,6 +529,7 @@ class FFmpegService():
               while 1:
                   c = proc.stderr.read(1)
                   if len(c)==0:
+                    print(ln)
                     break
                   if c == b'\r':
                     print(ln)
@@ -539,6 +545,7 @@ class FFmpegService():
                           print(e)
                     ln=b''
                   ln+=c
+              proc.communicate()
               totalEncodedSeconds+=etime
               statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
               self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
@@ -751,6 +758,7 @@ class FFmpegService():
             while 1:
               c=proc.stderr.read(1)
               if len(c)==0:
+                print(ln)
                 break
               if c in b'\r\n':
                 if b'pts_time' in ln:
@@ -762,6 +770,7 @@ class FFmpegService():
                 ln=b''
               else:
                 ln+=c
+            proc.communicate()
         except Exception as e:
           print(e)
 

@@ -33,7 +33,7 @@ class YTDLService():
 
           tempPathname='tempDownloadedVideoFiles'
           os.path.exists(tempPathname) or os.mkdir(tempPathname)
-          outfolder = os.path.join(tempPathname,'%(id)s-%(title)s.%(ext)s')
+          outfolder = os.path.join(tempPathname,'%(title)s-%(id)s.%(ext)s')
           proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)
           l = b''
           self.globalStatusCallback('Downloading {}'.format(url),0)

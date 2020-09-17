@@ -471,7 +471,11 @@ class FFmpegService():
             #Crop
             #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
 
-            filterexp+=",scale='max({}\\,min({}\\,iw)):-2'".format(0,options.get('maximumWidth',1280))
+
+            #filterexp+=",scale='max(0\\,min({}\\,iw)):-2'".format(maxDim=options.get('maximumWidth',1280))
+
+
+            filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))'".format(maxDim=options.get('maximumWidth',1280))
             filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 
             key = (rid,clipfilename,start,end,filterexp)

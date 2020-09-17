@@ -2,6 +2,7 @@
 import mpv
 import math
 import os
+import random
 
 
 class CutselectionController:
@@ -21,6 +22,12 @@ class CutselectionController:
     self.currentTotalDuration=None
     self.currentLoop_a=None
     self.currentLoop_b=None
+
+    if len(initialFiles)>0:
+      response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
+      if response=='yes':
+        random.shuffle(initialFiles)
+
     self.loadFiles(initialFiles)
     self.loopMode='Loop current'
 

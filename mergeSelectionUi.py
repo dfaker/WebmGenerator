@@ -644,6 +644,9 @@ class MergeSelectionUi(ttk.Frame):
     self.updatedPredictedDuration()
   
   def encodeCurrent(self):
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      encodeSequence = []
+      
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Sequence':
       encodeSequence = []
       self.encodeRequestId+=1

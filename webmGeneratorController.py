@@ -37,6 +37,7 @@ class WebmGeneratorController:
     self.tempFolder='tempVideoFiles'
     self.tempDownloadFolder='tempDownloadedVideoFiles'
     self.lastSaveFile=None
+    self.autosaveFilename = 'autosave.webgproj'
 
     self.initialFiles = self.cleanInitialFiles(initialFiles+[self.tempDownloadFolder])
     self.root = Tk()
@@ -72,6 +73,22 @@ class WebmGeneratorController:
                                                              self.ffmpegService,
                                                              self.filterSelectionController
                                                              )
+
+    if os.path.exists(self.autosaveFilename) and len(self.initialFiles)==0:
+      lastSaveData = newSaveData = None
+      try:
+        lastSaveData = json.loads(open(self.autosaveFilename,'r').read())
+        newSaveData  = self.getSaveData()
+      except Exception as e:
+        print(e)
+
+      if lastSaveData != newSaveData:
+        response = self.cutselectionUi.confirmWithMessage('Load autosave from last session?','Load autosave from last session?',icon='warning')
+        if response=='yes':
+          try:
+            self.openProject(self.autosaveFilename)
+          except Exception as e:
+            print('audoload save failed',e)
 
   def cleanInitialFiles(self,files):
     finalFiles = []
@@ -122,11 +139,16 @@ class WebmGeneratorController:
     self.ytdlService.update()
 
   def close_ui(self):
-    if self.lastSaveFile is not None:
+    if self.lastSaveFile is not None and self.lastSaveFile != self.autosaveFilename:
       lastSaveData = json.loads(open(self.lastSaveFile,'r').read())
       newSaveData  = self.getSaveData()
       if newSaveData != lastSaveData:
-        print('SaveDifferences?')
+        response = self.cutselectionUi.confirmWithMessage('Changes since last save','You have made changes since your last save, do you want to save current project to \'{}\'?'.format(self.lastSaveFile),icon='warning')
+        if response == 'yes':
+          self.saveProject(self.lastSaveFile)
+          self.saveProject(self.autosaveFilename)
+    else:
+      self.saveProject(self.autosaveFilename)
 
     print('self.cutselectionController.close_ui()')
     self.cutselectionController.close_ui()

@@ -465,7 +465,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameMaximumWidth = ttk.Frame(self.frameSequenceValuesRight)
     self.labelMaximumWidth = ttk.Label(self.frameMaximumWidth)
-    self.labelMaximumWidth.config(anchor='e', padding='2', text='Maximum Width', width='25')
+    self.labelMaximumWidth.config(anchor='e', padding='2', text='Limit largest dimension', width='25')
     self.labelMaximumWidth.pack(side='left')
     self.entryMaximumWidth = ttk.Spinbox(self.frameMaximumWidth, 
                                          from_=0, 

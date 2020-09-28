@@ -614,8 +614,9 @@ class MergeSelectionUi(ttk.Frame):
   def clearSequence(self):
     for sv in self.sequencedClips:
       sv.destroy()
-    for col in self.gridColumns:
-      self.removeColumn(col)
+    for col in self.gridColumns[::-1]:
+      self.gridColumns.remove(col)
+      col['column'].pack_forget()
     self.sequencedClips=[]
     self.gridColumns=[]
 
@@ -698,12 +699,11 @@ class MergeSelectionUi(ttk.Frame):
 
       for i,column in enumerate(self.gridColumns):
         outcol = []
-        if column == self.selectedColumn:
-          selectedColumnInd=i
-
         for clip in column['clips']:
           definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
           outcol.append(definition)
+          if column == self.selectedColumn:
+            selectedColumnInd=i
         if len(outcol)>0:
           encodeSequence.append(outcol)
       if len(encodeSequence)==0:
@@ -899,7 +899,14 @@ class MergeSelectionUi(ttk.Frame):
       
   def removeSequencedClip(self,clip):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
-      pass
+      for column in self.gridColumns:
+        try:
+          currentIndex = column['clips'].index(clip)
+          removedClip = column['clips'].pop(currentIndex)
+          removedClip.pack_forget()
+          removedClip.destroy()
+        except Exception as e:
+          print(e)
     else:
       currentIndex = self.sequencedClips.index(clip)
       removedClip = self.sequencedClips.pop(currentIndex)

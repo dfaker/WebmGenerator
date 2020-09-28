@@ -614,7 +614,10 @@ class MergeSelectionUi(ttk.Frame):
   def clearSequence(self):
     for sv in self.sequencedClips:
       sv.destroy()
+    for col in self.gridColumns:
+      self.removeColumn(col)
     self.sequencedClips=[]
+    self.gridColumns=[]
 
 
   def valueChange(self,*args):

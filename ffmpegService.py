@@ -964,10 +964,20 @@ class FFmpegService():
                    statusCallback)
 
 
-
     def encodeWorker():
       tempPathname='tempVideoFiles'
       outputPathName='finalVideos'
+      
+      try:
+        os.path.exists(tempPathname) or os.mkdir(tempPathname)
+      except Exception as e:
+        print(e)
+
+      try:
+        os.path.exists(outputPathName) or os.mkdir(outputPathName)
+      except Exception as e:
+        print(e)
+
       runNumber=int(time.time())
 
       while 1:

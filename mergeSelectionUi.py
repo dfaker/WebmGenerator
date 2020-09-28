@@ -137,8 +137,6 @@ class GridColumn(ttk.Frame):
     self.controller=controller
     self.config(relief='raised',padding='4')
 
-
-
     self.selectColumnBtn = ttk.Button(self,text='Select Column ✔',command=self.selectColumn)
     self.selectColumnBtn.pack(expand='false', fill='x', side='bottom')
 
@@ -250,7 +248,7 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyleVar = tk.StringVar()
     self.mergeStyles   = ['Individual Files - Output each individual subclip as a separate file.',                          
                           'Sequence - Join the subclips into a sequence.',
-                          'Grid - Expeimental still under development.',]
+                          'Grid - Pack videos into variably sized grid layouts.',]
 
     self.mergeStyleVar.set(self.mergeStyles[0])
     
@@ -326,16 +324,18 @@ class MergeSelectionUi(ttk.Frame):
     self.frameEncodeSettings = ttk.Frame(self.labelframeSequenceFrame)
     self.frameSequenceValues = ttk.Frame(self.frameEncodeSettings)
 
-    self.automaticFileNamingVar  = tk.BooleanVar() 
-    self.filenamePrefixVar    = tk.StringVar()
-    self.outputFormatVar      = tk.StringVar()
-    self.frameSizeStrategyVar = tk.StringVar()
-    self.maximumSizeVar       = tk.StringVar()
-    self.maximumWidthVar      = tk.StringVar()
-    self.transDurationVar     = tk.StringVar()
-    self.transStyleVar        = tk.StringVar()
-    self.speedAdjustmentVar   = tk.StringVar() 
-    self.audioChannelsVar     = tk.StringVar()
+    self.automaticFileNamingVar   = tk.BooleanVar() 
+    self.filenamePrefixVar        = tk.StringVar()
+    self.outputFormatVar          = tk.StringVar()
+    self.frameSizeStrategyVar     = tk.StringVar()
+    self.maximumSizeVar           = tk.StringVar()
+    self.maximumWidthVar          = tk.StringVar()
+    self.transDurationVar         = tk.StringVar()
+    self.transStyleVar            = tk.StringVar()
+    self.speedAdjustmentVar       = tk.StringVar() 
+    self.audioChannelsVar         = tk.StringVar()
+    self.audioMergeOptionsVar     = tk.StringVar()
+    self.postProcessingFilterVar  = tk.StringVar()
 
 
     self.automaticFileNamingVar.trace('w',self.valueChange)
@@ -348,6 +348,8 @@ class MergeSelectionUi(ttk.Frame):
     self.transStyleVar.trace('w',self.valueChange)
     self.speedAdjustmentVar.trace('w',self.valueChange)
     self.audioChannelsVar.trace('w',self.valueChange)
+    self.audioMergeOptionsVar.trace('w',self.valueChange)
+    self.postProcessingFilterVar.trace('w',self.valueChange)
 
 
     self.automaticFileNamingVar.set(True)
@@ -383,6 +385,15 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsOptions = ['Stereo','Mono','No audio']
     self.audioChannelsVar.set(self.audioChannelsOptions[0])    
 
+    self.audioMergeOptions = ['Merge Normalize All','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
+    self.audioMergeOptionsVar.set(self.audioMergeOptions[0]) 
+
+    self.postProcessingFilterOptions = ['None']
+    for f in os.listdir('.'):
+      if f.upper().endswith('-POSTFILTER.TXT'):
+        self.postProcessingFilterOptions.append(f)
+    self.postProcessingFilterVar.set(self.postProcessingFilterOptions[0])
+
     self.frameSequenceActions = ttk.Frame(self.frameEncodeSettings)
     self.buttonSequenceClear = ttk.Button(self.frameSequenceActions)
     self.buttonSequenceClear.config(text='Clear Sequence')
@@ -403,8 +414,6 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameSequenceValuesLeft = ttk.Frame(self.frameSequenceValues)
     self.frameSequenceValuesRight = ttk.Frame(self.frameSequenceValues)
-
-
 
     # two column menu below
 
@@ -501,6 +510,30 @@ class MergeSelectionUi(ttk.Frame):
     self.entrySpeedChange.pack(expand='true', fill='both', side='left')
     self.frameSpeedChange.config(height='200', width='100')
     self.frameSpeedChange.pack(expand='true', fill='x', side='top')
+
+
+
+    self.frameAudioMerge = ttk.Frame(self.frameSequenceValuesLeft)
+    self.labelAudioMerge = ttk.Label(self.frameAudioMerge)
+    self.labelAudioMerge.config(anchor='e', padding='2', text='Audio Merge', width='25')
+    self.labelAudioMerge.pack(side='left')
+    self.entryAudioMerge = ttk.OptionMenu(self.frameAudioMerge,self.audioMergeOptionsVar,self.audioMergeOptionsVar.get(),*self.audioMergeOptions)
+    
+    self.entryAudioMerge.pack(expand='true', fill='both', side='left')
+    self.frameAudioMerge.config(height='200', width='300')
+    self.frameAudioMerge.pack(expand='true', fill='x', side='top')
+
+
+    self.framepostProcessingFilter = ttk.Frame(self.frameSequenceValuesRight)
+    self.labelpostProcessingFilter = ttk.Label(self.framepostProcessingFilter)
+    self.labelpostProcessingFilter.config(anchor='e', padding='2', text='Post filter', width='25')
+    self.labelpostProcessingFilter.pack(side='left')
+    self.entrypostProcessingFilter = ttk.OptionMenu(self.framepostProcessingFilter,self.postProcessingFilterVar,self.postProcessingFilterVar.get(),*self.postProcessingFilterOptions)
+    self.entrypostProcessingFilter.config(width='50')
+    self.entrypostProcessingFilter.pack(expand='true', fill='both', side='left')
+    self.framepostProcessingFilter.config(height='200', width='100')
+    self.framepostProcessingFilter.pack(expand='true', fill='x', side='top')
+
 
     self.frameTransDuration = ttk.Frame(self.frameTransitionSettings)
     self.labelTransDuration = ttk.Label(self.frameTransDuration)
@@ -641,12 +674,71 @@ class MergeSelectionUi(ttk.Frame):
     except:
       pass
 
+    try:
+      self.audioMerge = self.audioMergeOptionsVar.get()
+    except:
+      pass
+
+    try:
+      self.postProcessingFilter = self.postProcessingFilterVar.get()
+    except:
+      pass
+
+
     self.updatedPredictedDuration()
   
   def encodeCurrent(self):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       encodeSequence = []
       
+      selectedColumnInd = 0
+
+      for i,column in enumerate(self.gridColumns):
+        outcol = []
+        if column == self.selectedColumn:
+          selectedColumnInd=i
+
+        for clip in column['clips']:
+          definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
+          outcol.append(definition)
+        if len(outcol)>0:
+          encodeSequence.append(outcol)
+      if len(encodeSequence)==0:
+        return
+
+
+      self.encodeRequestId+=1
+      options={
+        'frameSizeStrategy':self.frameSizeStrategyValue,
+        'maximumSize':self.maximumSizeValue,
+        'maximumWidth':self.maximumWidthValue,
+        'transDuration':self.transDurationValue,
+        'transStyle':self.transStyleValue,
+        'speedAdjustment':self.speedAdjustmentValue,
+        'outputFormat':self.outputFormatValue,
+        'audioChannels':self.audioChannels,
+        'audioMerge':self.audioMerge,
+        'postProcessingFilter':self.postProcessingFilter,
+        'selectedColumn':selectedColumnInd
+      }
+      print(options)
+      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
+      self.encoderProgress.append(encodeProgressWidget)
+      outputPrefix = self.filenamePrefixValue
+      if self.automaticFileNamingValue:
+        try:
+          outputPrefix = self.convertFilenameToBaseName(encodeSequence[0][0].filename)
+        except:
+          pass
+      self.controller.encode(self.encodeRequestId,
+                             'GRID',
+                             encodeSequence,
+                             options,
+                             outputPrefix,
+                             encodeProgressWidget.updateStatus) 
+      self.labelframeEncodeProgress.reposition()
+
+
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Sequence':
       encodeSequence = []
       self.encodeRequestId+=1
@@ -662,7 +754,9 @@ class MergeSelectionUi(ttk.Frame):
           'transStyle':self.transStyleValue,
           'speedAdjustment':self.speedAdjustmentValue,
           'outputFormat':self.outputFormatValue,
-          'audioChannels':self.audioChannels
+          'audioChannels':self.audioChannels,
+          'audioMerge':self.audioMerge,
+          'postProcessingFilter':self.postProcessingFilter
         }
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
@@ -680,7 +774,8 @@ class MergeSelectionUi(ttk.Frame):
                                encodeSequence,
                                options,
                                outputPrefix,
-                               encodeProgressWidget.updateStatus) 
+                               encodeProgressWidget.updateStatus)
+
         self.labelframeEncodeProgress.reposition()
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Individual Files':
       
@@ -697,7 +792,10 @@ class MergeSelectionUi(ttk.Frame):
             'transDuration':self.transDurationValue,
             'transStyle':self.transStyleValue,
             'speedAdjustment':self.speedAdjustmentValue,
-            'outputFormat':self.outputFormatValue
+            'outputFormat':self.outputFormatValue,
+            'audioChannels':self.audioChannels,
+            'audioMerge':self.audioMerge,
+            'postProcessingFilter':self.postProcessingFilter,
           }
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)

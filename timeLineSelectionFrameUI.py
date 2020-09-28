@@ -72,8 +72,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.timelineZoomFactor=1.0
     self.currentZoomRangeMidpoint=0.5
-    self.canvasSeekPointer = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
-   
+    self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
+    self.canvasTimestampLabel = self.timeline_canvas.create_text(0, 0, text='XXX',fill="white")
+
     self.targetTrim=0.25
     self.defaultSliceDuration=10.0
     
@@ -290,12 +291,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           break
         else:          
           tm = self.timeline_canvas.create_line(tx, 20, tx, 22,fill="white",tags='ticks') 
-          tm = self.timeline_canvas.create_text(tx, 30,text=str(datetime.timedelta(seconds=round(self.xCoordToSeconds(tx)))).strip('0'),fill="white",tags='ticks') 
+          tm = self.timeline_canvas.create_text(tx, 30,text=str(datetime.timedelta(seconds=round(self.xCoordToSeconds(tx)))),fill="white",tags='ticks') 
 
 
 
     currentPlaybackX =  self.secondsToXcoord(self.controller.getCurrentPlaybackPosition())
-    self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+    self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,55,currentPlaybackX,timelineHeight )
+    self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45)
+    self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=str(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX)))))
     activeRanges=set()
     for rid,(s,e) in list(ranges):
 
@@ -315,7 +318,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'main')],sx, timelineHeight-self.midrangeHeight, ex, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
-        self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(str(datetime.timedelta(seconds=round(e-s,2))).strip('0').strip(':') ) )
+        self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(str(datetime.timedelta(seconds=round(e-s,2))) ) )
         
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight)

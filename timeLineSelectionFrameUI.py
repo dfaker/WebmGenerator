@@ -71,6 +71,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind('<Configure>',self.reconfigure)
 
     self.timelineZoomFactor=1.0
+    self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
     self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
     self.canvasTimestampLabel = self.timeline_canvas.create_text(0, 0, text='XXX',fill="white")
@@ -97,6 +98,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.canvasHeaderSeekPointer = self.timeline_canvas.create_line(0, 0, 0,10,fill="white")
     self.lastSeek=None
+
+  def setDragPreviewPos(self,value):
+    self.dragPreviewPos = value
 
   def reconfigure(self,e):
     self.uiDirty=True
@@ -240,7 +244,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.seekTo( targetSeconds-0.1 )
         elif pos == 'm':
           targetSeconds = targetSeconds+((oe-os)/2)
-          self.controller.seekTo( targetSeconds-0.1 )
+          self.controller.seekTo( targetSeconds-self.dragPreviewPos )
 
     if str(e.type) == 'ButtonPress':
       if e.num==3:      

@@ -104,6 +104,10 @@ class CutselectionUi(ttk.Frame):
         self.targetTrimVar = tk.StringVar()
         self.targetTrimVar.trace("w", self.targetTrimChangeCallback)
 
+        self.dragPreviewPos = 0.1
+        self.dragPreviewPosVar = tk.StringVar()
+        self.dragPreviewPosVar.trace("w", self.dragPreviewPosCallback)
+
         self.frameSliceLength = ttk.Frame(self.labelFrameSlice)
         self.labelSiceLength = ttk.Label(self.frameSliceLength)
         self.labelSiceLength.config(text="Slice Length")
@@ -150,6 +154,26 @@ class CutselectionUi(ttk.Frame):
         self.entryTargetTrim.pack(side="right")
         self.frameTargetTrim.config(height="200", width="200")
         self.frameTargetTrim.pack(fill="x", pady="2", side="top")
+
+        self.framePreviewPos = ttk.Frame(self.labelFrameSlice)
+        self.labelPreviewPos = ttk.Label(self.framePreviewPos)
+        self.labelPreviewPos.config(text="Drag offset")
+        self.labelPreviewPos.pack(side="left")
+        self.entryPreviewPos = ttk.Spinbox(
+            self.framePreviewPos,
+            textvariable=self.dragPreviewPosVar,
+            from_=0.0,
+            to=float("inf"),
+            increment=0.01,
+        )
+
+        self.entryPreviewPos.pack(side="right")
+        self.framePreviewPos.config(height="200", width="200")
+        self.framePreviewPos.pack(fill="x", pady="2", side="top")
+
+
+
+
 
 
         self.loopModeVar = tk.StringVar()
@@ -297,6 +321,7 @@ class CutselectionUi(ttk.Frame):
         self.targetLengthVar.set(str(self.targetLength))
         self.sliceLengthVar.set(str(self.sliceLength))
         self.targetTrimVar.set(str(self.targetTrim))
+        self.dragPreviewPosVar.set(str(self.dragPreviewPos))
 
         self.frameUpperFrame.bind('<Key>',self.playerFrameKeypress)
 
@@ -389,6 +414,14 @@ class CutselectionUi(ttk.Frame):
             self.frameTimeLineFrame.setTargetTrim(value)
         except Exception as e:
             print(e)
+
+    def dragPreviewPosCallback(self, *args):
+      try:
+        value = float(self.dragPreviewPosVar.get())
+        self.frameTimeLineFrame.setDragPreviewPos(value)
+      except Exception as e:
+        print(e)
+
 
     def updateProgressStatitics(self, totalExTrim, totalTrim):
         percent = totalExTrim / self.targetLength

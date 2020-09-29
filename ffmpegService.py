@@ -469,7 +469,7 @@ class FFmpegService():
         colstack = Stack(col,'vertical')
         tempStack.append(colstack)
 
-      totalExpectedEncodedSeconds = cutLengths+minLength+minLength
+      totalExpectedEncodedSeconds = cutLengths+minLength
       totalEncodedSeconds = 0
 
       brickTofileLookup = {}
@@ -573,8 +573,14 @@ class FFmpegService():
 
       #PRE CUT END
 
+      maximumSideLength = options.get('maximumWidth',1280)
       logger={}
-      vow,voh = tempStack.getSizeWithContstraint('width',options.get('maximumWidth',1280),logger,0,0)
+      vow,voh = tempStack.getSizeWithContstraint('width',maximumSideLength,logger,0,0)
+
+      if vow>maximumSideLength or voh>maximumSideLength:
+        logger={}
+        vow,voh = tempStack.getSizeWithContstraint('height',maximumSideLength,logger,0,0)
+      
       print(vow,voh)
       print(logger)
 

@@ -45,9 +45,10 @@ class SequencedVideoEntry(ttk.Frame):
     self.previewImage=sourceClip.previewImage
 
     self.frameSequenceVideoEntry = self
-    self.labelSequenceVideoName = ttk.Label(self.frameSequenceVideoEntry)
-    self.labelSequenceVideoName.config(text='{} ({:0.2f}-{:0.2f}) {:0.2f}s'.format(self.basename,self.s,self.e,self.e-self.s))
-    self.labelSequenceVideoName.pack(side='top')
+    if direction == 'LEFT_RIGHT':
+      self.labelSequenceVideoName = ttk.Label(self.frameSequenceVideoEntry)
+      self.labelSequenceVideoName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
+      self.labelSequenceVideoName.pack(side='top')
     self.frameOrderingButtons = ttk.Frame(self.frameSequenceVideoEntry)
 
     if direction == 'LEFT_RIGHT':
@@ -71,12 +72,22 @@ class SequencedVideoEntry(ttk.Frame):
     self.buttonSequenceEntryPreview = ttk.Button(self.frameSequenceVideoEntry)
     self.buttonSequenceEntryPreview.config(text='Preview ⯈')
     self.buttonSequenceEntryPreview.config(command=self.preview)
-    self.buttonSequenceEntryPreview.pack(expand='true', fill='x', side='top')
+    self.buttonSequenceEntryPreview.config(style="small.TButton")
+    if direction == 'LEFT_RIGHT':
+      self.buttonSequenceEntryPreview.pack(expand='true', fill='both', side='left')
+    else:
+      self.buttonSequenceEntryPreview.pack(expand='true', fill='x', side='left')
+
 
     self.buttonSequenceEntryREmove = ttk.Button(self.frameSequenceVideoEntry)
     self.buttonSequenceEntryREmove.config(text='Remove ✖')
     self.buttonSequenceEntryREmove.config(command=self.remove)
-    self.buttonSequenceEntryREmove.pack(expand='true', fill='both', side='top')
+    self.buttonSequenceEntryREmove.config(style="small.TButton")
+    if direction == 'LEFT_RIGHT':
+      self.buttonSequenceEntryREmove.pack(expand='true', fill='both', side='left')
+    else:
+      self.buttonSequenceEntryREmove.pack(expand='true', fill='x', side='left')
+
 
     self.frameSequenceVideoEntry.config(height='200', padding='2', relief='groove', width='200')
 
@@ -126,7 +137,7 @@ class SequencedVideoEntry(ttk.Frame):
     self.s=s
     self.e=e
     self.filterexp=filterexp
-    self.labelSequenceVideoName.config(text='{} ({:0.2f}-{:0.2f}) {:0.2f}s'.format(self.basename,self.s,self.e,self.e-self.s))
+    self.labelSequenceVideoName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
 
@@ -137,11 +148,19 @@ class GridColumn(ttk.Frame):
     self.controller=controller
     self.config(relief='raised',padding='4')
 
-    self.selectColumnBtn = ttk.Button(self,text='Select Column ✔',command=self.selectColumn)
-    self.selectColumnBtn.pack(expand='false', fill='x', side='bottom')
+    self.buttonFrame = ttk.Frame(self)
 
-    self.removeColumnBtn = ttk.Button(self,text='Remove Column ✖',command=self.removeColumn)
-    self.removeColumnBtn.pack(expand='false', fill='x', side='bottom')
+
+    self.selectColumnBtn = ttk.Button(self.buttonFrame,text='Select ✔',command=self.selectColumn)
+    self.selectColumnBtn.config(style="small.TButton")
+    self.selectColumnBtn.pack(expand='true', fill='x', side='left')
+
+
+    self.removeColumnBtn = ttk.Button(self.buttonFrame,text='Remove ✖',command=self.removeColumn)
+    self.removeColumnBtn.config(style="small.TButton")
+    self.removeColumnBtn.pack(expand='true', fill='x', side='left')
+
+    self.buttonFrame.pack(expand='false', fill='x', side='bottom')
 
     self.pack(expand='false', fill='y', side='left')
 
@@ -167,10 +186,10 @@ class SelectableVideoEntry(ttk.Frame):
 
     self.frameInputCutWidget = self
     self.labelInputCutName = ttk.Label(self.frameInputCutWidget)
-    self.labelInputCutName.config(text='{} ({:0.2f}-{:0.2f}) {:0.2f}s'.format(self.basename,self.s,self.e,self.e-self.s))
+    self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.labelInputCutName.pack(side='top')
     
-    self.previewData = "P5\n200 117\n255\n"+("0"*200*117)
+    self.previewData = "P5\n124 80\n255\n"+("0"*80*124)
     self.previewImage= tk.PhotoImage(data=self.previewData)  
     self.canvasInputCutPreview = ttk.Label(self.frameInputCutWidget)
     self.canvasInputCutPreview.config(text='No Preview loaded')
@@ -182,7 +201,7 @@ class SelectableVideoEntry(ttk.Frame):
     self.buttonInputPreview = ttk.Button(self.frameInputCutWidget)
     self.buttonInputPreview.config(text='preview ⯈')
     self.buttonInputPreview.config(command=self.preview)
-    self.buttonInputPreview.pack(expand='true', fill='x', side='top')
+    self.buttonInputPreview.pack(expand='true', fill='both', side='top')
     
     self.buttonInputCutAdd = ttk.Button(self.frameInputCutWidget)
     self.buttonInputCutAdd.config(text='Add to Sequence ⯆')
@@ -200,7 +219,7 @@ class SelectableVideoEntry(ttk.Frame):
     self.s=s
     self.e=e
     self.filterexp=filterexp
-    self.labelInputCutName.config(text='{} ({:0.2f}-{:0.2f}) {:0.2f}s'.format(self.basename,self.s,self.e,self.e-self.s))
+    self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
   def addClipToSequence(self):
@@ -264,22 +283,23 @@ class MergeSelectionUi(ttk.Frame):
 
     self.selectableVideosContainer = ttk.Frame(self.scrolledframeInputCustContainer.innerframe)
 
-    self.selectableVideosContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+    self.selectableVideosContainer.pack(expand='true', fill='x', padx='0', pady='0', side='top')
 
     self.scrolledframeInputCustContainer.innerframe.config(padding='5')
     self.scrolledframeInputCustContainer.configure(usemousewheel=False)
-    self.scrolledframeInputCustContainer.pack(anchor='n', expand='true', fill='x', padx='5', pady='5', side='top')
+    self.scrolledframeInputCustContainer.pack(anchor='n', expand='true', fill='x', padx='0', pady='0', side='top')
 
     self.labelframeInputCutSelection.config(height='0', text='Avalaible Cuts', width='500')
-    self.labelframeInputCutSelection.pack(expand='false', fill='x', padx='5', pady='5', side='top')
+    self.labelframeInputCutSelection.pack(expand='false', fill='x', padx='0', pady='0', side='top')
 
     self.addAddClipsFrame = ttk.Frame(self.frameMergeSelection)
 
     self.addAllClipsbutton = ttk.Button(self.addAddClipsFrame,text='⯆ Add all clips in timeline order ⯆')
     self.addAllClipsbutton.config(command=self.addAllClipsInTimelineOrder)
-    self.addAllClipsbutton.pack(expand='false', fill='x', padx='5', pady='0', side='top')
+    self.addAllClipsbutton.config(style="small.TButton")
+    self.addAllClipsbutton.pack(expand='false', fill='x', padx='0', pady='3', side='top')
 
-    self.addAddClipsFrame.pack(expand='false', fill='x', padx='5', pady='0', side='top')
+    self.addAddClipsFrame.pack(expand='false', fill='x', padx='0', pady='0', side='top')
 
     self.labelframeSequenceFrame = ttk.Labelframe(self.frameMergeSelection)
 
@@ -287,16 +307,17 @@ class MergeSelectionUi(ttk.Frame):
     self.outputPlanningContainer.pack(expand='false', fill='both', padx='0', pady='0', side='top')
 
     self.gridSequenceContainer = ttk.Frame(self.outputPlanningContainer)
-    self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
+    self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='0', side='top')
 
 
     self.gridColumnContainer = ttk.Frame(self.gridSequenceContainer)
-    self.gridColumnContainer.pack(expand='true', fill='x', padx='5', pady='5', side='top')
+    self.gridColumnContainer.pack(expand='true', fill='x', padx='0', pady='0', side='top')
 
     self.gridColumns = []
 
     self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column ✚', command=self.addColumn)
-    self.gridSequenceContainerAddColumn.pack(expand='false', fill='x', padx='5', pady='5', side='bottom')
+    self.gridSequenceContainerAddColumn.config(style="small.TButton")
+    self.gridSequenceContainerAddColumn.pack(expand='false', fill='x', padx='0', pady='0', side='bottom')
     self.gridSequenceContainer.pack_forget()
 
     self.scrolledframeSequenceContainer = ScrolledFrame(self.outputPlanningContainer, scrolltype='horizontal')
@@ -310,14 +331,14 @@ class MergeSelectionUi(ttk.Frame):
 
     self.scrolledframeSequenceContainer.configure(usemousewheel=False)
     self.scrolledframeSequenceContainer.innerframe.config(padding='5')
-    self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
+    self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='5', pady='0', side='top')
 
     self.frameSequenceSummary = ttk.Frame(self.labelframeSequenceFrame)
     self.labelSequenceSummary = ttk.Label(self.frameSequenceSummary)
     self.labelSequenceSummary.config(anchor='center', text='Number of Subclips: 0 Total subclip duration 0s Output Duration 0s')
-    self.labelSequenceSummary.pack(expand='false', fill='x', side='top')
-    self.frameSequenceSummary.config(height='100', width='200')
-    self.frameSequenceSummary.pack(expand='false', fill='x', side='top')
+    self.labelSequenceSummary.pack(expand='false', fill='x', side='top', pady='0')
+    self.frameSequenceSummary.config(height='10', width='200')
+    self.frameSequenceSummary.pack(expand='false', fill='x', side='top', pady='0')
     
     self.frameTransitionSettings = ttk.Frame(self.labelframeSequenceFrame)
 
@@ -860,7 +881,7 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeSequenceContainer.reposition()
 
   def requestPreviewFrame(self,rid,filename,timestamp,filterexp):
-    self.controller.requestPreviewFrame(rid,filename,timestamp,filterexp,(-1,100),self.previewFrameCallback)
+    self.controller.requestPreviewFrame(rid,filename,timestamp,filterexp,(-1,80),self.previewFrameCallback)
 
   def addClipToSequence(self,clip):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':

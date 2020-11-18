@@ -398,10 +398,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       activeRanges.add(rid)
       if (rid,'main') in self.canvasRegionCache:
 
-        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
-
-
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'main')],sx, timelineHeight-self.midrangeHeight, ex, timelineHeight)
+
+        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
         self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(str(datetime.timedelta(seconds=round(e-s,2))) ) )
@@ -410,20 +409,20 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight)
 
         if self.lastClickedEndpoint is None:
-          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],fill="#69bfdb")
-          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],fill="#db6986")
+          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
+          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
         elif self.lastClickedEndpoint[0] == rid and self.lastClickedEndpoint[1] == 's':
-          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],fill="#c3e5f0")
-          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],fill="#db6986")
+          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=1,outline='white')
+          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
         elif self.lastClickedEndpoint[0] == rid and self.lastClickedEndpoint[1] == 'e':
-          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],fill="#f0c3ce")
-          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],fill="#69bfdb")
+          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=1,outline='white')
+          self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
 
 
         for dtx in (-1,1):
           for dty in (-1,0,1,2):
             dst_tn = 'startHandleDot'+str(dtx)+str(dty)
-            self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 )
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 ) 
             dst_tn = 'endHandleDot'+str(dtx)+str(dty)
             self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 )
 
@@ -438,17 +437,18 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         print('add',rid)
 
         self.canvasRegionCache[(rid,'main')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#69dbbe",width=0, tags='fileSpecific')
-        self.canvasRegionCache[(rid,'startHandle')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight, fill="#69bfdb",width=0, tags='fileSpecific')
-        self.canvasRegionCache[(rid,'endHandle')] = self.timeline_canvas.create_rectangle(ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight, fill="#db6986",width=0, tags='fileSpecific')
+
+        self.canvasRegionCache[(rid,'startHandle')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight, fill="#69bfdb",width=1, tags='fileSpecific')
+        self.canvasRegionCache[(rid,'endHandle')] = self.timeline_canvas.create_rectangle(ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight, fill="#db6986",width=1, tags='fileSpecific')
         
 
    
         for dtx in (-1,1):
           for dty in (-1,0,1,2):
             dst_tn = 'startHandleDot'+str(dtx)+str(dty)
-            self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=2, tags='fileSpecific')
+            self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
             dst_tn = 'endHandleDot'+str(dtx)+str(dty)
-            self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=2, tags='fileSpecific')
+            self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
 
 
         self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(str(datetime.timedelta(seconds=round(e-s,2))).strip('0').strip(':')),fill="white", tags='fileSpecific') 

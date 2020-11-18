@@ -296,7 +296,26 @@ class FilterSelectionUi(ttk.Frame):
 
     self.labelframeFilterBrowserFrame.config(height='200', text='Filtering', width='200')
     self.labelframeFilterBrowserFrame.pack(anchor='w', expand='false', fill='y', side='left')
-    self.framePlayerFrame = ttk.Frame(self.frameFilterSelectionFrame, style='PlayerFrame.TFrame')
+
+    self.playerContainerFrame = ttk.Frame(self.frameFilterSelectionFrame)
+    self.playerContainerFrame.pack(expand='true', fill='both', side='right')
+
+
+    self.selectionOptionsFrame = ttk.Frame(self.playerContainerFrame)
+
+    self.fixSeectionArEnabledVar = tk.BooleanVar()
+    self.fixSeectionArEnabledVar.set(False)
+    self.arFixCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Restrict selection aspect ratio", variable=self.fixSeectionArEnabledVar)
+    self.arFixCheckbox.pack(expand='false', side='left')
+    
+    self.fixSeectionArVar = tk.StringVar()
+    self.fixSeectionArVar.set('1.0')
+    self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'), increment=0.01)
+    self.spinBoxArRatio.pack(expand='false', side='left')
+
+    self.selectionOptionsFrame.pack(expand='false', fill='x', side='top')
+
+    self.framePlayerFrame = ttk.Frame(self.playerContainerFrame, style='PlayerFrame.TFrame')
     self.framePlayerFrame.config(height='200', width='200')
     self.framePlayerFrame.pack(expand='true', fill='both', side='right')
 
@@ -333,6 +352,19 @@ class FilterSelectionUi(ttk.Frame):
   def getRectProperties(self):
     return self.videoMouseRect
 
+  def applyScreenSpaceAR(self):
+    forceAR = None
+    print(self.fixSeectionArEnabledVar.get())
+    if self.fixSeectionArEnabledVar.get():
+      try:
+        forceAR = float(self.fixSeectionArVar.get())
+      except Exception as e:
+        print(e)
+
+    print(forceAR)
+    if forceAR is not None:
+      self.screenMouseRect[3] = self.screenMouseRect[1] + abs(self.screenMouseRect[0]-self.screenMouseRect[2])*forceAR
+
   def videomousePress(self,e):
       if str(e.type) == 'ButtonPress':
         print('start')
@@ -343,6 +375,7 @@ class FilterSelectionUi(ttk.Frame):
         print('show')
         self.screenMouseRect[2]=e.x
         self.screenMouseRect[3]=e.y
+        self.applyScreenSpaceAR()
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
       if str(e.type) == 'ButtonRelease':
         print('release')
@@ -350,6 +383,7 @@ class FilterSelectionUi(ttk.Frame):
 
         vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
         vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
+
 
         self.videoMouseRect=[vx1,vy1,vx2,vy2]
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])

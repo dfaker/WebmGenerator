@@ -29,12 +29,11 @@ class VideoFilePreview(ttk.Frame):
 
         self.previewData = "P5\n200 117\n255\n" + ("0" * 200 * 117)
         self.labelVideoPreviewImage = tk.PhotoImage(data=self.previewData)
+        self.previewRequested = False
 
         self.labelVideoPreviewLabel.configure(image=self.labelVideoPreviewImage)
 
         self.labelVideoPreviewLabel.pack(side="top", expand="false", fill="y")
-
-        self.parent.requestPreviewFrame(self.filename)
 
         self.labelVideoFilecountCutsSelected = ttk.Label(self.frameVideoFileWidget)
         self.labelVideoFilecountCutsSelected.config(
@@ -61,6 +60,19 @@ class VideoFilePreview(ttk.Frame):
             height="200", padding="2", relief="groove", width="200"
         )
         self.frameVideoFileWidget.pack(expand="false", fill="x", pady="5", side="top")
+        self.parent.master.update()
+        self.requestPreviewFrameIfVisible()
+
+
+    def requestPreviewFrameIfVisible(self):
+      if not self.previewRequested:
+        if self.winfo_y() < self.master.winfo_height():
+          self.previewRequested = True
+          self.parent.requestPreviewFrame(self.filename)
+          print('REQUETSED',self.filename,self.winfo_y(),self.master.winfo_height())
+        else:
+          print('Skipped',self.filename,self.winfo_y(),self.master.winfo_height())
+
 
     def setVideoPreview(self, photoImage):
         self.labelVideoPreviewImage = photoImage
@@ -333,6 +345,11 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<ButtonRelease-1>",   self.videomousePress)
         self.frameVideoPlayerFrame.bind("<Motion>",            self.videomousePress)
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
+
+
+    def setinitialFocus(self):
+      self.master.deiconify()
+      self.entrySiceLength.focus_set()
 
     def prevClip(self):
       self.controller.jumpClips(-1)

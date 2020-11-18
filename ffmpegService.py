@@ -445,15 +445,24 @@ class FFmpegService():
       
       bricksInSelectedColumn = set()
 
+      maximumSideLength = options.get('maximumWidth',1280)
+      inputMaxWidth  = 0
+      inputMaxHeight = 0
+
       for icol,column in enumerate(seqClips):
         col = []
         print(column)
+        maxColWidth  = 0
+        sumcolHeight = 0
         for i,(rid,clipfilename,s,e,filterexp) in enumerate(column):
           print(i,(rid,clipfilename,s,e,filterexp))
           
           videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename),filters=filterexp)
           brick = Brick(brickn,videoInfo.width,videoInfo.height)
           
+          maxColWidth = max(maxColWidth, videoInfo.width)
+          sumcolHeight += videoInfo.height
+
           if e-s < minLength:
             minLength = e-s
           cutLengths += e-s
@@ -466,8 +475,14 @@ class FFmpegService():
 
           brickn += 1
           col.append(brick)
+        inputMaxWidth  += maxColWidth
+        inputMaxHeight = max(inputMaxHeight, sumcolHeight)
         colstack = Stack(col,'vertical')
         tempStack.append(colstack)
+
+      largestInputDim = max(inputMaxWidth,inputMaxHeight)
+      if largestInputDim < maximumSideLength or maximumSideLength == 0:
+        maximumSideLength = largestInputDim
 
       totalExpectedEncodedSeconds = cutLengths+minLength
       totalEncodedSeconds = 0
@@ -573,7 +588,7 @@ class FFmpegService():
 
       #PRE CUT END
 
-      maximumSideLength = options.get('maximumWidth',1280)
+      
       logger={}
       vow,voh = tempStack.getSizeWithContstraint('width',maximumSideLength,logger,0,0)
 
@@ -599,23 +614,18 @@ class FFmpegService():
           largestBrickArea=w*h
           largestBrickInd=k
 
-      if audioMergeMode == 'Merge Normalize All':
-        for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
-          videoInfo = brickVideoInfo[k]
-          if videoInfo.hasaudio:
-            inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=\'1.0\':eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
-            outputsAudio.append('[aud{k}]'.format(k=snum))
-      elif audioMergeMode == 'Selected Column Only':
+
+      if audioMergeMode == 'Selected Column Only':
         for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           videoInfo = brickVideoInfo[k]
           if videoInfo.hasaudio and k in bricksInSelectedColumn:
-            inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=\'1.0\':eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
+            inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=1.0:eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
             outputsAudio.append('[aud{k}]'.format(k=snum))
       elif audioMergeMode == 'Largest Cell by Area':
         for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           videoInfo = brickVideoInfo[k]
           if videoInfo.hasaudio and k == largestBrickInd:
-            inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=\'1.0\':eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
+            inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=1.0:eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
             outputsAudio.append('[aud{k}]'.format(k=snum))
       elif audioMergeMode == 'Adaptive Loudest Cell':
         vols={}
@@ -648,7 +658,6 @@ class FFmpegService():
               vol= -((float(vol1)+float(vol2))/2)
               vol = (vol-minvol)/(maxvol-minvol)
               vols.setdefault(round(float(ts),1),{}).setdefault(k,[]).append(vol)
-
 
         loudSeq=[]
 
@@ -704,6 +713,13 @@ class FFmpegService():
           if videoInfo.hasaudio:
             inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=\'1.0*min(1,{vol})\':eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0),vol=volcommands.get(k,'0.0')))
             outputsAudio.append('[aud{k}]'.format(k=snum))
+      else:
+        for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
+          videoInfo = brickVideoInfo[k]
+          if videoInfo.hasaudio:
+            inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=1.0:eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
+            outputsAudio.append('[aud{k}]'.format(k=snum))
+
 
       #audio calcs
 
@@ -930,15 +946,15 @@ class FFmpegService():
           print('invalid speed Adjustment',e)
 
         if speedAdjustment==1.0:
-          crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outa]'
+          crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
         else:
           try:
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
-            crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outa]'.format(vfactor=vfactor,afactor=afactor)
+            crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
             print(e)
-            crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outa]'
+            crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
 
         filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
       else:
@@ -947,8 +963,8 @@ class FFmpegService():
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
           filterInputs += '[{i}:v][{i}:a]'.format(i=vi)
-        filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outvpre][outa]'.format(len(inputsList)//2)
-      
+        filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outvpre][outapre]'.format(len(inputsList)//2)
+
       if os.path.exists( options.get('postProcessingFilter','') ):
         filtercommand += open(options.get('postProcessingFilter',''),'r').read()
       else:
@@ -957,6 +973,23 @@ class FFmpegService():
       print(filtercommand)
 
       os.path.exists(outputPathName) or os.mkdir(outputPathName)
+
+      audioOverride      = options.get('audioOverride',None)
+      audioOverrideDelay = options.get('audiOverrideDelay',0)
+
+      try:
+        audioOverrideDelay = float(audioOverrideDelay)
+      except Exception as e:
+        print(e)
+        audioOverrideDelay = 0
+
+
+      if audioOverride is not None:
+        inputsLen = len(inputsList)-1
+        inputsList.extend(['-i',audioOverride])
+        filtercommand += ',[outapre]anullsink,[{soundind}:a]anull[outa]'.format(soundind=inputsLen)
+      else:
+        filtercommand += ',[outapre]anull[outa]'
 
       outputFormat  = options.get('outputFormat','webm:VP8')
       finalEncoder  = encoderMap.get(outputFormat,encoderMap.get('webm:VP8'))

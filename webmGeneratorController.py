@@ -46,9 +46,9 @@ class WebmGeneratorController:
 
     self.webmMegeneratorUi = WebmGeneratorUi(self,self.root)
 
-    self.cutselectionUi = CutselectionUi(self.root)
+    self.cutselectionUi     = CutselectionUi(self.root)
     self.filterSselectionUi = FilterSelectionUi(self.root)
-    self.mergeSelectionUi = MergeSelectionUi(self.root)
+    self.mergeSelectionUi   = MergeSelectionUi(self.root)
 
     self.webmMegeneratorUi.addPane(self.cutselectionUi,'Cuts')
     self.webmMegeneratorUi.addPane(self.filterSselectionUi,'Filters')

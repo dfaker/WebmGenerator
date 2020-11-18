@@ -27,6 +27,9 @@ class CutselectionController:
       response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
       if response=='yes':
         random.shuffle(initialFiles)
+    
+
+    self.ui.setinitialFocus()
 
     self.loadFiles(initialFiles)
     self.loopMode='Loop current'
@@ -43,6 +46,7 @@ class CutselectionController:
     if self.loopMode == 'Loop all':
       self.player.ab_loop_a=-1
       self.player.ab_loop_b=-1
+
 
   def checkLoopCycleJump(self):
     if self.loopMode == 'Loop all':

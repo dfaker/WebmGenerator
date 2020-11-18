@@ -4,6 +4,10 @@ from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import string 
 import mpv
+from tkinter.filedialog import askopenfilename
+
+
+
 class EncodeProgress(ttk.Frame):
   def __init__(self, master=None, *args, encodeRequestId=None, **kwargs):
     ttk.Frame.__init__(self, master)
@@ -17,16 +21,24 @@ class EncodeProgress(ttk.Frame):
 
     self.frameEncodeProgressWidget.config(height='200', width='200')
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=10, fill='x', side='top')
+    self.progresspercent = 0
 
   def updateStatus(self,status,percent):
     self.labelEncodeProgressLabel.config(text=status)
     self.progressbarEncodeProgressLabel['value']=percent*100
+    self.progresspercent = percent*100
+
     if percent >= 1:
       self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
     else:
       self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
 
     self.winfo_toplevel().title('webmGenerator: encoding: {:0.2f}%'.format(percent*100))
+
+  def remove(self):
+    if self.progresspercent == 100:
+      self.pack_forget()
+      del self
 
 
 class SequencedVideoEntry(ttk.Frame):
@@ -257,7 +269,12 @@ class MergeSelectionUi(ttk.Frame):
 
     self.master=master
     self.controller=None
-    self.frameMergeSelection = self
+
+
+    self.outserScrolledFrame = ScrolledFrame(self, scrolltype='vertical')
+    self.outserScrolledFrame.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+
+    self.frameMergeSelection = self.outserScrolledFrame.innerframe
 
     self.mergeStyleFrame = ttk.Frame(self.frameMergeSelection)
 
@@ -278,6 +295,7 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyleFrame.pack(expand='false', fill='x', padx='5', pady='5', side='top')
 
     self.labelframeInputCutSelection = ttk.Labelframe(self.frameMergeSelection)
+    
     self.scrolledframeInputCustContainer = ScrolledFrame(self.labelframeInputCutSelection, scrolltype='horizontal')
 
 
@@ -305,6 +323,9 @@ class MergeSelectionUi(ttk.Frame):
 
     self.outputPlanningContainer = ttk.Frame(self.labelframeSequenceFrame)
     self.outputPlanningContainer.pack(expand='false', fill='both', padx='0', pady='0', side='top')
+
+    self.labelframeSequenceFrame.config(height='200', text='Output Plan', width='200')
+    self.labelframeSequenceFrame.pack(expand='true',fill='both', padx='5', pady='5', side='top')
 
     self.gridSequenceContainer = ttk.Frame(self.outputPlanningContainer)
     self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='0', side='top')
@@ -358,6 +379,8 @@ class MergeSelectionUi(ttk.Frame):
     self.audioMergeOptionsVar     = tk.StringVar()
     self.postProcessingFilterVar  = tk.StringVar()
 
+    self.audioOverrideVar         = tk.StringVar()
+    self.audiOverrideDelayVar     = tk.StringVar()
 
     self.automaticFileNamingVar.trace('w',self.valueChange)
     self.filenamePrefixVar.trace('w',self.valueChange)
@@ -372,9 +395,14 @@ class MergeSelectionUi(ttk.Frame):
     self.audioMergeOptionsVar.trace('w',self.valueChange)
     self.postProcessingFilterVar.trace('w',self.valueChange)
 
+    self.audioOverrideVar.trace('w',self.valueChange)
+    self.audiOverrideDelayVar.trace('w',self.valueChange)
 
     self.automaticFileNamingVar.set(True)
     self.filenamePrefixVar.set('Sequence')
+
+    self.audioOverrideVar.set('None')
+    self.audiOverrideDelayVar.set('0')
 
     self.outputFormats = [
       'mp4:x264',
@@ -420,6 +448,7 @@ class MergeSelectionUi(ttk.Frame):
     self.buttonSequenceClear.config(text='Clear Sequence')
     self.buttonSequenceClear.config(command=self.clearSequence)
     self.buttonSequenceClear.pack(side='top')
+
     self.buttonSequenceEncode = ttk.Button(self.frameSequenceActions)
     self.buttonSequenceEncode.config(text='Encode')
     self.buttonSequenceEncode.config(command=self.encodeCurrent)
@@ -556,6 +585,31 @@ class MergeSelectionUi(ttk.Frame):
     self.framepostProcessingFilter.pack(expand='true', fill='x', side='top')
 
 
+    self.framepostAudioOverride = ttk.Frame(self.frameSequenceValuesLeft)
+    self.labelpostAudioOverride = ttk.Label(self.framepostAudioOverride)
+    self.labelpostAudioOverride.config(anchor='e', padding='2', text='Audio Dub', width='25')
+    self.labelpostAudioOverride.pack(side='left')
+    self.entrypostAudioOverride = ttk.Button(self.framepostAudioOverride,textvariable=self.audioOverrideVar,command=self.selectAudioOverride)
+    self.entrypostAudioOverride.config(width='50')
+    self.entrypostAudioOverride.pack(expand='true', fill='both', side='left')
+    self.framepostAudioOverride.config(height='200', width='100')
+    self.framepostAudioOverride.pack(expand='true', fill='x', side='top')
+
+
+    self.framepostAudioOverrideDelay = ttk.Frame(self.frameSequenceValuesRight)
+    self.labelpostAudioOverrideDelay = ttk.Label(self.framepostAudioOverrideDelay)
+    self.labelpostAudioOverrideDelay.config(anchor='e', padding='2', text='Dub Delay (seconds)', width='25')
+    self.labelpostAudioOverrideDelay.pack(side='left')
+    self.entrypostAudioOverrideDelay = ttk.Spinbox(self.framepostAudioOverrideDelay, textvariable=self.audiOverrideDelayVar,from_=float('-inf'), 
+                                          to=float('inf'), 
+                                          increment=0.5)
+    self.entrypostAudioOverrideDelay.config(width='50')
+    self.entrypostAudioOverrideDelay.pack(expand='true', fill='both', side='left')
+    self.framepostAudioOverrideDelay.config(height='200', width='100')
+    self.framepostAudioOverrideDelay.pack(expand='true', fill='x', side='top')
+
+
+
     self.frameTransDuration = ttk.Frame(self.frameTransitionSettings)
     self.labelTransDuration = ttk.Label(self.frameTransDuration)
     self.labelTransDuration.config(anchor='e', padding='2', text='Transition Duration', width='25')
@@ -587,13 +641,10 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
 
 
-    self.labelframeSequenceFrame.config(height='200', text='Output Plan', width='200')
-    self.labelframeSequenceFrame.pack(expand='true',fill='both', padx='5', pady='5', side='top')
+
 
     self.frameSequenceValuesLeft.pack(expand='true', fill='x', side='left')
     self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
-
-
 
 
     self.labelframeEncodeProgress = ScrolledFrame(self.labelframeSequenceFrame,usemousewheel=True,scrolltype='vertical',)
@@ -610,6 +661,11 @@ class MergeSelectionUi(ttk.Frame):
     self.encodeRequestId=0
     self.selectableVideos={}
     self.selectedColumn = None
+
+  def selectAudioOverride(self):
+    files = askopenfilename(multiple=False,filetypes=[('mp3','*.mp3',),('wav','*.wav')])
+    self.audioOverrideVar.set(str(files))
+
 
   def addColumn(self):
     column = GridColumn(self.gridColumnContainer,self)
@@ -640,6 +696,8 @@ class MergeSelectionUi(ttk.Frame):
       col['column'].pack_forget()
     self.sequencedClips=[]
     self.gridColumns=[]
+    for e in self.encoderProgress:
+      e.remove()
 
 
   def valueChange(self,*args):
@@ -652,6 +710,19 @@ class MergeSelectionUi(ttk.Frame):
         self.entryFilenamePrefix.state(["!disabled"]) 
         self.labelFilenamePrefix.state(["!disabled"]) 
 
+    except:
+      pass
+
+    try:
+      self.audioOverrideValue = self.audioOverrideVar.get()
+      if self.audioOverrideValue.upper() == 'NONE':
+        self.audioOverrideValue = None
+
+    except:
+      pass
+
+    try:
+      self.audiOverrideDelayValue = self.audiOverrideDelayVar.get()
     except:
       pass
 
@@ -743,7 +814,9 @@ class MergeSelectionUi(ttk.Frame):
         'audioChannels':self.audioChannels,
         'audioMerge':self.audioMerge,
         'postProcessingFilter':self.postProcessingFilter,
-        'selectedColumn':selectedColumnInd
+        'selectedColumn':selectedColumnInd,
+        'audioOverride':self.audioOverrideValue,
+        'audiOverrideDelay':self.audiOverrideDelayValue
       }
       print(options)
       encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
@@ -780,7 +853,9 @@ class MergeSelectionUi(ttk.Frame):
           'outputFormat':self.outputFormatValue,
           'audioChannels':self.audioChannels,
           'audioMerge':self.audioMerge,
-          'postProcessingFilter':self.postProcessingFilter
+          'postProcessingFilter':self.postProcessingFilter,
+          'audioOverride':self.audioOverrideValue,
+          'audiOverrideDelay':self.audiOverrideDelayValue
         }
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
@@ -820,6 +895,8 @@ class MergeSelectionUi(ttk.Frame):
             'audioChannels':self.audioChannels,
             'audioMerge':self.audioMerge,
             'postProcessingFilter':self.postProcessingFilter,
+            'audioOverride':self.audioOverrideValue,
+            'audiOverrideDelay':self.audiOverrideDelayValue
           }
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
@@ -840,9 +917,15 @@ class MergeSelectionUi(ttk.Frame):
     if self.mergeStyleVar.get().split('-')[0].strip()=='Grid':
       self.scrolledframeSequenceContainer.pack_forget()
       self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
+      self.frameTransStyle.pack_forget()
+      self.frameTransDuration.pack_forget()
     else:
       self.gridSequenceContainer.pack_forget()
       self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+      self.frameTransStyle.pack(expand='true', fill='x', side='top')
+      self.frameTransDuration.pack(expand='true', fill='x', side='top')
+
+
       
   def updatedPredictedDuration(self):
     totalTime=0

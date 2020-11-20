@@ -9,6 +9,10 @@ os.environ['TK_LIBRARY'] =  os.path.expandvars(r'%USERPROFILE%\AppData\Local\Pro
 buildOptions = dict(packages = ["os"], 
                     include_files = [
                     'ffmpeg.exe'
+                    ,'ffprobe.exe'
+                    ,'addQRCode-PostFilter.txt'
+                    ,'QRCode.gif'
+                    ,'rainbow-PostFilter.txt'
                     ,'youtube-dl.exe'
                     ,'screenspacetools.lua'
                     ,'mpv-1.dll'

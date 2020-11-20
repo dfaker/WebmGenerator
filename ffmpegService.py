@@ -757,13 +757,32 @@ class FFmpegService():
       ffmpegFilterCommand += ',[tmp{k}]null,pad=ceil(iw/2)*2:ceil(ih/2)*2[outv]'.format(k=snum+1)
 
       if len(inputAudio)>1:
-        ffmpegFilterCommand +=  ',{}amix=inputs={}:duration=shortest[outa]'.format(''.join(outputsAudio),len(outputsAudio))
+        ffmpegFilterCommand +=  ',{}amix=inputs={}:duration=shortest[outapre]'.format(''.join(outputsAudio),len(outputsAudio))
       elif len(inputAudio)==1:
-        ffmpegFilterCommand +=  ',{}anull[outa]'.format(''.join(outputsAudio),len(outputsAudio))
+        ffmpegFilterCommand +=  ',{}anull[outapre]'.format(''.join(outputsAudio),len(outputsAudio))
       else:
-        ffmpegFilterCommand +=  ',anullsrc[outa]'
+        ffmpegFilterCommand +=  ',anullsrc[outapre]'
 
     
+      audioOverride      = options.get('audioOverride',None)
+      audioOverrideDelay = options.get('audiOverrideDelay',0)
+
+      try:
+        audioOverrideDelay = float(audioOverrideDelay)
+      except Exception as e:
+        print(e)
+        audioOverrideDelay = 0
+
+
+      if audioOverride is not None:
+        inputsLen = len(inputsList)//2
+        inputsList.extend(['-i',audioOverride])
+        finalAudoTS = audioOverrideDelay+minLength
+        ffmpegFilterCommand += ',[outapre]anullsink,[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS)
+      else:
+        ffmpegFilterCommand += ',[outapre]anull[outa]'
+
+
 
       filtercommand = ffmpegFilterCommand
 
@@ -797,13 +816,17 @@ class FFmpegService():
         clipDimensions.append((videow,videoh))
 
       largestclipDimensions = sorted(clipDimensions,key=lambda x:x[0]*x[1],reverse=True)[0]
+      
+      totalExpectedFinalLength=sum(expectedTimes)
 
       expectedTimes.append(sum(expectedTimes))
       totalExpectedEncodedSeconds = sum(expectedTimes)
       totalEncodedSeconds = 0
+      shortestClipLength = float('inf')
 
       for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
         print(i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)))
+        shortestClipLength = min(shortestClipLength, etime)
         if filterexp=='':
           filterexp='null'  
 
@@ -938,6 +961,7 @@ class FFmpegService():
           n=0 if i==len(expectedFadeDurations)-1 else i+1
           o=dur-offset
           preo=offset          
+          totalExpectedFinalLength-= (fadeDuration*2)
           videoSplits.append(splitTemplate.format(i=i))
           transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
           audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
@@ -991,9 +1015,13 @@ class FFmpegService():
 
 
       if audioOverride is not None:
-        inputsLen = len(inputsList)-1
+        inputsLen = len(inputsList)//2
         inputsList.extend(['-i',audioOverride])
-        filtercommand += ',[outapre]anullsink,[{soundind}:a]anull[outa]'.format(soundind=inputsLen)
+        finalAudoTS = audioOverrideDelay+totalExpectedFinalLength
+        if mode == 'GRID':
+          finalAudoTS = audioOverrideDelay+shortestClipLength 
+
+        filtercommand += ',[outapre]anullsink,[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS)
       else:
         filtercommand += ',[outapre]anull[outa]'
 

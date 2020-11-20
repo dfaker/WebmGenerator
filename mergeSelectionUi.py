@@ -565,7 +565,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameAudioMerge = ttk.Frame(self.frameSequenceValuesLeft)
     self.labelAudioMerge = ttk.Label(self.frameAudioMerge)
-    self.labelAudioMerge.config(anchor='e', padding='2', text='Audio Merge', width='25')
+    self.labelAudioMerge.config(anchor='e', padding='2', text='Grid Audio Merge', width='25')
     self.labelAudioMerge.pack(side='left')
     self.entryAudioMerge = ttk.OptionMenu(self.frameAudioMerge,self.audioMergeOptionsVar,self.audioMergeOptionsVar.get(),*self.audioMergeOptions)
     

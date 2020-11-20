@@ -713,6 +713,12 @@ class FFmpegService():
           if videoInfo.hasaudio:
             inputAudio.append('[{k}:a]loudnorm=I=-16:TP=-1.5:LRA=11,atrim=duration={mindur},volume=\'1.0*min(1,{vol})\':eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0),vol=volcommands.get(k,'0.0')))
             outputsAudio.append('[aud{k}]'.format(k=snum))
+      if audioMergeMode == 'Merge Original Volume':
+        for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
+          videoInfo = brickVideoInfo[k]
+          if videoInfo.hasaudio:
+            inputAudio.append('[{k}:a]atrim=duration={mindur},volume=1.0:eval=frame,pan=stereo|c0=c0|c1=c0,stereotools=balance_out={panpos}[aud{k}]'.format(k=snum,mindur=minLength,panpos=streropos.get(k,0)))
+            outputsAudio.append('[aud{k}]'.format(k=snum))
       else:
         for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           videoInfo = brickVideoInfo[k]

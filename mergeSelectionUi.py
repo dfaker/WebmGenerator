@@ -434,7 +434,7 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsOptions = ['Stereo','Mono','No audio']
     self.audioChannelsVar.set(self.audioChannelsOptions[0])    
 
-    self.audioMergeOptions = ['Merge Normalize All','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
+    self.audioMergeOptions = ['Merge Normalize All','Merge Original Volume','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
     self.audioMergeOptionsVar.set(self.audioMergeOptions[0]) 
 
     self.postProcessingFilterOptions = ['None']

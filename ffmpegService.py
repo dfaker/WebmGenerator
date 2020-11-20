@@ -272,6 +272,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-c:v","libx264" 
                    ,"-stats"
                    ,"-max_muxing_queue_size", "9999"
+
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", "3000k"
                    ,"-threads", str(4)
@@ -805,18 +806,22 @@ class FFmpegService():
       clipDimensions = []
       infoOut={}
 
+
+
+
+
       print(requestId,mode,seqClips,options,filenamePrefix,statusCallback)
       for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
         print(i,(rid,clipfilename,s,e,filterexp))
         expectedTimes.append(e-s)
         videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
         infoOut[rid] = videoInfo
+
         videoh=videoInfo.height
         videow=videoInfo.width
+
         clipDimensions.append((videow,videoh))
 
-      largestclipDimensions = sorted(clipDimensions,key=lambda x:x[0]*x[1],reverse=True)[0]
-      
       totalExpectedFinalLength=sum(expectedTimes)
 
       expectedTimes.append(sum(expectedTimes))
@@ -831,17 +836,20 @@ class FFmpegService():
           filterexp='null'  
 
         #Black Bars
-        #scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2
         
         #Crop
         #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
 
-
         #filterexp+=",scale='max(0\\,min({}\\,iw)):-2'".format(maxDim=options.get('maximumWidth',1280))
-
 
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))'".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
+
+        print('#########')
+        print('#########')
+        print(filterexp)
+        print('#########')
+        print('#########')
 
         key = (rid,clipfilename,start,end,filterexp)
 
@@ -901,7 +909,6 @@ class FFmpegService():
                 print(ln)
                 break
               if c == b'\r':
-                print(ln)
                 for p in ln.split(b' '):
                   if b'time=' in p:
                     try:
@@ -935,6 +942,26 @@ class FFmpegService():
 
       print(fadeDuration)
 
+      dimensionsSet = set()
+      
+      in_maxWidth  = 0
+      in_minWidth  = float('inf')
+      in_maxHeight = 0
+      in_minHeight = float('inf')
+
+      for clipfilename in fileSequence:
+
+        videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+        videoh=videoInfo.height
+        in_maxHeight = max(in_maxHeight, videoh)
+        in_minHeight = min(in_minHeight, videoh)
+        
+        videow=videoInfo.width
+        in_maxWidth  = max(in_maxWidth, videow)
+        in_minWidth  = min(in_minWidth, videow)
+
+        dimensionsSet.add( (videow,videoh) )
+
       if fadeDuration > 0.0:
         inputsList = []
 
@@ -951,8 +978,8 @@ class FFmpegService():
         crossfades=[]
         crossfadeOut=''
 
-        splitTemplate='[{i}:v]split[vid{i}a][vid{i}b];'
-        xFadeTemplate='[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
+        splitTemplate     = '[{i}:v]{splitexp},split[vid{i}a][vid{i}b];'
+        xFadeTemplate     = '[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
         fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
         asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
         crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
@@ -962,7 +989,12 @@ class FFmpegService():
           o=dur-offset
           preo=offset          
           totalExpectedFinalLength-= (fadeDuration*2)
-          videoSplits.append(splitTemplate.format(i=i))
+
+          splitexp = 'null'
+          if mode == 'CONCAT' and len(dimensionsSet) > 1:
+            splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight)
+
+          videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
           transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
           audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
           audioSplits.append(asplitTemplate.format(i=i,preo=preo,dur=dur))
@@ -990,10 +1022,18 @@ class FFmpegService():
       else:
         inputsList   = []
         filterInputs = ''
+        filterPeProcess = ''
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
-          filterInputs += '[{i}:v][{i}:a]'.format(i=vi)
-        filtercommand = filterInputs + 'concat=n={}:v=1:a=1[outvpre][outapre]'.format(len(inputsList)//2)
+          
+          if mode == 'CONCAT' and len(dimensionsSet) > 1:
+            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi)
+          else:
+            filterPeProcess += '[{i}:v]null[{i}vsc],'.format(i=vi)
+
+          filterInputs += '[{i}vsc][{i}:a]'.format(i=vi)
+
+        filtercommand = filterPeProcess + filterInputs + 'concat=n={}:v=1:a=1[outvpre][outapre]'.format(len(inputsList)//2)
 
       if os.path.exists( options.get('postProcessingFilter','') ):
         filtercommand += open(options.get('postProcessingFilter',''),'r').read()

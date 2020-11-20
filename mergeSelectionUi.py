@@ -5,7 +5,7 @@ import os
 import string 
 import mpv
 from tkinter.filedialog import askopenfilename
-
+import random
 
 
 class EncodeProgress(ttk.Frame):
@@ -315,7 +315,12 @@ class MergeSelectionUi(ttk.Frame):
     self.addAllClipsbutton = ttk.Button(self.addAddClipsFrame,text='⯆ Add all clips in timeline order ⯆')
     self.addAllClipsbutton.config(command=self.addAllClipsInTimelineOrder)
     self.addAllClipsbutton.config(style="small.TButton")
-    self.addAllClipsbutton.pack(expand='false', fill='x', padx='0', pady='3', side='top')
+    self.addAllClipsbutton.pack(expand='true', fill='x', padx='0', pady='3', side='left')
+
+    self.addAllClipsRandombutton = ttk.Button(self.addAddClipsFrame,text=' Add all clips in random order ')
+    self.addAllClipsRandombutton.config(command=self.addAllClipsInRandomOrder)
+    self.addAllClipsRandombutton.config(style="small.TButton")
+    self.addAllClipsRandombutton.pack(expand='false', fill='x', padx='0', pady='3', side='right')
 
     self.addAddClipsFrame.pack(expand='false', fill='x', padx='0', pady='0', side='top')
 
@@ -1046,6 +1051,10 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeInputCustContainer._scrollBothNow()
     self.scrolledframeSequenceContainer._scrollBothNow()
 
+  def addAllClipsInRandomOrder(self):
+    self.clearSequence()
+    for clip in sorted(self.selectableVideos.values(),key=lambda x:random.random()):
+      self.addClipToSequence(clip)
 
   def addAllClipsInTimelineOrder(self):
     self.clearSequence()

@@ -951,7 +951,7 @@ class MergeSelectionUi(ttk.Frame):
   def setController(self,controller):
     self.controller=controller
 
-  def previewFrameCallback(self,requestId,imageData):
+  def previewFrameCallback(self,requestId,timestamp,size,imageData):
     photoImage = tk.PhotoImage(data=imageData)
     for sv in self.selectableVideos.values():
       if sv.rid==requestId:

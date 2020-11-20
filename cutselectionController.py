@@ -245,7 +245,7 @@ class CutselectionController:
     self.ui.updateFileListing(self.files[:])
     self.updateProgressStatistics()
 
-  def returnPreviewFrame(self,requestId,responseImage):
+  def returnPreviewFrame(self,requestId,timestamp,size,responseImage):
     self.ui.updateViewPreviewFrame(requestId,responseImage)
 
   def requestPreviewFrame(self,filename,timestamp,size):

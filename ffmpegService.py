@@ -1177,7 +1177,7 @@ class FFmpegService():
   def postCompletedImageFrame(self,requestKey,responseImage):
     self.cache[requestKey] = responseImage
     requestId,filename,timestamp,filters,size = requestKey
-    self.responseRouting[requestKey](requestId,responseImage)
+    self.responseRouting[requestKey](requestId,timestamp,size,responseImage)
 
   def runSceneChangeDetection(self,filename,duration,callback):
     self.statsRequestQueue.put( (filename,'SceneChangeSearch',dict(filename=filename,

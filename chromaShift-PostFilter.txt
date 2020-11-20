@@ -1,0 +1,4 @@
+,[outvpre]split=3[r][g][b];nullsrc=size=640x360[base1];nullsrc=size=640x360[base2];nullsrc=size=640x360[base3];[r]lutrgb=g=0:b=0[red];[g]lutrgb=r=0:b=0[green];[b]lutrgb=r=0:g=0[blue];[base1][red]overlay=x=10:shortest=1,format=rgb24[x];[base2][green]overlay=x=0:shortest=1,format=rgb24[y];[base3][blue]overlay=y=10:shortest=1,format=rgb24[z];[x][y]blend=all_mode='addition'[xy];[xy][z]blend=all_mode='addition'[xyz];[xyz]crop=630:350:10:10,scale=640:360:out_color_matrix=bt709[outv]
+
+
+

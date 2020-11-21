@@ -7,6 +7,7 @@ class VideoInfo:
   duration: float
   fps: float
   tbr: float
+  tbn: float
   height:int
   width:int
   hasaudio:bool
@@ -44,6 +45,15 @@ def getVideoInfo(filename,filters=None):
         elif errElem.endswith(b'tbr'):
           try:
             stats['tbr']=float(errElem.split(b' ')[0])
+          except Exception as e:
+            print(e)
+        elif errElem.endswith(b'tbn'):
+          try:
+            tbnval = errElem.split(b' ')[0]
+            if b'k' in tbnval:
+              stats['tbn']=float(tbnval.replace(b'k',b'000'))
+            else:
+              stats['tbn']=float(tbnval)
           except Exception as e:
             print(e)
         if b'x' in errElem:

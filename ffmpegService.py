@@ -943,6 +943,8 @@ class FFmpegService():
       print(fadeDuration)
 
       dimensionsSet = set()
+      fpsSet        = set()
+      tbnSet        = set()
       
       in_maxWidth  = 0
       in_minWidth  = float('inf')
@@ -959,8 +961,22 @@ class FFmpegService():
         videow=videoInfo.width
         in_maxWidth  = max(in_maxWidth, videow)
         in_minWidth  = min(in_minWidth, videow)
-
+        fpsSet.add(videoInfo.tbr)
         dimensionsSet.add( (videow,videoh) )
+        tbnSet.add(videoInfo.tbn)
+
+      fpsCmd = 'null'
+
+      if len(fpsSet)>1 or len(tbnSet)>1:
+        count=0
+        targetfps = 0
+        for fpse in fpsSet:
+          if fpse is not None:
+            count+=1
+            targetfps+=fpse
+        fpse = targetfps/count
+        if fpse != 0:
+          fpsCmd = 'fps={},settb=AVTB'.format(targetfps)
 
       if fadeDuration > 0.0:
         inputsList = []
@@ -992,7 +1008,7 @@ class FFmpegService():
 
           splitexp = 'null'
           if mode == 'CONCAT' and len(dimensionsSet) > 1:
-            splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight)
+            splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
 
           videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
           transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
@@ -1025,9 +1041,8 @@ class FFmpegService():
         filterPeProcess = ''
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
-          
           if mode == 'CONCAT' and len(dimensionsSet) > 1:
-            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi)
+            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
           else:
             filterPeProcess += '[{i}:v]null[{i}vsc],'.format(i=vi)
 

@@ -940,6 +940,11 @@ class FFmpegService():
       except Exception as e:
         print('invalid fade duration',e)
 
+      try:
+        speedAdjustment= float(options.get('speedAdjustment',1.0))
+      except Exception as e:
+        print('invalid speed Adjustment',e)
+
       print(fadeDuration)
 
       dimensionsSet = set()
@@ -1018,10 +1023,7 @@ class FFmpegService():
           crossfadeOut+='[fadet{i}][audf{i}]'.format(i=i)
         crossfadeOut+='concat=n={}:v=1:a=1[concatOutV][concatOutA]'.format(len(expectedFadeDurations))
 
-        try:
-          speedAdjustment= float(options.get('speedAdjustment',1.0))
-        except Exception as e:
-          print('invalid speed Adjustment',e)
+
 
         if speedAdjustment==1.0:
           crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
@@ -1048,7 +1050,19 @@ class FFmpegService():
 
           filterInputs += '[{i}vsc][{i}:a]'.format(i=vi)
 
-        filtercommand = filterPeProcess + filterInputs + 'concat=n={}:v=1:a=1[outvpre][outapre]'.format(len(inputsList)//2)
+        filtercommand = filterPeProcess + filterInputs + 'concat=n={}:v=1:a=1[outvconcat][outaconcat]'.format(len(inputsList)//2)
+
+
+        if speedAdjustment==1.0:
+          filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'
+        else:
+          try:
+            vfactor=1/speedAdjustment
+            afactor=speedAdjustment
+            filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+          except Exception as e:
+            print(e)
+            filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'
 
       if os.path.exists( options.get('postProcessingFilter','') ):
         filtercommand += open(options.get('postProcessingFilter',''),'r').read()
@@ -1260,7 +1274,7 @@ class FFmpegService():
     requestKey = (requestId,filename,timestamp,filters,size)
     self.responseRouting[requestKey]=callback
     if requestKey in self.cache:
-      callback(requestId,self.cache[requestKey])
+      callback(requestId,timestamp,size,self.cache[requestKey])
     self.imageRequestQueue.put( requestKey )
 
   def postCompletedImageFrame(self,requestKey,responseImage):

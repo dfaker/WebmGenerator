@@ -18,6 +18,11 @@ from masonry import Brick,Stack
 
 filesPlannedForCreation = set()
 fileExistanceLock = threading.Lock()
+cancelledEncodeIds = set()
+
+def isRquestCancelled(requestId):
+  global cancelledEncodeIds
+  return requestId in cancelledEncodeIds
 
 packageglobalStatusCallback=print
 
@@ -35,7 +40,7 @@ except Exception as e:
 def cleanFilenameForFfmpeg(filename):
   return getShortPathName(os.path.normpath(filename))
 
-def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR'):
+def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None):
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
   smallestFailedOverMaximum=None
@@ -47,15 +52,21 @@ def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,siz
     val=int(val)
     passCount+=1
 
+    if isRquestCancelled(requestId):
+      return
+
     if twoPassMode:
       passReason='Stats Pass {} {}'.format(passCount+1,lastFailReason)
-      _         = encoderFunction(val,passCount,passReason,passPhase=1)
+      _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId)
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize = encoderFunction(val,passCount,passReason,passPhase=2)
+      finalSize = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId)
     else:
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize = encoderFunction(val,passCount,passReason)
-    
+      finalSize = encoderFunction(val,passCount,passReason,requestId=requestId)
+
+    if isRquestCancelled(requestId):
+      return
+
     if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts+2:
       break
     elif finalSize<sizeLimitMin:
@@ -72,11 +83,15 @@ def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,siz
       val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
 
 
-def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0):
+def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None):
   currentEncodedTotal=0
   ln=b''
   while 1:
     try:
+      if isRquestCancelled(requestId):
+        proc.kill()
+        outs, errs = proc.communicate()
+        return
       c = proc.stderr.read(1)
       if len(c)==0:
         break
@@ -108,7 +123,7 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
     statusCallback('Complete '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
 
 
-def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
   
   audio_mp  = 8
   video_mp  = 1024*1024
@@ -143,7 +158,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0):
+  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -191,8 +206,9 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase)
-    
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    if isRquestCancelled(requestId):
+      return 0
     if passPhase==1:
       return 0
     else:
@@ -209,13 +225,14 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                       twoPassMode=True,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6)
+                      maxAttempts=6,
+                      requestId=requestId)
 
   encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+finalOutName,1)
 
 
-def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
 
   audio_mp  = 8
   video_mp  = 1024*1024
@@ -247,7 +264,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0):
+  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None):
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -304,8 +321,9 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase)
-    
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    if isRquestCancelled(requestId):
+      return 0
     if passPhase==1:
       return 0
     else:
@@ -318,12 +336,13 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                       sizeLimitMin=sizeLimitMin,
                       twoPassMode=True,
                       sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6)
+                      maxAttempts=6,
+                      requestId=requestId)
 
   encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+finalOutName,1)
 
-def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback):
+def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
 
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')
@@ -348,7 +367,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     packageglobalStatusCallback(text,percentage)
 
 
-  def encoderFunction(width,passNumber,passReason,passPhase=0):
+  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None):
 
     giffiltercommand = filtercommand+',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\',split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
 
@@ -368,7 +387,9 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    if isRquestCancelled(requestId):
+      return 0
     finalSize = os.stat(finalOutName).st_size
     return finalSize
 
@@ -379,7 +400,8 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
                       maxAttempts=10,
-                      dependentValueName='Width')
+                      dependentValueName='Width',
+                      requestId=requestId)
   encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+finalOutName,1)
 
@@ -558,6 +580,11 @@ class FFmpegService():
           ln=b''
           while 1:
               c = proc.stderr.read(1)
+              if isRquestCancelled(requestId):
+                proc.kill()
+                outs, errs = proc.communicate()
+                os.remove(outname)
+                return
               if len(c)==0:
                 print(ln)
                 break
@@ -796,7 +823,7 @@ class FFmpegService():
                    options, 
                    totalEncodedSeconds, 
                    totalExpectedEncodedSeconds, 
-                   statusCallback)
+                   statusCallback, requestId=requestId)
 
     def encodeConcat(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
 
@@ -805,10 +832,6 @@ class FFmpegService():
       fileSequence=[]
       clipDimensions = []
       infoOut={}
-
-
-
-
 
       print(requestId,mode,seqClips,options,filenamePrefix,statusCallback)
       for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
@@ -905,6 +928,11 @@ class FFmpegService():
           ln=b''
           while 1:
               c = proc.stderr.read(1)
+              if isRquestCancelled(requestId):
+                proc.kill()
+                outs, errs = proc.communicate()
+                os.remove(outname)
+                return
               if len(c)==0:
                 print(ln)
                 break
@@ -969,6 +997,8 @@ class FFmpegService():
         fpsSet.add(videoInfo.tbr)
         dimensionsSet.add( (videow,videoh) )
         tbnSet.add(videoInfo.tbn)
+        if isRquestCancelled(requestId):
+          return
 
       fpsCmd = 'null'
 
@@ -1103,7 +1133,7 @@ class FFmpegService():
                    options, 
                    totalEncodedSeconds, 
                    totalExpectedEncodedSeconds, 
-                   statusCallback)
+                   statusCallback, requestId=requestId)
 
 
     def encodeWorker():
@@ -1293,6 +1323,10 @@ class FFmpegService():
                                                              rid=rid,
                                                              cropRect=cropRect,
                                                              secondsChange=secondsChange),callback) )
+
+  def cancelEncodeRequest(self,requestId):
+    global cancelledEncodeIds
+    cancelledEncodeIds.add(requestId)
 
 if __name__ == '__main__':
   import webmGenerator

@@ -14,7 +14,7 @@ class VideoInfo:
 
 def getVideoInfo(filename,filters=None):
   state=None
-  stats= dict(filename=filename,duration=0,hasaudio=False,fps=24)
+  stats= dict(filename=filename,duration=0,hasaudio=False,fps=24,tbr=None,tbn=None,height=0,width=0)
   if filters is None:
     proc = sp.Popen(['ffmpeg','-i',filename],stdout=sp.PIPE,stderr=sp.PIPE)
   else:

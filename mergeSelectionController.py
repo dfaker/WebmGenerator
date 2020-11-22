@@ -18,5 +18,9 @@ class MergeSelectionController:
     print('encode',requestId,mode,seq,options,filenamePrefix)
     self.ffmpegService.encode(requestId,mode,seq,options,filenamePrefix,statusCallback)
 
+  def cancelEncodeRequest(self,requestId):
+    self.ffmpegService.cancelEncodeRequest(requestId)
+
+
 if __name__ == '__main__':
   import webmGenerator

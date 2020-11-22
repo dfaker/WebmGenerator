@@ -9,9 +9,13 @@ import random
 
 
 class EncodeProgress(ttk.Frame):
-  def __init__(self, master=None, *args, encodeRequestId=None, **kwargs):
+  def __init__(self, master=None, *args, encodeRequestId=None,controller=None, **kwargs):
     ttk.Frame.__init__(self, master)
     self.frameEncodeProgressWidget = self
+    self.encodeRequestId = encodeRequestId
+    self.cancelled = False
+    self.controller = controller
+
     self.labelEncodeProgressLabel = ttk.Label(self.frameEncodeProgressWidget)
     self.labelEncodeProgressLabel.config(text='Encode request submitted', width='60')
     self.labelEncodeProgressLabel.pack(side='left')
@@ -19,11 +23,30 @@ class EncodeProgress(ttk.Frame):
     self.progressbarEncodeProgressLabel.config(mode='determinate', orient='horizontal')
     self.progressbarEncodeProgressLabel.pack(expand='true',padx=10, fill='x', side='left')
 
+    self.progressbarEncodeCancelButton = ttk.Button(self.frameEncodeProgressWidget)
+    self.progressbarEncodeCancelButton.config(text='Cancel', width=10)
+    self.progressbarEncodeCancelButton.config(command=self.cancelEncodeRequest)
+    self.progressbarEncodeCancelButton.config(style="small.TButton")
+    self.progressbarEncodeCancelButton.pack(expand='false',padx=0, fill='x', side='left')
+
     self.frameEncodeProgressWidget.config(height='200', width='200')
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=10, fill='x', side='top')
     self.progresspercent = 0
 
+  def cancelEncodeRequest(self):
+    self.progressbarEncodeProgressLabel.config(style="Red.Horizontal.TProgressbar")
+    self.progressbarEncodeProgressLabel['value']=100
+    self.progresspercent = 100
+    self.cancelled = True
+    self.progressbarEncodeCancelButton.pack_forget()
+    self.labelEncodeProgressLabel.config(text='Cancelled')
+    self.controller.cancelEncodeRequest(self.encodeRequestId)
+
+
   def updateStatus(self,status,percent):
+    if self.cancelled:
+      return
+
     self.labelEncodeProgressLabel.config(text=status)
     self.progressbarEncodeProgressLabel['value']=percent*100
     self.progresspercent = percent*100
@@ -789,6 +812,10 @@ class MergeSelectionUi(ttk.Frame):
 
     self.updatedPredictedDuration()
   
+
+  def cancelEncodeRequest(self,requestId):
+    self.controller.cancelEncodeRequest(requestId)
+
   def encodeCurrent(self):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       encodeSequence = []
@@ -825,7 +852,7 @@ class MergeSelectionUi(ttk.Frame):
         'audiOverrideDelay':self.audiOverrideDelayValue
       }
       print(options)
-      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
+      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
       self.encoderProgress.append(encodeProgressWidget)
       outputPrefix = self.filenamePrefixValue
       if self.automaticFileNamingValue:
@@ -864,7 +891,7 @@ class MergeSelectionUi(ttk.Frame):
           'audiOverrideDelay':self.audiOverrideDelayValue
         }
 
-        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
+        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
         self.encoderProgress.append(encodeProgressWidget)
 
         outputPrefix = self.filenamePrefixValue
@@ -905,7 +932,7 @@ class MergeSelectionUi(ttk.Frame):
             'audiOverrideDelay':self.audiOverrideDelayValue
           }
 
-          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId)
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
           self.encoderProgress.append(encodeProgressWidget)
           outputPrefix = self.filenamePrefixValue
           if self.automaticFileNamingValue:

@@ -34,6 +34,7 @@ class WebmGeneratorUi:
     self.style.configure("Green.Horizontal.TProgressbar", 
                            background='green',lightcolor='green',darkcolor='green',border=0,relief='flat')
 
+
     self.style.configure('small.TButton', padding=0)
     self.style.configure('smallextra.TButton', padding=-20)
 

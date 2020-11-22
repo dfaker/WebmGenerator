@@ -53,6 +53,7 @@ class EncodeProgress(ttk.Frame):
 
     if percent >= 1:
       self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
+      self.progressbarEncodeCancelButton.pack_forget()
     else:
       self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
 

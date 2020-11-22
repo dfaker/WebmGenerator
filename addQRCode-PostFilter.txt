@@ -1,1 +1,0 @@
-,movie='QRCode.gif'[logo],[outvpre][logo]overlay='0:0'[outv]

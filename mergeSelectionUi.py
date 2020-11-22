@@ -42,7 +42,6 @@ class EncodeProgress(ttk.Frame):
     self.labelEncodeProgressLabel.config(text='Cancelled')
     self.controller.cancelEncodeRequest(self.encodeRequestId)
 
-
   def updateStatus(self,status,percent):
     if self.cancelled:
       return
@@ -56,6 +55,7 @@ class EncodeProgress(ttk.Frame):
       self.progressbarEncodeCancelButton.pack_forget()
     else:
       self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
+      self.progressbarEncodeCancelButton.pack(expand='false',padx=0, fill='x', side='left')
 
     self.winfo_toplevel().title('webmGenerator: encoding: {:0.2f}%'.format(percent*100))
 

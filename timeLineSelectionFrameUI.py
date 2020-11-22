@@ -4,8 +4,56 @@ import tkinter.ttk as ttk
 
 import datetime
 import threading
-
+from math import floor
 import time
+
+
+def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
+
+    if hasattr(value, 'seconds'):
+        seconds = value.seconds + value.days * 24 * 3600
+    else:
+        seconds = value
+
+    seconds_total = seconds
+
+    minutes = int(floor(seconds / 60))
+    minutes_total = minutes
+    seconds -= minutes * 60
+
+    if hasattr(value, 'microseconds'):
+      seconds += (value.microseconds/1000000)
+      seconds = round(seconds,2)
+
+    hours = int(floor(minutes / 60))
+    hours_total = hours
+    minutes -= hours * 60
+
+    days = int(floor(hours / 24))
+    days_total = days
+    hours -= days * 24
+
+    years = int(floor(days / 365))
+    years_total = years
+    days -= years * 365
+
+    return time_format.format(**{
+        'seconds': seconds,
+        'seconds2': str(seconds).zfill(2),
+        'minutes': minutes,
+        'minutes2': str(minutes).zfill(2),
+        'hours': hours,
+        'hours2': str(hours).zfill(2),
+        'days': days,
+        'years': years,
+        'seconds_total': seconds_total,
+        'minutes_total': minutes_total,
+        'hours_total': hours_total,
+        'days_total': days_total,
+        'years_total': years_total,
+    })
+
+
 def debounce(wait):
     def decorator(fn):
         def debounced(*args, **kwargs):
@@ -375,14 +423,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           break
         else:          
           tm = self.timeline_canvas.create_line(tx, 20, tx, 22,fill="white",tags='ticks') 
-          tm = self.timeline_canvas.create_text(tx, 30,text=str(datetime.timedelta(seconds=round(self.xCoordToSeconds(tx)))),fill="white",tags='ticks') 
+          tm = self.timeline_canvas.create_text(tx, 30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds2}'),fill="white",tags='ticks') 
 
 
 
     currentPlaybackX =  self.secondsToXcoord(self.controller.getCurrentPlaybackPosition())
     self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,55,currentPlaybackX,timelineHeight )
     self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45)
-    self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=str(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX)))))
+    self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX))), '{hours_total}:{minutes2}:{seconds2}'))
     activeRanges=set()
     for rid,(s,e) in list(ranges):
 
@@ -403,7 +451,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
-        self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(str(datetime.timedelta(seconds=round(e-s,2))) ) )
+        self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds2}') ) )
         
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight)
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight)
@@ -451,7 +499,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
 
 
-        self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(str(datetime.timedelta(seconds=round(e-s,2))).strip('0').strip(':')),fill="white", tags='fileSpecific') 
+        self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds2}')),fill="white", tags='fileSpecific') 
     
         self.canvasRegionCache[(rid,'preTrim')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
         self.canvasRegionCache[(rid,'postTrim')] = self.timeline_canvas.create_rectangle(trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')

@@ -10,7 +10,6 @@ buildOptions = dict(packages = ["os"],
                     include_files = [
                     'ffmpeg.exe'
                     ,'ffprobe.exe'
-                    ,'addQRCode-PostFilter.txt'
                     ,'QRCode.gif'
                     ,'PostFilter-addQRCode.txt'
                     ,'PostFilter-chromaShift.txt'

@@ -1,5 +1,0 @@
-,[outvpre]scale=-2:720,tblend=all_mode=difference128,tblend=all_mode=difference128,tblend=all_mode=difference128,spp=4:10,tblend=all_mode=average,tblend=all_mode=difference128,tblend=all_mode=difference128,tblend=all_mode=difference128,spp=4:10,tblend=all_mode=average,tblend=all_mode=difference128,tblend=all_mode=difference128,tblend=all_mode=difference128,spp=4:10,tblend=all_mode=average,tblend=all_mode=difference128,tblend=all_mode=difference128,tblend=all_mode=difference128[outv]
-
-
-
- 

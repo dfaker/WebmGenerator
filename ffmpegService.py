@@ -1031,7 +1031,7 @@ class FFmpegService():
           try:
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
-            crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
             print(e)
             crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
@@ -1059,7 +1059,7 @@ class FFmpegService():
           try:
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
-            filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:vsbmc=1:fps=30\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
             print(e)
             filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'

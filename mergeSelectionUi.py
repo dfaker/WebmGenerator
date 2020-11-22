@@ -444,9 +444,12 @@ class MergeSelectionUi(ttk.Frame):
 
     self.postProcessingFilterOptions = ['None']
     for f in os.listdir('.'):
-      if f.upper().endswith('-POSTFILTER.TXT'):
+      if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
         self.postProcessingFilterOptions.append(f)
     self.postProcessingFilterVar.set(self.postProcessingFilterOptions[0])
+    for filterElem in self.postProcessingFilterOptions:
+      if 'DEFAULT' in filterElem.upper():
+        self.postProcessingFilterVar.set(filterElem)
 
     self.frameSequenceActions = ttk.Frame(self.frameEncodeSettings)
     self.buttonSequenceClear = ttk.Button(self.frameSequenceActions)

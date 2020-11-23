@@ -1444,15 +1444,20 @@ class FFmpegService():
             print(ln)
             break
           if c in b'\r\n':
-            if b'pts_time' in ln:
-              for e in ln.split(b' '):
-                if b'pts_time' in e:
-                  ts = float(e.split(b':')[-1])
-                  self.globalStatusCallback('Loading image {}'.format(filename),ts/duration)
+            print(ln)
+            for p in ln.split(b' '):
+              if b'time=' in p:
+                try:
+                  pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+                  currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                  if currentEncodedTotal>0:
+                    self.globalStatusCallback('Loading image {}'.format(filename),currentEncodedTotal/duration)
+                except Exception as e:
+                  print(e)
             ln=b''
           else:
             ln+=c
-            print(ln)
+            
         proc.communicate()
         completioncallback(outfileName)
 

@@ -177,9 +177,10 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
       ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
 
 
+
     bufsize = "3000k"
     if sizeLimitMax != 0.0:
-      bufsize = str(br*2)
+      bufsize = str(min(2000000000.0,br*2))
 
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
@@ -292,7 +293,7 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     bufsize = "3000k"
     if sizeLimitMax != 0.0:
-      bufsize = str(br*2)
+      bufsize = str(min(2000000000.0,br*2))
 
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"

@@ -314,7 +314,7 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyleCombo = ttk.OptionMenu(self.mergeStyleFrame,self.mergeStyleVar,self.mergeStyleVar.get(),*self.mergeStyles)
     self.mergeStyleCombo.pack(expand='true', fill='x', side='right')
 
-    self.mergeStyleFrame.pack(expand='false', fill='x', padx='5', pady='5', side='top')
+    self.mergeStyleFrame.pack(expand='false', fill='x', padx='5', pady='0', side='top')
 
 
 
@@ -335,7 +335,7 @@ class MergeSelectionUi(ttk.Frame):
     self.profileCombo = ttk.OptionMenu(self.profileFrame,self.profileVar,self.profileVar.get(),*self.profiles)
     self.profileCombo.pack(expand='true', fill='x', side='right')
 
-    self.profileFrame.pack(expand='false', fill='x', padx='5', pady='5', side='top')
+    self.profileFrame.pack(expand='false', fill='x', padx='5', pady='0', side='top')
 
     self.profileVar.trace('w',self.profileChanged)
 
@@ -763,6 +763,17 @@ class MergeSelectionUi(ttk.Frame):
 
   def profileChanged(self,*args):
     profileName = self.profileVar.get()
+
+    if profileName == 'Default max quality mp4':
+      self.outputFormatVar.set('mp4:x264')
+      self.maximumSizeVar.set('0.0')
+    elif profileName == 'Sub 4M max quality vp8 webm':
+      self.outputFormatVar.set('webm:VP8')
+      self.maximumSizeVar.set('4.0')
+    elif profileName == 'Sub 100M max quality mp4':
+      self.outputFormatVar.set('webm:VP8')
+      self.maximumSizeVar.set('100.0')
+
 
   def valueChange(self,*args):
     try:

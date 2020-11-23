@@ -63,6 +63,12 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Open Project", command=self.openProject)
     self.filemenu.add_command(label="Save Project", command=self.saveProject)
     self.filemenu.add_separator()
+
+    self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles)
+    self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl)
+    self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile)
+
+    self.filemenu.add_separator()
     self.filemenu.add_command(label="Update youtube-dl", command=self.updateYoutubeDl)
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Exit", command=self.exitProject)
@@ -92,6 +98,15 @@ class WebmGeneratorUi:
 
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
+
+  def loadVideoFiles(self):
+    self.controller.cutselectionUi.loadVideoFiles()
+
+  def loadVideoYTdl(self):
+    self.controller.cutselectionUi.loadVideoYTdl()
+
+  def loadImageFile(self):
+    self.controller.cutselectionUi.loadImageFile()
 
   def newProject(self):
     self.controller.newProject()

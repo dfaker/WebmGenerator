@@ -171,18 +171,22 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
       ffmpegcommand+=['-filter_complex',filtercommand]
       ffmpegcommand+=['-map','[outv]','-map','[outa]']  
 
-
     if passPhase==1:
       ffmpegcommand+=['-pass', '1', '-passlogfile', outLogFilename ]
     elif passPhase==2:
       ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
 
+
+    bufsize = "3000k"
+    if sizeLimitMax != 0.0:
+      bufsize = str(br*2)
+
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
-                   ,"-stats","-pix_fmt","yuv420p","-bufsize", "3000k"
+                   ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
                    ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-tune","ssim","-deadline","best",'-slices','8'
+                   ,"-tune","ssim","-deadline","best",'-slices','8','-cpu-used','0'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
@@ -192,6 +196,119 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     if options.get('audioChannels') == 'No audio' or passPhase==1:
       ffmpegcommand+=["-an"]    
+    elif options.get('audioChannels') == 'Stereo':
+      ffmpegcommand+=["-ac","2"]    
+    else:
+      ffmpegcommand+=["-ac","1"]
+
+    ffmpegcommand+=["-sn"]
+
+    if passPhase==1:
+      ffmpegcommand += ['-f', 'null', os.devnull]
+    else:
+      ffmpegcommand += [finalOutName]
+
+    print(' '.join(ffmpegcommand))
+    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    if isRquestCancelled(requestId):
+      return 0
+    if passPhase==1:
+      return 0
+    else:
+      finalSize = os.stat(finalOutName).st_size
+      return finalSize
+
+  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+
+
+
+  encodeTargetingSize(encoderFunction=encoderFunction,
+                      outputFilename=finalOutName,
+                      initialDependentValue=initialBr,
+                      twoPassMode=True,
+                      sizeLimitMin=sizeLimitMin,
+                      sizeLimitMax=sizeLimitMax,
+                      maxAttempts=6,
+                      requestId=requestId)
+
+  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+finalOutName,1)
+
+
+def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
+  
+  audio_mp  = 8
+  video_mp  = 1024*1024
+  initialBr = 16777216
+  dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
+
+  if options.get('maximumSize') == 0.0:
+    sizeLimitMax = float('inf')
+    sizeLimitMin = float('-inf')
+    initialBr    = 16777216
+  else:
+    sizeLimitMax = options.get('maximumSize')*1024*1024
+    sizeLimitMin = sizeLimitMax*0.85
+    targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
+    initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
+
+
+
+  fileN=0
+  with fileExistanceLock:
+    while 1:
+      fileN+=1
+      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
+      finalOutName = os.path.join(outputPathName,finalOutName)
+      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
+      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
+        filesPlannedForCreation.add(finalOutName)
+        break
+
+  
+  def encoderStatusCallback(text,percentage):
+    statusCallback(text,percentage)
+    packageglobalStatusCallback(text,percentage)
+
+  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None):
+    
+    ffmpegcommand=[]
+    ffmpegcommand+=['ffmpeg' ,'-y']
+    ffmpegcommand+=inputsList
+
+    if options.get('audioChannels') == 'No audio':
+      ffmpegcommand+=['-filter_complex',filtercommand+',[outa]anullsink']
+      ffmpegcommand+=['-map','[outv]']
+    else:
+      ffmpegcommand+=['-filter_complex',filtercommand]
+      ffmpegcommand+=['-map','[outv]','-map','[outa]']  
+
+
+    if passPhase==1:
+      ffmpegcommand+=['-pass', '1', '-passlogfile', outLogFilename ]
+    elif passPhase==2:
+      ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
+
+    bufsize = "3000k"
+    if sizeLimitMax != 0.0:
+      bufsize = str(br*2)
+
+    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
+                   ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
+                   ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
+                   ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
+                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
+                   ,"-deadline","best",'-slices','8','-cpu-used','0'
+                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
+    
+    if sizeLimitMax == 0.0:
+      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
+    else:
+      ffmpegcommand+=["-b:v",str(br)]
+
+    if options.get('audioChannels') == 'No audio' or passPhase==1:
+      ffmpegcommand+=["-an"]
     elif options.get('audioChannels') == 'Stereo':
       ffmpegcommand+=["-ac","2"]    
     else:
@@ -407,6 +524,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder
+  ,'webm:VP9':webmvp9Encoder
   ,'mp4:x264':mp4x264Encoder
   ,'gif':gifEncoder
 }
@@ -782,7 +900,7 @@ class FFmpegService():
 
       ffmpegFilterCommand += ','.join(inputScales)
       ffmpegFilterCommand += ',' + ','.join(overlays)
-      ffmpegFilterCommand += ',[tmp{k}]null,pad=ceil(iw/2)*2:ceil(ih/2)*2[outv]'.format(k=snum+1)
+      ffmpegFilterCommand += ',[tmp{k}]null,pad=ceil(iw/2)*2:ceil(ih/2)*2[outvpre]'.format(k=snum+1)
 
       if len(inputAudio)>1:
         ffmpegFilterCommand +=  ',{}amix=inputs={}:duration=shortest[outapre]'.format(''.join(outputsAudio),len(outputsAudio))
@@ -809,6 +927,12 @@ class FFmpegService():
         ffmpegFilterCommand += ',[outapre]anullsink,[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS)
       else:
         ffmpegFilterCommand += ',[outapre]anull[outa]'
+
+
+      if os.path.exists( options.get('postProcessingFilter','') ):
+        ffmpegFilterCommand += open(options.get('postProcessingFilter',''),'r').read()
+      else:
+        ffmpegFilterCommand += ',[outvpre]null[outv]'
 
 
 
@@ -968,8 +1092,10 @@ class FFmpegService():
       except Exception as e:
         print('invalid fade duration',e)
 
+      speedAdjustment = 1.0
       try:
         speedAdjustment= float(options.get('speedAdjustment',1.0))
+        speedAdjustment = max(min(speedAdjustment, 100),0.5)
       except Exception as e:
         print('invalid speed Adjustment',e)
 
@@ -1297,6 +1423,46 @@ class FFmpegService():
       statsWorkerThread.start()
       self.statsWorkers.append(statsWorkerThread)
 
+    self.loadImageAsVideoRequestQueue = Queue()
+
+    def loadImageAsVideoWorker():
+      imageasVideoID=0
+      while 1:
+        filename,duration,completioncallback = self.loadImageAsVideoRequestQueue.get()
+        vidInfo = ffmpegInfoParser.getVideoInfo(filename)
+        print(vidInfo)
+        imageasVideoID+=1
+        
+        os.path.exists('tempVideoFiles') or os.mkdir('tempVideoFiles')
+
+        outfileName = os.path.join('tempVideoFiles','loadImageAsVideo_{}.mp4'.format(imageasVideoID))
+        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-vf', 'scale={}:{},pad=ceil(iw/2)*2:ceil(ih/2)*2'.format(vidInfo.width,vidInfo.height),outfileName],stderr=sp.PIPE)
+        ln=b''
+        while 1:
+          c=proc.stderr.read(1)
+          if len(c)==0:
+            print(ln)
+            break
+          if c in b'\r\n':
+            if b'pts_time' in ln:
+              for e in ln.split(b' '):
+                if b'pts_time' in e:
+                  ts = float(e.split(b':')[-1])
+                  self.globalStatusCallback('Loading image {}'.format(filename),ts/duration)
+            ln=b''
+          else:
+            ln+=c
+            print(ln)
+        proc.communicate()
+        completioncallback(outfileName)
+
+
+    self.loadImageAsVideoWorkers=[]
+    loadImageAsVideoWorkerThread = threading.Thread(target=loadImageAsVideoWorker,daemon=True)
+    loadImageAsVideoWorkerThread.start()
+    self.loadImageAsVideoWorkers.append(loadImageAsVideoWorkerThread)
+
+
   def encode(self,requestId,mode,seq,options,filenamePrefix,statusCallback):
     self.encodeRequestQueue.put((requestId,mode,seq,options,filenamePrefix,statusCallback))
 
@@ -1327,6 +1493,9 @@ class FFmpegService():
   def cancelEncodeRequest(self,requestId):
     global cancelledEncodeIds
     cancelledEncodeIds.add(requestId)
+
+  def loadImageFile(self,filename,duration,callback):
+    self.loadImageAsVideoRequestQueue.put((filename,duration,callback))
 
 if __name__ == '__main__':
   import webmGenerator

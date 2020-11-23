@@ -23,7 +23,7 @@ class CutselectionController:
     self.currentLoop_a=None
     self.currentLoop_b=None
 
-    if len(initialFiles)>0:
+    if len(initialFiles)>1:
       response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
       if response=='yes':
         random.shuffle(initialFiles)
@@ -235,6 +235,12 @@ class CutselectionController:
 
   def loadVideoYTdl(self,url):
     self.ytdlService.loadUrl(url,self.returnYTDLDownlaodedVideo)
+
+  def returnImageLoadAsVideo(self,filename):
+    self.loadFiles([filename])
+
+  def loadImageFile(self,filename,duration):
+    self.ffmpegService.loadImageFile(filename,duration,self.returnImageLoadAsVideo)
 
   def loadFiles(self,fileList):
     for file in fileList:

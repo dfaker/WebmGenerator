@@ -185,8 +185,6 @@ class GridColumn(ttk.Frame):
     self.config(relief='raised',padding='4')
 
     self.buttonFrame = ttk.Frame(self)
-
-
     self.selectColumnBtn = ttk.Button(self.buttonFrame,text='Select ✔',command=self.selectColumn)
     self.selectColumnBtn.config(style="small.TButton")
     self.selectColumnBtn.pack(expand='true', fill='x', side='left')
@@ -302,7 +300,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.mergeStyleFrame = ttk.Frame(self.frameMergeSelection)
 
-    self.mergestyleLabel = ttk.Label(self.mergeStyleFrame,text='Merge Style')
+    self.mergestyleLabel = ttk.Label(self.mergeStyleFrame,text='Merge Style',width='12')
     self.mergestyleLabel.pack(expand='false', fill='x', side='left')
 
     self.mergeStyleVar = tk.StringVar()
@@ -317,6 +315,30 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyleCombo.pack(expand='true', fill='x', side='right')
 
     self.mergeStyleFrame.pack(expand='false', fill='x', padx='5', pady='5', side='top')
+
+
+
+    self.profileFrame = ttk.Frame(self.frameMergeSelection)
+
+    self.profileLabel = ttk.Label(self.profileFrame,text='Profile',width='12')
+    self.profileLabel.pack(expand='false', fill='x', side='left')
+
+    self.profileVar = tk.StringVar()
+    self.profiles   = ['None',
+                       'Default max quality mp4',                          
+                       'Sub 4M max quality vp8 webm',
+                       'Sub 100M max quality mp4',]
+
+    self.profileVar.set(self.profiles[0])
+    
+
+    self.profileCombo = ttk.OptionMenu(self.profileFrame,self.profileVar,self.profileVar.get(),*self.profiles)
+    self.profileCombo.pack(expand='true', fill='x', side='right')
+
+    self.profileFrame.pack(expand='false', fill='x', padx='5', pady='5', side='top')
+
+    self.profileVar.trace('w',self.profileChanged)
+
 
     self.labelframeInputCutSelection = ttk.Labelframe(self.frameMergeSelection)
     
@@ -365,9 +387,14 @@ class MergeSelectionUi(ttk.Frame):
 
     self.gridColumns = []
 
-    self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column ✚', command=self.addColumn)
+    #self.gridSequenceContainerAddRow = ttk.Button(self.gridSequenceContainer,text='Add Row ⇄', command=self.addRow)
+    #self.gridSequenceContainerAddRow.config(style="small.TButton")
+    #self.gridSequenceContainerAddRow.pack(expand='true', fill='x', padx='0', pady='0', side='left')
+
+
+    self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column ⇅', command=self.addColumn)
     self.gridSequenceContainerAddColumn.config(style="small.TButton")
-    self.gridSequenceContainerAddColumn.pack(expand='false', fill='x', padx='0', pady='0', side='bottom')
+    self.gridSequenceContainerAddColumn.pack(expand='true', fill='x', padx='0', pady='0', side='right')
     self.gridSequenceContainer.pack_forget()
 
     self.scrolledframeSequenceContainer = ScrolledFrame(self.outputPlanningContainer, scrolltype='horizontal')
@@ -436,6 +463,7 @@ class MergeSelectionUi(ttk.Frame):
     self.outputFormats = [
       'mp4:x264',
       'webm:VP8',
+      'webm:VP9',
       'gif',      
     ]
     self.outputFormatVar.set(self.outputFormats[0])
@@ -697,6 +725,10 @@ class MergeSelectionUi(ttk.Frame):
     self.audioOverrideVar.set(str(files))
 
 
+  def addRow(self):
+    column = GridColumn(self.gridColumnContainer,self)
+    self.gridColumns.append({'column':column,'clips':[]})
+
   def addColumn(self):
     column = GridColumn(self.gridColumnContainer,self)
     self.gridColumns.append({'column':column,'clips':[]})
@@ -729,6 +761,8 @@ class MergeSelectionUi(ttk.Frame):
     for e in self.encoderProgress:
       e.remove()
 
+  def profileChanged(self,*args):
+    profileName = self.profileVar.get()
 
   def valueChange(self,*args):
     try:

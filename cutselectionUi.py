@@ -1,7 +1,7 @@
 
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter.filedialog import askopenfilenames
+from tkinter.filedialog import askopenfilenames,askopenfilename
 from tkinter import messagebox
 from tkinter import simpledialog
 from pygubu.widgets.scrolledframe import ScrolledFrame
@@ -514,6 +514,14 @@ class CutselectionUi(ttk.Frame):
     def loadVideoFiles(self):
         fileList = askopenfilenames()
         self.controller.loadFiles(fileList)
+
+    def loadImageFile(self):
+      filename = askopenfilename()
+      if filename is not None and len(filename)>0:
+        duration = simpledialog.askfloat("Create video from still image {}".format(filename), "What should the durtation of the new video clip be?",parent=self,minvalue=0.0, maxvalue=100000.0)
+        if duration is not None:
+          self.controller.loadImageFile(filename,duration)
+
 
     def restartForNewFile(self, filename):
         self.frameTimeLineFrame.resetForNewFile()

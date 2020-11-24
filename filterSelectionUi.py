@@ -234,6 +234,7 @@ class FilterSelectionUi(ttk.Frame):
     ttk.Frame.__init__(self, master)
     # build ui
     self.frameFilterFrame = self
+    self.controller=None
     self.frameFilterSelectionFrame = ttk.Frame(self.frameFilterFrame)
     self.labelframeFilterBrowserFrame = ttk.Labelframe(self.frameFilterSelectionFrame)
     self.frameVideoPickerFrame = ttk.Frame(self.labelframeFilterBrowserFrame)
@@ -313,6 +314,25 @@ class FilterSelectionUi(ttk.Frame):
     self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'), increment=0.01)
     self.spinBoxArRatio.pack(expand='false', side='left')
 
+    self.fitToScreenVar = tk.BooleanVar()
+    self.fitToScreenVar.trace('w',self.changeFitToScreen)
+    self.fitToScreenVar.set(True)
+    self.fitToScreenCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Fit to screen", variable=self.fitToScreenVar)
+    self.fitToScreenCheckbox.pack(expand='false', side='left')
+
+
+
+    self.speedVar = tk.StringVar()
+    self.speedVar.trace('w',self.speedChange)
+    self.speedVar.set('2.0')
+    self.spinboxSpeed = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.speedVar,from_=float('0'), to=float('inf'), increment=0.1)
+    self.spinboxSpeed.pack(expand='false', side='right')
+
+    self.speedLabel = ttk.Label(self.selectionOptionsFrame)
+    self.speedLabel.config(text='Preview speed')
+    self.speedLabel.pack(expand='false', side='right')
+    
+
     self.selectionOptionsFrame.pack(expand='false', fill='x', side='top')
 
     self.framePlayerFrame = ttk.Frame(self.playerContainerFrame, style='PlayerFrame.TFrame')
@@ -348,6 +368,22 @@ class FilterSelectionUi(ttk.Frame):
     self.subClipOrder=[]
     self.currentSubclipIndex=None
     self.filterClipboard=[]
+    
+
+  def speedChange(self,*args):
+    speed = self.speedVar.get()
+    try:
+      speed = float(speed)
+      if self.controller is not None:  
+        self.controller.setSpeed(speed)
+    except:
+      pass
+
+
+  def changeFitToScreen(self,*args):
+    fitToScreen = self.fitToScreenVar.get()
+    if self.controller is not None:
+      self.controller.fitoScreen(fitToScreen)
 
   def getRectProperties(self):
     return self.videoMouseRect

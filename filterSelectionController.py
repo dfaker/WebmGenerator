@@ -19,6 +19,11 @@ class FilterSelectionController:
     self.player.speed=2
     self.currentlyPlayingFileName=None
 
+  def setSpeed(self,speed):
+    self.player.speed=speed
+
+  def fitoScreen(self,fit):
+    self.player.video_unscaled = not fit
 
   def close_ui(self):
     self.player.terminate()

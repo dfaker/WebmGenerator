@@ -39,6 +39,16 @@ class WebmGeneratorController:
     self.lastSaveFile=None
     self.autosaveFilename = 'autosave.webgproj'
 
+    self.globalOptions = {
+      "parallelVideoJobs":3,
+      "statsWorkers":1,
+      "encodeWorkers":1,
+      "tempFolder":'tempVideoFiles',
+      "tempDownloadFolder":'tempDownloadedVideoFiles',
+      "autosaveFilename":'autosave.webgproj',
+      "defaultProfile":"None"
+    }
+
     self.initialFiles = self.cleanInitialFiles(initialFiles+[self.tempDownloadFolder])
     self.root = Tk()
     

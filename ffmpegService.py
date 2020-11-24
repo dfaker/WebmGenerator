@@ -11,6 +11,7 @@ import subprocess as sp
 import threading
 import time
 import ffmpegInfoParser
+import shutil
 
 import statistics
 
@@ -39,8 +40,9 @@ except Exception as e:
 
 def cleanFilenameForFfmpeg(filename):
   return getShortPathName(os.path.normpath(filename))
+                      
 
-def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None):
+def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None):
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
   smallestFailedOverMaximum=None
@@ -68,6 +70,7 @@ def encodeTargetingSize(encoderFunction,outputFilename,initialDependentValue,siz
       return
 
     if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts+2:
+      shutil.move(tempFilename,outputFilename)
       break
     elif finalSize<sizeLimitMin:
       lastFailReason = 'File too small, {} increase'.format(dependentValueName)
@@ -122,6 +125,21 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
   elif passNumber == 2:
     statusCallback('Complete '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
 
+def getFreeNameForFileAndLog(filenamePrefix,extension):
+  fileN=0
+  with fileExistanceLock:
+    while 1:
+      fileN+=1
+      videoFileName = '{}_WmG_{}.{}'.format(filenamePrefix,fileN,extension)
+      outLogFilename = 'encoder_{}.log'.format(fileN)
+      
+      logFilePath         = os.path.join('tempVideoFiles',outLogFilename)
+      tempVideoFilePath  = os.path.join('tempVideoFiles',videoFileName)
+      videoFilePath      = os.path.join('finalVideos',videoFileName)
+
+      if not os.path.exists(tempVideoFilePath) and not os.path.exists(videoFilePath) and not os.path.exists(logFilePath) and videoFileName not in filesPlannedForCreation:
+        filesPlannedForCreation.add(videoFileName)
+        return videoFileName,logFilePath,tempVideoFilePath,videoFilePath
 
 def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
   
@@ -141,18 +159,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
 
-
-  fileN=0
-  with fileExistanceLock:
-    while 1:
-      fileN+=1
-      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
-      finalOutName = os.path.join(outputPathName,finalOutName)
-      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
-      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
-        filesPlannedForCreation.add(finalOutName)
-        break
-
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
   
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
@@ -172,9 +179,9 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
       ffmpegcommand+=['-map','[outv]','-map','[outa]']  
 
     if passPhase==1:
-      ffmpegcommand+=['-pass', '1', '-passlogfile', outLogFilename ]
+      ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
     elif passPhase==2:
-      ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
+      ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
 
 
@@ -187,7 +194,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
                    ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-tune","ssim","-deadline","best",'-slices','8','-cpu-used','0'
+                   ,"-deadline","best",'-slices','8','-cpu-used','0'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
@@ -207,25 +214,24 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     if passPhase==1:
       ffmpegcommand += ['-f', 'null', os.devnull]
     else:
-      ffmpegcommand += [finalOutName]
+      ffmpegcommand += [tempVideoFilePath]
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
       return 0
     if passPhase==1:
       return 0
     else:
-      finalSize = os.stat(finalOutName).st_size
+      finalSize = os.stat(tempVideoFilePath).st_size
       return finalSize
 
-  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-
+  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
   encodeTargetingSize(encoderFunction=encoderFunction,
-                      outputFilename=finalOutName,
+                      tempFilename=tempVideoFilePath,
+                      outputFilename=videoFilePath,
                       initialDependentValue=initialBr,
                       twoPassMode=True,
                       sizeLimitMin=sizeLimitMin,
@@ -233,8 +239,8 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                       maxAttempts=6,
                       requestId=requestId)
 
-  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+finalOutName,1)
+  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+videoFilePath,1)
 
 
 def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
@@ -255,17 +261,7 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
 
-
-  fileN=0
-  with fileExistanceLock:
-    while 1:
-      fileN+=1
-      finalOutName = '{}_WmG_{}.webm'.format(filenamePrefix,fileN)
-      finalOutName = os.path.join(outputPathName,finalOutName)
-      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
-      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
-        filesPlannedForCreation.add(finalOutName)
-        break
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
 
   
   def encoderStatusCallback(text,percentage):
@@ -287,9 +283,9 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
 
     if passPhase==1:
-      ffmpegcommand+=['-pass', '1', '-passlogfile', outLogFilename ]
+      ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
     elif passPhase==2:
-      ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
+      ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
     bufsize = "3000k"
     if sizeLimitMax != 0.0:
@@ -298,9 +294,9 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
-                   ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
+                   ,"-threads", str(4),"-crf"  ,'4'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","best",'-slices','8','-cpu-used','0'
+                   ,"-deadline","good",'-slices','8'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
@@ -320,25 +316,24 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     if passPhase==1:
       ffmpegcommand += ['-f', 'null', os.devnull]
     else:
-      ffmpegcommand += [finalOutName]
+      ffmpegcommand += [tempVideoFilePath]
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
       return 0
     if passPhase==1:
       return 0
     else:
-      finalSize = os.stat(finalOutName).st_size
+      finalSize = os.stat(tempVideoFilePath).st_size
       return finalSize
 
-  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-
+  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
   encodeTargetingSize(encoderFunction=encoderFunction,
-                      outputFilename=finalOutName,
+                      tempFilename=tempVideoFilePath,
+                      outputFilename=videoFilePath,
                       initialDependentValue=initialBr,
                       twoPassMode=True,
                       sizeLimitMin=sizeLimitMin,
@@ -346,8 +341,8 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                       maxAttempts=6,
                       requestId=requestId)
 
-  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+finalOutName,1)
+  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+videoFilePath,1)
 
 
 def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
@@ -367,16 +362,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
 
-  fileN=0
-  with fileExistanceLock:
-    while 1:
-      fileN+=1
-      finalOutName = '{}_WmG_{}.mp4'.format(filenamePrefix,fileN)
-      finalOutName = os.path.join(outputPathName,finalOutName)
-      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
-      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
-        filesPlannedForCreation.add(finalOutName)
-        break
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'mp4')
 
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
@@ -397,9 +383,9 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
       ffmpegcommand+=['-map','[outv]','-map','[outa]']  
 
     if passPhase==1:
-      ffmpegcommand+=['-pass', '1', '-passlogfile', outLogFilename ]
+      ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
     elif passPhase==2:
-      ffmpegcommand+=['-pass', '2', '-passlogfile', outLogFilename ]
+      ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
     ffmpegcommand+=["-shortest"
                    ,"-copyts"
@@ -433,23 +419,24 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     if passPhase==1:
       ffmpegcommand += ["-sn",'-f', 'null', os.devnull]
     else:
-      ffmpegcommand += ["-sn",finalOutName]
+      ffmpegcommand += ["-sn",tempVideoFilePath]
 
     print(' '.join(ffmpegcommand))
 
-    encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
       return 0
     if passPhase==1:
       return 0
     else:
-      finalSize = os.stat(finalOutName).st_size
+      finalSize = os.stat(tempVideoFilePath).st_size
       return finalSize
 
   encodeTargetingSize(encoderFunction=encoderFunction,
-                      outputFilename=finalOutName,
+                      tempFilename=tempVideoFilePath,
+                      outputFilename=videoFilePath,
                       initialDependentValue=initialBr,
                       sizeLimitMin=sizeLimitMin,
                       twoPassMode=True,
@@ -457,8 +444,8 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                       maxAttempts=6,
                       requestId=requestId)
 
-  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+finalOutName,1)
+  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+videoFilePath,1)
 
 def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
 
@@ -469,16 +456,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
 
-  fileN=0
-  with fileExistanceLock:
-    while 1:
-      fileN+=1
-      finalOutName = '{}_WmG_{}.gif'.format(filenamePrefix,fileN)
-      finalOutName = os.path.join(outputPathName,finalOutName)
-      outLogFilename = os.path.join('tempVideoFiles','encoder_{}.log'.format(fileN))
-      if not os.path.exists(finalOutName) and finalOutName not in filesPlannedForCreation:
-        filesPlannedForCreation.add(finalOutName)
-        break
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif')
 
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
@@ -500,28 +478,29 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
                    ,"-start_at_zero"
                    ,"-stats"
                    ,"-an"
-                   ,"-sn",finalOutName]
+                   ,"-sn",tempVideoFilePath]
 
-    encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,finalOutName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
     if isRquestCancelled(requestId):
       return 0
-    finalSize = os.stat(finalOutName).st_size
+    finalSize = os.stat(tempVideoFilePath).st_size
     return finalSize
 
   initialWidth = options.get('maximumWidth',1280)
   encodeTargetingSize(encoderFunction=encoderFunction,
-                      outputFilename=finalOutName,
+                      tempFilename=tempVideoFilePath,
+                      outputFilename=videoFilePath,
                       initialDependentValue=initialWidth,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
                       maxAttempts=10,
                       dependentValueName='Width',
                       requestId=requestId)
-  encoderStatusCallback('Encoding final '+finalOutName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+finalOutName,1)
+  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+  encoderStatusCallback('Encoding complete '+videoFilePath,1)
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder
@@ -532,7 +511,7 @@ encoderMap = {
 
 class FFmpegService():
 
-  def __init__(self,globalStatusCallback=print(),imageWorkerCount=2,encodeWorkerCount=3,statsWorkerCount=1):
+  def __init__(self,globalStatusCallback=print(),imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1):
     
 
     self.cache={}
@@ -1437,7 +1416,7 @@ class FFmpegService():
         os.path.exists('tempVideoFiles') or os.mkdir('tempVideoFiles')
 
         outfileName = os.path.join('tempVideoFiles','loadImageAsVideo_{}.mp4'.format(imageasVideoID))
-        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-vf', 'scale={}:{},pad=ceil(iw/2)*2:ceil(ih/2)*2'.format(vidInfo.width,vidInfo.height),outfileName],stderr=sp.PIPE)
+        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-tune', 'stillimage','-vf', 'scale={}:{},pad=ceil(iw/2)*2:ceil(ih/2)*2'.format(vidInfo.width,vidInfo.height),outfileName],stderr=sp.PIPE)
         ln=b''
         while 1:
           c=proc.stderr.read(1)

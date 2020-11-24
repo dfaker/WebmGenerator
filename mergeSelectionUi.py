@@ -335,7 +335,7 @@ class MergeSelectionUi(ttk.Frame):
     self.profileCombo = ttk.OptionMenu(self.profileFrame,self.profileVar,self.profileVar.get(),*self.profiles)
     self.profileCombo.pack(expand='true', fill='x', side='right')
 
-    self.profileFrame.pack(expand='false', fill='x', padx='5', pady='0', side='top')
+    self.profileFrame.pack(expand='false', fill='x', padx='5', pady='0  ', side='top')
 
     self.profileVar.trace('w',self.profileChanged)
 

@@ -7,7 +7,52 @@ from tkinter import simpledialog
 from pygubu.widgets.scrolledframe import ScrolledFrame
 from timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 import os
+import threading
+from math import floor
+import logging
 
+def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
+
+    if hasattr(value, 'seconds'):
+        seconds = value.seconds + value.days * 24 * 3600
+    else:
+        seconds = value
+
+    seconds_total = seconds
+
+    minutes = int(floor(seconds / 60))
+    minutes_total = minutes
+    seconds -= minutes * 60
+
+    seconds = int(seconds)
+
+    hours = int(floor(minutes / 60))
+    hours_total = hours
+    minutes -= hours * 60
+
+    days = int(floor(hours / 24))
+    days_total = days
+    hours -= days * 24
+
+    years = int(floor(days / 365))
+    years_total = years
+    days -= years * 365
+
+    return time_format.format(**{
+        'seconds': seconds,
+        'seconds2': str(seconds).zfill(2),
+        'minutes': minutes,
+        'minutes2': str(minutes).zfill(2),
+        'hours': hours,
+        'hours2': str(hours).zfill(2),
+        'days': days,
+        'years': years,
+        'seconds_total': seconds_total,
+        'minutes_total': minutes_total,
+        'hours_total': hours_total,
+        'days_total': days_total,
+        'years_total': years_total,
+    })
 
 class VideoFilePreview(ttk.Frame):
     def __init__(self, master, parent, filename, *args, **kwargs):
@@ -60,19 +105,23 @@ class VideoFilePreview(ttk.Frame):
             height="200", padding="2", relief="groove", width="200"
         )
         self.frameVideoFileWidget.pack(expand="false", fill="x", pady="5", side="top")
-        self.parent.master.update()
-        self.requestPreviewFrameIfVisible()
-
-
+        
     def requestPreviewFrameIfVisible(self):
       if not self.previewRequested:
-        if self.winfo_y() < self.master.winfo_height():
-          self.previewRequested = True
-          self.parent.requestPreviewFrame(self.filename)
-          print('REQUETSED',self.filename,self.winfo_y(),self.master.winfo_height())
-        else:
-          print('Skipped',self.filename,self.winfo_y(),self.master.winfo_height())
+        try:
+          winy = self.winfo_rooty()
+          winmaserHeight = self.master.winfo_vrootheight()
 
+          if winy > 0 and winy < winmaserHeight:
+            self.previewRequested = True
+            self.parent.requestPreviewFrame(self.filename)
+            logging.debug('Preview frame requested for cut selection ui file:{} winy:{} winMasterH:{}'.format(self.filename,winy,winmaserHeight))
+            return True
+          else:
+            return False
+        except Exception as e:
+          logging.error('Exception requestPreviewFrameIfVisible',exc_info=e)
+      return False
 
     def setVideoPreview(self, photoImage):
         self.labelVideoPreviewImage = photoImage
@@ -346,6 +395,18 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<Motion>",            self.videomousePress)
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
 
+        self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
+        self._previewtimer.daemon = True
+        self._previewtimer.start()
+
+    def updateVideoPreviews(self):
+      for vidPReview in self.previews:
+        if vidPReview.requestPreviewFrameIfVisible():
+          break
+      self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
+      self._previewtimer.daemon = True
+      self._previewtimer.start()
+
 
     def setinitialFocus(self):
       self.master.deiconify()
@@ -365,17 +426,17 @@ class CutselectionUi(ttk.Frame):
 
     def videomousePress(self,e):
       if str(e.type) == 'ButtonPress':
-        print('start')
+        logging.debug('video mouse press start')
         self.mouseRectDragging=True
         self.screenMouseRect[0]=e.x
         self.screenMouseRect[1]=e.y
       elif str(e.type) in ('Motion','ButtonRelease') and self.mouseRectDragging:
-        print('show')
+        logging.debug('video mouse press drag')
         self.screenMouseRect[2]=e.x
         self.screenMouseRect[3]=e.y
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
       if str(e.type) == 'ButtonRelease':
-        print('release')
+        logging.debug('video mouse press release')
         self.mouseRectDragging=False
         if self.screenMouseRect[0] is not None and self.screenMouseRect[2] is not None:
           vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
@@ -385,7 +446,7 @@ class CutselectionUi(ttk.Frame):
           self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
         
       if self.screenMouseRect[0] is not None and not self.mouseRectDragging and self.screenMouseRect[0]==self.screenMouseRect[2] and self.screenMouseRect[1]==self.screenMouseRect[3]:
-        print('clear')
+        logging.debug('video mouse rect clear')
         self.screenMouseRect=[None,None,None,None]
         self.mouseRectDragging=False
         self.controller.clearVideoRect()
@@ -403,7 +464,7 @@ class CutselectionUi(ttk.Frame):
       self.controller.jumpFwd()
 
     def playerFrameKeypress(self,e):
-      print(e)
+      pass
 
     def findLowestErrorForBetterLoop(self,rid,secondsChange):
       self.controller.findLowestErrorForBetterLoop(rid,secondsChange,self.videoMouseRect)
@@ -416,28 +477,28 @@ class CutselectionUi(ttk.Frame):
             value = float(self.sliceLengthVar.get())
             self.frameTimeLineFrame.setDefaultsliceDuration(value)
         except Exception as e:
-            print(e)
+            logging.error('Exception sliceLengthChangeCallback',exc_info=e)
 
     def targetLengthChangeCallback(self, *args):
         try:
             value = float(self.targetLengthVar.get())
             self.targetLength = value
         except Exception as e:
-            print(e)
+            logging.error('Exception targetLengthChangeCallback',exc_info=e)
 
     def targetTrimChangeCallback(self, *args):
         try:
             value = float(self.targetTrimVar.get())
             self.frameTimeLineFrame.setTargetTrim(value)
         except Exception as e:
-            print(e)
+            logging.error('Exception targetTrimChangeCallback',exc_info=e)
 
     def dragPreviewPosCallback(self, *args):
       try:
         value = float(self.dragPreviewPosVar.get())
         self.frameTimeLineFrame.setDragPreviewPos(value)
       except Exception as e:
-        print(e)
+        logging.error('Exception dragPreviewPosCallback',exc_info=e)
 
 
     def updateProgressStatitics(self, totalExTrim, totalTrim):
@@ -445,13 +506,12 @@ class CutselectionUi(ttk.Frame):
         progressPercent = max(0, min(100, percent * 100))
         self.progressToSize.config(value=progressPercent)
         if percent > 1.0:
-            print("red")
             self.progressToSize.config(style="Red.Horizontal.TProgressbar")
         else:
             self.progressToSize.config(style="Horizontal.TProgressbar")
 
         self.labelCurrentSize.config(
-            text="{:0.2f}s {:0.2%}% (-{:0.2f}s)".format(totalExTrim, percent, totalTrim)
+            text="{}s {:0.2%}% (-{}s)".format( format_timedelta(totalExTrim,'{hours_total}:{minutes2}:{seconds2}') , percent, format_timedelta(totalTrim,'{hours_total}:{minutes2}:{seconds2}'))
         )
 
     def setController(self, controller):
@@ -561,6 +621,9 @@ class CutselectionUi(ttk.Frame):
 
     def addNewSubclip(self, start, end):
         self.controller.addNewSubclip(start, end)
+
+    def cloneSubclip(self, point):
+        self.controller.cloneSubclip(point)
 
     def removeSubclip(self, point):
         self.controller.removeSubclip(point)

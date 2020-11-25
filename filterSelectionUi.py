@@ -310,7 +310,7 @@ class FilterSelectionUi(ttk.Frame):
     self.arFixCheckbox.pack(expand='false', side='left')
     
     self.fixSeectionArVar = tk.StringVar()
-    self.fixSeectionArVar.set('1.0')
+    self.fixSeectionArVar.set('1.7')
     self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'), increment=0.01)
     self.spinBoxArRatio.pack(expand='false', side='left')
 
@@ -331,7 +331,7 @@ class FilterSelectionUi(ttk.Frame):
     self.speedLabel = ttk.Label(self.selectionOptionsFrame)
     self.speedLabel.config(text='Preview speed')
     self.speedLabel.pack(expand='false', side='right')
-    
+
 
     self.selectionOptionsFrame.pack(expand='false', fill='x', side='top')
 
@@ -396,10 +396,17 @@ class FilterSelectionUi(ttk.Frame):
         forceAR = float(self.fixSeectionArVar.get())
       except Exception as e:
         print(e)
-
     print(forceAR)
     if forceAR is not None:
-      self.screenMouseRect[3] = self.screenMouseRect[1] + abs(self.screenMouseRect[0]-self.screenMouseRect[2])*forceAR
+      if self.screenMouseRect[3] > self.screenMouseRect[1]:
+        self.screenMouseRect[3] = self.screenMouseRect[1] + abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
+      else:
+        self.screenMouseRect[3] = self.screenMouseRect[1] - abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
+    else:
+      try:
+        self.fixSeectionArVar.set( str( round( abs(self.screenMouseRect[0]-self.screenMouseRect[2])/abs(self.screenMouseRect[1]-self.screenMouseRect[3]),4  ))  )
+      except:
+        pass
 
   def videomousePress(self,e):
       if str(e.type) == 'ButtonPress':
@@ -548,6 +555,7 @@ class FilterSelectionUi(ttk.Frame):
       return self.subclips[self.subClipOrder[self.currentSubclipIndex]]
     except Exception as e:
       print(e)
+    return None
 
   def goToNextSubclip(self):
     if self.currentSubclipIndex is not None:

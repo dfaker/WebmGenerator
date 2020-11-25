@@ -37,6 +37,7 @@ class WebmGeneratorUi:
 
 
     self.style.configure('small.TButton', padding=0)
+    self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)
     self.style.configure('smallextra.TButton', padding=-20)
 
     self.panes=[]

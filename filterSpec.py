@@ -693,13 +693,13 @@ selectableFilters = [
     
     {
         "name": "rotate",
-        "filter": "rotate",
+        "filter": "rotate=a={a}:out_w=rotw({a}):out_h=roth({a})",
         "params": [
             {
                 "n": "a",
                 "d": 0.785398,
                 "type": "float",
-                "range": [0, 6.28319],
+                "range": [-6.28319, 6.28319],
                 "inc": 0.0174533,
             },
         ],
@@ -860,7 +860,37 @@ selectableFilters = [
         ],
     },
     
-    
+
+
+
+    {
+        "name": "loop",
+        "filter": "loop",
+         "params": [
+            {
+                "n": "loop",
+                "d": -1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },
+            {
+                "n": "size",
+                "d": 0,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },
+            {
+                "n": "start",
+                "d": 0,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },
+          ]
+    },
+
     {
         "name": "drawtext",
         "filter": "drawtext",

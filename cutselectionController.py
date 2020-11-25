@@ -4,6 +4,8 @@ import math
 import os
 import random
 
+import logging
+
 
 class CutselectionController:
 
@@ -14,30 +16,32 @@ class CutselectionController:
     self.ffmpegService = ffmpegService
     self.ytdlService   = ytdlService
 
+    self.loopMode='Loop current'
+
     self.initialisePlayer()
     self.files=[]
-    
+    self.currentLoopCycleStart = None
+    self.currentLoopCycleEnd   = None
+    self.removeAllDownloads    = False
+    self.removeDownloadRun     = 0
+
     self.currentlyPlayingFileName=None
     self.currentTimePos=None
     self.currentTotalDuration=None
     self.currentLoop_a=None
     self.currentLoop_b=None
 
+    """
     if len(initialFiles)>1:
       response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
       if response=='yes':
         random.shuffle(initialFiles)
+    """
     
-
     self.ui.setinitialFocus()
 
     self.loadFiles(initialFiles)
-    self.loopMode='Loop current'
-
-    self.currentLoopCycleStart = None
-    self.currentLoopCycleEnd   = None
-    self.removeAllDownloads    = False
-    self.removeDownloadRun     = 0
+    
 
   def updateLoopMode(self,loopMode):
     self.loopMode=loopMode
@@ -111,7 +115,7 @@ class CutselectionController:
     try:
       self.ui.destroy()
       del self.ui.master
-      print('destroyed')
+      logging.info('CutselectionController destroyed')
     except:
       pass
 
@@ -124,7 +128,7 @@ class CutselectionController:
 
   def handleMpvDurationChange(self,name,value):
     if value is not None:
-      print(value)
+      logging.debug('Duration updated {}'.format(value))
       self.currentTotalDuration=value
 
   def getIsPlaybackStarted(self):
@@ -135,7 +139,7 @@ class CutselectionController:
       nextClipInd = self.files.index(self.currentlyPlayingFileName)+offset      
       self.playVideoFile(self.files[nextClipInd%len(self.files)],0)      
     except ValueError as e:
-      print(e)
+      logging.error('Exception jumpClips',exc_info=e)
 
   def playVideoFile(self,filename,startTimestamp):
     self.currentTotalDuration=None
@@ -204,7 +208,6 @@ class CutselectionController:
     if not deleteFile:
       if fileIsInTempFolder:
         response = self.ui.confirmWithMessage('Also remove downloaded video?' ,'Video "{}" was downloaded with youtube-dl, do you also want to delete the downloaded temporary file?'.format(justFilename),icon='warning')
-        print(response)
         if response=='yes':
           deleteFile=True
           self.removeDownloadRun += 1
@@ -230,7 +233,7 @@ class CutselectionController:
       os.remove(filename)
 
   def returnYTDLDownlaodedVideo(self,filename):
-    print(filename)
+    logging.debug('YTDL file returned {}'.format(filename))
     self.loadFiles([filename])
 
   def loadVideoYTdl(self,url):
@@ -312,6 +315,14 @@ class CutselectionController:
     self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,start,end)
     self.updateProgressStatistics()
     self.seekTo(start+((end-start)*0.8))
+
+
+  def cloneSubclip(self,point):
+    self.videoManager.cloneSubclip(self.currentlyPlayingFileName,point)
+    self.updateProgressStatistics()
+    self.currentLoopCycleStart  = None
+    self.currentLoopCycleEnd    = None
+
 
   def removeSubclip(self,point):
     self.videoManager.removeSubclip(self.currentlyPlayingFileName,point)

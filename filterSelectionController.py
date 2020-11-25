@@ -14,7 +14,7 @@ class FilterSelectionController:
                           osc=True,
                           loop='inf',
                           mute=True,
-                          autofit_larger='1280', log_handler=print, loglevel="debug")
+                          autofit_larger='1280')
     self.player.command('load-script','screenspacetools.lua')
     self.player.speed=2
     self.currentlyPlayingFileName=None
@@ -33,10 +33,11 @@ class FilterSelectionController:
     return self.videoManager.getAllClips()
 
   def clearFilter(self):
-      self.player.command('async','vf', 'del',    "@filterStack")
+    self.player.command('async','vf', 'del',    "@filterStack")
 
   def setFilter(self,filterExpStr):
-      self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr))
+    print(filterExpStr)
+    self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr))
 
   def play(self):
     self.player.pause=False

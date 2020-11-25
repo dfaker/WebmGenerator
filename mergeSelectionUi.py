@@ -177,12 +177,12 @@ class SequencedVideoEntry(ttk.Frame):
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
 
-class GridColumn(ttk.Frame):
+class GridColumn(ttk.Labelframe):
   def __init__(self, master,controller):
-    ttk.Frame.__init__(self, master)
+    ttk.Labelframe.__init__(self, master)
     self.master=master
     self.controller=controller
-    self.config(relief='raised',padding='4')
+    self.config(relief='groove',padding='4')
 
     self.buttonFrame = ttk.Frame(self)
     self.selectColumnBtn = ttk.Button(self.buttonFrame,text='Select ✔',command=self.selectColumn)
@@ -197,6 +197,17 @@ class GridColumn(ttk.Frame):
     self.buttonFrame.pack(expand='false', fill='x', side='bottom')
 
     self.pack(expand='false', fill='y', side='left')
+
+  def setSelected(self,isSelected):
+    if isSelected:
+      self.config(relief='sunken',text='Selected')
+      self.selectColumnBtn.config(text='Selected ✔',style="smallBlue.TButton")
+
+      
+    else:
+      self.config(relief='groove',text='')
+      self.selectColumnBtn.config(text='Select ✔',style="small.TButton")
+
 
   def selectColumn(self):
     self.controller.selectColumn(self)
@@ -286,12 +297,12 @@ class SelectableVideoEntry(ttk.Frame):
 
 class MergeSelectionUi(ttk.Frame):
 
-  def __init__(self, master=None, *args, **kwargs):
+  def __init__(self, master=None,defaultProfile='None', *args, **kwargs):
     ttk.Frame.__init__(self, master)
 
     self.master=master
     self.controller=None
-
+    self.defaultProfile=defaultProfile
 
     self.outserScrolledFrame = ScrolledFrame(self, scrolltype='vertical')
     self.outserScrolledFrame.pack(expand='true', fill='both', padx='0', pady='0', side='top')
@@ -329,8 +340,10 @@ class MergeSelectionUi(ttk.Frame):
                        'Sub 4M max quality vp8 webm',
                        'Sub 100M max quality mp4',]
 
-    self.profileVar.set(self.profiles[0])
-    
+    if self.defaultProfile in self.profiles:
+      self.profileVar.set(defaultProfile)
+    else:
+      self.profileVar.set(self.profiles[0])
 
     self.profileCombo = ttk.OptionMenu(self.profileFrame,self.profileVar,self.profileVar.get(),*self.profiles)
     self.profileCombo.pack(expand='true', fill='x', side='right')
@@ -488,8 +501,22 @@ class MergeSelectionUi(ttk.Frame):
     self.transStyleVar.set('fade')
     self.speedAdjustmentVar.set(1.0)
 
-    self.audioChannelsOptions = ['Stereo','Mono','No audio']
-    self.audioChannelsVar.set(self.audioChannelsOptions[0])    
+
+    self.audioChannelsOptions = [
+      'Stereo - Low    48 kbps'
+      ,'Stereo - Medium 64 kbps'
+      ,'Stereo - High   96 kbps'
+      ,'Stereo - HD     128 kbps'
+      ,'Stereo - Ultra  192 kbps'
+      ,'Mono - Low    48 kbps'
+      ,'Mono - Medium 64 kbps'
+      ,'Mono - High   96 kbps'
+      ,'Mono - HD     128 kbps'
+      ,'Mono - Ultra  192 kbps'
+      ,'No audio'
+    ]
+
+    self.audioChannelsVar.set(self.audioChannelsOptions[6])    
 
     self.audioMergeOptions = ['Merge Normalize All','Merge Original Volume','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
     self.audioMergeOptionsVar.set(self.audioMergeOptions[0]) 
@@ -736,10 +763,10 @@ class MergeSelectionUi(ttk.Frame):
   def selectColumn(self,col):
     selectedCol = [x for x in self.gridColumns if x['column'] == col][0]
     if self.selectedColumn is not None:
-      self.selectedColumn['column'].config(style="TFrame")
+      self.selectedColumn['column'].setSelected(False)
       self.selectedColumn = None
     self.selectedColumn = selectedCol
-    self.selectedColumn['column'].config(style="SelectedColumn.TFrame")
+    self.selectedColumn['column'].setSelected(True)
 
 
   def removeColumn(self,col):

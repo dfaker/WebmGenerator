@@ -5,6 +5,8 @@ import threading
 from queue import Queue
 import traceback
 
+import logging
+
 class YTDLService():
 
   def __init__(self,globalStatusCallback=print()):
@@ -36,7 +38,8 @@ class YTDLService():
           outfolder = os.path.join(tempPathname,'%(title)s-%(id)s.%(ext)s')
           proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stdout=sp.PIPE)
           l = b''
-          self.globalStatusCallback('Downloading {}'.format(url),0)
+          self.globalStatusCallback('Download start {}'.format(url),0)
+          logging.debug("Downloading {}".format(url))
           finalName = b''
           
           seenFiles = set()
@@ -46,20 +49,17 @@ class YTDLService():
             c=proc.stdout.read(1)
             l+=c
             if len(c)==0:
-              print(c,l)
               break
             if c in (b'\n',b'\r'):
-              print(l)
               
               if b'[download] Destination:' in l:
                 finalName = l.replace(b'[download] Destination: ',b'').strip()
                 seenFiles.add(finalName)
-                print(finalName)
               if b'[ffmpeg] Merging formats into' in l:
                 finalName = l.split(b'"')[-2].strip()
                 seenFiles.add(finalName)
                 self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
-                print('Done',finalName)
+                logging.debug("Download complete {}".format(finalName))
               if b'[download]' in l and b' has already been downloaded and merged' in l:
                 finalName = l.replace(b' has already been downloaded and merged',b'').replace(b'[download] ',b'').strip()
                 seenFiles.add(finalName)
@@ -73,8 +73,6 @@ class YTDLService():
                       pc = tc.replace(b'%',b'')
                   desc = l.replace(b'[download]',b'').strip().decode('utf8',errors='ignore')
                   self.globalStatusCallback('Downloading {} {}'.format(url,desc),float(pc)/100)
-
-                  print(finalName,int(float(pc)) == 100)
                   if int(float(pc)) == 100 and len(finalName)>0:
                     self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
                 except Exception as e:

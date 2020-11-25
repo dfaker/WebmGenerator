@@ -86,22 +86,23 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.grid_columnconfigure(0, weight=1)
 
     self.timeline_canvas_popup_menu = tk.Menu(self, tearoff=0)
-    self.timeline_canvas_popup_menu.add_command(label="Add new subclip",
-                                                command=self.canvasPopupAddNewSubClipCallback)
-    self.timeline_canvas_popup_menu.add_command(label="Delete subclip",
-                                                command=self.canvasPopupRemoveSubClipCallback)
-    self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",
-                                                command=self.canvasPopupAddNewInterestMarkCallback)
 
-    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 1s",
-                                                command=self.canvasPopupFindLowestError1s)
+    self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
+    self.timeline_canvas_popup_menu.add_separator()
 
-    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 2s",
-                                                command=self.canvasPopupFindLowestError2s)
+    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 1s",command=self.canvasPopupFindLowestError1s)
+    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 2s",command=self.canvasPopupFindLowestError2s)
+    self.timeline_canvas_popup_menu.add_separator()
 
-    self.timeline_canvas_popup_menu.add_command(label="Run scene scene change detection",
-                                                command=self.canvasPopupRunSceneChangeDetection)
-
+    self.timeline_canvas_popup_menu.add_command(label="Run scene scene change detection",command=self.canvasPopupRunSceneChangeDetection)
+    self.timeline_canvas_popup_menu.add_separator()
+    
+    self.timeline_canvas_popup_menu.add_command(label="Clone subclip",command=self.canvasPopupCloneSubClipCallback)
+    self.timeline_canvas_popup_menu.add_separator()
+    
+    self.timeline_canvas_popup_menu.add_command(label="Delete subclip",command=self.canvasPopupRemoveSubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Add new subclip",command=self.canvasPopupAddNewSubClipCallback)
+    
     self.timeline_canvas_last_right_click_x=None
 
     self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
@@ -135,6 +136,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.handleWidth=10
     self.handleHeight=30
     self.midrangeHeight=20
+    self.miniMidrangeHeight=7
 
     self.canvasRegionCache = {}
     self.timeline_mousedownstate={}
@@ -289,11 +291,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       return
     
     ctrl  = (e.state & 0x4) != 0
+    
 
     self.timeline_canvas.focus_set()
 
     if str(e.type) in ('ButtonPress'):
       self.lastClickedEndpoint=None
+      self.timelineMousePressOffset=0
 
     if str(e.type) in ('ButtonPress','ButtonRelease'):
       self.timeline_mousedownstate[e.num] = str(e.type)=='ButtonPress'
@@ -307,20 +311,26 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         for rid,(sts,ens) in ranges:
           st=self.secondsToXcoord(sts)
           en=self.secondsToXcoord(ens)
-          if st-self.handleWidth<e.x<st+2:
+
+
+          if (st<e.x<en and e.y>self.winfo_height()-self.midrangeHeight) or (st-self.handleWidth<e.x<en+self.handleWidth and e.y>self.winfo_height()-self.miniMidrangeHeight):
+            self.clickTarget = (rid,'m',sts,ens)
+            self.timelineMousePressOffset = ((st+en)/2)-e.x
+            self.controller.pause()
+            break
+          elif st-self.handleWidth<e.x<st+2:
             self.clickTarget = (rid,'s',sts,ens)
             self.lastClickedEndpoint=(rid,'s')
+            self.timelineMousePressOffset = st-e.x
             self.controller.pause()
             break
           elif en-2<e.x<en+self.handleWidth:
             self.clickTarget = (rid,'e',sts,ens)
             self.lastClickedEndpoint=(rid,'e')
+            self.timelineMousePressOffset = en-e.x
             self.controller.pause()
             break
-          elif st<e.x<en and e.y>self.winfo_height()-self.midrangeHeight:
-            self.clickTarget = (rid,'m',sts,ens)
-            self.controller.pause()
-            break
+
 
     if str(e.type) in ('ButtonRelease') and e.num in (1,2):
       self.clickTarget = None
@@ -335,10 +345,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if self.timeline_mousedownstate.get(1,False):
       if self.clickTarget is None:
         if self.rangeHeaderClickStart is not None:
-
-          self.currentZoomRangeMidpoint = (e.x/self.winfo_width())+self.rangeHeaderClickStart
+          self.currentZoomRangeMidpoint = ((e.x)/self.winfo_width())+self.rangeHeaderClickStart
           self.uiDirty=True
         else:          
+          print(self.timelineMousePressOffset)
           seconds = self.xCoordToSeconds(e.x)
           self.controller.pause()
           self.seekto(seconds)
@@ -351,25 +361,19 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       else:
         rid,pos,os,oe = self.clickTarget
 
-        targetSeconds = self.xCoordToSeconds(e.x)
-
-
+        targetSeconds = self.xCoordToSeconds(e.x+self.timelineMousePressOffset)
 
         self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,targetSeconds)
-        
-
+  
         if pos == 's':
           self.controller.seekTo( targetSeconds )
         elif pos == 'e':
           self.controller.seekTo( targetSeconds-0.1 )
         elif pos == 'm':
-
           if ctrl:
             targetSeconds = targetSeconds-((oe-os)/2)
           else:
             targetSeconds = targetSeconds+((oe-os)/2)
-
-
           self.controller.seekTo( targetSeconds-self.dragPreviewPos )
 
 
@@ -453,8 +457,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
         self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds2}') ) )
         
-        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight)
-        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight)
+        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, min(trimpreend,ex), timelineHeight)
+        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],max(trimpostStart,sx), timelineHeight-self.midrangeHeight, ex, timelineHeight)
+
+        self.timeline_canvas.coords(self.canvasRegionCache[(rid,'miniDrag')],sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight)
+
 
         if self.lastClickedEndpoint is None:
           self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
@@ -485,10 +492,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         print('add',rid)
 
         self.canvasRegionCache[(rid,'main')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#69dbbe",width=0, tags='fileSpecific')
-
+        self.canvasRegionCache[(rid,'preTrim')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
+        self.canvasRegionCache[(rid,'postTrim')] = self.timeline_canvas.create_rectangle(trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
+     
         self.canvasRegionCache[(rid,'startHandle')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight, fill="#69bfdb",width=1, tags='fileSpecific')
         self.canvasRegionCache[(rid,'endHandle')] = self.timeline_canvas.create_rectangle(ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight, fill="#db6986",width=1, tags='fileSpecific')
-        
+
 
    
         for dtx in (-1,1):
@@ -501,8 +510,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds2}')),fill="white", tags='fileSpecific') 
     
-        self.canvasRegionCache[(rid,'preTrim')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
-        self.canvasRegionCache[(rid,'postTrim')] = self.timeline_canvas.create_rectangle(trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
+
+        self.canvasRegionCache[(rid,'miniDrag')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight, fill="#2bb390",width=0, tags='fileSpecific')
+
 
         hstx = (s/self.controller.getTotalDuration())*timelineWidth
         henx = (e/self.controller.getTotalDuration())*timelineWidth
@@ -517,6 +527,21 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def setUiDirtyFlag(self):
     self.uiDirty=True    
+
+  def canvasPopupCloneSubClipCallback(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+      upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+      for rid,(s,e) in list(ranges):
+        if s<mid<e:
+          self.controller.cloneSubclip((e+s)/2)
+          break
+        if lower<e<upper or lower<s<upper:
+          self.controller.cloneSubclip((e+s)/2)
+          break
+    self.timeline_canvas_last_right_click_x=None
 
   def canvasPopupRemoveSubClipCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:

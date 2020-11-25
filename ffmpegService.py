@@ -42,7 +42,7 @@ def cleanFilenameForFfmpeg(filename):
   return getShortPathName(os.path.normpath(filename))
                       
 
-def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None):
+def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0):
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
   smallestFailedOverMaximum=None
@@ -50,6 +50,8 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
   passCount=0
   lastFailReason=''
   passReason='Initial Pass'
+  lastpsnr = None
+  widthReduction = 0.0
   while 1:
     val=int(val)
     passCount+=1
@@ -59,17 +61,17 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
 
     if twoPassMode:
       passReason='Stats Pass {} {}'.format(passCount+1,lastFailReason)
-      _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId)
+      _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId,widthReduction=widthReduction)
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId)
+      finalSize,lastpsnr = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction)
     else:
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize = encoderFunction(val,passCount,passReason,requestId=requestId)
+      finalSize,lastpsnr = encoderFunction(val,passCount,passReason,requestId=requestId,widthReduction=widthReduction)
 
     if isRquestCancelled(requestId):
       return
 
-    if sizeLimitMin<finalSize<sizeLimitMax or (passCount>maxAttempts and finalSize<sizeLimitMax) or passCount>maxAttempts+2:
+    if sizeLimitMin<finalSize<sizeLimitMax or (passCount==1 and finalSize<sizeLimitMax) or passCount>maxAttempts:
       shutil.move(tempFilename,outputFilename)
       break
     elif finalSize<sizeLimitMin:
@@ -85,9 +87,9 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
     if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
       val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
 
-
 def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None):
   currentEncodedTotal=0
+  psnr = None
   ln=b''
   while 1:
     try:
@@ -101,17 +103,19 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
       if c == b'\r':
         print(ln)
         for p in ln.split(b' '):
+          if b'*:' in p:
+            psnr = float(p.split(b':')[-1])
           if b'time=' in p:
             try:
               pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
               currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
               if currentEncodedTotal>0:
                 if passNumber == 0:
-                  statusCallback('Encoding '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+                  statusCallback('Encoding '+processLabel+' q'+str(psnr),(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
                 elif passNumber == 1:
-                  statusCallback('Encoding '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+                  statusCallback('Encoding '+processLabel+' q'+str(psnr),((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
                 elif passNumber == 2:
-                  statusCallback('Encoding '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+                  statusCallback('Encoding '+processLabel+' q'+str(psnr),( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
             except Exception as e:
               print(e)
         ln=b''
@@ -119,11 +123,12 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
     except Exception as e:
       print(e)
   if passNumber == 0:
-    statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+    statusCallback('Complete '+processLabel+' q'+str(psnr),(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
   elif passNumber == 1:
-    statusCallback('Complete '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+    statusCallback('Complete '+processLabel+' q'+str(psnr),((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
   elif passNumber == 2:
-    statusCallback('Complete '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+    statusCallback('Complete '+processLabel+' q'+str(psnr),( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
+  return psnr
 
 def getFreeNameForFileAndLog(filenamePrefix,extension):
   fileN=0
@@ -143,6 +148,11 @@ def getFreeNameForFileAndLog(filenamePrefix,extension):
 
 def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
   
+  audoBitrate = 8
+  for abr in ['48','64','96','128','192']:
+    if abr in options.get('audioChannels',''):
+      audoBitrate = int(abr)*1024
+
   audio_mp  = 8
   video_mp  = 1024*1024
   initialBr = 16777216
@@ -156,7 +166,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
-    initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
+    initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
 
   videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
@@ -165,7 +175,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None):
+  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -194,7 +204,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
                    ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","best",'-slices','8','-cpu-used','0'
+                   ,"-deadline","best",'-slices','8','-cpu-used','0','-psnr'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
@@ -202,12 +212,19 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand+=["-b:v",str(br)]
 
-    if options.get('audioChannels') == 'No audio' or passPhase==1:
+
+    if 'No audio' in options.get('audioChannels','') or passPhase==1:
       ffmpegcommand+=["-an"]    
-    elif options.get('audioChannels') == 'Stereo':
+    elif 'Stereo' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","2"]    
-    else:
+      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-b:a",str(audoBitrate)]
+    elif 'Mono' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","1"]
+      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-b:a",str(audoBitrate)]
+    else:
+      ffmpegcommand+=["-an"]    
 
     ffmpegcommand+=["-sn"]
 
@@ -218,14 +235,14 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0
+      return 0, psnr
     if passPhase==1:
-      return 0
+      return 0, psnr
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
-      return finalSize
+      return finalSize, psnr
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
@@ -245,6 +262,11 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
 def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
   
+  audoBitrate = 8
+  for abr in ['48','64','96','128','192']:
+    if abr in options.get('audioChannels',''):
+      audoBitrate = int(abr)*1024
+
   audio_mp  = 8
   video_mp  = 1024*1024
   initialBr = 16777216
@@ -258,17 +280,15 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
-    initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
-
+    initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
   videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
 
-  
   def encoderStatusCallback(text,percentage):
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None):
+  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -296,7 +316,7 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
                    ,"-threads", str(4),"-crf"  ,'4'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","good",'-slices','8'
+                   ,"-deadline","good",'-slices','8','-psnr'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
@@ -304,12 +324,18 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand+=["-b:v",str(br)]
 
-    if options.get('audioChannels') == 'No audio' or passPhase==1:
-      ffmpegcommand+=["-an"]
-    elif options.get('audioChannels') == 'Stereo':
+    if 'No audio' in options.get('audioChannels','') or passPhase==1:
+      ffmpegcommand+=["-an"]    
+    elif 'Stereo' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","2"]    
-    else:
+      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-b:a",str(audoBitrate)]
+    elif 'Mono' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","1"]
+      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-b:a",str(audoBitrate)]
+    else:
+      ffmpegcommand+=["-an"]  
 
     ffmpegcommand+=["-sn"]
 
@@ -320,14 +346,14 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     print(' '.join(ffmpegcommand))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0
+      return 0, psnr
     if passPhase==1:
-      return 0
+      return 0, psnr
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
-      return finalSize
+      return finalSize, psnr
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
@@ -347,6 +373,11 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
 def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
 
+  audoBitrate = 8
+  for abr in ['48','64','96','128','192']:
+    if abr in options.get('audioChannels',''):
+      audoBitrate = int(abr)*1024
+
   audio_mp  = 8
   video_mp  = 1024*1024
   initialBr = 16777216
@@ -360,7 +391,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
-    initialBr        = ( ((targetSize_guide)/dur) - ((64 / audio_mp)/dur) )*8
+    initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
   videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'mp4')
 
@@ -368,7 +399,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     statusCallback(text,percentage)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None):
+  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0):
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -400,6 +431,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
                    ,"-crf"  ,'17'
                    ,"-preset", "slower"
                    ,"-tune", "film"
+                   ,'-psnr'
                    ,"-movflags","+faststart"]
 
     if sizeLimitMax == 0.0:
@@ -407,14 +439,18 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand+= ["-b:v", str(br), "-maxrate", str(br)]
 
-    if options.get('audioChannels') == 'No audio' or passPhase==1:
-      ffmpegcommand+=["-an"]
-    elif options.get('audioChannels') == 'Stereo':
-      ffmpegcommand+=["-c:a"  ,"aac"]
-      ffmpegcommand+=["-ac","2"]
-    else:
-      ffmpegcommand+=["-c:a"  ,"aac"]
+    if 'No audio' in options.get('audioChannels','') or passPhase==1:
+      ffmpegcommand+=["-an"]    
+    elif 'Stereo' in options.get('audioChannels',''):
+      ffmpegcommand+=["-ac","2"]    
+      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-b:a",str(audoBitrate)]
+    elif 'Mono' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","1"]
+      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-b:a",str(audoBitrate)]
+    else:
+      ffmpegcommand+=["-an"]  
 
     if passPhase==1:
       ffmpegcommand += ["-sn",'-f', 'null', os.devnull]
@@ -425,14 +461,14 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0
+      return 0, psnr
     if passPhase==1:
-      return 0
+      return 0, psnr
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
-      return finalSize
+      return finalSize, psnr
 
   encodeTargetingSize(encoderFunction=encoderFunction,
                       tempFilename=tempVideoFilePath,
@@ -463,7 +499,7 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
     packageglobalStatusCallback(text,percentage)
 
 
-  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None):
+  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0):
 
     giffiltercommand = filtercommand+',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\',split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
 
@@ -478,16 +514,17 @@ def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options
                    ,"-start_at_zero"
                    ,"-stats"
                    ,"-an"
+                   ,'-psnr'
                    ,"-sn",tempVideoFilePath]
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0
+      return 0, psnr
     finalSize = os.stat(tempVideoFilePath).st_size
-    return finalSize
+    return finalSize, psnr
 
   initialWidth = options.get('maximumWidth',1280)
   encodeTargetingSize(encoderFunction=encoderFunction,
@@ -605,7 +642,14 @@ class FFmpegService():
       if largestInputDim < maximumSideLength or maximumSideLength == 0:
         maximumSideLength = largestInputDim
 
-      totalExpectedEncodedSeconds = cutLengths+minLength
+      speedAdjustment = 1.0
+      try:
+        speedAdjustment= float(options.get('speedAdjustment',1.0))
+        speedAdjustment = max(min(speedAdjustment, 100),0.5)
+      except Exception as e:
+        print('invalid speed Adjustment',e)
+
+      totalExpectedEncodedSeconds = cutLengths+(minLength*(1/speedAdjustment))
       totalEncodedSeconds = 0
 
       brickTofileLookup = {}
@@ -949,9 +993,16 @@ class FFmpegService():
 
         clipDimensions.append((videow,videoh))
 
+      speedAdjustment = 1.0
+      try:
+        speedAdjustment= float(options.get('speedAdjustment',1.0))
+        speedAdjustment = max(min(speedAdjustment, 100),0.5)
+      except Exception as e:
+        print('invalid speed Adjustment',e)
+
       totalExpectedFinalLength=sum(expectedTimes)
 
-      expectedTimes.append(sum(expectedTimes))
+      expectedTimes.append(sum(expectedTimes)*(1/speedAdjustment))
       totalExpectedEncodedSeconds = sum(expectedTimes)
       totalEncodedSeconds = 0
       shortestClipLength = float('inf')
@@ -962,12 +1013,7 @@ class FFmpegService():
         if filterexp=='':
           filterexp='null'  
 
-        #Black Bars
-        
-        #Crop
         #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
-
-        #filterexp+=",scale='max(0\\,min({}\\,iw)):-2'".format(maxDim=options.get('maximumWidth',1280))
 
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))'".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
@@ -1072,14 +1118,13 @@ class FFmpegService():
       except Exception as e:
         print('invalid fade duration',e)
 
-      speedAdjustment = 1.0
-      try:
-        speedAdjustment= float(options.get('speedAdjustment',1.0))
-        speedAdjustment = max(min(speedAdjustment, 100),0.5)
-      except Exception as e:
-        print('invalid speed Adjustment',e)
+
 
       print(fadeDuration)
+
+      sizeMatchMode = 'PAD'
+      if 'center crop' in options.get('frameSizeStrategy',''):
+        sizeMatchMode = 'CROP'
 
       dimensionsSet = set()
       fpsSet        = set()

@@ -34,20 +34,42 @@ class WebmGeneratorController:
   
   def __init__(self,initialFiles):
 
-    self.tempFolder='tempVideoFiles'
-    self.tempDownloadFolder='tempDownloadedVideoFiles'
-    self.lastSaveFile=None
-    self.autosaveFilename = 'autosave.webgproj'
-
+    self.configFileName = 'configuration.json'
     self.globalOptions = {
-      "parallelVideoJobs":3,
       "statsWorkers":1,
       "encodeWorkers":1,
+      "imageWorkers":2,
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
-      "autosaveFilename":'autosave.webgproj',
+      "defaultAutosaveFilename":'autosave.webgproj',
       "defaultProfile":"None"
     }
+
+    if os.path.exists(self.configFileName) and os.path.isfile(self.configFileName):
+      tempConfig = json.loads(open(self.configFileName,'r').read())
+
+      for key in self.globalOptions.keys():
+        try:
+          if type(self.globalOptions.get(key)) == int:
+            self.globalOptions[key] = int(tempConfig.get(key,self.globalOptions[key]))
+          else:
+            self.globalOptions[key] = str(tempConfig.get(key,self.globalOptions[key]))
+        except Exception as e:
+          print(e)
+
+    open(self.configFileName,'w').write(json.dumps(self.globalOptions,indent=1))
+
+
+    self.parallelVideoJobs = self.globalOptions.get("parallelVideoJobs",3)
+    self.statsWorkers      = self.globalOptions.get("statsWorkers",1)
+    self.encodeWorkers     = self.globalOptions.get("encodeWorkers",1)
+    self.imageWorkers      = self.globalOptions.get("imageWorkers",2)
+    self.defaultProfile    = self.globalOptions.get("defaultProfile","None")
+    self.tempFolder           = self.globalOptions.get('tempFolder', 'tempVideoFiles')
+    self.tempDownloadFolder   = self.globalOptions.get('tempDownloadFolder', 'tempDownloadedVideoFiles') 
+    self.autosaveFilename     = self.globalOptions.get('defaultAutosaveFilename', 'autosave.webgproj') 
+    self.lastSaveFile=None
+
 
     self.initialFiles = self.cleanInitialFiles(initialFiles+[self.tempDownloadFolder])
     self.root = Tk()
@@ -58,14 +80,14 @@ class WebmGeneratorController:
 
     self.cutselectionUi     = CutselectionUi(self.root)
     self.filterSselectionUi = FilterSelectionUi(self.root)
-    self.mergeSelectionUi   = MergeSelectionUi(self.root)
+    self.mergeSelectionUi   = MergeSelectionUi(self.root,defaultProfile=self.defaultProfile)
 
     self.webmMegeneratorUi.addPane(self.cutselectionUi,'Cuts')
     self.webmMegeneratorUi.addPane(self.filterSselectionUi,'Filters')
     self.webmMegeneratorUi.addPane(self.mergeSelectionUi,'Merge')
 
     self.videoManager  = VideoManager()
-    self.ffmpegService = FFmpegService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus)
+    self.ffmpegService = FFmpegService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,imageWorkerCount=self.imageWorkers,encodeWorkerCount=self.encodeWorkers,statsWorkerCount=self.statsWorkers)
     self.ytdlService   = YTDLService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus)
 
     self.cutselectionController = CutselectionController(self.cutselectionUi,
@@ -141,6 +163,7 @@ class WebmGeneratorController:
   def saveProject(self,filename):
     if filename is not None:
       saveData = self.getSaveData()
+      print(saveData)
       with open(filename,'w') as saveFile:
         saveFile.write(json.dumps(saveData))
         self.lastSaveFile = filename

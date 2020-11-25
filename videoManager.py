@@ -45,6 +45,15 @@ class VideoManager:
     start,end = sorted([start,end])
     self.subclips.setdefault(filename,{})[self.subClipCounter]=[start,end]
 
+  def cloneSubclip(self,filename,point):
+    clipsToClone=set()
+    for rid,(s,e) in self.subclips.get(filename,{}).items():
+      if s<point<e:
+        clipsToClone.add(rid)
+    for rid in clipsToClone:
+      start,end = self.subclips.get(filename,{})[rid]
+      self.registerNewSubclip(filename,start,end)
+
   def removeSubclip(self,filename,point):
     clipsToRemove=set()
     for rid,(s,e) in self.subclips.get(filename,{}).items():

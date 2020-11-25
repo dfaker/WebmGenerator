@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 
 try:
+  import logging
+
+  logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+        handlers=[
+            logging.FileHandler("debug.log"),
+            logging.StreamHandler()
+        ]
+  )  
+
+  logging.info('Startup.')
+
   import sys
   from webmGeneratorController import WebmGeneratorController
   import threading
@@ -15,11 +28,9 @@ try:
 
   del webmGenerator
 except Exception as e:
-  print(e)
-  
-  traceback.print_exc()
-  input('ENTER TO QUIT>>>')
+  logging.error('Startup Exception',exc_info=e)
+  logging.error(traceback.format_exc())
 
-print('DONE')
+logging.info('DONE')
 sys.exit('QUIT')
 os.kill()

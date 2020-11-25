@@ -65,6 +65,9 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Save Project", command=self.saveProject)
     self.filemenu.add_separator()
 
+    self.filemenu.add_command(label="Run scene change detection", command=self.controller.runSceneChangeDetection)
+    self.filemenu.add_separator()
+
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles)
     self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile)

@@ -87,21 +87,23 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.timeline_canvas_popup_menu = tk.Menu(self, tearoff=0)
 
-    self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Add new subclip",command=self.canvasPopupAddNewSubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Delete subclip",command=self.canvasPopupRemoveSubClipCallback)
     self.timeline_canvas_popup_menu.add_separator()
-
-    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 1s",command=self.canvasPopupFindLowestError1s)
-    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 2s",command=self.canvasPopupFindLowestError2s)
-    self.timeline_canvas_popup_menu.add_separator()
-
-    self.timeline_canvas_popup_menu.add_command(label="Run scene scene change detection",command=self.canvasPopupRunSceneChangeDetection)
-    self.timeline_canvas_popup_menu.add_separator()
-    
     self.timeline_canvas_popup_menu.add_command(label="Clone subclip",command=self.canvasPopupCloneSubClipCallback)
     self.timeline_canvas_popup_menu.add_separator()
+    self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
+    self.timeline_canvas_popup_menu.add_separator()
+    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 1s",command=self.canvasPopupFindLowestError1s)
+    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 2s",command=self.canvasPopupFindLowestError2s)
+
     
-    self.timeline_canvas_popup_menu.add_command(label="Delete subclip",command=self.canvasPopupRemoveSubClipCallback)
-    self.timeline_canvas_popup_menu.add_command(label="Add new subclip",command=self.canvasPopupAddNewSubClipCallback)
+    
+    
+    
+    
+    
+    
     
     self.timeline_canvas_last_right_click_x=None
 
@@ -572,9 +574,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.addNewSubclip( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)-pre,self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)+post  )
 
     self.timeline_canvas_last_right_click_x=None
-
-  def canvasPopupRunSceneChangeDetection(self):
-    self.controller.runSceneChangeDetection()
 
   def canvasPopupFindLowestError1s(self):
     self.findLowestErrorForBetterLoop(1.0)

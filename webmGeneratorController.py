@@ -122,6 +122,9 @@ class WebmGeneratorController:
           except Exception as e:
             print('audoload save failed',e)
 
+  def runSceneChangeDetection(self):
+    self.cutselectionController.runSceneChangeDetection()
+
   def cleanInitialFiles(self,files):
     finalFiles = []
     for f in files:

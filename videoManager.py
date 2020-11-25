@@ -8,11 +8,11 @@ class VideoManager:
 
 
   def getStateForSave(self):
-    return {'subclips':self.subclips.copy(),'interestMarks':self.interestMarks.copy(),'subClipCounter':self.subClipCounter}
+    return {'subclips':self.subclips.copy(),'interestMarks':{},'subClipCounter':self.subClipCounter}
 
   def loadStateFromSave(self,data):
     self.subclips       = data['subclips']
-    self.interestMarks  = data['interestMarks']
+    self.interestMarks  = {}
     self.subClipCounter = data['subClipCounter']
 
   def reset(self):

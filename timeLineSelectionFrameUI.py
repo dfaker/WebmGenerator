@@ -91,6 +91,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Delete subclip",command=self.canvasPopupRemoveSubClipCallback)
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Clone subclip",command=self.canvasPopupCloneSubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Expand subclip to interest marks",command=self.canvasPopupExpandSublcipToInterestMarksCallback)
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
     self.timeline_canvas_popup_menu.add_separator()
@@ -529,6 +530,22 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def setUiDirtyFlag(self):
     self.uiDirty=True    
+
+  def canvasPopupExpandSublcipToInterestMarksCallback(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+      upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+      for rid,(s,e) in list(ranges):
+        if s<mid<e:
+          self.controller.expandSublcipToInterestMarks((e+s)/2)
+          break
+        if lower<e<upper or lower<s<upper:
+          self.controller.expandSublcipToInterestMarks((e+s)/2)
+          break
+    self.timeline_canvas_last_right_click_x=None
+
 
   def canvasPopupCloneSubClipCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:

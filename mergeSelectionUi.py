@@ -6,7 +6,7 @@ import string
 import mpv
 from tkinter.filedialog import askopenfilename
 import random
-
+import time
 
 class EncodeProgress(ttk.Frame):
   def __init__(self, master=None, *args, encodeRequestId=None,controller=None, **kwargs):
@@ -23,6 +23,10 @@ class EncodeProgress(ttk.Frame):
     self.progressbarEncodeProgressLabel.config(mode='determinate', orient='horizontal')
     self.progressbarEncodeProgressLabel.pack(expand='true',padx=10, fill='x', side='left')
 
+    self.labelTimeLeft  = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelTimeLeft.config(text='', width='19')
+    self.labelTimeLeft.pack(side='left')
+
     self.progressbarEncodeCancelButton = ttk.Button(self.frameEncodeProgressWidget)
     self.progressbarEncodeCancelButton.config(text='Cancel', width=10)
     self.progressbarEncodeCancelButton.config(command=self.cancelEncodeRequest)
@@ -32,12 +36,14 @@ class EncodeProgress(ttk.Frame):
     self.frameEncodeProgressWidget.config(height='200', width='200')
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=10, fill='x', side='top')
     self.progresspercent = 0
+    self.encodeStartTime = None
 
   def cancelEncodeRequest(self):
+    self.cancelled = True
     self.progressbarEncodeProgressLabel.config(style="Red.Horizontal.TProgressbar")
     self.progressbarEncodeProgressLabel['value']=100
+    self.labelTimeLeft.config(text='Cancelled')
     self.progresspercent = 100
-    self.cancelled = True
     self.progressbarEncodeCancelButton.pack_forget()
     self.labelEncodeProgressLabel.config(text='Cancelled')
     self.controller.cancelEncodeRequest(self.encodeRequestId)
@@ -45,12 +51,19 @@ class EncodeProgress(ttk.Frame):
   def updateStatus(self,status,percent):
     if self.cancelled:
       return
+    if self.encodeStartTime is None and percent > 0:
+      self.encodeStartTime = time.time()
+    if self.encodeStartTime is not None and time.time() > self.encodeStartTime:
+      rate = percent / (time.time() - self.encodeStartTime)
+      remaining = (1-percent)/rate
+      self.labelTimeLeft.config(text=str(round(remaining,2))+'s left')
 
     self.labelEncodeProgressLabel.config(text=status)
     self.progressbarEncodeProgressLabel['value']=percent*100
     self.progresspercent = percent*100
 
     if percent >= 1:
+      self.labelTimeLeft.config(text='Complete in {}s'.format( str(round(time.time() - self.encodeStartTime,2)) ))
       self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
       self.progressbarEncodeCancelButton.pack_forget()
     else:

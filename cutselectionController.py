@@ -86,6 +86,7 @@ class CutselectionController:
     self.currentLoopCycleStart = None
     self.currentLoopCycleEnd   = None
     self.ui.updateFileListing(self.files)
+    self.ui.restartForNewFile()
 
   def getStateForSave(self):
     return {'loadedFiles':self.files[:]}
@@ -316,13 +317,13 @@ class CutselectionController:
     self.updateProgressStatistics()
     self.seekTo(start+((end-start)*0.8))
 
+  def expandSublcipToInterestMarks(self,point):
+    self.videoManager.expandSublcipToInterestMarks(self.currentlyPlayingFileName,point)
+    self.updateProgressStatistics()
 
   def cloneSubclip(self,point):
     self.videoManager.cloneSubclip(self.currentlyPlayingFileName,point)
     self.updateProgressStatistics()
-    self.currentLoopCycleStart  = None
-    self.currentLoopCycleEnd    = None
-
 
   def removeSubclip(self,point):
     self.videoManager.removeSubclip(self.currentlyPlayingFileName,point)

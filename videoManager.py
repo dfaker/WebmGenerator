@@ -45,6 +45,33 @@ class VideoManager:
     start,end = sorted([start,end])
     self.subclips.setdefault(filename,{})[self.subClipCounter]=[start,end]
 
+  def expandSublcipToInterestMarks(self,filename,point):
+    targetRid = None
+    newStart  = None
+    newEnd    = None
+    print('expand to interestMarks')
+    for rid,(s,e) in self.subclips.get(filename,{}).items():
+      if s<point<e:
+        targetRid = rid
+        newStart = s
+        newEnd   = e
+        try:
+          newStart = max([x[0] for x in self.interestMarks.get(filename) if x[0]<=s])
+          print(newStart)
+        except Exception as e:
+          print(e)
+        try:
+          newEnd   = min([x[0] for x in self.interestMarks.get(filename) if x[0]>=e])
+          print(newEnd)
+        except Exception as e:
+          print(e)
+        break
+
+    print(filename,targetRid,newStart,newEnd)
+
+    if targetRid is not None:
+      self.updateDetailsForRangeId(filename,targetRid,newStart,newEnd)
+
   def cloneSubclip(self,filename,point):
     clipsToClone=set()
     for rid,(s,e) in self.subclips.get(filename,{}).items():

@@ -12,7 +12,7 @@ import threading
 import time
 import ffmpegInfoParser
 import shutil
-
+import logging
 import statistics
 
 from masonry import Brick,Stack
@@ -82,7 +82,8 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       lastFailReason = 'File too large, {} decrease'.format(dependentValueName)
       if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
         smallestFailedOverMaximum=val
-    print(val,finalSize,targetSizeMedian)
+    logging.debug("Encode complete {}:{} finalSize:{} targetSizeMedian:{}".format(dependentValueName,val,finalSize,targetSizeMedian))
+
     val =  val * (1/(finalSize/targetSizeMedian))
     if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
       val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
@@ -117,11 +118,11 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
                 elif passNumber == 2:
                   statusCallback('Encoding '+processLabel+' q'+str(psnr),( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
             except Exception as e:
-              print(e)
+              logging.error("Encode progress Exception",exc_info=e)
         ln=b''
       ln+=c
     except Exception as e:
-      print(e)
+      logging.error("Encode progress Exception",exc_info=e)
   if passNumber == 0:
     statusCallback('Complete '+processLabel+' q'+str(psnr),(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
   elif passNumber == 1:
@@ -233,7 +234,7 @@ def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand += [tempVideoFilePath]
 
-    print(' '.join(ffmpegcommand))
+    logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
@@ -314,9 +315,9 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
-                   ,"-threads", str(4),"-crf"  ,'4'
+                   ,"-threads", str(4),"-crf"  ,'25'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","good",'-slices','8','-psnr'
+                   ,"-deadline","good",'-slices','8','-psnr','-speed','0'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
     
     if sizeLimitMax == 0.0:
@@ -344,7 +345,7 @@ def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand += [tempVideoFilePath]
 
-    print(' '.join(ffmpegcommand))
+    logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
@@ -457,7 +458,7 @@ def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, opt
     else:
       ffmpegcommand += ["-sn",tempVideoFilePath]
 
-    print(' '.join(ffmpegcommand))
+    logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
@@ -572,12 +573,12 @@ class FFmpegService():
 
 
           cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
-          print(' '.join(cmd))
+          logging.debug("Ffmpeg command: {}".format(' '.join(cmd)))
           proc = sp.Popen(cmd,stdout=sp.PIPE)
           outs,errs = proc.communicate()
           self.postCompletedImageFrame(requestKey,outs)
         except Exception as e:
-          print(imageWorker,e)
+          logging.error("Image worker Exception",exc_info=e)
 
 
     self.imageWorkers=[]
@@ -609,11 +610,10 @@ class FFmpegService():
 
       for icol,column in enumerate(seqClips):
         col = []
-        print(column)
+
         maxColWidth  = 0
         sumcolHeight = 0
         for i,(rid,clipfilename,s,e,filterexp) in enumerate(column):
-          print(i,(rid,clipfilename,s,e,filterexp))
           
           videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename),filters=filterexp)
           brick = Brick(brickn,videoInfo.width,videoInfo.height)
@@ -647,7 +647,7 @@ class FFmpegService():
         speedAdjustment= float(options.get('speedAdjustment',1.0))
         speedAdjustment = max(min(speedAdjustment, 100),0.5)
       except Exception as e:
-        print('invalid speed Adjustment',e)
+        logging.error('invalid speed Adjustment',exc_info=e)
 
       totalExpectedEncodedSeconds = cutLengths+(minLength*(1/speedAdjustment))
       totalEncodedSeconds = 0
@@ -728,10 +728,8 @@ class FFmpegService():
                 os.remove(outname)
                 return
               if len(c)==0:
-                print(ln)
                 break
               if c == b'\r':
-                print(ln)
                 for p in ln.split(b' '):
                   if b'time=' in p:
                     try:
@@ -741,7 +739,7 @@ class FFmpegService():
                         statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
                         self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
                     except Exception as e:
-                      print(e)
+                      logging.error('Clip cutting exception',exc_info=e)
                 ln=b''
               ln+=c
           proc.communicate()
@@ -765,10 +763,10 @@ class FFmpegService():
       if vow>maximumSideLength or voh>maximumSideLength:
         logger={}
         vow,voh = tempStack.getSizeWithContstraint('height',maximumSideLength,logger,0,0)
-      
-      print(vow,voh)
-      print(logger)
 
+      logging.debug("Grid final size {}x{}".format(vow,voh))      
+      logging.debug("Grid calculated {}".format(logger))      
+      
       #audio calcs
       streropos = {}
       inputAudio  = []
@@ -806,7 +804,6 @@ class FFmpegService():
           klookup[k]=snum
           file = brickTofileLookup[k]
 
-          print(file)
           proc = sp.Popen(['ffprobe', '-f', 'lavfi'
                           ,'-i','amovie=\'{}\',astats=metadata=1:reset=1'.format(file.replace('\\','/').replace(':','\\:').replace('\'','\\\\\''))
                           ,'-show_entries', 'frame=pkt_pts_time:frame_tags=lavfi.astats.Overall.RMS_level,lavfi.astats.1.RMS_level,lavfi.astats.2.RMS_level'
@@ -861,9 +858,6 @@ class FFmpegService():
             pass
           selectedSections.append( (second,selection) )
 
-        for second,selection in selectedSections:
-          print(second,selection)
-
         volcommands = {}
         for i,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           onSections = []
@@ -873,10 +867,6 @@ class FFmpegService():
               onSections.append( (min(gl),max(gl)) )
           if len(onSections)>0:
             volcommands[k] = '+'.join([ '(between(t,{s},{e}) + ( between(t,{s}-1,{s}+1)*cos(t-{s}) ) + ( between(t,{e}-1,{e}+1)*cos(t-{e}) ))'.format(s=x[0],e=x[1]) for x in onSections])
-            
-            print(k,volcommands[k])
-
-        print(volcommands)
 
         for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           videoInfo = brickVideoInfo[k]
@@ -940,7 +930,7 @@ class FFmpegService():
       try:
         audioOverrideDelay = float(audioOverrideDelay)
       except Exception as e:
-        print(e)
+        logging.error("Audio delay exception",exc_info =e)
         audioOverrideDelay = 0
 
 
@@ -981,9 +971,7 @@ class FFmpegService():
       clipDimensions = []
       infoOut={}
 
-      print(requestId,mode,seqClips,options,filenamePrefix,statusCallback)
       for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
-        print(i,(rid,clipfilename,s,e,filterexp))
         expectedTimes.append(e-s)
         videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
         infoOut[rid] = videoInfo
@@ -998,7 +986,7 @@ class FFmpegService():
         speedAdjustment= float(options.get('speedAdjustment',1.0))
         speedAdjustment = max(min(speedAdjustment, 100),0.5)
       except Exception as e:
-        print('invalid speed Adjustment',e)
+        logging.error("invalid speed Adjustment",exc_info =e)
 
       totalExpectedFinalLength=sum(expectedTimes)
 
@@ -1017,12 +1005,6 @@ class FFmpegService():
 
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))'".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
-
-        print('#########')
-        print('#########')
-        print(filterexp)
-        print('#########')
-        print('#########')
 
         key = (rid,clipfilename,start,end,filterexp)
 
@@ -1084,7 +1066,6 @@ class FFmpegService():
                 os.remove(outname)
                 return
               if len(c)==0:
-                print(ln)
                 break
               if c == b'\r':
                 for p in ln.split(b' '):
@@ -1096,7 +1077,7 @@ class FFmpegService():
                         statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
                         self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
                     except Exception as e:
-                      print(e)
+                      logging.error("Clip cutting exception",exc_info =e)
                 ln=b''
               ln+=c
           proc.communicate()
@@ -1116,11 +1097,7 @@ class FFmpegService():
       try:
         fadeDuration= float(options.get('transDuration',0.5))
       except Exception as e:
-        print('invalid fade duration',e)
-
-
-
-      print(fadeDuration)
+        logging.error("invalid fade duration",exc_info =e)
 
       sizeMatchMode = 'PAD'
       if 'center crop' in options.get('frameSizeStrategy',''):
@@ -1214,7 +1191,7 @@ class FFmpegService():
             afactor=speedAdjustment
             crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
-            print(e)
+            logging.error("Crossfade exception",exc_info =e)
             crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
 
         filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
@@ -1250,7 +1227,7 @@ class FFmpegService():
       else:
         filtercommand += ',[outvpre]null[outv]'
 
-      print(filtercommand)
+      logging.debug("Filter command: {}".format(filtercommand))
 
       os.path.exists(outputPathName) or os.mkdir(outputPathName)
 
@@ -1260,7 +1237,7 @@ class FFmpegService():
       try:
         audioOverrideDelay = float(audioOverrideDelay)
       except Exception as e:
-        print(e)
+        logging.error("audioOverrideDelay exception",exc_info =e)
         audioOverrideDelay = 0
 
 
@@ -1294,12 +1271,12 @@ class FFmpegService():
       try:
         os.path.exists(tempPathname) or os.mkdir(tempPathname)
       except Exception as e:
-        print(e)
+        logging.error("tempPathname exception",exc_info =e)
 
       try:
         os.path.exists(outputPathName) or os.mkdir(outputPathName)
       except Exception as e:
-        print(e)
+        logging.error("outputPathName exception",exc_info =e)
 
       runNumber=int(time.time())
 
@@ -1313,9 +1290,8 @@ class FFmpegService():
             encodeGrid(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback)
 
         except Exception as e:
-          print(e)
-          import traceback
-          traceback.print_exc()
+          logging.error("unhandled {} exception".format(mode),exc_info =e)
+
 
     self.encodeWorkers=[]
     for _ in range(encodeWorkerCount):
@@ -1329,7 +1305,7 @@ class FFmpegService():
         try:
           filename,requestType,options,callback = self.statsRequestQueue.get()
           if requestType == 'MSESearchImprove':
-            print('error seatch srtart')
+            logging.debug('error seatch srtart')
             filename = options.get('filename')
             start = options.get('start')
             end   = options.get('end')
@@ -1409,10 +1385,11 @@ class FFmpegService():
               matchStart = (start-searchDistance)+(si*sframeDistance)
               matchEnd   = (end-searchDistance)+(argmin*eframeDistance)
               distances.append( (mse[argmin],matchStart,matchEnd) )
-              print(mse[argmin],matchStart,matchEnd)
+              logging.debug("Frame search mse:{} matchstart:{} matchend:{}".format(mse[argmin],matchStart,matchEnd))
 
             finalmse,finals,finale = sorted(distances)[0]
-            print(finalmse,finals,finale)
+            logging.debug("Frame search finalmse:{} finalstart:{} finalend:{}".format(finalmse,finals,finale))
+
             self.globalStatusCallback('Found closest matches, updating',1)
             callback(filename,rid,mse,finals,finale)
 
@@ -1426,7 +1403,6 @@ class FFmpegService():
             while 1:
               c=proc.stderr.read(1)
               if len(c)==0:
-                print(ln)
                 break
               if c in b'\r\n':
                 if b'pts_time' in ln:

@@ -622,6 +622,9 @@ class CutselectionUi(ttk.Frame):
     def addNewSubclip(self, start, end):
         self.controller.addNewSubclip(start, end)
 
+    def expandSublcipToInterestMarks(self, point):
+      self.controller.expandSublcipToInterestMarks(point)
+
     def cloneSubclip(self, point):
         self.controller.cloneSubclip(point)
 

@@ -404,10 +404,14 @@ class MergeSelectionUi(ttk.Frame):
     self.profileLabel.pack(expand='false', fill='x', side='left')
 
     self.profileVar = tk.StringVar()
-    self.profiles   = ['None',
-                       'Default max quality mp4',                          
-                       'Sub 4M max quality vp8 webm',
-                       'Sub 100M max quality mp4',]
+    self.profileSpecs = [
+      {'name':'None','editable':False},
+      {'name':'Default max quality mp4','editable':False,'outputFormat':'mp4:x264','maximumSize':'0.0'},
+      {'name':'Sub 4M max quality vp8 webm','editable':False,'outputFormat':'webm:VP8','maximumSize':'4.0'},
+      {'name':'Sub 100M max quality mp4','editable':False,'outputFormat':'mp4:x264','maximumSize':'100.0'}
+    ]
+
+    self.profiles   = [x['name'] for x in self.profileSpecs]
 
     if self.defaultProfile in self.profiles:
       self.profileVar.set(defaultProfile)
@@ -881,17 +885,12 @@ class MergeSelectionUi(ttk.Frame):
 
   def profileChanged(self,*args):
     profileName = self.profileVar.get()
-
-    if profileName == 'Default max quality mp4':
-      self.outputFormatVar.set('mp4:x264')
-      self.maximumSizeVar.set('0.0')
-    elif profileName == 'Sub 4M max quality vp8 webm':
-      self.outputFormatVar.set('webm:VP8')
-      self.maximumSizeVar.set('4.0')
-    elif profileName == 'Sub 100M max quality mp4':
-      self.outputFormatVar.set('webm:VP8')
-      self.maximumSizeVar.set('100.0')
-
+    for p in self.profileSpecs:
+      if p['name'] == profileName:
+        for k,v in p.items():
+          attrName = k+'Var'
+          if hasattr(self, attrName) and hasattr(getattr(self, attrName),'set'):
+             getattr(self, attrName).set(v)
 
   def valueChange(self,*args):
     try:

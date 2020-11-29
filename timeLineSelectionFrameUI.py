@@ -298,8 +298,35 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def timelineMousePress(self,e):
     if not self.controller.getIsPlaybackStarted():
-      return
-    
+      self.timeline_canvas.config(cursor="no")
+      return    
+
+    enableDraggableHint=False
+    ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+
+    if e.y<20:
+      enableDraggableHint=True
+    elif self.clickTarget is not None:
+      enableDraggableHint=True
+    else:
+      for rid,(sts,ens) in ranges:
+        st=self.secondsToXcoord(sts)
+        en=self.secondsToXcoord(ens)
+
+        if (st<e.x<en and e.y>self.winfo_height()-self.midrangeHeight) or (st-self.handleWidth<e.x<en+self.handleWidth and e.y>self.winfo_height()-self.miniMidrangeHeight):
+          enableDraggableHint=True
+        elif st-self.handleWidth<e.x<st+2:
+          enableDraggableHint=True
+        elif en-2<e.x<en+self.handleWidth:
+          enableDraggableHint=True
+
+    if enableDraggableHint:
+        self.timeline_canvas.config(cursor="sb_h_double_arrow")
+    else:
+        self.timeline_canvas.config(cursor="crosshair")
+
+
+
     ctrl  = (e.state & 0x4) != 0
     
 
@@ -317,11 +344,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
       elif e.num==1 and e.y>self.winfo_height()-self.handleHeight:
 
-        ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
         for rid,(sts,ens) in ranges:
           st=self.secondsToXcoord(sts)
           en=self.secondsToXcoord(ens)
-
 
           if (st<e.x<en and e.y>self.winfo_height()-self.midrangeHeight) or (st-self.handleWidth<e.x<en+self.handleWidth and e.y>self.winfo_height()-self.miniMidrangeHeight):
             self.clickTarget = (rid,'m',sts,ens)
@@ -392,6 +417,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if e.num==3:      
         self.timeline_canvas_last_right_click_x=e.x
         self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
+
+
 
   def frameResponseCallback(self,filename,timestamp,frameWidth,frameData):
     previewData = tk.PhotoImage(data=frameData)

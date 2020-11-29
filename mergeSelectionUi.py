@@ -7,6 +7,9 @@ import mpv
 from tkinter.filedialog import askopenfilename
 import random
 import time
+from collections import deque
+import logging 
+
 
 class EncodeProgress(ttk.Frame):
   def __init__(self, master=None, *args, encodeRequestId=None,controller=None, **kwargs):
@@ -33,10 +36,42 @@ class EncodeProgress(ttk.Frame):
     self.progressbarEncodeCancelButton.config(style="small.TButton")
     self.progressbarEncodeCancelButton.pack(expand='false',padx=0, fill='x', side='left')
 
+
+    self.progressbarPlayButton = ttk.Button(self.frameEncodeProgressWidget)
+    self.progressbarPlayButton.config(text='Play', width=10)
+    self.progressbarPlayButton.config(command=self.playFinal)
+    self.progressbarPlayButton.config(style="small.TButton")
+    
+
     self.frameEncodeProgressWidget.config(height='200', width='200')
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=10, fill='x', side='top')
     self.progresspercent = 0
     self.encodeStartTime = None
+    self.progressQueue    = deque([],10)
+    self.timestampQueue   = deque([],10)
+    self.finalFilename    = None
+    self.player = None
+
+  def playFinal(self):
+    if self.finalFilename is not None:
+
+      if self.player is not None:
+        self.player.terminate()
+
+      self.player = mpv.MPV(loop='inf',
+                            mute=True,
+                            volume=0,
+                            autofit_larger='1280')
+
+      self.player.play(self.finalFilename)
+
+      def quit(key_state, key_name, key_char):
+        self.player.terminate()
+        self.player = None
+      
+      self.player.register_key_binding("q", quit) 
+      self.player.register_key_binding("Q", quit)        
+      self.player.register_key_binding("CLOSE_WIN", quit)
 
   def cancelEncodeRequest(self):
     self.cancelled = True
@@ -48,16 +83,34 @@ class EncodeProgress(ttk.Frame):
     self.labelEncodeProgressLabel.config(text='Cancelled')
     self.controller.cancelEncodeRequest(self.encodeRequestId)
 
-  def updateStatus(self,status,percent):
+  def updateStatus(self,status,percent,finalFilename=None):
     if self.cancelled:
       return
-    if self.encodeStartTime is None and percent > 0:
-      self.encodeStartTime = time.time()
-    if self.encodeStartTime is not None and time.time() > self.encodeStartTime:
-      rate = percent / (time.time() - self.encodeStartTime)
-      remaining = (1-percent)/rate
-      self.labelTimeLeft.config(text=str(round(remaining,2))+'s left')
+    if finalFilename is not None:
+      self.finalFilename = finalFilename
+    print(finalFilename)
 
+
+    self.progressQueue.append(percent)
+    self.timestampQueue.append(time.time())
+
+    if self.encodeStartTime is None:
+      self.encodeStartTime = self.timestampQueue[-1]
+
+    if len(self.progressQueue)>=2:
+      
+      currentValue = self.progressQueue[-1]
+      oldestValue  = self.progressQueue[0]
+      
+      currentKey   = self.timestampQueue[-1]
+      oldestKey    = self.timestampQueue[0]
+
+      try:
+        remaining = (1.0 - currentValue) * (currentKey - oldestKey) / (currentValue - oldestValue)
+        self.labelTimeLeft.config(text=str(round(remaining,2))+'s left')
+      except:
+        pass
+      
     self.labelEncodeProgressLabel.config(text=status)
     self.progressbarEncodeProgressLabel['value']=percent*100
     self.progresspercent = percent*100
@@ -66,6 +119,8 @@ class EncodeProgress(ttk.Frame):
       self.labelTimeLeft.config(text='Complete in {}s'.format( str(round(time.time() - self.encodeStartTime,2)) ))
       self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
       self.progressbarEncodeCancelButton.pack_forget()
+      if self.finalFilename is not None:
+        self.progressbarPlayButton.pack(expand='false',padx=0, fill='x', side='left')
     else:
       self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
       self.progressbarEncodeCancelButton.pack(expand='false',padx=0, fill='x', side='left')
@@ -443,7 +498,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceSummary.config(height='10', width='200')
     self.frameSequenceSummary.pack(expand='false', fill='x', side='top', pady='0')
     
-    self.frameTransitionSettings = ttk.Frame(self.labelframeSequenceFrame)
+    
 
     self.frameEncodeSettings = ttk.Frame(self.labelframeSequenceFrame)
     self.frameSequenceValues = ttk.Frame(self.frameEncodeSettings)
@@ -459,6 +514,7 @@ class MergeSelectionUi(ttk.Frame):
     self.speedAdjustmentVar       = tk.StringVar() 
     self.audioChannelsVar         = tk.StringVar()
     self.audioMergeOptionsVar     = tk.StringVar()
+    self.gridLoopMergeOptionsVar  = tk.StringVar()
     self.postProcessingFilterVar  = tk.StringVar()
 
     self.audioOverrideVar         = tk.StringVar()
@@ -475,6 +531,7 @@ class MergeSelectionUi(ttk.Frame):
     self.speedAdjustmentVar.trace('w',self.valueChange)
     self.audioChannelsVar.trace('w',self.valueChange)
     self.audioMergeOptionsVar.trace('w',self.valueChange)
+    self.gridLoopMergeOptionsVar.trace('w',self.valueChange)
     self.postProcessingFilterVar.trace('w',self.valueChange)
 
     self.audioOverrideVar.trace('w',self.valueChange)
@@ -534,6 +591,9 @@ class MergeSelectionUi(ttk.Frame):
     self.audioMergeOptions = ['Merge Normalize All','Merge Original Volume','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
     self.audioMergeOptionsVar.set(self.audioMergeOptions[0]) 
 
+    self.gridLoopMergeOptions = ['End on shortest Clip','Loop shorter clips to match longest']
+    self.gridLoopMergeOptionsVar.set(self.gridLoopMergeOptions[0])
+
     self.postProcessingFilterOptions = ['None']
     for f in os.listdir('.'):
       if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
@@ -556,157 +616,14 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceActions.config(height='200', width='200')
     self.frameSequenceActions.pack(expand='false', fill='both', side='right')
 
+
+    self.frameMergeStyleSettings = ttk.Frame(self.labelframeSequenceFrame)
+
+    self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
+
+    # Settings for Transitions Starts
+    self.frameTransitionSettings = ttk.Frame(self.frameMergeStyleSettings)
     self.frameTransitionSettings.config(height='200', padding='5', relief='groove', width='200')
-    self.frameTransitionSettings.pack(fill='x', ipadx='3', side='top')
-
-    self.frameEncodeSettings.config(height='200', padding='5', relief='groove', width='200')
-    self.frameEncodeSettings.pack(fill='x', ipadx='3', side='top')
-
-    self.frameSequenceValuesLeft = ttk.Frame(self.frameSequenceValues)
-    self.frameSequenceValuesRight = ttk.Frame(self.frameSequenceValues)
-
-    # two column menu below
-
-    self.frameAutomaticFileNaming = ttk.Frame(self.frameSequenceValuesLeft)
-    self.labelAutomaticFileNaming = ttk.Label(self.frameAutomaticFileNaming)
-    self.labelAutomaticFileNaming.config(anchor='e', padding='2', text='Automatically name output files', width='25')
-    self.labelAutomaticFileNaming.pack(side='left')
-    self.entryAutomaticFileNaming = ttk.Checkbutton(self.frameAutomaticFileNaming,text='',onvalue=True, offvalue=False)
-    self.entryAutomaticFileNaming.config(width='5',variable=self.automaticFileNamingVar)
-    self.entryAutomaticFileNaming.pack(expand='true', fill='both', side='left')
-    self.frameAutomaticFileNaming.config(height='200', width='10')
-    self.frameAutomaticFileNaming.pack(expand='true', fill='x', side='top')
-
-
-    self.frameFilenamePrefix = ttk.Frame(self.frameSequenceValuesRight)
-    self.labelFilenamePrefix = ttk.Label(self.frameFilenamePrefix)
-    self.labelFilenamePrefix.config(anchor='e', padding='2', text='Output filename prefix', width='25')
-    self.labelFilenamePrefix.pack(side='left')
-    self.entryFilenamePrefix = ttk.Entry(self.frameFilenamePrefix)
-    self.entryFilenamePrefix.config(width='5',textvariable=self.filenamePrefixVar)
-    self.entryFilenamePrefix.pack(expand='true', fill='both', side='left')
-    self.frameFilenamePrefix.config(height='200', width='10')
-    self.frameFilenamePrefix.pack(expand='true', fill='x', side='top')
-
-
-    self.frameOutputFormat = ttk.Frame(self.frameSequenceValuesLeft)
-    self.labelOutputFormat = ttk.Label(self.frameOutputFormat)
-    self.labelOutputFormat.config(anchor='e', padding='2', text='Otuput format', width='25')
-    self.labelOutputFormat.pack(side='left')  
-    self.comboboxOutputFormat= ttk.OptionMenu(self.frameOutputFormat,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
-    self.comboboxOutputFormat.pack(expand='true', fill='x', side='top')
-    self.frameOutputFormat.config(height='200', width='100')
-    self.frameOutputFormat.pack(expand='true', fill='x', side='top')
-
-    self.frameSizeStrategy = ttk.Frame(self.frameSequenceValuesRight)
-    self.labelSizeStrategy = ttk.Label(self.frameSizeStrategy)
-    self.labelSizeStrategy.config(anchor='e', padding='2', text='Size Match Strategy', width='25')
-    self.labelSizeStrategy.pack(side='left')
-    
-    self.comboboxSizeStrategy = ttk.OptionMenu(self.frameSizeStrategy,self.frameSizeStrategyVar,self.frameSizeStrategyVar.get(),*self.frameSizeStrategies)
-    self.comboboxSizeStrategy.pack(expand='true', fill='x', side='top')
-    self.frameSizeStrategy.config(height='200', width='100')
-    self.frameSizeStrategy.pack(expand='true', fill='x', side='top')
-
-
-    self.frameMaximumSize = ttk.Frame(self.frameSequenceValuesLeft)
-    self.labelMaximumSize = ttk.Label(self.frameMaximumSize)
-    self.labelMaximumSize.config(anchor='e', padding='2', text='Maximum File Size (MB)', width='25')
-    self.labelMaximumSize.pack(side='left')
-    self.entryMaximumSize = ttk.Spinbox(self.frameMaximumSize, from_=0, to=float('inf'), increment=0.1)
-    self.entryMaximumSize.config(textvariable=self.maximumSizeVar)
-    self.entryMaximumSize.config(width='5')
-
-    self.entryMaximumSize.pack(expand='true', fill='both', side='left')
-    self.frameMaximumSize.config(height='200', width='100')
-    self.frameMaximumSize.pack(expand='true', fill='x', side='top')
-
-
-    self.frameMaximumWidth = ttk.Frame(self.frameSequenceValuesRight)
-    self.labelMaximumWidth = ttk.Label(self.frameMaximumWidth)
-    self.labelMaximumWidth.config(anchor='e', padding='2', text='Limit largest dimension', width='25')
-    self.labelMaximumWidth.pack(side='left')
-    self.entryMaximumWidth = ttk.Spinbox(self.frameMaximumWidth, 
-                                         from_=0, 
-                                         to=float('inf'), 
-                                         increment=1,
-                                         textvariable=self.maximumWidthVar)
-    self.entryMaximumWidth.config(width='5')
-    self.entryMaximumWidth.pack(expand='true', fill='both', side='left')
-    self.frameMaximumWidth.config(height='200', width='300')
-    self.frameMaximumWidth.pack(expand='true', fill='x', side='top')
-
-    self.frameAudioChannels = ttk.Frame(self.frameSequenceValuesLeft)
-    self.labelAudioChannels = ttk.Label(self.frameAudioChannels)
-    self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels', width='25')
-    self.labelAudioChannels.pack(side='left')
-    self.entryAudioChannels = ttk.OptionMenu(self.frameAudioChannels,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
-    
-    self.entryAudioChannels.pack(expand='true', fill='both', side='left')
-    self.frameAudioChannels.config(height='200', width='300')
-    self.frameAudioChannels.pack(expand='true', fill='x', side='top')
-
-
-    self.frameSpeedChange = ttk.Frame(self.frameSequenceValuesRight)
-    self.labelSpeedChange = ttk.Label(self.frameSpeedChange)
-    self.labelSpeedChange.config(anchor='e', padding='2', text='Speed adjustment', width='25')
-    self.labelSpeedChange.pack(side='left')
-    self.entrySpeedChange = ttk.Spinbox(self.frameSpeedChange, 
-                                         from_=0.5, 
-                                         to=2.0, 
-                                         increment=0.01,
-                                         textvariable=self.speedAdjustmentVar)
-    self.entrySpeedChange.config(width='5')
-    self.entrySpeedChange.pack(expand='true', fill='both', side='left')
-    self.frameSpeedChange.config(height='200', width='100')
-    self.frameSpeedChange.pack(expand='true', fill='x', side='top')
-
-    self.frameAudioMerge = ttk.Frame(self.frameSequenceValuesLeft)
-    self.labelAudioMerge = ttk.Label(self.frameAudioMerge)
-    self.labelAudioMerge.config(anchor='e', padding='2', text='Grid Audio Merge', width='25')
-    self.labelAudioMerge.pack(side='left')
-    self.entryAudioMerge = ttk.OptionMenu(self.frameAudioMerge,self.audioMergeOptionsVar,self.audioMergeOptionsVar.get(),*self.audioMergeOptions)
-    
-    self.entryAudioMerge.pack(expand='true', fill='both', side='left')
-    self.frameAudioMerge.config(height='200', width='300')
-    self.frameAudioMerge.pack(expand='true', fill='x', side='top')
-
-
-    self.framepostProcessingFilter = ttk.Frame(self.frameSequenceValuesRight)
-    self.labelpostProcessingFilter = ttk.Label(self.framepostProcessingFilter)
-    self.labelpostProcessingFilter.config(anchor='e', padding='2', text='Post filter', width='25')
-    self.labelpostProcessingFilter.pack(side='left')
-    self.entrypostProcessingFilter = ttk.OptionMenu(self.framepostProcessingFilter,self.postProcessingFilterVar,self.postProcessingFilterVar.get(),*self.postProcessingFilterOptions)
-    self.entrypostProcessingFilter.config(width='50')
-    self.entrypostProcessingFilter.pack(expand='true', fill='both', side='left')
-    self.framepostProcessingFilter.config(height='200', width='100')
-    self.framepostProcessingFilter.pack(expand='true', fill='x', side='top')
-
-
-    self.framepostAudioOverride = ttk.Frame(self.frameSequenceValuesLeft)
-    self.labelpostAudioOverride = ttk.Label(self.framepostAudioOverride)
-    self.labelpostAudioOverride.config(anchor='e', padding='2', text='Audio Dub', width='25')
-    self.labelpostAudioOverride.pack(side='left')
-    self.entrypostAudioOverride = ttk.Button(self.framepostAudioOverride,textvariable=self.audioOverrideVar,command=self.selectAudioOverride)
-    self.entrypostAudioOverride.config(width='50')
-    self.entrypostAudioOverride.pack(expand='true', fill='both', side='left')
-    self.framepostAudioOverride.config(height='200', width='100')
-    self.framepostAudioOverride.pack(expand='true', fill='x', side='top')
-
-
-    self.framepostAudioOverrideDelay = ttk.Frame(self.frameSequenceValuesRight)
-    self.labelpostAudioOverrideDelay = ttk.Label(self.framepostAudioOverrideDelay)
-    self.labelpostAudioOverrideDelay.config(anchor='e', padding='2', text='Dub Delay (seconds)', width='25')
-    self.labelpostAudioOverrideDelay.pack(side='left')
-    self.entrypostAudioOverrideDelay = ttk.Spinbox(self.framepostAudioOverrideDelay, textvariable=self.audiOverrideDelayVar,from_=float('-inf'), 
-                                          to=float('inf'), 
-                                          increment=0.5)
-    self.entrypostAudioOverrideDelay.config(width='50')
-    self.entrypostAudioOverrideDelay.pack(expand='true', fill='both', side='left')
-    self.framepostAudioOverrideDelay.config(height='200', width='100')
-    self.framepostAudioOverrideDelay.pack(expand='true', fill='x', side='top')
-
-
 
     self.frameTransDuration = ttk.Frame(self.frameTransitionSettings)
     self.labelTransDuration = ttk.Label(self.frameTransDuration)
@@ -720,13 +637,173 @@ class MergeSelectionUi(ttk.Frame):
     self.entryTransDuration.config(width='5')
 
     self.entryTransDuration.pack(expand='true', fill='both', side='left')
-    self.frameTransDuration.config(height='200', width='100')
+
     self.frameTransDuration.pack(expand='true', fill='x', side='top')
 
     self.frameTransStyle = ttk.Frame(self.frameTransitionSettings)
     self.labelTransStyle = ttk.Label(self.frameTransStyle)
     self.labelTransStyle.config(anchor='e', padding='2', text='Transition Style', width='25')
     self.labelTransStyle.pack(side='left')
+    self.frameTransStyle.pack(expand='true', fill='x', side='bottom')
+
+    
+    # Settings for Transitions Ends
+
+    # Settings for Grid Merge Starts
+
+    self.frameGridSettings = ttk.Frame(self.frameMergeStyleSettings)
+    self.frameGridSettings.config(height='200', padding='5', relief='groove', width='200')
+
+    self.frameAudioMerge = ttk.Frame(self.frameGridSettings)
+
+    self.labelAudioMerge = ttk.Label(self.frameAudioMerge)
+    self.labelAudioMerge.config(anchor='e', padding='2', text='Grid Audio Merge', width='25')
+    self.labelAudioMerge.pack(side='left')
+    
+    self.entryAudioMerge = ttk.OptionMenu(self.frameAudioMerge,self.audioMergeOptionsVar,self.audioMergeOptionsVar.get(),*self.audioMergeOptions)
+    self.entryAudioMerge.pack(expand='true', fill='both', side='left')
+
+    self.frameAudioMerge.pack(fill='x', side='top')
+
+
+    self.frameGridLoopOptions = ttk.Frame(self.frameGridSettings)
+
+    self.labelGridLoopOptions = ttk.Label(self.frameGridLoopOptions)
+    self.labelGridLoopOptions.config(anchor='e', padding='2', text='Grid Loop Option', width='25')
+    self.labelGridLoopOptions.pack(side='left')
+    
+    self.entryGridLoopOptions = ttk.OptionMenu(self.frameGridLoopOptions,self.gridLoopMergeOptionsVar,self.gridLoopMergeOptionsVar.get(),*self.gridLoopMergeOptions)
+    self.entryGridLoopOptions.pack(expand='true', fill='both', side='left')
+    self.frameGridLoopOptions.pack(fill='x', side='bottom')
+
+
+    # Settings for Grid Merge Ends
+
+
+    self.frameEncodeSettings.config(height='200', padding='5', relief='groove', width='200')
+    self.frameEncodeSettings.pack(fill='x', expand=True, ipadx='3', side='top')
+
+    #self.frameSequenceValuesLeft = ttk.Frame(self.frameSequenceValues)
+    #self.frameSequenceValuesRight = ttk.Frame(self.frameSequenceValues)
+
+    # two column menu below
+
+    
+
+    self.frameSequenceValues.columnconfigure(0, weight=1)
+    self.frameSequenceValues.columnconfigure(1, weight=100)
+    self.frameSequenceValues.columnconfigure(2, weight=1)
+    self.frameSequenceValues.columnconfigure(3, weight=100)
+
+
+    self.frameSequenceValues.rowconfigure(0, weight=1)
+    self.frameSequenceValues.rowconfigure(1, weight=1)
+    self.frameSequenceValues.rowconfigure(2, weight=1)
+    self.frameSequenceValues.rowconfigure(3, weight=1)
+    self.frameSequenceValues.rowconfigure(4, weight=1)
+    self.frameSequenceValues.rowconfigure(5, weight=1)
+
+    self.labelAutomaticFileNaming = ttk.Label(self.frameSequenceValues)
+    self.labelAutomaticFileNaming.config(anchor='e', padding='2', text='Automatically name output files', width='25')
+    self.labelAutomaticFileNaming.grid(row=0,column=0,sticky='e')
+
+    self.entryAutomaticFileNaming = ttk.Checkbutton(self.frameSequenceValues,text='',onvalue=True, offvalue=False)
+    self.entryAutomaticFileNaming.config(width='5',variable=self.automaticFileNamingVar)
+    self.entryAutomaticFileNaming.grid(row=0,column=1,sticky='ew')
+
+    self.labelFilenamePrefix = ttk.Label(self.frameSequenceValues)
+    self.labelFilenamePrefix.config(anchor='e', padding='2', text='Output filename prefix')
+    self.labelFilenamePrefix.grid(row=0,column=2,sticky='e')
+
+    self.entryFilenamePrefix = ttk.Entry(self.frameSequenceValues)
+    self.entryFilenamePrefix.config(textvariable=self.filenamePrefixVar)
+    self.entryFilenamePrefix.grid(row=0,column=3,sticky='ew')
+
+    self.labelOutputFormat = ttk.Label(self.frameSequenceValues)
+    self.labelOutputFormat.config(anchor='e', padding='2', text='Output format')
+    self.labelOutputFormat.grid(row=1,column=0,sticky='e')
+
+    self.comboboxOutputFormat= ttk.OptionMenu(self.frameSequenceValues,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
+    self.comboboxOutputFormat.grid(row=1,column=1,sticky='ew')
+
+  
+    self.labelSizeStrategy = ttk.Label(self.frameSequenceValues)
+    self.labelSizeStrategy.config(anchor='e', padding='2', text='Size Match Strategy')
+    self.labelSizeStrategy.grid(row=1,column=2,sticky='e')
+    
+    self.comboboxSizeStrategy = ttk.OptionMenu(self.frameSequenceValues,self.frameSizeStrategyVar,self.frameSizeStrategyVar.get(),*self.frameSizeStrategies)
+    self.comboboxSizeStrategy.grid(row=1,column=3,sticky='ew')
+
+    self.labelMaximumSize = ttk.Label(self.frameSequenceValues)
+    self.labelMaximumSize.config(anchor='e', padding='2', text='Maximum File Size (MB)')
+    self.labelMaximumSize.grid(row=2,column=0,sticky='e')
+
+    self.entryMaximumSize = ttk.Spinbox(self.frameSequenceValues, from_=0, to=float('inf'), increment=0.1)
+    self.entryMaximumSize.config(textvariable=self.maximumSizeVar)
+    self.entryMaximumSize.grid(row=2,column=1,sticky='ew')
+
+
+
+    self.labelMaximumWidth = ttk.Label(self.frameSequenceValues)
+    self.labelMaximumWidth.config(anchor='e', padding='2', text='Limit largest dimension')
+    self.labelMaximumWidth.grid(row=2,column=2,sticky='e')
+    self.entryMaximumWidth = ttk.Spinbox(self.frameSequenceValues, 
+                                         from_=0, 
+                                         to=float('inf'), 
+                                         increment=1,
+                                         textvariable=self.maximumWidthVar)
+    self.entryMaximumWidth.grid(row=2,column=3,sticky='ew')
+
+
+
+    self.labelAudioChannels = ttk.Label(self.frameSequenceValues)
+    self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels')
+    self.labelAudioChannels.grid(row=3,column=0,sticky='e')
+    self.entryAudioChannels = ttk.OptionMenu(self.frameSequenceValues,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
+    self.entryAudioChannels.grid(row=3,column=1,sticky='ew')
+
+
+    self.labelSpeedChange = ttk.Label(self.frameSequenceValues)
+    self.labelSpeedChange.config(anchor='e', padding='2', text='Speed adjustment')
+    self.labelSpeedChange.grid(row=3,column=2,sticky='e')
+    self.entrySpeedChange = ttk.Spinbox(self.frameSequenceValues, 
+                                         from_=0.5, 
+                                         to=2.0, 
+                                         increment=0.01,
+                                         textvariable=self.speedAdjustmentVar)
+    self.entrySpeedChange.grid(row=3,column=3,sticky='ew')
+
+
+    self.labelpostProcessingFilter = ttk.Label(self.frameSequenceValues)
+    self.labelpostProcessingFilter.config(anchor='e', padding='2', text='Post filter')
+    self.labelpostProcessingFilter.grid(row=4,column=2,sticky='e')
+    self.entrypostProcessingFilter = ttk.OptionMenu(self.frameSequenceValues,self.postProcessingFilterVar,self.postProcessingFilterVar.get(),*self.postProcessingFilterOptions)
+    self.entrypostProcessingFilter.grid(row=4,column=3,sticky='ew')
+
+
+    self.labelpostAudioOverride = ttk.Label(self.frameSequenceValues)
+    self.labelpostAudioOverride.config(anchor='e', padding='2', text='Audio Dub')
+    self.labelpostAudioOverride.grid(row=5,column=0,sticky='e')
+    self.entrypostAudioOverride = ttk.Button(self.frameSequenceValues,textvariable=self.audioOverrideVar,command=self.selectAudioOverride)
+    self.entrypostAudioOverride.grid(row=5,column=1,sticky='ew')
+
+
+
+    self.labelpostAudioOverrideDelay = ttk.Label(self.frameSequenceValues)
+    self.labelpostAudioOverrideDelay.config(anchor='e', padding='2', text='Dub Delay (seconds)')
+    self.labelpostAudioOverrideDelay.grid(row=5,column=2,sticky='e')
+    self.entrypostAudioOverrideDelay = ttk.Spinbox(self.frameSequenceValues, textvariable=self.audiOverrideDelayVar,from_=float('-inf'), 
+                                          to=float('inf'), 
+                                          increment=0.5)
+    self.entrypostAudioOverrideDelay.grid(row=5,column=3,sticky='ew')
+
+    
+
+
+
+
+
+
     
     self.comboboxTransStyle = ttk.OptionMenu(self.frameTransStyle,self.transStyleVar,self.transStyleVar.get(),*self.transStyles)
 
@@ -741,8 +818,8 @@ class MergeSelectionUi(ttk.Frame):
 
 
 
-    self.frameSequenceValuesLeft.pack(expand='true', fill='x', side='left')
-    self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
+    #self.frameSequenceValuesLeft.pack(expand='true', fill='x', side='left')
+    #self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
 
 
     self.labelframeEncodeProgress = ScrolledFrame(self.labelframeSequenceFrame,usemousewheel=True,scrolltype='vertical',)
@@ -751,8 +828,8 @@ class MergeSelectionUi(ttk.Frame):
       
     ]
 
-    self.labelframeEncodeProgress.config(height='200', width='200')
-    self.labelframeEncodeProgress.pack(anchor='ne', expand='true', fill='both', padx='5', pady='5', side='top')
+    self.labelframeEncodeProgress.config(height='10', width='200')
+    self.labelframeEncodeProgress.pack(anchor='ne', expand='true', fill='x', padx='5', pady='5', side='top')
     self.frameMergeSelection.config(height='200', width='200')
     self.frameMergeSelection.pack(expand='true',fill='both', side='top')
     self.mainwindow = self.frameMergeSelection
@@ -895,6 +972,11 @@ class MergeSelectionUi(ttk.Frame):
     except:
       pass
 
+    try:
+      self.gridLoopMergeOption = self.gridLoopMergeOptionsVar.get()
+    except:
+      pass
+
 
     self.updatedPredictedDuration()
   
@@ -935,9 +1017,10 @@ class MergeSelectionUi(ttk.Frame):
         'postProcessingFilter':self.postProcessingFilter,
         'selectedColumn':selectedColumnInd,
         'audioOverride':self.audioOverrideValue,
-        'audiOverrideDelay':self.audiOverrideDelayValue
+        'audiOverrideDelay':self.audiOverrideDelayValue,
+        'gridLoopMergeOption':self.gridLoopMergeOption
       }
-      print(options)
+
       encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
       self.encoderProgress.append(encodeProgressWidget)
       outputPrefix = self.filenamePrefixValue
@@ -974,7 +1057,8 @@ class MergeSelectionUi(ttk.Frame):
           'audioMerge':self.audioMerge,
           'postProcessingFilter':self.postProcessingFilter,
           'audioOverride':self.audioOverrideValue,
-          'audiOverrideDelay':self.audiOverrideDelayValue
+          'audiOverrideDelay':self.audiOverrideDelayValue,
+          'gridLoopMergeOption':self.gridLoopMergeOption
         }
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
@@ -1007,7 +1091,7 @@ class MergeSelectionUi(ttk.Frame):
             'frameSizeStrategy':self.frameSizeStrategyValue,
             'maximumSize':self.maximumSizeValue,
             'maximumWidth':self.maximumWidthValue,
-            'transDuration':self.transDurationValue,
+            'transDuration':0.0,
             'transStyle':self.transStyleValue,
             'speedAdjustment':self.speedAdjustmentValue,
             'outputFormat':self.outputFormatValue,
@@ -1015,7 +1099,8 @@ class MergeSelectionUi(ttk.Frame):
             'audioMerge':self.audioMerge,
             'postProcessingFilter':self.postProcessingFilter,
             'audioOverride':self.audioOverrideValue,
-            'audiOverrideDelay':self.audiOverrideDelayValue
+            'audiOverrideDelay':self.audiOverrideDelayValue,
+            'gridLoopMergeOption':self.gridLoopMergeOption
           }
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
@@ -1036,14 +1121,25 @@ class MergeSelectionUi(ttk.Frame):
     if self.mergeStyleVar.get().split('-')[0].strip()=='Grid':
       self.scrolledframeSequenceContainer.pack_forget()
       self.gridSequenceContainer.pack(expand='true', fill='both', padx='5', pady='5', side='top')
+      self.frameGridSettings.pack(fill='x', ipadx='3', side='top')
       self.frameTransStyle.pack_forget()
       self.frameTransDuration.pack_forget()
-    else:
+      self.frameTransitionSettings.pack_forget()
+    elif self.mergeStyleVar.get().split('-')[0].strip()=='Individual Files':
       self.gridSequenceContainer.pack_forget()
+      self.frameGridSettings.pack_forget()
+      self.frameTransDuration.pack_forget()
+      self.frameTransStyle.pack_forget()
+      self.frameTransitionSettings.pack_forget()
+      self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+    elif self.mergeStyleVar.get().split('-')[0].strip()=='Sequence':
+      self.gridSequenceContainer.pack_forget()
+      self.frameGridSettings.pack_forget()
       self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
       self.frameTransStyle.pack(expand='true', fill='x', side='top')
       self.frameTransDuration.pack(expand='true', fill='x', side='top')
-
+      self.frameTransitionSettings.pack(fill='x', ipadx='3', side='top')
+    self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
 
       
   def updatedPredictedDuration(self):
@@ -1106,7 +1202,6 @@ class MergeSelectionUi(ttk.Frame):
 
   def moveSequencedClip(self,clip,move):
     currentIndex = self.sequencedClips.index(clip)
-    print([x.rid for x in self.sequencedClips])
     
     if 0<=currentIndex+move<len(self.sequencedClips):
       self.sequencedClips[currentIndex],self.sequencedClips[currentIndex+move] = self.sequencedClips[currentIndex+move],self.sequencedClips[currentIndex]
@@ -1129,7 +1224,7 @@ class MergeSelectionUi(ttk.Frame):
           removedClip.pack_forget()
           removedClip.destroy()
         except Exception as e:
-          print(e)
+          logging.error("removeSequencedClip Exception",exc_info=e)
     else:
       currentIndex = self.sequencedClips.index(clip)
       removedClip = self.sequencedClips.pop(currentIndex)

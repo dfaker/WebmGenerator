@@ -5,9 +5,10 @@ from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import copy
 import math
-
+import logging
 import threading
 import time
+
 def debounce(wait):
     def decorator(fn):
         def debounced(*args, **kwargs):
@@ -39,7 +40,7 @@ class FilterValuePair(ttk.Frame):
     self.labelfilterValueLabel.pack(expand='true', fill='x', side='left')
     self.valueVar = tk.StringVar()
 
-    if 'rectProp' in param is not None:
+    if param.get('rectProp') is not None:
       self.controller.registerRectProp(param.get('rectProp'),self.valueVar)
 
     if param['type'] == 'cycle':
@@ -84,7 +85,7 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
     else:
-      print(param)
+      logging.error("Unhandled param {}".format(str(param)))
 
     self.entryFilterValueValue.pack(side='right')
     self.frameFilterValuePair.config(height='200', width='200')
@@ -320,6 +321,10 @@ class FilterSelectionUi(ttk.Frame):
     self.fitToScreenCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Fit to screen", variable=self.fitToScreenVar)
     self.fitToScreenCheckbox.pack(expand='false', side='left')
 
+    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
+    self.autocropButton.config(text='Autocrop')
+    self.autocropButton.config(command=self.autoCrop)
+    self.autocropButton.pack(side='right')
 
 
     self.speedVar = tk.StringVar()
@@ -368,7 +373,33 @@ class FilterSelectionUi(ttk.Frame):
     self.subClipOrder=[]
     self.currentSubclipIndex=None
     self.filterClipboard=[]
-    
+  
+  def autoCropCallback(self,x,y,w,h):
+
+
+    self.filterSpecificationCount+=1
+    newFilter = None
+    for spec in selectableFilters:
+      if spec['name'] == 'crop':
+        newFilter = FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
+        self.filterSpecifications.append( newFilter)
+        break
+    if newFilter is not None:
+      newFilter.rectProps.get('x').set(int(x))
+      newFilter.rectProps.get('y').set(int(y))
+      newFilter.rectProps.get('w').set(int(w))
+      newFilter.rectProps.get('h').set(int(h))
+    self.scrolledframeFilterContainer.reposition()
+    self.recaculateFilters()
+
+  def autoCrop(self):
+    rid = self.subClipOrder[self.currentSubclipIndex]
+    subclip = self.subclips[rid]
+    start    = subclip['start']
+    end      =  subclip['end'] 
+    filename = subclip['filename']
+    mid = (start+end)/2
+    self.controller.requestAutocrop(rid,mid,filename,self.autoCropCallback)
 
   def speedChange(self,*args):
     speed = self.speedVar.get()
@@ -378,7 +409,6 @@ class FilterSelectionUi(ttk.Frame):
         self.controller.setSpeed(speed)
     except:
       pass
-
 
   def changeFitToScreen(self,*args):
     fitToScreen = self.fitToScreenVar.get()
@@ -390,13 +420,13 @@ class FilterSelectionUi(ttk.Frame):
 
   def applyScreenSpaceAR(self):
     forceAR = None
-    print(self.fixSeectionArEnabledVar.get())
+
     if self.fixSeectionArEnabledVar.get():
       try:
         forceAR = float(self.fixSeectionArVar.get())
       except Exception as e:
-        print(e)
-    print(forceAR)
+        logging.error("applyScreenSpaceAR Exception",exc_info=e)
+
     if forceAR is not None:
       if self.screenMouseRect[3] > self.screenMouseRect[1]:
         self.screenMouseRect[3] = self.screenMouseRect[1] + abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
@@ -410,18 +440,18 @@ class FilterSelectionUi(ttk.Frame):
 
   def videomousePress(self,e):
       if str(e.type) == 'ButtonPress':
-        print('start')
+        logging.debug("videomousePress start")
         self.mouseRectDragging=True
         self.screenMouseRect[0]=e.x
         self.screenMouseRect[1]=e.y
       elif str(e.type) in ('Motion','ButtonRelease') and self.mouseRectDragging:
-        print('show')
+        logging.debug("videomousePress show")
         self.screenMouseRect[2]=e.x
         self.screenMouseRect[3]=e.y
         self.applyScreenSpaceAR()
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
       if str(e.type) == 'ButtonRelease':
-        print('release')
+        logging.debug("videomousePress release")
         self.mouseRectDragging=False
 
         vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
@@ -432,7 +462,7 @@ class FilterSelectionUi(ttk.Frame):
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
       
       if self.screenMouseRect[0] is not None and not self.mouseRectDragging and self.screenMouseRect[0]==self.screenMouseRect[2] and self.screenMouseRect[1]==self.screenMouseRect[3]:
-        print('clear')
+        logging.debug("videomousePress clear")
         self.screenMouseRect=[None,None,None,None]
         self.mouseRectDragging=False
         self.controller.clearVideoRect()
@@ -554,7 +584,7 @@ class FilterSelectionUi(ttk.Frame):
     try:
       return self.subclips[self.subClipOrder[self.currentSubclipIndex]]
     except Exception as e:
-      print(e)
+      logging.error("getCurrentClip Exception",exc_info=e)
     return None
 
   def goToNextSubclip(self):
@@ -580,7 +610,7 @@ class FilterSelectionUi(ttk.Frame):
         f.destroy()
       self.filterSpecifications=[]
       rid = self.subClipOrder[self.currentSubclipIndex]
-      print(rid,self.subclips[rid])
+      
       for spec in self.subclips[rid].setdefault('filters',[]):
         self.filterSpecificationCount+=1
         self.filterSpecifications.append( 
@@ -593,8 +623,6 @@ class FilterSelectionUi(ttk.Frame):
     self.recaculateFilters()
     if self.currentSubclipIndex is not None and len(self.subClipOrder)>0:
       rid = self.subClipOrder[self.currentSubclipIndex]
-      print('rid---',rid,self.subclips[rid])
-      #print('rid[fil]---',self.subclips[rid]['filters'])
       self.subclips[rid]['filters'] = self.convertFilterstoSpecDefaults()
 
     self.currentSubclipIndex = newIndex
@@ -604,7 +632,6 @@ class FilterSelectionUi(ttk.Frame):
 
     if newIndex is not None and len(self.subClipOrder)>0:
       rid = self.subClipOrder[self.currentSubclipIndex]
-      print(rid,self.subclips[rid])
       for spec in self.subclips[rid].setdefault('filters',[]):
         self.filterSpecificationCount+=1
         self.filterSpecifications.append( 
@@ -626,7 +653,6 @@ class FilterSelectionUi(ttk.Frame):
                                                 i=self.currentSubclipIndex+1,
                                                 len=len(self.subClipOrder))
       self.labelVideoPickerLabel.config(text=newLabel)
-      print(currentClip['filename'],s,e)
       self.controller.playVideoFile(currentClip['filename'],s,e)
 
   def getPlayerFrameWid(self):

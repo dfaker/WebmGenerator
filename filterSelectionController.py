@@ -19,6 +19,9 @@ class FilterSelectionController:
     self.player.speed=2
     self.currentlyPlayingFileName=None
 
+  def requestAutocrop(self,rid,mid,filename,callback):
+    self.ffmpegService.requestAutocrop(rid,mid,filename,callback)
+
   def setSpeed(self,speed):
     self.player.speed=speed
 

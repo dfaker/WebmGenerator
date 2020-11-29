@@ -228,6 +228,7 @@ class CutselectionController:
       else:
         self.player.command('stop')
         self.currentlyPlayingFileName=None
+        self.ui.frameTimeLineFrame.resetForNewFile()
     self.updateProgressStatistics()
 
     if fileIsInTempFolder and deleteFile:
@@ -263,6 +264,10 @@ class CutselectionController:
 
   def getcurrentFilename(self):
     return self.currentlyPlayingFileName
+
+  def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
+    self.ffmpegService.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,callback)
+    return True
 
   def getRangesForClip(self,filename):
     return self.videoManager.getRangesForClip(filename)

@@ -1,6 +1,7 @@
 
 import os
 import sys
+import logging
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
@@ -11,7 +12,7 @@ try:
 except AttributeError:
   pass
 except Exception as e:
-  print(e,scriptPath)
+  logging.error("scriptPath Exception",exc_info=e)
 
 from tkinter import Tk
 import json
@@ -55,7 +56,7 @@ class WebmGeneratorController:
           else:
             self.globalOptions[key] = str(tempConfig.get(key,self.globalOptions[key]))
         except Exception as e:
-          print(e)
+          logging.error("WebmGeneratorController __init__ Exception",exc_info=e)
 
     open(self.configFileName,'w').write(json.dumps(self.globalOptions,indent=1))
 
@@ -112,7 +113,7 @@ class WebmGeneratorController:
         lastSaveData = json.loads(open(self.autosaveFilename,'r').read())
         newSaveData  = self.getSaveData()
       except Exception as e:
-        print(e)
+        logging.error("Load last save Exception",exc_info=e)
 
       if lastSaveData != newSaveData:
         response = self.cutselectionUi.confirmWithMessage('Load autosave from last session?','Load autosave from last session?',icon='warning')
@@ -120,7 +121,7 @@ class WebmGeneratorController:
           try:
             self.openProject(self.autosaveFilename)
           except Exception as e:
-            print('audoload save failed',e)
+            logging.error("Audoload save failed",exc_info=e)
 
   def runSceneChangeDetection(self):
     self.cutselectionController.runSceneChangeDetection()
@@ -165,11 +166,13 @@ class WebmGeneratorController:
 
   def saveProject(self,filename):
     if filename is not None:
-      saveData = self.getSaveData()
-      print(saveData)
-      with open(filename,'w') as saveFile:
-        saveFile.write(json.dumps(saveData))
-        self.lastSaveFile = filename
+      try:
+        saveData = self.getSaveData()
+        with open(filename,'w') as saveFile:
+          saveFile.write(json.dumps(saveData))
+          self.lastSaveFile = filename
+      except Exception as e:
+        logging.error("saveProject save failed",exc_info=e)
 
   def updateYoutubeDl(self):
     self.ytdlService.update()
@@ -186,16 +189,16 @@ class WebmGeneratorController:
     else:
       self.saveProject(self.autosaveFilename)
 
-    print('self.cutselectionController.close_ui()')
+    logging.debug('self.cutselectionController.close_ui()')
     self.cutselectionController.close_ui()
-    print('self.cutselectionController.close_ui()')
+    logging.debug('self.cutselectionController.close_ui()')
     self.filterSelectionController.close_ui()
-    print('self.filterSelectionController.close_ui()')
+    logging.debug('self.filterSelectionController.close_ui()')
     self.webmMegeneratorUi.close_ui()
     try:
       self.root.destroy()
     except Exception as e:
-      print(e)
+      logging.error("root.destroy() Exception",exc_info=e)
 
     if os.path.exists(self.tempFolder):
       for f in os.listdir(self.tempFolder):
@@ -209,7 +212,7 @@ class WebmGeneratorController:
 
   def __call__(self):
     self.webmMegeneratorUi.run()
-    print('EXIT')
+    logging.debug('EXIT')
 
 if __name__ == '__main__':
   import webmGenerator

@@ -4,6 +4,8 @@ from tkinter import Tk,Menu
 import tkinter.ttk as ttk
 import webbrowser
 from tkinter.filedialog import askopenfilename,asksaveasfilename
+import sys
+import logging
 
 class WebmGeneratorUi:
 
@@ -50,12 +52,12 @@ class WebmGeneratorUi:
     try:
       self.master.state('zoomed')
     except Exception as e:
-      print(e)
+      logging.error('Zoomed state not avaliable, possibly on some linux distros?',exc_info=e)
       try:
         m = self.master.maxsize()
         self.master.geometry('{}x{}+0+0'.format(*m))
       except Exception as e:
-        print(e)
+        logging.error('self.master.geometryException',exc_info=e)
 
     self.menubar = Menu(self.master)
     
@@ -115,6 +117,9 @@ class WebmGeneratorUi:
   def newProject(self):
     self.controller.newProject()
     self.notebook.select(0)
+    self.statusLabel['text']='Idle no background task'
+    self.statusProgress['value'] = 0
+
 
   def openProject(self):
     filename = askopenfilename(title='Open WebmGenerator Project',filetypes=[('WebmGenerator Project','*.webgproj')])
@@ -131,13 +136,13 @@ class WebmGeneratorUi:
     self.controller.updateYoutubeDl()
 
   def exitProject(self):
-    exit()
+    sys.exit()
 
   def openDocs(self):
     webbrowser.open('https://github.com/dfaker/WebmGenerator/blob/master/README.md', new=2)
 
   def updateGlobalStatus(self,message,percentage):
-    print(message,percentage)
+    logging.debug('updateGlobalStatus: {} {}%'.format(message,percentage))
     self.statusLabel['text']=message
     self.statusProgress['value'] = max(0,min(100,percentage*100))
 
@@ -157,7 +162,7 @@ class WebmGeneratorUi:
     try:
       self.master.destroy()
       del self.master
-      print('destroyed')
+      logging.debug('webmGeneratorUi destroyed')
     except:
       pass
 

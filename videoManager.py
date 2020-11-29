@@ -59,12 +59,12 @@ class VideoManager:
           newStart = max([x[0] for x in self.interestMarks.get(filename) if x[0]<=s])
           print(newStart)
         except Exception as e:
-          print(e)
+          logging.error("expandSublcipToInterestMarks",exc_info=e)
         try:
           newEnd   = min([x[0] for x in self.interestMarks.get(filename) if x[0]>=e])
           print(newEnd)
         except Exception as e:
-          print(e)
+          logging.error("expandSublcipToInterestMarks",exc_info=e)
         break
 
     print(filename,targetRid,newStart,newEnd)

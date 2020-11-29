@@ -28,7 +28,7 @@ def getVideoInfo(filename,filters=None):
           timeParts = [float(x) for x in errElem.split()[-1].split(b':')]
           stats['duration'] = sum([t*m for t,m in zip(timeParts[::-1],[1,60,60*60,60*60*60])])
         except Exception as e:
-          print(e)
+          logging.error("getVideoInfo Exception",exc_info=e)
       elif errElem.startswith(b'Stream'):
         if b'Video:' in errElem:
           state='Video'
@@ -41,12 +41,12 @@ def getVideoInfo(filename,filters=None):
           try:
             stats['fps']=float(errElem.split(b' ')[0])
           except Exception as e:
-            print(e)
+            logging.error("getVideoInfo Exception",exc_info=e)
         elif errElem.endswith(b'tbr'):
           try:
             stats['tbr']=float(errElem.split(b' ')[0])
           except Exception as e:
-            print(e)
+            logging.error("getVideoInfo Exception",exc_info=e)
         elif errElem.endswith(b'tbn'):
           try:
             tbnval = errElem.split(b' ')[0]
@@ -55,7 +55,7 @@ def getVideoInfo(filename,filters=None):
             else:
               stats['tbn']=float(tbnval)
           except Exception as e:
-            print(e)
+            logging.error("getVideoInfo Exception",exc_info=e)
         if b'x' in errElem:
           try:
             w,h = errElem.split(b' ')[0].split(b'x')

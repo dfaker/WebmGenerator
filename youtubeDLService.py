@@ -9,7 +9,7 @@ import logging
 
 class YTDLService():
 
-  def __init__(self,globalStatusCallback=print()):
+  def __init__(self,globalStatusCallback=print):
     self.globalStatusCallback = globalStatusCallback
     self.downloadRequestQueue = Queue()
 

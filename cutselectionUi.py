@@ -399,6 +399,11 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.daemon = True
         self._previewtimer.start()
 
+
+
+    def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
+      return self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,callback)
+
     def updateVideoPreviews(self):
       for vidPReview in self.previews:
         if vidPReview.requestPreviewFrameIfVisible():
@@ -406,7 +411,6 @@ class CutselectionUi(ttk.Frame):
       self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
       self._previewtimer.daemon = True
       self._previewtimer.start()
-
 
     def setinitialFocus(self):
       self.master.deiconify()
@@ -421,8 +425,8 @@ class CutselectionUi(ttk.Frame):
     def updateLoopMode(self,*args):
       self.controller.updateLoopMode(self.loopModeVar.get())
 
-    def videoMousewheel(self,e):
-      self.controller.seekRelative(e.delta/20)
+    def videoMousewheel(self,evt):
+      self.controller.seekRelative(evt.delta/20)
 
     def videomousePress(self,e):
       if str(e.type) == 'ButtonPress':
@@ -582,8 +586,7 @@ class CutselectionUi(ttk.Frame):
         if duration is not None:
           self.controller.loadImageFile(filename,duration)
 
-
-    def restartForNewFile(self, filename):
+    def restartForNewFile(self, filename=None):
         self.frameTimeLineFrame.resetForNewFile()
 
     def getIsPlaybackStarted(self):

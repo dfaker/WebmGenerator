@@ -888,7 +888,7 @@ class MergeSelectionUi(ttk.Frame):
       self.outputFormatVar.set('webm:VP8')
       self.maximumSizeVar.set('4.0')
     elif profileName == 'Sub 100M max quality mp4':
-      self.outputFormatVar.set('webm:VP8')
+      self.outputFormatVar.set('mp4:x264')
       self.maximumSizeVar.set('100.0')
 
 

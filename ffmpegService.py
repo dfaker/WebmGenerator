@@ -619,6 +619,58 @@ class FFmpegService():
 
     self.encodeRequestQueue = Queue()
 
+    def encodeStreamCopy(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
+      
+      totalExpectedEncodedSeconds = 0
+      for rid,clipfilename,s,e,filterexp in seqClips:
+        totalExpectedEncodedSeconds += e-s
+
+      totalEncodedSeconds=0
+
+      for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
+
+        etime = e-s
+        basename = os.path.basename(clipfilename)
+        ext = basename.split('.')[-1]
+        
+        videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext)
+
+        comvcmd = ['ffmpeg', '-ss', str(s), '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-vcodec', 'copy', '-t', str(e-s), tempVideoFilePath]
+        proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+        
+        currentEncodedTotal=0
+
+        ln=b''
+        while 1:
+          c = proc.stderr.read(1)
+          if isRquestCancelled(requestId):
+            proc.kill()
+            outs, errs = proc.communicate()
+            os.remove(outname)
+            return
+          if len(c)==0:
+            break
+          if c == b'\r':
+            print(ln)
+            for p in ln.split(b' '):
+              if b'time=' in p:
+                try:
+                  pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+                  currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                  if currentEncodedTotal>0:
+                    statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                    self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                except Exception as e:
+                  logging.error("Clip cutting exception",exc_info =e)
+            ln=b''
+          ln+=c
+        proc.communicate()
+        totalEncodedSeconds+=etime
+        shutil.copy(tempVideoFilePath,videoFilePath)
+        statusCallback('Cutting clip {}'.format(i+1),1,finalFilename=videoFilePath)
+        self.globalStatusCallback('Cutting clip {}'.format(i+1),1)
+
+
     def encodeGrid(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
       
       tempStack = Stack([],'horizontal')
@@ -1340,6 +1392,8 @@ class FFmpegService():
             encodeConcat(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback)
           elif mode == 'GRID':
             encodeGrid(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback)
+          elif mode == 'STREAMCOPY':
+            encodeStreamCopy(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback)
 
         except Exception as e:
           logging.error("unhandled {} exception".format(mode),exc_info =e)

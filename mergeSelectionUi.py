@@ -385,7 +385,8 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyleVar = tk.StringVar()
     self.mergeStyles   = ['Individual Files - Output each individual subclip as a separate file.',                          
                           'Sequence - Join the subclips into a sequence.',
-                          'Grid - Pack videos into variably sized grid layouts.',]
+                          'Grid - Pack videos into variably sized grid layouts.',
+                          'Stream Copy - Ignore all filters and percorm no conversions, just slice the clips.']
 
     self.mergeStyleVar.set(self.mergeStyles[0])
     
@@ -888,7 +889,7 @@ class MergeSelectionUi(ttk.Frame):
       self.outputFormatVar.set('webm:VP8')
       self.maximumSizeVar.set('4.0')
     elif profileName == 'Sub 100M max quality mp4':
-      self.outputFormatVar.set('mp4:x264')
+      self.outputFormatVar.set('webm:VP8')
       self.maximumSizeVar.set('100.0')
 
 
@@ -985,6 +986,30 @@ class MergeSelectionUi(ttk.Frame):
     self.controller.cancelEncodeRequest(requestId)
 
   def encodeCurrent(self):
+
+
+    if self.mergeStyleVar.get().split('-')[0].strip()=='Stream Copy':
+     
+      for clip in self.sequencedClips:
+        encodeSequence = []
+        self.encodeRequestId+=1
+        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
+        encodeSequence.append(definition)
+        if len(encodeSequence)>0:
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
+          self.encoderProgress.append(encodeProgressWidget)
+          outputPrefix = self.filenamePrefixValue
+          if self.automaticFileNamingValue:
+            outputPrefix = self.convertFilenameToBaseName(clip.filename)
+          self.controller.encode(self.encodeRequestId,
+                                 'STREAMCOPY',
+                                 encodeSequence,
+                                 {},
+                                 outputPrefix,
+                                 encodeProgressWidget.updateStatus) 
+          self.labelframeEncodeProgress.reposition()
+
+
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       encodeSequence = []
       
@@ -1032,7 +1057,7 @@ class MergeSelectionUi(ttk.Frame):
       self.controller.encode(self.encodeRequestId,
                              'GRID',
                              encodeSequence,
-                             options,
+                             options.copy(),
                              outputPrefix,
                              encodeProgressWidget.updateStatus) 
       self.labelframeEncodeProgress.reposition()
@@ -1074,11 +1099,12 @@ class MergeSelectionUi(ttk.Frame):
         self.controller.encode(self.encodeRequestId,
                                'CONCAT',
                                encodeSequence,
-                               options,
+                               options.copy(),
                                outputPrefix,
                                encodeProgressWidget.updateStatus)
 
         self.labelframeEncodeProgress.reposition()
+
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Individual Files':
       
       for clip in self.sequencedClips:
@@ -1125,13 +1151,19 @@ class MergeSelectionUi(ttk.Frame):
       self.frameTransStyle.pack_forget()
       self.frameTransDuration.pack_forget()
       self.frameTransitionSettings.pack_forget()
+      self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
+      self.profileCombo.state(["!disabled"])
+      self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
     elif self.mergeStyleVar.get().split('-')[0].strip()=='Individual Files':
       self.gridSequenceContainer.pack_forget()
       self.frameGridSettings.pack_forget()
       self.frameTransDuration.pack_forget()
       self.frameTransStyle.pack_forget()
       self.frameTransitionSettings.pack_forget()
+      self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
+      self.profileCombo.state(["!disabled"])
       self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+      self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
     elif self.mergeStyleVar.get().split('-')[0].strip()=='Sequence':
       self.gridSequenceContainer.pack_forget()
       self.frameGridSettings.pack_forget()
@@ -1139,7 +1171,25 @@ class MergeSelectionUi(ttk.Frame):
       self.frameTransStyle.pack(expand='true', fill='x', side='top')
       self.frameTransDuration.pack(expand='true', fill='x', side='top')
       self.frameTransitionSettings.pack(fill='x', ipadx='3', side='top')
-    self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
+      self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
+      self.profileCombo.state(["!disabled"]) 
+      self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
+    elif self.mergeStyleVar.get().split('-')[0].strip()=='Stream Copy':
+      self.gridSequenceContainer.pack_forget()
+      self.frameGridSettings.pack_forget()
+      self.frameTransDuration.pack_forget()
+      self.frameTransStyle.pack_forget()
+      self.frameTransitionSettings.pack_forget()
+      self.frameMergeStyleSettings.pack_forget()
+      self.frameSequenceValues.pack_forget()
+      self.profileVar.set('None')
+      self.profileCombo.state(["disabled"]) 
+
+
+      self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+
+    
+
 
       
   def updatedPredictedDuration(self):

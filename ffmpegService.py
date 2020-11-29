@@ -621,6 +621,8 @@ class FFmpegService():
 
     def encodeStreamCopy(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
       
+      assert(len(seqClips)==1)
+
       totalExpectedEncodedSeconds = 0
       for rid,clipfilename,s,e,filterexp in seqClips:
         totalExpectedEncodedSeconds += e-s
@@ -635,10 +637,13 @@ class FFmpegService():
         
         videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext)
 
-        comvcmd = ['ffmpeg', '-ss', str(s), '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-vcodec', 'copy', '-t', str(e-s), tempVideoFilePath]
+        comvcmd = ['ffmpeg', '-ss', str(s), '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-c', 'copy', '-t', str(etime), tempVideoFilePath]
         proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
         
         currentEncodedTotal=0
+
+        statusCallback('Stream copying started', 0.1)
+        self.globalStatusCallback('Stream copying started', 0.1)
 
         ln=b''
         while 1:
@@ -658,17 +663,17 @@ class FFmpegService():
                   pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
                   currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
                   if currentEncodedTotal>0:
-                    statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
-                    self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                    statusCallback('Stream copying clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                    self.globalStatusCallback('Stream copying clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
                 except Exception as e:
-                  logging.error("Clip cutting exception",exc_info =e)
+                  logging.error("Clip Stream copy exception",exc_info =e)
             ln=b''
           ln+=c
         proc.communicate()
         totalEncodedSeconds+=etime
         shutil.copy(tempVideoFilePath,videoFilePath)
-        statusCallback('Cutting clip {}'.format(i+1),1,finalFilename=videoFilePath)
-        self.globalStatusCallback('Cutting clip {}'.format(i+1),1)
+        statusCallback('Stream copy complete',1,finalFilename=videoFilePath)
+        self.globalStatusCallback('Stream copy complete',1)
 
 
     def encodeGrid(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):

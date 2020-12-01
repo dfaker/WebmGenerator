@@ -2,6 +2,8 @@
 
 try:
   import logging
+  import sys
+  import traceback
 
   logging.basicConfig(
         level=logging.INFO,
@@ -14,15 +16,9 @@ try:
 
   logging.info('Startup.')
 
-  import sys
-  from webmGeneratorController import WebmGeneratorController
-  import threading
-  from tkinter import Tk
-  import tkinter.ttk as ttk
-  import traceback
-
+  from src.webmGeneratorController import WebmGeneratorController
+  
   initialFiles = sys.argv[1:]
-
   webmGenerator = WebmGeneratorController(initialFiles)
   webmGenerator()
 

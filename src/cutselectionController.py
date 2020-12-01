@@ -3,7 +3,7 @@ import mpv
 import math
 import os
 import random
-
+import os
 import logging
 
 
@@ -85,6 +85,7 @@ class CutselectionController:
     self.currentLoop_b=None
     self.currentLoopCycleStart = None
     self.currentLoopCycleEnd   = None
+    
     self.ui.updateFileListing(self.files)
     self.ui.restartForNewFile()
 
@@ -147,7 +148,7 @@ class CutselectionController:
     self.currentTimePos=None
     self.player.start=startTimestamp
     self.player.play(filename)
-    self.player.command('load-script','screenspacetools.lua')
+    self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.currentlyPlayingFileName=filename
     self.ui.restartForNewFile(self.currentlyPlayingFileName)
 

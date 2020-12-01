@@ -1,574 +1,35 @@
 
 from datetime import datetime
 from queue import Queue
-import itertools
 import copy
 import hashlib
-import numpy as np
+import itertools
+import logging
+import math
 import os
+import shutil
+import statistics
 import string
 import subprocess as sp
 import threading
 import time
-import ffmpegInfoParser
-import shutil
-import logging
-import statistics
-import math
-from masonry import Brick,Stack
 
-filesPlannedForCreation = set()
-fileExistanceLock = threading.Lock()
-cancelledEncodeIds = set()
+import numpy as np
 
-clipProgressLock = threading.Lock()
-clipProgress     = {}
+from .encoders.gifEncoder     import encoder as gifEncoder
+from .encoders.mp4x264Encoder import encoder as mp4x264Encoder
+from .encoders.webmvp8Encoder import encoder as webmvp8Encoder
+from .encoders.webmvp9Encoder import encoder as webmvp9Encoder
 
-def shouldIProcessClip(fileKey):
-  response=False
-  clipProgressLock.acquire()
-  if fileKey not in clipProgress:
-    clipProgress[fileKey] = 'InProgress'
-    response=True
-  else:
-    response=False
-  clipProgressLock.release()
-  return response
+from .encodingUtils import cleanFilenameForFfmpeg
+from .encodingUtils import getFreeNameForFileAndLog
+from .encodingUtils import isRquestCancelled
+from .encodingUtils import cancelCurrentEncodeRequest
 
-def setClipAsReady(fileKey):
-  clipProgressLock.acquire()
-  clipProgress[fileKey] = 'Ready'
-  clipProgressLock.release()
+from .ffmpegInfoParser import getVideoInfo
+from .masonry import Brick,Stack
 
-def isClipReady(fileKey):
-  response=False
-  clipProgressLock.acquire()
-  if clipProgress.get(fileKey,'') == 'Ready':
-    response=True
-  else:
-    response=False
-  clipProgressLock.release()
-  return response
 
-def isRquestCancelled(requestId):
-  global cancelledEncodeIds
-  return requestId in cancelledEncodeIds
-
-packageglobalStatusCallback=print
-
-
-def idfunc(s):return s
-
-getShortPathName = idfunc
-
-try:
-  import win32api
-  getShortPathName=win32api.GetShortPathName
-except Exception as e:
-  logging.error("win32api getShortPathName Exception",exc_info=e)
-
-def cleanFilenameForFfmpeg(filename):
-  return getShortPathName(os.path.normpath(filename))
-                      
-
-def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0):
-  val = initialDependentValue
-  targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
-  smallestFailedOverMaximum=None
-  largestFailedUnderMinimum=None
-  passCount=0
-  lastFailReason=''
-  passReason='Initial Pass'
-  lastpsnr = None
-  widthReduction = 0.0
-  while 1:
-    val=int(val)
-    passCount+=1
-
-    if isRquestCancelled(requestId):
-      return
-
-    if twoPassMode:
-      passReason='Stats Pass {} {}'.format(passCount+1,lastFailReason)
-      _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId,widthReduction=widthReduction)
-      passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction)
-    else:
-      passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr = encoderFunction(val,passCount,passReason,requestId=requestId,widthReduction=widthReduction)
-
-    if isRquestCancelled(requestId):
-      return
-
-    if sizeLimitMin<finalSize<sizeLimitMax or (passCount==1 and finalSize<sizeLimitMax) or passCount>maxAttempts:
-      shutil.move(tempFilename,outputFilename)
-      return outputFilename
-    elif finalSize<sizeLimitMin:
-      lastFailReason = 'File too small, {} increase'.format(dependentValueName)
-      if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
-        largestFailedUnderMinimum=val
-    elif finalSize>sizeLimitMax:
-      lastFailReason = 'File too large, {} decrease'.format(dependentValueName)
-      if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
-        smallestFailedOverMaximum=val
-    logging.debug("Encode complete {}:{} finalSize:{} targetSizeMedian:{}".format(dependentValueName,val,finalSize,targetSizeMedian))
-
-    val =  val * (1/(finalSize/targetSizeMedian))
-    if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
-      val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
-
-def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None):
-  currentEncodedTotal=0
-  psnr = None
-  ln=b''
-  while 1:
-    try:
-      if isRquestCancelled(requestId):
-        proc.kill()
-        outs, errs = proc.communicate()
-        return
-      c = proc.stderr.read(1)
-      if len(c)==0:
-        break
-      if c == b'\r':
-        for p in ln.split(b' '):
-          if b'*:' in p:
-            psnr = float(p.split(b':')[-1])
-          if b'time=' in p:
-            try:
-              pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-              currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-              if currentEncodedTotal>0:
-                if passNumber == 0:
-                  statusCallback('Encoding '+processLabel+' q'+str(psnr),(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-                elif passNumber == 1:
-                  statusCallback('Encoding '+processLabel+' q'+str(psnr),((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-                elif passNumber == 2:
-                  statusCallback('Encoding '+processLabel+' q'+str(psnr),( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-            except Exception as e:
-              logging.error("Encode progress Exception",exc_info=e)
-        ln=b''
-      ln+=c
-    except Exception as e:
-      logging.error("Encode progress Exception",exc_info=e)
-  if passNumber == 0:
-    statusCallback('Complete '+processLabel+' q'+str(psnr),(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-  elif passNumber == 1:
-    statusCallback('Complete '+processLabel+' q'+str(psnr),((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-  elif passNumber == 2:
-    statusCallback('Complete '+processLabel+' q'+str(psnr),( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds )
-  return psnr
-
-def getFreeNameForFileAndLog(filenamePrefix,extension):
-  fileN=0
-  with fileExistanceLock:
-    while 1:
-      fileN+=1
-      videoFileName = '{}_WmG_{}.{}'.format(filenamePrefix,fileN,extension)
-      outLogFilename = 'encoder_{}.log'.format(fileN)
-      
-      logFilePath         = os.path.join('tempVideoFiles',outLogFilename)
-      tempVideoFilePath  = os.path.join('tempVideoFiles',videoFileName)
-      videoFilePath      = os.path.join('finalVideos',videoFileName)
-
-      if not os.path.exists(tempVideoFilePath) and not os.path.exists(videoFilePath) and not os.path.exists(logFilePath) and videoFileName not in filesPlannedForCreation:
-        filesPlannedForCreation.add(videoFileName)
-        return videoFileName,logFilePath,tempVideoFilePath,videoFilePath
-
-def webmvp8Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
-  
-  audoBitrate = 8
-  for abr in ['48','64','96','128','192']:
-    if abr in options.get('audioChannels',''):
-      audoBitrate = int(abr)*1024
-
-  audio_mp  = 8
-  video_mp  = 1024*1024
-  initialBr = 16777216
-  dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
-
-  if options.get('maximumSize') == 0.0:
-    sizeLimitMax = float('inf')
-    sizeLimitMin = float('-inf')
-    initialBr    = 16777216
-  else:
-    sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
-    targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
-    initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
-
-
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
-  
-  def encoderStatusCallback(text,percentage,finalFilename=None):
-    statusCallback(text,percentage,finalFilename=finalFilename)
-    packageglobalStatusCallback(text,percentage)
-
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0):
-    
-    ffmpegcommand=[]
-    ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=inputsList
-
-    if options.get('audioChannels') == 'No audio':
-      ffmpegcommand+=['-filter_complex',filtercommand+',[outa]anullsink']
-      ffmpegcommand+=['-map','[outv]']
-    else:
-      ffmpegcommand+=['-filter_complex',filtercommand]
-      ffmpegcommand+=['-map','[outv]','-map','[outa]']  
-
-    if passPhase==1:
-      ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
-    elif passPhase==2:
-      ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
-
-
-
-    bufsize = "3000k"
-    if sizeLimitMax != 0.0:
-      bufsize = str(min(2000000000.0,br*2))
-
-    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
-                   ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
-                   ,"-threads", str(4),"-crf"  ,'4',"-speed", "0"
-                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","best",'-slices','8','-cpu-used','0','-psnr'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
-    
-    if sizeLimitMax == 0.0:
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
-    else:
-      ffmpegcommand+=["-b:v",str(br)]
-
-
-    if 'No audio' in options.get('audioChannels','') or passPhase==1:
-      ffmpegcommand+=["-an"]    
-    elif 'Stereo' in options.get('audioChannels',''):
-      ffmpegcommand+=["-ac","2"]    
-      ffmpegcommand+=["-ar",str(44100)]
-      ffmpegcommand+=["-b:a",str(audoBitrate)]
-    elif 'Mono' in options.get('audioChannels',''):
-      ffmpegcommand+=["-ac","1"]
-      ffmpegcommand+=["-ar",str(44100)]
-      ffmpegcommand+=["-b:a",str(audoBitrate)]
-    else:
-      ffmpegcommand+=["-an"]    
-
-    ffmpegcommand+=["-sn"]
-
-    if passPhase==1:
-      ffmpegcommand += ['-f', 'null', os.devnull]
-    else:
-      ffmpegcommand += [tempVideoFilePath]
-
-    logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
-    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
-    if isRquestCancelled(requestId):
-      return 0, psnr
-    if passPhase==1:
-      return 0, psnr
-    else:
-      finalSize = os.stat(tempVideoFilePath).st_size
-      return finalSize, psnr
-
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-  finalFilenameConfirmed = encodeTargetingSize(encoderFunction=encoderFunction,
-                      tempFilename=tempVideoFilePath,
-                      outputFilename=videoFilePath,
-                      initialDependentValue=initialBr,
-                      twoPassMode=True,
-                      sizeLimitMin=sizeLimitMin,
-                      sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6,
-                      requestId=requestId)
-
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)
-
-
-def webmvp9Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
-  
-  audoBitrate = 8
-  for abr in ['48','64','96','128','192']:
-    if abr in options.get('audioChannels',''):
-      audoBitrate = int(abr)*1024
-
-  audio_mp  = 8
-  video_mp  = 1024*1024
-  initialBr = 16777216
-  dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
-
-  if options.get('maximumSize') == 0.0:
-    sizeLimitMax = float('inf')
-    sizeLimitMin = float('-inf')
-    initialBr    = 16777216
-  else:
-    sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
-    targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
-    initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
-
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
-
-  def encoderStatusCallback(text,percentage,finalFilename=None):
-    statusCallback(text,percentage,finalFilename=finalFilename)
-    packageglobalStatusCallback(text,percentage)
-
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0):
-    
-    ffmpegcommand=[]
-    ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=inputsList
-
-    if options.get('audioChannels') == 'No audio':
-      ffmpegcommand+=['-filter_complex',filtercommand+',[outa]anullsink']
-      ffmpegcommand+=['-map','[outv]']
-    else:
-      ffmpegcommand+=['-filter_complex',filtercommand]
-      ffmpegcommand+=['-map','[outv]','-map','[outa]']  
-
-
-    if passPhase==1:
-      ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
-    elif passPhase==2:
-      ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
-
-    bufsize = "3000k"
-    if sizeLimitMax != 0.0:
-      bufsize = str(min(2000000000.0,br*2))
-
-    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
-                   ,"-stats","-pix_fmt","yuv420p","-bufsize", bufsize
-                   ,"-threads", str(4),"-crf"  ,'25'
-                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","good",'-slices','8','-psnr','-speed','0'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
-    
-    if sizeLimitMax == 0.0:
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
-    else:
-      ffmpegcommand+=["-b:v",str(br)]
-
-    if 'No audio' in options.get('audioChannels','') or passPhase==1:
-      ffmpegcommand+=["-an"]    
-    elif 'Stereo' in options.get('audioChannels',''):
-      ffmpegcommand+=["-ac","2"]    
-      ffmpegcommand+=["-ar",str(44100)]
-      ffmpegcommand+=["-b:a",str(audoBitrate)]
-    elif 'Mono' in options.get('audioChannels',''):
-      ffmpegcommand+=["-ac","1"]
-      ffmpegcommand+=["-ar",str(44100)]
-      ffmpegcommand+=["-b:a",str(audoBitrate)]
-    else:
-      ffmpegcommand+=["-an"]  
-
-    ffmpegcommand+=["-sn"]
-
-    if passPhase==1:
-      ffmpegcommand += ['-f', 'null', os.devnull]
-    else:
-      ffmpegcommand += [tempVideoFilePath]
-
-    logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
-    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
-    if isRquestCancelled(requestId):
-      return 0, psnr
-    if passPhase==1:
-      return 0, psnr
-    else:
-      finalSize = os.stat(tempVideoFilePath).st_size
-      return finalSize, psnr
-
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-  finalFilenameConfirmed = encodeTargetingSize(encoderFunction=encoderFunction,
-                      tempFilename=tempVideoFilePath,
-                      outputFilename=videoFilePath,
-                      initialDependentValue=initialBr,
-                      twoPassMode=True,
-                      sizeLimitMin=sizeLimitMin,
-                      sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6,
-                      requestId=requestId)
-
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  
-  encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)
-
-
-
-def mp4x264Encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
-
-  audoBitrate = 8
-  for abr in ['48','64','96','128','192']:
-    if abr in options.get('audioChannels',''):
-      audoBitrate = int(abr)*1024
-
-  audio_mp  = 8
-  video_mp  = 1024*1024
-  initialBr = 16777216
-  dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
-
-  if options.get('maximumSize') == 0.0:
-    sizeLimitMax = float('inf')
-    sizeLimitMin = float('-inf')
-    initialBr    = 16777216
-  else:
-    sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
-    targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
-    initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
-
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'mp4')
-
-  def encoderStatusCallback(text,percentage,finalFilename=None):
-    statusCallback(text,percentage,finalFilename=finalFilename)
-    packageglobalStatusCallback(text,percentage)
-
-  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0):
-
-    ffmpegcommand=[]
-    ffmpegcommand+=['ffmpeg' ,'-y']
-
-    ffmpegcommand+=inputsList
-
-    if options.get('audioChannels') == 'No audio' or passPhase==1:
-      ffmpegcommand+=['-filter_complex',filtercommand+',[outa]anullsink']
-      ffmpegcommand+=['-map','[outv]']
-    else:
-      ffmpegcommand+=['-filter_complex',filtercommand]
-      ffmpegcommand+=['-map','[outv]','-map','[outa]']  
-
-    if passPhase==1:
-      ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
-    elif passPhase==2:
-      ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
-
-    ffmpegcommand+=["-shortest"
-                   ,"-copyts"
-                   ,"-start_at_zero"
-                   ,"-c:v","libx264" 
-                   ,"-stats"
-                   ,"-max_muxing_queue_size", "9999"
-
-                   ,"-pix_fmt","yuv420p"
-                   ,"-bufsize", "3000k"
-                   ,"-threads", str(4)
-                   ,"-crf"  ,'17'
-                   ,"-preset", "slower"
-                   ,"-tune", "film"
-                   ,'-psnr'
-                   ,"-movflags","+faststart"]
-
-    if sizeLimitMax == 0.0:
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
-    else:
-      ffmpegcommand+= ["-b:v", str(br), "-maxrate", str(br)]
-
-    if 'No audio' in options.get('audioChannels','') or passPhase==1:
-      ffmpegcommand+=["-an"]    
-    elif 'Stereo' in options.get('audioChannels',''):
-      ffmpegcommand+=["-ac","2"]    
-      ffmpegcommand+=["-ar",str(44100)]
-      ffmpegcommand+=["-b:a",str(audoBitrate)]
-    elif 'Mono' in options.get('audioChannels',''):
-      ffmpegcommand+=["-ac","1"]
-      ffmpegcommand+=["-ar",str(44100)]
-      ffmpegcommand+=["-b:a",str(audoBitrate)]
-    else:
-      ffmpegcommand+=["-an"]  
-
-    if passPhase==1:
-      ffmpegcommand += ["-sn",'-f', 'null', os.devnull]
-    else:
-      ffmpegcommand += ["-sn",tempVideoFilePath]
-
-    logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
-
-    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
-    if isRquestCancelled(requestId):
-      return 0, psnr
-    if passPhase==1:
-      return 0, psnr
-    else:
-      finalSize = os.stat(tempVideoFilePath).st_size
-      return finalSize, psnr
-
-  finalFilenameConfirmed = encodeTargetingSize(encoderFunction=encoderFunction,
-                      tempFilename=tempVideoFilePath,
-                      outputFilename=videoFilePath,
-                      initialDependentValue=initialBr,
-                      sizeLimitMin=sizeLimitMin,
-                      twoPassMode=True,
-                      sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6,
-                      requestId=requestId)
-
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)
-
-def gifEncoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None):
-
-  if options.get('maximumSize') == 0.0:
-    sizeLimitMax = float('inf')
-    sizeLimitMin = float('-inf')
-  else:
-    sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
-
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif')
-
-  def encoderStatusCallback(text,percentage,finalFilename=None):
-    statusCallback(text,percentage,finalFilename=finalFilename)
-    packageglobalStatusCallback(text,percentage)
-
-
-  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0):
-
-    giffiltercommand = filtercommand+',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\',split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
-
-    ffmpegcommand=[]
-    ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=inputsList
-    ffmpegcommand+=['-filter_complex',giffiltercommand]
-    ffmpegcommand+=['-map','[outvgif]']
-    ffmpegcommand+=["-vsync", '0'
-                   ,"-shortest" 
-                   ,"-copyts"
-                   ,"-start_at_zero"
-                   ,"-stats"
-                   ,"-an"
-                   ,'-psnr'
-                   ,"-sn",tempVideoFilePath]
-
-    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
-    if isRquestCancelled(requestId):
-      return 0, psnr
-    finalSize = os.stat(tempVideoFilePath).st_size
-    return finalSize, psnr
-
-  initialWidth = options.get('maximumWidth',1280)
-  finalFilenameConfirmed = encodeTargetingSize(encoderFunction=encoderFunction,
-                      tempFilename=tempVideoFilePath,
-                      outputFilename=videoFilePath,
-                      initialDependentValue=initialWidth,
-                      sizeLimitMin=sizeLimitMin,
-                      sizeLimitMax=sizeLimitMax,
-                      maxAttempts=10,
-                      dependentValueName='Width',
-                      requestId=requestId)
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+videoFilePath,1)
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder
@@ -586,8 +47,7 @@ class FFmpegService():
     self.imageRequestQueue = Queue()
     self.responseRouting = {}
     self.globalStatusCallback=globalStatusCallback
-    global packageglobalStatusCallback
-    packageglobalStatusCallback = globalStatusCallback
+
     def imageWorker():
       while 1:
         try:
@@ -598,11 +58,9 @@ class FFmpegService():
           w,h=size
           if type(timestamp) != float and '%' in timestamp:
             pc = float(timestamp.replace('%',''))/100.0
-            videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(filename))
+            videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename))
             timestamp = videoInfo.duration*pc
-
-
-          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
+          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}:flags=bicubic'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
           logging.debug("Ffmpeg command: {}".format(' '.join(cmd)))
           proc = sp.Popen(cmd,stdout=sp.PIPE)
           outs,errs = proc.communicate()
@@ -624,12 +82,12 @@ class FFmpegService():
       assert(len(seqClips)==1)
 
       totalExpectedEncodedSeconds = 0
-      for rid,clipfilename,s,e,filterexp in seqClips:
+      for rid,clipfilename,s,e,filterexp,filterexpEnc in seqClips:
         totalExpectedEncodedSeconds += e-s
 
       totalEncodedSeconds=0
 
-      for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
+      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(seqClips):
 
         etime = e-s
         basename = os.path.basename(clipfilename)
@@ -651,7 +109,10 @@ class FFmpegService():
           if isRquestCancelled(requestId):
             proc.kill()
             outs, errs = proc.communicate()
-            os.remove(outname)
+            try:
+              os.remove(outname)
+            except:
+              pass
             return
           if len(c)==0:
             break
@@ -701,9 +162,9 @@ class FFmpegService():
 
         maxColWidth  = 0
         sumcolHeight = 0
-        for i,(rid,clipfilename,s,e,filterexp) in enumerate(column):
+        for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(column):
           
-          videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename),filters=filterexp)
+          videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename),filters=filterexp)
           brick = Brick(brickn,videoInfo.width,videoInfo.height)
           
           maxColWidth = max(maxColWidth, videoInfo.width)
@@ -716,7 +177,7 @@ class FFmpegService():
           if e-s > maxLength:
             maxLength = e-s
 
-          brickClips[brickn] = (i,(rid,clipfilename,s,e,filterexp))
+          brickClips[brickn] = (i,(rid,clipfilename,s,e,filterexp,filterexpEnc))
           brickVideoInfo[brickn] = videoInfo
 
           if options.get('selectedColumn',0) == icol:
@@ -753,20 +214,23 @@ class FFmpegService():
       audioMergeMode = options.get('audioMerge','Merge Normalize All')
 
       for brickn in brickClips.keys():
-        (i,(rid,clipfilename,s,e,filterexp)) = brickClips[brickn]
+        (i,(rid,clipfilename,s,e,filterexp,filterexpEnc)) = brickClips[brickn]
         videoInfo = brickVideoInfo[brickn]
         etime = e-s
         if filterexp=='':
           filterexp='null'  
 
-        filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))'".format(maxDim=options.get('maximumWidth',1280))
+        filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 
-        key = (rid,clipfilename,s,e,filterexp)
+        key = (rid,clipfilename,s,e,filterexp,filterexpEnc)
 
         basename = os.path.basename(clipfilename)
 
-        os.path.exists(tempPathname) or os.mkdir(tempPathname)
+        try:
+          os.path.exists(tempPathname) or os.mkdir(tempPathname)
+        except Exception as e:
+          logging.error(msg)
 
         m = hashlib.md5()
         m.update(filterexp.encode('utf8'))
@@ -828,7 +292,10 @@ class FFmpegService():
               if isRquestCancelled(requestId):
                 proc.kill()
                 outs, errs = proc.communicate()
-                os.remove(outname)
+                try:
+                  os.remove(outname)
+                except:
+                  pass
                 return
               if len(c)==0:
                 break
@@ -881,7 +348,7 @@ class FFmpegService():
 
       for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
         streropos[k] = (((xo+w/2)/vow)-0.5)
-        vi,(vrid,vclipfilename,vs,ve,vfilterexp) = brickClips[k]
+        vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
         if w*h > largestBrickArea:
           largestBrickArea=w*h
           largestBrickInd=k
@@ -904,7 +371,7 @@ class FFmpegService():
         klookup={}
         for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           videoInfo = brickVideoInfo[k]
-          vi,(vrid,vclipfilename,vs,ve,vfilterexp) = brickClips[k]
+          vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
           klookup[k]=snum
           file = brickTofileLookup[k]
 
@@ -1001,14 +468,14 @@ class FFmpegService():
       overlays = []
 
       for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
-        vi,(vrid,vclipfilename,vs,ve,vfilterexp) = brickClips[k]
+        vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
 
         loopCount=0
         if 'Loop shorter' in gridLoopMergeOption:
           loopCount =  math.ceil(maxLength/etime) 
 
         inputsList.extend(['-stream_loop', str(loopCount),'-i',brickTofileLookup[k]])
-        inputScales.append('[{k}:v]setpts=PTS-STARTPTS+{st},scale={w}:{h}[vid{k}]'.format(k=snum,w=int(w),h=int(h),st=0))
+        inputScales.append('[{k}:v]setpts=PTS-STARTPTS+{st},scale={w}:{h}:flags=bicubic[vid{k}]'.format(k=snum,w=int(w),h=int(h),st=0))
 
         srcLayer='[tmp{k}]'.format(k=snum)
         if snum==0:
@@ -1052,8 +519,10 @@ class FFmpegService():
         ffmpegFilterCommand += ',[outapre]anull[outa]'
 
 
-      if os.path.exists( options.get('postProcessingFilter','') ):
-        ffmpegFilterCommand += open(options.get('postProcessingFilter',''),'r').read()
+
+      postProcessingPath = os.path.join( 'postFilters', options.get('postProcessingFilter','') )
+      if os.path.exists( postProcessingPath ) and os.path.isfile( postProcessingPath ):
+        ffmpegFilterCommand += open( postProcessingPath ,'r').read()
       else:
         ffmpegFilterCommand += ',[outvpre]null[outv]'
 
@@ -1080,9 +549,16 @@ class FFmpegService():
       clipDimensions = []
       infoOut={}
 
-      for i,(rid,clipfilename,s,e,filterexp) in enumerate(seqClips):
+      fadeStartToEnd = options.get('fadeStartToEnd',True)
+
+      encodeStageFilterList = []
+
+      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(seqClips):
+        if filterexpEnc is not None and len(filterexpEnc)>0 and filterexpEnc != 'null':
+          encodeStageFilterList.append(filterexpEnc)
+
         expectedTimes.append(e-s)
-        videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+        videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
         infoOut[rid] = videoInfo
 
         videoh=videoInfo.height
@@ -1104,22 +580,26 @@ class FFmpegService():
       totalEncodedSeconds = 0
       shortestClipLength = float('inf')
 
-      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
-        
+
+
+      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filterexpEnc)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
         shortestClipLength = min(shortestClipLength, etime)
         if filterexp=='':
           filterexp='null'  
 
         #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
 
-        filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))'".format(maxDim=options.get('maximumWidth',1280))
+        filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 
-        key = (rid,clipfilename,start,end,filterexp)
+        key = (rid,clipfilename,start,end,filterexp,filterexpEnc)
 
         basename = os.path.basename(clipfilename)
 
-        os.path.exists(tempPathname) or os.mkdir(tempPathname)
+        try:
+          os.path.exists(tempPathname) or os.mkdir(tempPathname)
+        except Exception as e:
+          logging.error(msg)
 
         m = hashlib.md5()
         m.update(filterexp.encode('utf8'))
@@ -1172,7 +652,10 @@ class FFmpegService():
               if isRquestCancelled(requestId):
                 proc.kill()
                 outs, errs = proc.communicate()
-                os.remove(outname)
+                try:
+                  os.remove(outname)
+                except:
+                  pass
                 return
               if len(c)==0:
                 break
@@ -1223,7 +706,7 @@ class FFmpegService():
 
       for clipfilename in fileSequence:
 
-        videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+        videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
         videoh=videoInfo.height
         in_maxHeight = max(in_maxHeight, videoh)
         in_minHeight = min(in_minHeight, videoh)
@@ -1280,7 +763,7 @@ class FFmpegService():
 
           splitexp = 'null'
           if mode == 'CONCAT' and len(dimensionsSet) > 1:
-            splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
+            splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
 
           videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
           transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
@@ -1289,8 +772,6 @@ class FFmpegService():
           crossfades.append(crossfadeTemplate.format(i=i,preo=preo,dur=dur,n=n,o=o))
           crossfadeOut+='[fadet{i}][audf{i}]'.format(i=i)
         crossfadeOut+='concat=n={}:v=1:a=1[concatOutV][concatOutA]'.format(len(expectedFadeDurations))
-
-
 
         if speedAdjustment==1.0:
           crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
@@ -1311,7 +792,7 @@ class FFmpegService():
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
           if mode == 'CONCAT' and len(dimensionsSet) > 1:
-            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
+            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
           else:
             filterPeProcess += '[{i}:v]null[{i}vsc],'.format(i=vi)
 
@@ -1331,14 +812,18 @@ class FFmpegService():
             logging.error("Concat progress Exception",exc_info=e)
             filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'
 
-      if os.path.exists( options.get('postProcessingFilter','') ):
-        filtercommand += open(options.get('postProcessingFilter',''),'r').read()
+      postProcessingPath = os.path.join( 'postFilters', options.get('postProcessingFilter','') )
+      if os.path.exists( postProcessingPath ) and os.path.isfile( postProcessingPath ):
+        filtercommand += open( postProcessingPath ,'r').read()
       else:
         filtercommand += ',[outvpre]null[outv]'
 
       logging.debug("Filter command: {}".format(filtercommand))
 
-      os.path.exists(outputPathName) or os.mkdir(outputPathName)
+      try:
+        os.path.exists(outputPathName) or os.mkdir(outputPathName)
+      except Exception as e:
+          logging.error(msg)
 
       audioOverride      = options.get('audioOverride',None)
       audioOverrideDelay = options.get('audiOverrideDelay',0)
@@ -1363,6 +848,13 @@ class FFmpegService():
 
       outputFormat  = options.get('outputFormat','webm:VP8')
       finalEncoder  = encoderMap.get(outputFormat,encoderMap.get('webm:VP8'))
+
+      if len(encodeStageFilterList)>0:
+        encodeStageFilter = ','.join(encodeStageFilterList)
+      else:
+        encodeStageFilter = 'null'
+
+
       finalEncoder(inputsList, 
                    outputPathName,
                    filenamePrefix, 
@@ -1370,7 +862,7 @@ class FFmpegService():
                    options, 
                    totalEncodedSeconds, 
                    totalExpectedEncodedSeconds, 
-                   statusCallback, requestId=requestId)
+                   statusCallback, requestId=requestId, encodeStageFilter=encodeStageFilter)
 
 
     def encodeWorker():
@@ -1473,10 +965,10 @@ class FFmpegService():
             frameDistance=0.01
 
             if cropRect is None:
-              videofilter = "scale={}:{}".format(od,od)
+              videofilter = "scale={}:{}:flags=bicubic".format(od,od)
             else:
               x,y,w,h = cropRect
-              videofilter = "crop={}:{}:{}:{},scale={}:{}".format(x,y,w,h,od,od)
+              videofilter = "crop={}:{}:{}:{},scale={}:{}:flags=bicubic".format(x,y,w,h,od,od)
 
             popen_params = {
               "bufsize": 10 ** 5,
@@ -1577,14 +1069,17 @@ class FFmpegService():
       imageasVideoID=0
       while 1:
         filename,duration,completioncallback = self.loadImageAsVideoRequestQueue.get()
-        vidInfo = ffmpegInfoParser.getVideoInfo(filename)
+        vidInfo = getVideoInfo(filename)
         logging.debuug(str(vidInfo))
         imageasVideoID+=1
         
-        os.path.exists('tempVideoFiles') or os.mkdir('tempVideoFiles')
+        try:
+          os.path.exists('tempVideoFiles') or os.mkdir('tempVideoFiles')
+        except Exception as e:
+          logging.error("outputPathName exception",exc_info =e)
 
         outfileName = os.path.join('tempVideoFiles','loadImageAsVideo_{}.mp4'.format(imageasVideoID))
-        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-tune', 'stillimage','-vf', 'scale={}:{},pad=ceil(iw/2)*2:ceil(ih/2)*2'.format(vidInfo.width,vidInfo.height),outfileName],stderr=sp.PIPE)
+        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-tune', 'stillimage','-vf', 'scale={}:{}:flags=bicubic,pad=ceil(iw/2)*2:ceil(ih/2)*2'.format(vidInfo.width,vidInfo.height),outfileName],stderr=sp.PIPE)
         ln=b''
         while 1:
           c=proc.stderr.read(1)
@@ -1622,7 +1117,7 @@ class FFmpegService():
           continue
 
 
-        videoInfo = ffmpegInfoParser.getVideoInfo(cleanFilenameForFfmpeg(filename),filters="scale={}:45:force_original_aspect_ratio=decrease".format(frameWidth))
+        videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename),filters="scale={}:45:force_original_aspect_ratio=decrease:flags=bicubic".format(frameWidth))
         outputWidth = videoInfo.width
 
         numberOfFrames = math.floor( (timelineWidth)/frameWidth )
@@ -1739,8 +1234,7 @@ class FFmpegService():
                                                                   secondsChange=secondsChange),callback) )
 
   def cancelEncodeRequest(self,requestId):
-    global cancelledEncodeIds
-    cancelledEncodeIds.add(requestId)
+    cancelCurrentEncodeRequest(requestId)
 
   def loadImageFile(self,filename,duration,callback):
     self.loadImageAsVideoRequestQueue.put((filename,duration,callback))

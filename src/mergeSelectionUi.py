@@ -9,48 +9,106 @@ import random
 import time
 from collections import deque
 import logging 
-
+import json
 
 class EncodeProgress(ttk.Frame):
-  def __init__(self, master=None, *args, encodeRequestId=None,controller=None, **kwargs):
+
+  def __init__(self, master=None, *args, encodeRequestId=None,controller=None, targetSize=0.0, **kwargs):
     ttk.Frame.__init__(self, master)
     self.frameEncodeProgressWidget = self
     self.encodeRequestId = encodeRequestId
     self.cancelled = False
     self.controller = controller
+    self.config(padding='2', relief='raised')
 
-    self.labelEncodeProgressLabel = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelEncodeProgressLabel.config(text='Encode request submitted', width='60')
-    self.labelEncodeProgressLabel.pack(side='left')
-    self.progressbarEncodeProgressLabel = ttk.Progressbar(self.frameEncodeProgressWidget)
-    self.progressbarEncodeProgressLabel.config(mode='determinate', orient='horizontal')
-    self.progressbarEncodeProgressLabel.pack(expand='true',padx=10, fill='x', side='left')
+    self.frameEncodeProgressWidget.columnconfigure(0, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(1, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(2, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(3, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(4, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(5, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(6, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(7, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(8, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(9, weight=1)
+    self.frameEncodeProgressWidget.rowconfigure(0, weight=1)
+
+    self.labelRequestId = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelRequestId.config(text='Request Id: {}'.format(encodeRequestId), relief='flat')
+    self.labelRequestId.grid(row=0,column=0,sticky='nesw')
+
+    self.labelRequestStatus = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelRequestStatus.config(text='Idle', relief='flat')
+    self.labelRequestStatus.grid(row=0,column=1,sticky='nesw',columnspan=9)
+
+    self.labelEncodeStage = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelEncodeStage.config(text='Encode Stage: Submitted Idle', relief='flat')
+    self.labelEncodeStage.grid(row=1,column=0,sticky='nesw')
+
+    self.labelEncodePass = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelEncodePass.config(text='Pass: Preparation Cutting Clips', relief='flat')
+    self.labelEncodePass.grid(row=1,column=1,sticky='nesw')
+
+    self.labelTargetSize = ttk.Label(self.frameEncodeProgressWidget)
+    if targetSize <= 0.0:
+      self.labelTargetSize.config(text='Target Size: No Limit', relief='flat')
+    else:
+      self.labelTargetSize.config(text='Target Size: {}M'.format(targetSize), relief='flat')
+    self.labelTargetSize.grid(row=1,column=2,sticky='nesw')
+
+    self.labelLastEncodedSize = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelLastEncodedSize.config(text='Last output size: 0M', relief='flat')
+    self.labelLastEncodedSize.grid(row=1,column=3,sticky='nesw')
+
+    self.labelLastEncodedBR = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelLastEncodedBR.config(text='Bitrate: No Limit', relief='flat')
+    self.labelLastEncodedBR.grid(row=1,column=4,sticky='nesw')
+
+    self.labelLastEncodedPSNR = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelLastEncodedPSNR.config(text='Last PSNR: inf', relief='flat')
+    self.labelLastEncodedPSNR.grid(row=1,column=5,sticky='nesw')
+
+    self.labelLastBuff = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelLastBuff.config(text='Buffer: 0', relief='flat')
+    self.labelLastBuff.grid(row=1,column=6,sticky='nesw')
+
+    self.labelLastWR = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelLastWR.config(text='Width Reduction: 0%', relief='flat')
+    self.labelLastWR.grid(row=1,column=7,sticky='nesw')
 
     self.labelTimeLeft  = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelTimeLeft.config(text='', width='19')
-    self.labelTimeLeft.pack(side='left')
+    self.labelTimeLeft.config(text='Idle', width='19')
+    self.labelTimeLeft.grid(row=1,column=8,sticky='nesw')
+
+    self.progressbarEncodeProgressLabel = ttk.Progressbar(self.frameEncodeProgressWidget)
+    self.progressbarEncodeProgressLabel.config(mode='determinate', orient='horizontal')
+    self.progressbarEncodeProgressLabel.grid(row=2,column=0,sticky='nesw',columnspan=9)
+
 
     self.progressbarEncodeCancelButton = ttk.Button(self.frameEncodeProgressWidget)
-    self.progressbarEncodeCancelButton.config(text='Cancel', width=10)
+    self.progressbarEncodeCancelButton.config(text='Cancel')
     self.progressbarEncodeCancelButton.config(command=self.cancelEncodeRequest)
     self.progressbarEncodeCancelButton.config(style="small.TButton")
-    self.progressbarEncodeCancelButton.pack(expand='false',padx=0, fill='x', side='left')
+    self.progressbarEncodeCancelButton.grid(row=2,column=9,sticky='nesw')
 
 
     self.progressbarPlayButton = ttk.Button(self.frameEncodeProgressWidget)
-    self.progressbarPlayButton.config(text='Play', width=10)
+    self.progressbarPlayButton.config(text='Play')
     self.progressbarPlayButton.config(command=self.playFinal)
     self.progressbarPlayButton.config(style="small.TButton")
     
 
-    self.frameEncodeProgressWidget.config(height='200', width='200')
-    self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=10, fill='x', side='top')
+    self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=0, fill='x', side='top')
+    
     self.progresspercent = 0
     self.encodeStartTime = None
     self.progressQueue    = deque([],10)
     self.timestampQueue   = deque([],10)
     self.finalFilename    = None
     self.player = None
+    self.lastProgress=0
+
+    self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
 
   def playFinal(self):
     if self.finalFilename is not None:
@@ -79,53 +137,106 @@ class EncodeProgress(ttk.Frame):
     self.progressbarEncodeProgressLabel['value']=100
     self.labelTimeLeft.config(text='Cancelled')
     self.progresspercent = 100
-    self.progressbarEncodeCancelButton.pack_forget()
-    self.labelEncodeProgressLabel.config(text='Cancelled')
+    self.progressbarEncodeCancelButton.state(["disabled"])
     self.controller.cancelEncodeRequest(self.encodeRequestId)
 
-  def updateStatus(self,status,percent,finalFilename=None):
+  def sizeof_fmt(self,inum, suffix='B'):
+    num = float(inum)
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
+  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None):
+
+    if requestStatus is not None:
+      self.labelRequestStatus.config(text=str(requestStatus))
+
+    if encodeStage is not None:
+      self.labelEncodeStage.config(text='Encode Stage: {}'.format(encodeStage), relief='flat')
+
+    if encodePass is not None:
+      self.labelEncodePass.config(text='Pass: {}'.format(encodePass), relief='flat')
+    
+    if lastEncodedSize is not None:
+      lastEncodedSizeHuman = self.sizeof_fmt(lastEncodedSize,'B')  
+      self.labelLastEncodedSize.config(text='Last output size: {}'.format(lastEncodedSizeHuman), relief='flat')
+    
+    if lastEncodedBR is not None:
+      lastEncodedBRHuman = self.sizeof_fmt(lastEncodedBR,'B')
+      self.labelLastEncodedBR.config(text='Bitrate: {}'.format(lastEncodedBRHuman), relief='flat')
+
+    if lastEncodedPSNR is not None:
+      PSNRGrade = 'Terrible'
+
+      if int(lastEncodedPSNR) >= 48:
+        PSNRGrade = 'Excellent'
+      elif int(lastEncodedPSNR) >= 40:
+        PSNRGrade = 'Good'
+      elif int(lastEncodedPSNR) >= 38:
+        PSNRGrade = 'fair'
+      elif int(lastEncodedPSNR) >= 30:
+        PSNRGrade = 'Poor'
+      
+      self.labelLastEncodedPSNR.config(text='Last PSNR: {} ({})'.format(lastEncodedPSNR,PSNRGrade), relief='flat')
+    
+    if lastBuff is not None:
+      lastBuffSizeHuman = self.sizeof_fmt(lastBuff,'B') 
+      self.labelLastBuff.config(text='Last Buffer Size: {}'.format(lastBuffSizeHuman), relief='flat')
+    
+    if lastWR is not None:
+      self.labelLastWR.config(text='Last Width Reduction: {:0.2f}%'.format(lastWR*100), relief='flat')
+
     if self.cancelled:
       return
     if finalFilename is not None:
       self.finalFilename = finalFilename
-    print(finalFilename)
 
+    if percent is not None:
+      if percent<self.lastProgress:
+        self.progressQueue    = deque([],10)
+        self.timestampQueue   = deque([],10)
 
-    self.progressQueue.append(percent)
-    self.timestampQueue.append(time.time())
+      self.lastProgress = percent
 
-    if self.encodeStartTime is None:
-      self.encodeStartTime = self.timestampQueue[-1]
+      self.progressQueue.append(percent)
+      self.timestampQueue.append(time.time())
 
-    if len(self.progressQueue)>=2:
+      if self.encodeStartTime is None:
+        self.encodeStartTime = self.timestampQueue[-1]
+
+      if len(self.progressQueue)>=2:
+        
+        currentValue = self.progressQueue[-1]
+        oldestValue  = self.progressQueue[0]
+        
+        currentKey   = self.timestampQueue[-1]
+        oldestKey    = self.timestampQueue[0]
+
+        try:
+          remaining = (1.0 - currentValue) * (currentKey - oldestKey) / (currentValue - oldestValue)
+          self.labelTimeLeft.config(text=str(round(remaining,2))+'s left')
+        except:
+          pass
       
-      currentValue = self.progressQueue[-1]
-      oldestValue  = self.progressQueue[0]
-      
-      currentKey   = self.timestampQueue[-1]
-      oldestKey    = self.timestampQueue[0]
+      if status is not None:
+        self.labelRequestStatus.config(text=status)
+      self.progressbarEncodeProgressLabel['value']=percent*100
+      self.progresspercent = percent*100
 
-      try:
-        remaining = (1.0 - currentValue) * (currentKey - oldestKey) / (currentValue - oldestValue)
-        self.labelTimeLeft.config(text=str(round(remaining,2))+'s left')
-      except:
-        pass
-      
-    self.labelEncodeProgressLabel.config(text=status)
-    self.progressbarEncodeProgressLabel['value']=percent*100
-    self.progresspercent = percent*100
+      if percent >= 1:
+        self.labelTimeLeft.config(text='Complete in {}s'.format( str(round(time.time() - self.encodeStartTime,2)) ))
+        self.progressbarEncodeCancelButton.grid_forget()
+        if self.finalFilename is not None:
+          self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
+          self.progressbarPlayButton.grid(row=2,column=9,sticky='nesw')
+      else:
+        self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
+        self.progressbarEncodeCancelButton.grid(row=2,column=9,sticky='nesw') 
 
-    if percent >= 1:
-      self.labelTimeLeft.config(text='Complete in {}s'.format( str(round(time.time() - self.encodeStartTime,2)) ))
-      self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
-      self.progressbarEncodeCancelButton.pack_forget()
-      if self.finalFilename is not None:
-        self.progressbarPlayButton.pack(expand='false',padx=0, fill='x', side='left')
-    else:
-      self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
-      self.progressbarEncodeCancelButton.pack(expand='false',padx=0, fill='x', side='left')
-
-    self.winfo_toplevel().title('webmGenerator: encoding: {:0.2f}%'.format(percent*100))
+      if percent is not None:
+        self.winfo_toplevel().title('webmGenerator: encoding: {:0.2f}%'.format(percent*100))
 
   def remove(self):
     if self.progresspercent == 100:
@@ -145,6 +256,7 @@ class SequencedVideoEntry(ttk.Frame):
     
     self.filename=sourceClip.filename
     self.filterexp=sourceClip.filterexp
+    self.filterexpEnc=sourceClip.filterexpEnc
     self.basename = sourceClip.basename
     self.previewImage=sourceClip.previewImage
 
@@ -237,10 +349,11 @@ class SequencedVideoEntry(ttk.Frame):
     self.previewImage=photoImage
     self.canvasSequencePreview.config(image=self.previewImage)
 
-  def update(self,s,e,filterexp):
+  def update(self,s,e,filterexp,filterexpEnc):
     self.s=s
     self.e=e
     self.filterexp=filterexp
+    self.filterexpEnc = filterexpEnc
     self.labelSequenceVideoName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
@@ -285,7 +398,7 @@ class GridColumn(ttk.Labelframe):
 
 
 class SelectableVideoEntry(ttk.Frame):
-  def __init__(self, master,controller,filename,rid,s,e,filterexp, *args, **kwargs):
+  def __init__(self, master,controller,filename,rid,s,e,filterexp,filterexpEnc, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     self.master=master
     self.rid=rid
@@ -294,9 +407,11 @@ class SelectableVideoEntry(ttk.Frame):
     self.controller=controller
     self.filename=filename
     self.filterexp=filterexp
+    self.filterexpEnc = filterexpEnc
+
     self.basename = os.path.basename(filename)[:14]
     self.player=None
-
+    
     self.frameInputCutWidget = self
     self.labelInputCutName = ttk.Label(self.frameInputCutWidget)
     self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
@@ -328,10 +443,11 @@ class SelectableVideoEntry(ttk.Frame):
     self.previewImage=photoImage
     self.canvasInputCutPreview.config(image=self.previewImage)
 
-  def update(self,s,e,filterexp):
+  def update(self,s,e,filterexp,filterexpEnc):
     self.s=s
     self.e=e
     self.filterexp=filterexp
+    self.filterexpEnc = filterexpEnc
     self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
@@ -411,7 +527,9 @@ class MergeSelectionUi(ttk.Frame):
       {'name':'Sub 100M max quality mp4','editable':False,'outputFormat':'mp4:x264','maximumSize':'100.0'}
     ]
 
-    self.profiles   = [x['name'] for x in self.profileSpecs]
+    self.profileVar = tk.StringVar()
+    self.profiles   = [x.get('name') for x in self.profileSpecs if x.get('name') is not None ]
+
 
     if self.defaultProfile in self.profiles:
       self.profileVar.set(defaultProfile)
@@ -419,11 +537,22 @@ class MergeSelectionUi(ttk.Frame):
       self.profileVar.set(self.profiles[0])
 
     self.profileCombo = ttk.OptionMenu(self.profileFrame,self.profileVar,self.profileVar.get(),*self.profiles)
-    self.profileCombo.pack(expand='true', fill='x', side='right')
+    self.profileCombo.pack(expand='true', fill='x', side='left')
+
+
+    self.profileDelete = ttk.Button(self.profileFrame, command=self.deleteProfile)
+    self.profileDelete.configure(text='Delete Profile')
+    self.profileDelete.state(["disabled"])
+    self.profileDelete.pack(expand='false', side='right')
+
+    self.profileSave = ttk.Button(self.profileFrame, command=self.saveProfile)
+    self.profileSave.configure(text='Save New Profile')
+    self.profileSave.pack(expand='false', side='right')
 
     self.profileFrame.pack(expand='false', fill='x', padx='5', pady='0  ', side='top')
 
     self.profileVar.trace('w',self.profileChanged)
+
 
 
     self.labelframeInputCutSelection = ttk.Labelframe(self.frameMergeSelection)
@@ -514,6 +643,9 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSizeStrategyVar     = tk.StringVar()
     self.maximumSizeVar           = tk.StringVar()
     self.maximumWidthVar          = tk.StringVar()
+    self.minimumPSNRVar           = tk.StringVar()
+    self.optimizerVar             = tk.StringVar()
+
     self.transDurationVar         = tk.StringVar()
     self.transStyleVar            = tk.StringVar()
     self.speedAdjustmentVar       = tk.StringVar() 
@@ -538,6 +670,30 @@ class MergeSelectionUi(ttk.Frame):
     self.audioMergeOptionsVar.trace('w',self.valueChange)
     self.gridLoopMergeOptionsVar.trace('w',self.valueChange)
     self.postProcessingFilterVar.trace('w',self.valueChange)
+    self.minimumPSNRVar.trace('w',self.valueChange)
+    self.optimizerVar.trace('w',self.valueChange)
+
+
+    self.optimziers = [
+      'Linear Search',
+      'Nelder-Mead - Early Exit',
+      'Nelder-Mead - Exhaustive',
+    ]
+
+    self.optimizerVar.set(self.optimziers[0])
+
+    self.editableProfileVars = [
+      'outputFormat',
+      'frameSizeStrategy',
+      'maximumSize',
+      'maximumWidth',
+      'transDuration',
+      'transStyle',
+      'speedAdjustment',
+      'audioChannels',
+      'audioMergeOptions',
+      'gridLoopMergeOptions'
+    ]
 
     self.audioOverrideVar.trace('w',self.valueChange)
     self.audiOverrideDelayVar.trace('w',self.valueChange)
@@ -556,6 +712,14 @@ class MergeSelectionUi(ttk.Frame):
     ]
     self.outputFormatVar.set(self.outputFormats[0])
 
+
+    self.frameSizeStrategies = [
+      'Rescale to largest with black bars',
+      'Rescale to largest and center crop smaller',    
+    ]
+    self.frameSizeStrategyVar.set(self.frameSizeStrategies[0])
+
+
     self.frameSizeStrategies = [
       'Rescale to largest with black bars',
       'Rescale to largest and center crop smaller',    
@@ -563,6 +727,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSizeStrategyVar.set(self.frameSizeStrategies[0])
 
     self.maximumSizeVar.set('0.0')
+    self.minimumPSNRVar.set('0.0')
     self.maximumWidthVar.set('1280')
     self.transDurationVar.set('0.0')       
 
@@ -600,10 +765,10 @@ class MergeSelectionUi(ttk.Frame):
     self.gridLoopMergeOptionsVar.set(self.gridLoopMergeOptions[0])
 
     self.postProcessingFilterOptions = ['None']
-    for f in os.listdir('.'):
-      if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
-        self.postProcessingFilterOptions.append(f)
-    self.postProcessingFilterVar.set(self.postProcessingFilterOptions[0])
+    if os.path.exists('postFilters'):
+      for f in os.listdir('postFilters'):
+        if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
+          self.postProcessingFilterOptions.append(f)
     for filterElem in self.postProcessingFilterOptions:
       if 'DEFAULT' in filterElem.upper():
         self.postProcessingFilterVar.set(filterElem)
@@ -693,8 +858,6 @@ class MergeSelectionUi(ttk.Frame):
 
     # two column menu below
 
-    
-
     self.frameSequenceValues.columnconfigure(0, weight=1)
     self.frameSequenceValues.columnconfigure(1, weight=100)
     self.frameSequenceValues.columnconfigure(2, weight=1)
@@ -709,15 +872,15 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceValues.rowconfigure(5, weight=1)
 
     self.labelAutomaticFileNaming = ttk.Label(self.frameSequenceValues)
-    self.labelAutomaticFileNaming.config(anchor='e', padding='2', text='Automatically name output files', width='25')
+    self.labelAutomaticFileNaming.config(anchor='e', text='Automatically name output files', width='25')
     self.labelAutomaticFileNaming.grid(row=0,column=0,sticky='e')
 
     self.entryAutomaticFileNaming = ttk.Checkbutton(self.frameSequenceValues,text='',onvalue=True, offvalue=False)
-    self.entryAutomaticFileNaming.config(width='5',variable=self.automaticFileNamingVar)
+    self.entryAutomaticFileNaming.config(variable=self.automaticFileNamingVar)
     self.entryAutomaticFileNaming.grid(row=0,column=1,sticky='ew')
 
     self.labelFilenamePrefix = ttk.Label(self.frameSequenceValues)
-    self.labelFilenamePrefix.config(anchor='e', padding='2', text='Output filename prefix')
+    self.labelFilenamePrefix.config(anchor='e', text='Output filename prefix')
     self.labelFilenamePrefix.grid(row=0,column=2,sticky='e')
 
     self.entryFilenamePrefix = ttk.Entry(self.frameSequenceValues)
@@ -725,7 +888,7 @@ class MergeSelectionUi(ttk.Frame):
     self.entryFilenamePrefix.grid(row=0,column=3,sticky='ew')
 
     self.labelOutputFormat = ttk.Label(self.frameSequenceValues)
-    self.labelOutputFormat.config(anchor='e', padding='2', text='Output format')
+    self.labelOutputFormat.config(anchor='e', text='Output format')
     self.labelOutputFormat.grid(row=1,column=0,sticky='e')
 
     self.comboboxOutputFormat= ttk.OptionMenu(self.frameSequenceValues,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
@@ -733,14 +896,14 @@ class MergeSelectionUi(ttk.Frame):
 
   
     self.labelSizeStrategy = ttk.Label(self.frameSequenceValues)
-    self.labelSizeStrategy.config(anchor='e', padding='2', text='Size Match Strategy')
+    self.labelSizeStrategy.config(anchor='e',  text='Size Match Strategy')
     self.labelSizeStrategy.grid(row=1,column=2,sticky='e')
     
     self.comboboxSizeStrategy = ttk.OptionMenu(self.frameSequenceValues,self.frameSizeStrategyVar,self.frameSizeStrategyVar.get(),*self.frameSizeStrategies)
     self.comboboxSizeStrategy.grid(row=1,column=3,sticky='ew')
 
     self.labelMaximumSize = ttk.Label(self.frameSequenceValues)
-    self.labelMaximumSize.config(anchor='e', padding='2', text='Maximum File Size (MB)')
+    self.labelMaximumSize.config(anchor='e', text='Maximum File Size (MB)')
     self.labelMaximumSize.grid(row=2,column=0,sticky='e')
 
     self.entryMaximumSize = ttk.Spinbox(self.frameSequenceValues, from_=0, to=float('inf'), increment=0.1)
@@ -750,7 +913,7 @@ class MergeSelectionUi(ttk.Frame):
 
 
     self.labelMaximumWidth = ttk.Label(self.frameSequenceValues)
-    self.labelMaximumWidth.config(anchor='e', padding='2', text='Limit largest dimension')
+    self.labelMaximumWidth.config(anchor='e', text='Limit largest dimension')
     self.labelMaximumWidth.grid(row=2,column=2,sticky='e')
     self.entryMaximumWidth = ttk.Spinbox(self.frameSequenceValues, 
                                          from_=0, 
@@ -769,7 +932,7 @@ class MergeSelectionUi(ttk.Frame):
 
 
     self.labelSpeedChange = ttk.Label(self.frameSequenceValues)
-    self.labelSpeedChange.config(anchor='e', padding='2', text='Speed adjustment')
+    self.labelSpeedChange.config(anchor='e', text='Speed adjustment')
     self.labelSpeedChange.grid(row=3,column=2,sticky='e')
     self.entrySpeedChange = ttk.Spinbox(self.frameSequenceValues, 
                                          from_=0.5, 
@@ -779,15 +942,26 @@ class MergeSelectionUi(ttk.Frame):
     self.entrySpeedChange.grid(row=3,column=3,sticky='ew')
 
 
-    self.labelpostProcessingFilter = ttk.Label(self.frameSequenceValues)
-    self.labelpostProcessingFilter.config(anchor='e', padding='2', text='Post filter')
-    self.labelpostProcessingFilter.grid(row=4,column=2,sticky='e')
-    self.entrypostProcessingFilter = ttk.OptionMenu(self.frameSequenceValues,self.postProcessingFilterVar,self.postProcessingFilterVar.get(),*self.postProcessingFilterOptions)
-    self.entrypostProcessingFilter.grid(row=4,column=3,sticky='ew')
+    self.labelminimumPSNR = ttk.Label(self.frameSequenceValues)
+    self.labelminimumPSNR.config(anchor='e', text='Minumum PSNR')
+    self.labelminimumPSNR.grid(row=4,column=0,sticky='e')
+    self.entryminimumPSNR = ttk.Spinbox(self.frameSequenceValues, 
+                                         from_=0, 
+                                         to=48, 
+                                         increment=1,
+                                         textvariable=self.minimumPSNRVar)
+    self.entryminimumPSNR.grid(row=4,column=1,sticky='ew')
+
+
+    self.labelpostOptimiser = ttk.Label(self.frameSequenceValues)
+    self.labelpostOptimiser.config(anchor='e', text='Optimiser')
+    self.labelpostOptimiser.grid(row=4,column=2,sticky='e')
+    self.entrypostOptimiser = ttk.OptionMenu(self.frameSequenceValues,self.optimizerVar,self.optimizerVar.get(),*self.optimziers)
+    self.entrypostOptimiser.grid(row=4,column=3,sticky='ew')
 
 
     self.labelpostAudioOverride = ttk.Label(self.frameSequenceValues)
-    self.labelpostAudioOverride.config(anchor='e', padding='2', text='Audio Dub')
+    self.labelpostAudioOverride.config(anchor='e',  text='Audio Dub')
     self.labelpostAudioOverride.grid(row=5,column=0,sticky='e')
     self.entrypostAudioOverride = ttk.Button(self.frameSequenceValues,textvariable=self.audioOverrideVar,command=self.selectAudioOverride)
     self.entrypostAudioOverride.grid(row=5,column=1,sticky='ew')
@@ -795,7 +969,7 @@ class MergeSelectionUi(ttk.Frame):
 
 
     self.labelpostAudioOverrideDelay = ttk.Label(self.frameSequenceValues)
-    self.labelpostAudioOverrideDelay.config(anchor='e', padding='2', text='Dub Delay (seconds)')
+    self.labelpostAudioOverrideDelay.config(anchor='e',  text='Dub Delay (seconds)')
     self.labelpostAudioOverrideDelay.grid(row=5,column=2,sticky='e')
     self.entrypostAudioOverrideDelay = ttk.Spinbox(self.frameSequenceValues, textvariable=self.audiOverrideDelayVar,from_=float('-inf'), 
                                           to=float('inf'), 
@@ -804,6 +978,11 @@ class MergeSelectionUi(ttk.Frame):
 
     
 
+    self.labelpostProcessingFilter = ttk.Label(self.frameSequenceValues)
+    self.labelpostProcessingFilter.config(anchor='e', text='Post filter')
+    self.labelpostProcessingFilter.grid(row=6,column=2,sticky='e')
+    self.entrypostProcessingFilter = ttk.OptionMenu(self.frameSequenceValues,self.postProcessingFilterVar,self.postProcessingFilterVar.get(),*self.postProcessingFilterOptions)
+    self.entrypostProcessingFilter.grid(row=6,column=3,sticky='ew')
 
 
 
@@ -827,7 +1006,7 @@ class MergeSelectionUi(ttk.Frame):
     #self.frameSequenceValuesRight.pack(expand='true', fill='x', side='left')
 
 
-    self.labelframeEncodeProgress = ScrolledFrame(self.labelframeSequenceFrame,usemousewheel=True,scrolltype='vertical',)
+    self.labelframeEncodeProgress = ttk.Frame(self.labelframeSequenceFrame)
 
     self.encoderProgress=[
       
@@ -841,6 +1020,12 @@ class MergeSelectionUi(ttk.Frame):
     self.encodeRequestId=0
     self.selectableVideos={}
     self.selectedColumn = None
+
+  def deleteProfile(self):
+    pass
+
+  def saveProfile(self):
+    pass
 
   def selectAudioOverride(self):
     files = askopenfilename(multiple=False,filetypes=[('mp3','*.mp3',),('wav','*.wav')])
@@ -885,12 +1070,20 @@ class MergeSelectionUi(ttk.Frame):
 
   def profileChanged(self,*args):
     profileName = self.profileVar.get()
+
     for p in self.profileSpecs:
       if p['name'] == profileName:
+
+        if p.get('editable',False):
+          self.profileDelete.state(["disabled"])
+        else:
+          self.profileDelete.state(["!disabled"])
+
         for k,v in p.items():
-          attrName = k+'Var'
-          if hasattr(self, attrName) and hasattr(getattr(self, attrName),'set'):
-             getattr(self, attrName).set(v)
+          if k in self.editableProfileVars:
+            attrName = k+'Var'
+            if hasattr(self, attrName) and hasattr(getattr(self, attrName),'set'):
+               getattr(self, attrName).set(v)
 
   def valueChange(self,*args):
     try:
@@ -977,6 +1170,15 @@ class MergeSelectionUi(ttk.Frame):
     except:
       pass
 
+    try:
+      self.minimumPSNR = self.minimumPSNRVar.get()
+    except:
+      pass
+
+    try:
+      self.optimizer = self.optimizerVar.get()
+    except:
+      pass
 
     self.updatedPredictedDuration()
   
@@ -992,10 +1194,10 @@ class MergeSelectionUi(ttk.Frame):
       for clip in self.sequencedClips:
         encodeSequence = []
         self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
         encodeSequence.append(definition)
         if len(encodeSequence)>0:
-          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self)
           self.encoderProgress.append(encodeProgressWidget)
           outputPrefix = self.filenamePrefixValue
           if self.automaticFileNamingValue:
@@ -1006,7 +1208,6 @@ class MergeSelectionUi(ttk.Frame):
                                  {},
                                  outputPrefix,
                                  encodeProgressWidget.updateStatus) 
-          self.labelframeEncodeProgress.reposition()
 
 
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
@@ -1017,7 +1218,7 @@ class MergeSelectionUi(ttk.Frame):
       for i,column in enumerate(self.gridColumns):
         outcol = []
         for clip in column['clips']:
-          definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
+          definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
           outcol.append(definition)
           if column == self.selectedColumn:
             selectedColumnInd=i
@@ -1042,10 +1243,12 @@ class MergeSelectionUi(ttk.Frame):
         'selectedColumn':selectedColumnInd,
         'audioOverride':self.audioOverrideValue,
         'audiOverrideDelay':self.audiOverrideDelayValue,
-        'gridLoopMergeOption':self.gridLoopMergeOption
+        'gridLoopMergeOption':self.gridLoopMergeOption,
+        'minimumPSNR':self.minimumPSNR,
+        'optimizer':self.optimizer
       }
 
-      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
+      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
       self.encoderProgress.append(encodeProgressWidget)
       outputPrefix = self.filenamePrefixValue
       if self.automaticFileNamingValue:
@@ -1059,14 +1262,13 @@ class MergeSelectionUi(ttk.Frame):
                              options.copy(),
                              outputPrefix,
                              encodeProgressWidget.updateStatus) 
-      self.labelframeEncodeProgress.reposition()
 
 
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Sequence':
       encodeSequence = []
       self.encodeRequestId+=1
       for clip in self.sequencedClips:
-        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
         encodeSequence.append(definition)
       if len(encodeSequence)>0:
         options={
@@ -1082,10 +1284,12 @@ class MergeSelectionUi(ttk.Frame):
           'postProcessingFilter':self.postProcessingFilter,
           'audioOverride':self.audioOverrideValue,
           'audiOverrideDelay':self.audiOverrideDelayValue,
-          'gridLoopMergeOption':self.gridLoopMergeOption
+          'gridLoopMergeOption':self.gridLoopMergeOption,
+          'minimumPSNR':self.minimumPSNR,
+          'optimizer':self.optimizer
         }
 
-        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
+        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
         self.encoderProgress.append(encodeProgressWidget)
 
         outputPrefix = self.filenamePrefixValue
@@ -1102,14 +1306,12 @@ class MergeSelectionUi(ttk.Frame):
                                outputPrefix,
                                encodeProgressWidget.updateStatus)
 
-        self.labelframeEncodeProgress.reposition()
-
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Individual Files':
       
       for clip in self.sequencedClips:
         encodeSequence = []
         self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
         encodeSequence.append(definition)
         if len(encodeSequence)>0:
           options={
@@ -1125,10 +1327,13 @@ class MergeSelectionUi(ttk.Frame):
             'postProcessingFilter':self.postProcessingFilter,
             'audioOverride':self.audioOverrideValue,
             'audiOverrideDelay':self.audiOverrideDelayValue,
-            'gridLoopMergeOption':self.gridLoopMergeOption
+            'gridLoopMergeOption':self.gridLoopMergeOption,
+            'minimumPSNR':self.minimumPSNR,
+            'optimizer':self.optimizer
+
           }
 
-          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress.innerframe,encodeRequestId=self.encodeRequestId,controller=self)
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
           self.encoderProgress.append(encodeProgressWidget)
           outputPrefix = self.filenamePrefixValue
           if self.automaticFileNamingValue:
@@ -1140,7 +1345,8 @@ class MergeSelectionUi(ttk.Frame):
                                  options.copy(),
                                  outputPrefix,
                                  encodeProgressWidget.updateStatus) 
-          self.labelframeEncodeProgress.reposition()
+    self.outserScrolledFrame.reposition()
+
 
   def mergeStyleChanged(self,*args):
     if self.mergeStyleVar.get().split('-')[0].strip()=='Grid':
@@ -1214,6 +1420,22 @@ class MergeSelectionUi(ttk.Frame):
 
   def setController(self,controller):
     self.controller=controller
+    self.updateProfileSpecs()
+
+
+
+  def updateProfileSpecs(self):
+    self.profileSpecs = self.controller.getProfiles()
+    self.profiles = [x.get('name') for x in self.profileSpecs if x.get('name') is not None ]
+
+    menu = self.profileCombo["menu"]
+    menu.delete(0, "end")
+    for string in self.profiles:
+      menu.add_command(label=string,command=lambda value=string: self.profileVar.set(value))
+
+    if self.profileVar.get() not in self.profiles:
+      self.profileVar.set(self.profiles[0])
+
 
   def previewFrameCallback(self,requestId,timestamp,size,imageData):
     photoImage = tk.PhotoImage(data=imageData)
@@ -1287,17 +1509,17 @@ class MergeSelectionUi(ttk.Frame):
   def tabSwitched(self,tabName):
     if str(self) == tabName:
       unusedRids=set(self.selectableVideos.keys())
-      for filename,rid,s,e,filterexp in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
+      for filename,rid,s,e,filterexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
         if rid in self.selectableVideos:
           unusedRids.remove(rid)
         if rid not in self.selectableVideos:
-          self.selectableVideos[rid] = SelectableVideoEntry(self.selectableVideosContainer,self,filename,rid,s,e,filterexp)
+          self.selectableVideos[rid] = SelectableVideoEntry(self.selectableVideosContainer,self,filename,rid,s,e,filterexp,filterexpEnc)
         elif self.selectableVideos[rid].s != s or self.selectableVideos[rid].e != e or self.selectableVideos[rid].filterexp != filterexp:
-           self.selectableVideos[rid].update(s,e,filterexp)
+           self.selectableVideos[rid].update(s,e,filterexp,filterexpEnc)
 
         for sv in self.sequencedClips:
           if sv.rid==rid:
-            sv.update(s,e,filterexp)
+            sv.update(s,e,filterexp,filterexpEnc)
 
       for rid in unusedRids:
         self.selectableVideos[rid].destroy()

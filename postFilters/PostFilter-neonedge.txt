@@ -1,0 +1,1 @@
+,[outvpre]split[v1][v2],color=red[vr],[v2]edgedetect,format=gbrp[v3],[vr][v3]scale2ref[v4][v5],[v4][v5]blend=all_mode=multiply,hue='H=2*PI*t*1:s=4',scale=1.05*iw:-1,crop=iw/1.05:ih/1.05[v6],[v1]format=gbrp[v7],[v7][v6]blend=all_mode=addition:shortest=1[outv]

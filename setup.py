@@ -8,15 +8,16 @@ os.environ['TK_LIBRARY'] =  os.path.expandvars(r'%USERPROFILE%\AppData\Local\Pro
 # fine tuning.
 buildOptions = dict(packages = ["os"], 
                     include_files = [
-                    'ffmpeg.exe'
-                    ,'ffprobe.exe'
-                    ,'QRCode.gif'
-                    ,'PostFilter-addQRCode.txt'
-                    ,'PostFilter-chromaShift.txt'
-                    ,'PostFilter-rainbow.txt'
-                    ,'PostFilter-vhsishclean.txt'
+                     ('resources\\QRCode.gif','resources\\QRCode.gif')
+                    ,('resources\\quicksand.otf','resources\\quicksand.otf')
+                    ,('postFilers\\PostFilter-addQRCode.txt','postFilers\\PostFilter-addQRCode.txt')
+                    ,('postFilers\\PostFilter-chromaShift.txt','postFilers\\PostFilter-chromaShift.txt')
+                    ,('postFilers\\PostFilter-rainbow.txt','postFilers\\PostFilter-rainbow.txt')
+                    ,('postFilers\\PostFilter-vhsishclean.txt','postFilers\\PostFilter-vhsishclean.txt')
+                    ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     ,'youtube-dl.exe'
-                    ,'screenspacetools.lua'
+                    ,'ffmpeg.exe'
+                    ,'ffprobe.exe'
                     ,'mpv-1.dll'
                     ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tcl86t.dll')
                     ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tk86t.dll')

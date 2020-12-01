@@ -1,6 +1,5 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-from filterSpec import selectableFilters
 from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import copy
@@ -8,6 +7,9 @@ import math
 import logging
 import threading
 import time
+from tkinter.filedialog import askopenfilename
+
+from .filterSpec import selectableFilters
 
 def debounce(wait):
     def decorator(fn):
@@ -49,7 +51,7 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue = ttk.Combobox(self.frameFilterValuePair)
       self.entryFilterValueValue.config(textvariable=self.valueVar)
       self.entryFilterValueValue.config(values=self.selectableValues)
-      self.entryFilterValueValue.config(state='readonly')
+      #self.entryFilterValueValue.config(state='readonly')
     elif param['type'] == 'float':
       self.valueVar.set(param['d'])
       if param.get('range') is None:
@@ -84,6 +86,10 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
+    elif param['type'] == 'file':
+      self.valueVar.set(param['d'])
+      self.entryFilterValueValue = ttk.Button(self.frameFilterValuePair)
+      self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]),command=self.selectFile)
     else:
       logging.error("Unhandled param {}".format(str(param)))
 
@@ -91,6 +97,16 @@ class FilterValuePair(ttk.Frame):
     self.frameFilterValuePair.config(height='200', width='200')
     self.frameFilterValuePair.pack(expand='true', fill='x', side='top')
     self.valueVar.trace("w", self.valueUpdated)
+
+  def selectFile(self):
+    fn = askopenfilename()
+    if fn is None or len(fn)==0:
+      self.entryFilterValueValue.config(text='Select file')
+    else:
+      cleanPath = os.path.abspath(fn).replace('\\','/').replace(':','\\:')
+      self.valueVar.set(cleanPath)
+      print(self.valueVar.get())
+      self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
 
   def getValuePair(self):
     if self.param['type'] == 'string':
@@ -138,8 +154,71 @@ class FilterSpecification(ttk.Frame):
     self.frameFilterActions.pack(expand='true', fill='x', side='top')
     self.rectProps={}
     self.filterValuePairs= []
-    for param in spec.get('params',[]):      
-      self.filterValuePairs.append(FilterValuePair(self.frameFilterConfigFrame,self,param))
+    self.timelineSupport = spec.get('timelineSupport',False)
+    self.encodingStageFilter = spec.get('encodingStageFilter',False)
+    self.timelineStart = tk.StringVar()
+    self.timelineEnd   = tk.StringVar()
+
+
+
+    if self.timelineSupport:
+
+      def timelineStartChanged(*args):
+        self.recaculateFilters()
+        try:
+          ts = float(self.timelineStart.get())
+          self.controller.seekToTimelinePoint(ts)
+        except:
+          pass  
+
+      def timelineEndChanged(*args):
+        self.recaculateFilters()
+        try:
+          ts = float(self.timelineEnd.get())
+          self.controller.seekToTimelinePoint(ts)
+        except:
+          pass  
+
+
+      self.frameTimeline = ttk.Frame(self.frameFilterDetailsWidget)
+
+      self.timelineStart.trace('w',timelineStartChanged)
+      self.timelineEnd.trace('w',timelineEndChanged)
+
+      self.frameTimelineStart = ttk.Frame(self.frameTimeline)
+      self.labelTimelineStart = ttk.Label(self.frameTimelineStart)
+      self.labelTimelineStart.config(text='Start at:')
+      self.labelTimelineStart.pack(expand='false', fill='x', side='left')
+      self.entryTimelineStart = ttk.Spinbox(self.frameTimelineStart)
+      self.entryTimelineStart.config(textvariable=self.timelineStart)
+      self.entryTimelineStart.config(from_=0)
+      self.entryTimelineStart.config(to=100)
+      self.entryTimelineStart.config(increment=0.1)
+      self.entryTimelineStart.pack(expand='false', fill='x', side='right')
+      self.frameTimelineStart.pack(expand='true', fill='x', side='top')
+
+
+      self.frameTimelineEnd = ttk.Frame(self.frameTimeline)
+      self.labelTimelineEnd = ttk.Label(self.frameTimelineEnd)
+      self.labelTimelineEnd.config(text='End at:')
+      self.labelTimelineEnd.pack(expand='false', fill='x', side='left')
+      self.entryTimelineEnd = ttk.Spinbox(self.frameTimelineEnd)
+      self.entryTimelineEnd.config(textvariable=self.timelineEnd)
+      self.entryTimelineEnd.config(from_=0)
+      self.entryTimelineEnd.config(to=100)
+      self.entryTimelineEnd.config(increment=0.1)
+      self.entryTimelineEnd.pack(expand='false', fill='x', side='right')
+      self.frameTimelineEnd.pack(expand='true', fill='x', side='top')
+
+      self.frameTimeline.pack(expand='true', fill='x', side='top')
+
+    for param in spec.get('params',[]):    
+      if param.get('type') == 'timelineStart':
+        self.timelineStart.set(param.get('value',''))
+      elif param.get('type') == 'timelineEnd':
+        self.timelineEnd.set(param.get('value',''))
+      else:
+        self.filterValuePairs.append(FilterValuePair(self.frameFilterConfigFrame,self,param))
     
     if len(self.rectProps)>0:
       self.buttonFilterValuesFromSelection = ttk.Button(self.frameFilterConfigFrame)
@@ -152,16 +231,33 @@ class FilterSpecification(ttk.Frame):
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
 
 
+  def getTimelineValuesAsSpecifications(self):
+    specs = []
+    try:
+      ts = float(self.timelineStart.get())
+      specs.append({'type':'timelineStart','value':ts})
+    except:
+      pass  
+    try:
+      ts = float(self.timelineEnd.get())
+      specs.append({'type':'timelineEnd', 'value':ts})
+    except:
+      pass  
+    return specs
+
 
   def populateRectPropValues(self):
     x1,y1,x2,y2 = self.controller.getRectProperties()
+    iw,ih       = self.controller.getVideoDimensions()
 
     x1,x2 = sorted([x1,x2])
     y1,y2 = sorted([y1,y2])
 
+
     rectDerivedProps = dict(
       x=x1,y=y1,x1=x1,y1=y1,x2=x2,y2=y2,
-      w=x2-x1,h=y2-y1,cx=(x1+x2)/2,cy=(y1+y2)/2
+      w=x2-x1,h=y2-y1,cx=(x1+x2)/2,cy=(y1+y2)/2,
+      xf=round(x1/iw,4),yf=round(y1/ih,4),wf=round((x2-x1)/iw,4),hf=round((y2-y1)/ih,4)
     )
 
     for k,v in rectDerivedProps.items():
@@ -179,15 +275,17 @@ class FilterSpecification(ttk.Frame):
       self.buttonfilterActionToggleEnabled.config(text='Disabled')
     self.controller.recaculateFilters()
 
-  def getFilterExpression(self,preview=False):
+  def getFilterExpression(self,preview=False,encodingStage=False):
     if not self.enabled:
       return 'null'
 
     if preview:
       filterExp= self.spec.get("filterPreview",self.spec.get("filter",'null'))
+    elif self.encodingStageFilter and encodingStage==False:
+      return 'null'
     else:
       filterExp= self.spec.get("filter",'null')
-      
+    
 
     filerExprams=[]
     i=id(self)
@@ -195,22 +293,25 @@ class FilterSpecification(ttk.Frame):
     formatDict={}
 
     for param in self.spec.get('params',[]):
-
-      if '{'+param['n']+'}' in filterExp:
-        formatDict.update({'fn':i,param['n']:values[param['n']] },)
-      else:
-        if param['type'] == 'float':
-          try:
-            filerExprams.append(':{}={:01.6f}'.format(param['n'],float(values[param['n']]) ) )
-          except:
-            filerExprams.append(':{}={:01.6f}'.format(param['n'],0) )
-        elif param['type'] == 'int':
-          try:
-            filerExprams.append(':{}={}'.format(param['n'],int(values[param['n']])))
-          except:
-            filerExprams.append(':{}={:01.2f}'.format(param['n'],0) )
+      if param.get('n') is not None:
+        if '{'+param['n']+'}' in filterExp:
+          formatDict.update({'fn':i,param['n']:values[param['n']] },)
         else:
-          filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
+          try:
+            if param['type'] == 'float':
+              try:
+                filerExprams.append(':{}={:01.6f}'.format(param['n'],float(values[param['n']]) ) )
+              except:
+                filerExprams.append(':{}={:01.6f}'.format(param['n'],0) )
+            elif param['type'] == 'int':
+              try:
+                filerExprams.append(':{}={}'.format(param['n'],int(values[param['n']])))
+              except:
+                filerExprams.append(':{}={:01.2f}'.format(param['n'],0) )
+            else:
+              filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
+          except:
+            filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
 
     if len(formatDict)>0:
       filterExp = filterExp.format( **formatDict )
@@ -220,6 +321,39 @@ class FilterSpecification(ttk.Frame):
         filterExp+= '='+e[1:]
       else:
         filterExp+= e
+
+    if self.timelineSupport and filterExp != 'null' and not self.encodingStageFilter:
+      tsStart = None
+      tsEnd   = None
+
+      try:
+        tsStart = float(self.timelineStart.get())
+        if preview:
+          tsStart = self.controller.normaliseTimestamp(tsStart)
+      except Exception as e:
+        print(e)
+
+      try:
+        tsEnd = float(self.timelineEnd.get())
+        if preview:
+          tsEnd = self.controller.normaliseTimestamp(tsEnd)
+      except Exception as e:
+        print(e)
+
+      timelineExpression = ''
+      if tsStart is not None and tsEnd is not None:
+        timelineExpression = ":enable='between(t,{},{})'".format(tsStart,tsEnd)
+      elif tsStart is not None:
+        timelineExpression = ":enable='gte(t,{})'".format(tsStart)
+      elif tsEnd is not None:
+        timelineExpression = ":enable='lte(t,{})'".format(tsEnd)
+
+      print(timelineExpression)
+
+      if '{timelineExpression}' in filterExp:
+        filterExp = filterExp.format(timelineExpression=timelineExpression)
+      else:
+        filterExp += timelineExpression
 
     return filterExp
 
@@ -291,17 +425,15 @@ class FilterSelectionUi(ttk.Frame):
     self.filterContainer = self.scrolledframeFilterContainer.innerframe
     self.filterSpecifications = []
     self.filterSpecificationCount=0
-    self.scrolledframeFilterContainer.configure(usemousewheel=True)
+    self.scrolledframeFilterContainer.configure(usemousewheel=False)
     self.scrolledframeFilterContainer.pack(expand='true', fill='both', side='top')
-
-  
 
     self.labelframeFilterBrowserFrame.config(height='200', text='Filtering', width='200')
     self.labelframeFilterBrowserFrame.pack(anchor='w', expand='false', fill='y', side='left')
 
     self.playerContainerFrame = ttk.Frame(self.frameFilterSelectionFrame)
+    self.playerContainerFrame.config(cursor="crosshair")
     self.playerContainerFrame.pack(expand='true', fill='both', side='right')
-
 
     self.selectionOptionsFrame = ttk.Frame(self.playerContainerFrame)
 
@@ -415,6 +547,10 @@ class FilterSelectionUi(ttk.Frame):
     if self.controller is not None:
       self.controller.fitoScreen(fitToScreen)
 
+  def getVideoDimensions(self):
+    return self.controller.getVideoDimensions()
+
+
   def getRectProperties(self):
     return self.videoMouseRect
 
@@ -495,14 +631,27 @@ class FilterSelectionUi(ttk.Frame):
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters()
 
+  def seekToTimelinePoint(self,ts):
+    return self.controller.seekToTimelinePoint(ts)
+
+  def normaliseTimestamp(self,ts):
+    return self.controller.normaliseTimestamp(ts)
+
+
   def recaculateFilters(self):
     filterexpPreview=[]
     filterExpReal=[]
+    filterExpEncodingStage=[]
+
     for filter in self.filterSpecifications:
       filterexpPreview.append(filter.getFilterExpression(preview=True)) 
       filterExpReal.append(filter.getFilterExpression(preview=False))
+      if filter.encodingStageFilter:
+        filterExpEncodingStage.append(filter.getFilterExpression(preview=False,encodingStage=True))
+
     filterExpStrPreview = ','.join(filterexpPreview)
     filterExpStrReal = ','.join(filterExpReal)
+    filterExpEncodingStage = ','.join(filterExpEncodingStage)
 
     if len(filterexpPreview)==0:
       self.controller.clearFilter()
@@ -514,7 +663,7 @@ class FilterSelectionUi(ttk.Frame):
       if currentClip is not None:
         currentClip['filters'] = self.convertFilterstoSpecDefaults()
         currentClip['filterexp'] =filterExpStrReal
-
+        currentClip['filterexpEncStage'] =filterExpEncodingStage
 
   def convertFilterstoSpecDefaults(self):
     filterstack=[]
@@ -529,6 +678,7 @@ class FilterSelectionUi(ttk.Frame):
           if param['n']==n:
             param['d']=v
             break
+      baseSpec.setdefault('params',[]).extend(ifilter.getTimelineValuesAsSpecifications())
       filterstack.append(baseSpec)
     return filterstack
 

@@ -5,11 +5,12 @@ from tkinter.filedialog import askopenfilenames,askopenfilename
 from tkinter import messagebox
 from tkinter import simpledialog
 from pygubu.widgets.scrolledframe import ScrolledFrame
-from timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 import os
 import threading
 from math import floor
 import logging
+
+from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
 
@@ -231,11 +232,6 @@ class CutselectionUi(ttk.Frame):
         self.entryPreviewPos.pack(side="right")
         self.framePreviewPos.config(height="200", width="200")
         self.framePreviewPos.pack(fill="x", pady="2", side="top")
-
-
-
-
-
 
         self.loopModeVar = tk.StringVar()
         

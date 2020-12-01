@@ -1,5 +1,6 @@
 import mpv
 import math
+import os
 
 class FilterSelectionController:
 
@@ -15,12 +16,26 @@ class FilterSelectionController:
                           loop='inf',
                           mute=True,
                           autofit_larger='1280')
-    self.player.command('load-script','screenspacetools.lua')
+    self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
+    self.playerStart=0
+    self.playerEnd=0
     self.player.speed=2
     self.currentlyPlayingFileName=None
+    self.installedFonts = None
+    self.getInstalledFonts()
 
   def requestAutocrop(self,rid,mid,filename,callback):
     self.ffmpegService.requestAutocrop(rid,mid,filename,callback)
+
+  def normaliseTimestamp(self,ts):
+    fts = float(ts)
+    s,e = float(self.playerStart),float(self.playerEnd)
+
+    fts = max(min(e,fts),s)
+    return float(self.playerStart) + float(ts)
+
+  def seekToTimelinePoint(self,ts):
+    self.player.command('seek',str(self.normaliseTimestamp(ts)),'absolute','exact')
 
   def setSpeed(self,speed):
     self.player.speed=speed
@@ -57,6 +72,11 @@ class FilterSelectionController:
   def clearVideoRect(self):
     self.player.command('script-message','screenspacetools_clear')
 
+  def getVideoDimensions(self):
+    osd_w = self.player.width
+    osd_h = self.player.height
+    return osd_w,osd_h
+
   def screenSpaceToVideoSpace(self,x,y):
     vid_w = self.player.width
     vid_h = self.player.height
@@ -78,17 +98,31 @@ class FilterSelectionController:
   def getClipsWithFilters(self):
     response=[]
     for filename,rid,s,e in self.videoManager.getAllClips():
-      result = [filename,rid,s,e,'null']
+      result = [filename,rid,s,e,'null','null']
       filteredVersion = self.ui.subclips.get(rid)
       if filteredVersion is not None:
         result[4]=filteredVersion.get('filterexp','null')
+        result[5]=filteredVersion.get('filterexpEncStage','null')
       if result[4] == '':
         result[4]='null'
+
+      if result[5] == '':
+        result[5]='null'
       response.append( tuple(result) )
     return response
 
+
+
+  def getInstalledFonts(self):
+    if self.installedFonts is None:
+      pass
+    return self.installedFonts
+
+
   def playVideoFile(self,filename,s,e):
     self.player.start=s
+    self.playerStart=s
+    self.playerEnd=e
     self.player.ab_loop_a=s
     self.player.ab_loop_b=e
     if self.currentlyPlayingFileName != filename:

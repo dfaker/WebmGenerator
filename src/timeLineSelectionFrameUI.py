@@ -147,6 +147,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.rangeHeaderClickStart=None
 
+    self.previewBG = self.timeline_canvas.create_rectangle(10,0,10+45,self.winfo_width(),fill="#353535",width=1,outline="white")
+
     self.canvasHeaderSeekPointer = self.timeline_canvas.create_line(0, 0, 0,10,fill="white")
     self.lastSeek=None
 
@@ -155,6 +157,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.lastClickedEndpoint = None
     self.framesRequested = False
     self.previewFrames = {}
+
 
   def keyboardRight(self,e):
     if self.lastClickedEndpoint is not None:
@@ -308,7 +311,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       enableDraggableHint=True
     elif self.clickTarget is not None:
       enableDraggableHint=True
-    else:
+    elif e.y>self.winfo_height()-self.handleHeight:
       for rid,(sts,ens) in ranges:
         st=self.secondsToXcoord(sts)
         en=self.secondsToXcoord(ens)
@@ -319,6 +322,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           enableDraggableHint=True
         elif en-2<e.x<en+self.handleWidth:
           enableDraggableHint=True
+        if enableDraggableHint:
+          break
 
     if enableDraggableHint:
         self.timeline_canvas.config(cursor="sb_h_double_arrow")
@@ -328,7 +333,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
 
     ctrl  = (e.state & 0x4) != 0
-    
+
 
     self.timeline_canvas.focus_set()
 
@@ -411,14 +416,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             targetSeconds = targetSeconds+((oe-os)/2)
           self.controller.seekTo( targetSeconds-self.dragPreviewPos )
 
-
-
     if str(e.type) == 'ButtonPress':
       if e.num==3:      
         self.timeline_canvas_last_right_click_x=e.x
         self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
-
-
 
   def frameResponseCallback(self,filename,timestamp,frameWidth,frameData):
     previewData = tk.PhotoImage(data=frameData)
@@ -437,22 +438,27 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if self.controller.getcurrentFilename() is None or self.controller.getTotalDuration() is None:
       return
 
+    ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+    timelineWidth = self.winfo_width()
+    timelineHeight = self.winfo_height()
+
+    if self.uiDirty:
+      self.timeline_canvas.coords(self.rangeHeaderBG,0,0,timelineWidth,20,)
+      self.timeline_canvas.coords(self.previewBG,0,20,timelineWidth,20+45,)
+
     for ts,(frameWidth,frameData) in list(self.previewFrames.items()):
       previewName = ('previewFrame',ts)
       ts_x = self.secondsToXcoord(ts)
       if previewName not in self.canvasRegionCache:
         self.canvasRegionCache[previewName] = self.timeline_canvas.create_image(ts_x, 20, image=frameData, anchor='n',tags='previewFrame')
         self.timeline_canvas.lower(self.canvasRegionCache[previewName])
+        self.timeline_canvas.lower(self.previewBG)
       elif self.uiDirty:
         self.timeline_canvas.coords(self.canvasRegionCache[previewName],ts_x, 20)
 
 
 
-    ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
-    timelineWidth = self.winfo_width()
-    timelineHeight = self.winfo_height()
-
-    self.timeline_canvas.coords(self.rangeHeaderBG,0,0,timelineWidth,20,)
+     
 
     startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
     endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
@@ -501,7 +507,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45+45)
     self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX))), '{hours_total}:{minutes2}:{seconds2}'))
     activeRanges=set()
-
 
     for rid,(s,e) in list(ranges):
 

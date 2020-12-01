@@ -18,18 +18,18 @@ from tkinter import Tk
 import json
 import mimetypes
 
-from cutselectionUi import CutselectionUi
-from filterSelectionUi import FilterSelectionUi
-from mergeSelectionUi import MergeSelectionUi
-from webmGeneratorUi import WebmGeneratorUi
+from .cutselectionUi import CutselectionUi
+from .filterSelectionUi import FilterSelectionUi
+from .mergeSelectionUi import MergeSelectionUi
+from .webmGeneratorUi import WebmGeneratorUi
     
-from cutselectionController import CutselectionController
-from filterSelectionController import FilterSelectionController
-from mergeSelectionController import MergeSelectionController
+from .cutselectionController import CutselectionController
+from .filterSelectionController import FilterSelectionController
+from .mergeSelectionController import MergeSelectionController
 
-from videoManager   import VideoManager
-from ffmpegService import FFmpegService  
-from youtubeDLService import YTDLService
+from .videoManager   import VideoManager
+from .ffmpegService import FFmpegService  
+from .youtubeDLService import YTDLService
 
 class WebmGeneratorController:
   

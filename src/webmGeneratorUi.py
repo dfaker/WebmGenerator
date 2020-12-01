@@ -143,8 +143,10 @@ class WebmGeneratorUi:
 
   def updateGlobalStatus(self,message,percentage):
     logging.debug('updateGlobalStatus: {} {}%'.format(message,percentage))
-    self.statusLabel['text']=message
-    self.statusProgress['value'] = max(0,min(100,percentage*100))
+    if message is not None:
+      self.statusLabel['text']=message
+    if percentage is not None:
+      self.statusProgress['value'] = max(0,min(100,percentage*100))
 
   def addPane(self,pane,name):
     self.panes.append(pane)

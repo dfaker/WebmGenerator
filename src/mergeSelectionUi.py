@@ -34,7 +34,7 @@ class EncodeProgress(ttk.Frame):
     self.frameEncodeProgressWidget.rowconfigure(0, weight=1)
 
     self.labelRequestId = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelRequestId.config(text='Request Id: {}'.format(encodeRequestId), relief='flat')
+    self.labelRequestId.config(text='Request #{}'.format(encodeRequestId), relief='flat')
     self.labelRequestId.grid(row=0,column=0,sticky='nesw')
 
     self.labelRequestStatus = ttk.Label(self.frameEncodeProgressWidget)
@@ -42,7 +42,7 @@ class EncodeProgress(ttk.Frame):
     self.labelRequestStatus.grid(row=0,column=1,sticky='nesw',columnspan=9)
 
     self.labelEncodeStage = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelEncodeStage.config(text='Encode Stage: Submitted Idle', relief='flat')
+    self.labelEncodeStage.config(text='Stage: Submitted Idle', relief='flat')
     self.labelEncodeStage.grid(row=1,column=0,sticky='nesw')
 
     self.labelEncodePass = ttk.Label(self.frameEncodeProgressWidget)
@@ -51,29 +51,29 @@ class EncodeProgress(ttk.Frame):
 
     self.labelTargetSize = ttk.Label(self.frameEncodeProgressWidget)
     if targetSize <= 0.0:
-      self.labelTargetSize.config(text='Target Size: No Limit', relief='flat')
+      self.labelTargetSize.config(text='Target Size: -', relief='flat')
     else:
       self.labelTargetSize.config(text='Target Size: {}M'.format(targetSize), relief='flat')
     self.labelTargetSize.grid(row=1,column=2,sticky='nesw')
 
     self.labelLastEncodedSize = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelLastEncodedSize.config(text='Last output size: 0M', relief='flat')
+    self.labelLastEncodedSize.config(text='Size: -', relief='flat')
     self.labelLastEncodedSize.grid(row=1,column=3,sticky='nesw')
 
     self.labelLastEncodedBR = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelLastEncodedBR.config(text='Bitrate: No Limit', relief='flat')
+    self.labelLastEncodedBR.config(text='Bitrate: -', relief='flat')
     self.labelLastEncodedBR.grid(row=1,column=4,sticky='nesw')
 
     self.labelLastEncodedPSNR = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelLastEncodedPSNR.config(text='Last PSNR: inf', relief='flat')
+    self.labelLastEncodedPSNR.config(text='PSNR: -', relief='flat')
     self.labelLastEncodedPSNR.grid(row=1,column=5,sticky='nesw')
 
     self.labelLastBuff = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelLastBuff.config(text='Buffer: 0', relief='flat')
+    self.labelLastBuff.config(text='Buffer: -', relief='flat')
     self.labelLastBuff.grid(row=1,column=6,sticky='nesw')
 
     self.labelLastWR = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelLastWR.config(text='Width Reduction: 0%', relief='flat')
+    self.labelLastWR.config(text='Width Change: -', relief='flat')
     self.labelLastWR.grid(row=1,column=7,sticky='nesw')
 
     self.labelTimeLeft  = ttk.Label(self.frameEncodeProgressWidget)
@@ -98,7 +98,7 @@ class EncodeProgress(ttk.Frame):
     self.progressbarPlayButton.config(style="small.TButton")
     
 
-    self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=10,pady=0, fill='x', side='top')
+    self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=0,pady=5, fill='x', side='top')
     
     self.progresspercent = 0
     self.encodeStartTime = None
@@ -154,14 +154,14 @@ class EncodeProgress(ttk.Frame):
       self.labelRequestStatus.config(text=str(requestStatus))
 
     if encodeStage is not None:
-      self.labelEncodeStage.config(text='Encode Stage: {}'.format(encodeStage), relief='flat')
+      self.labelEncodeStage.config(text='Stage: {}'.format(encodeStage), relief='flat')
 
     if encodePass is not None:
       self.labelEncodePass.config(text='Pass: {}'.format(encodePass), relief='flat')
     
     if lastEncodedSize is not None:
       lastEncodedSizeHuman = self.sizeof_fmt(lastEncodedSize,'B')  
-      self.labelLastEncodedSize.config(text='Last output size: {}'.format(lastEncodedSizeHuman), relief='flat')
+      self.labelLastEncodedSize.config(text='Size: {}'.format(lastEncodedSizeHuman), relief='flat')
     
     if lastEncodedBR is not None:
       lastEncodedBRHuman = self.sizeof_fmt(lastEncodedBR,'B')
@@ -179,14 +179,14 @@ class EncodeProgress(ttk.Frame):
       elif int(lastEncodedPSNR) >= 30:
         PSNRGrade = 'Poor'
       
-      self.labelLastEncodedPSNR.config(text='Last PSNR: {} ({})'.format(lastEncodedPSNR,PSNRGrade), relief='flat')
+      self.labelLastEncodedPSNR.config(text='PSNR: {} ({})'.format(lastEncodedPSNR,PSNRGrade), relief='flat')
     
     if lastBuff is not None:
       lastBuffSizeHuman = self.sizeof_fmt(lastBuff,'B') 
-      self.labelLastBuff.config(text='Last Buffer Size: {}'.format(lastBuffSizeHuman), relief='flat')
+      self.labelLastBuff.config(text='Buffer: {}'.format(lastBuffSizeHuman), relief='flat')
     
     if lastWR is not None:
-      self.labelLastWR.config(text='Last Width Reduction: {:0.2f}%'.format(lastWR*100), relief='flat')
+      self.labelLastWR.config(text='Width Change: {:0.2f}%'.format(lastWR*100), relief='flat')
 
     if self.cancelled:
       return

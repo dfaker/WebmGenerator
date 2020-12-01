@@ -142,7 +142,6 @@ class WebmGeneratorUi:
     webbrowser.open('https://github.com/dfaker/WebmGenerator/blob/master/README.md', new=2)
 
   def updateGlobalStatus(self,message,percentage):
-    logging.debug('updateGlobalStatus: {} {}%'.format(message,percentage))
     if message is not None:
       self.statusLabel['text']=message
     if percentage is not None:

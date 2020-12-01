@@ -192,6 +192,11 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
 
     passCount+=1
 
+    widthReduction = 0.0
+    buff=None
+    bitrate=0.0
+
+
     if argNames == ['br']:
       bitrate = x[0]
       widthReduction=0.0
@@ -204,6 +209,7 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       bitrate = x[0]
       widthReduction=x[1]
       buff=x[2]
+
     
     if widthReduction >= 0.9:
       widthReduction = 0.9
@@ -225,25 +231,31 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       passReason='Nelder-Mead Encode Pass {} {}'.format(passCount+1,lastFailReason)
       finalSize,lastpsnr = encoderFunction(bitrate,passCount,passReason,requestId=requestId,widthReduction=widthReduction,bufsize=buff)
 
-    if lastpsnr is not None and lastpsnr != float('inf'):
-      psnrScore           = (52-lastpsnr)/52
-    elif lastpsnr == float('inf'):
-      psnrScore = 0.0
-    else:
-      psnrScore = 1
+    try:
+      if lastpsnr is not None and lastpsnr != float('inf'):
+        psnrScore           = (52-lastpsnr)/52
+      elif lastpsnr == float('inf'):
+        psnrScore = 0.0
+      else:
+        psnrScore = 1
 
-    widthReductionScore = widthReduction
+      widthReductionScore = widthReduction
 
-    sizeScore           = abs(finalSize-sizeLimitMax)/sizeLimitMax
-    if finalSize > sizeLimitMax:
-      sizeScore  = abs(abs(finalSize-sizeLimitMax)/sizeLimitMax)*100
-    bitrateScore = (initialDependentValue*2)/bitrate
+      sizeScore           = abs(finalSize-sizeLimitMax)/sizeLimitMax
+      if finalSize > sizeLimitMax:
+        sizeScore  = abs(abs(finalSize-sizeLimitMax)/sizeLimitMax)*100
+      bitrateScore = (initialDependentValue*2)/bitrate
 
-    score = psnrScore+widthReductionScore+sizeScore+bitrateScore
+      score = psnrScore+widthReductionScore+sizeScore+bitrateScore
+    except Exception as e:
+      print(e)
+      score = float('inf')
+
+
 
     print("Optimzation pass complete - score: {} bitrate:{} widthReduction:{}  finalSize:{}  psnr:{}  ".format(score,bitrate,widthReduction,finalSize,lastpsnr))
 
-    isAcceptable = (sizeLimitMin<finalSize<=sizeLimitMax and lastpsnr > minimumPSNR ) 
+    isAcceptable = (sizeLimitMin<finalSize<=sizeLimitMax and lastpsnr is not None and lastpsnr > minimumPSNR ) 
 
     return score,isAcceptable
     

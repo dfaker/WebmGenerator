@@ -38,7 +38,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0):
+  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -62,7 +62,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     elif passPhase==2:
       ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
-    bufsize = "3000000"
+    if bufsize is None:
+      bufsize = 3000000
+
     ffmpegcommand+=["-shortest"
                    ,"-copyts"
                    ,"-start_at_zero"
@@ -71,7 +73,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-max_muxing_queue_size", "9999"
 
                    ,"-pix_fmt","yuv420p"
-                   ,"-bufsize", bufsize
+                   ,"-bufsize", str(bufsize)
                    ,"-threads", str(4)
                    ,"-crf"  ,'17'
                    ,"-preset", "slower"
@@ -106,6 +108,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+
+    encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
+
     psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
       return 0, psnr
@@ -113,6 +118,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       return 0, psnr
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
+      encoderStatusCallback(None,None,lastEncodedSize=finalSize)
       return finalSize, psnr
 
   optimiser = encodeTargetingSize_linear

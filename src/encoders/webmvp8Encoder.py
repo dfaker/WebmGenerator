@@ -65,7 +65,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
 
     if bufsize is None:
-      bufsize = "3000000"
+      bufsize = 3000000
       if sizeLimitMax != 0.0:
         bufsize = str(min(2000000000.0,br*2))
 

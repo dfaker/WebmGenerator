@@ -25,7 +25,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0):
+  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
 
     giffiltercommand = filtercommand+',[outv]fps=fps=24,scale=\'max({}\\,min({}\\,iw)):-1\':flags=bicubic,split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
 
@@ -50,6 +50,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if isRquestCancelled(requestId):
       return 0, psnr
     finalSize = os.stat(tempVideoFilePath).st_size
+    encoderStatusCallback(None,None,lastEncodedSize=finalSize)
     return finalSize, psnr
 
   initialWidth = options.get('maximumWidth',1280)
@@ -70,4 +71,4 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       optimiserName=options.get('optimizer'))
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-  encoderStatusCallback('Encoding complete '+videoFilePath,1)
+  encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)

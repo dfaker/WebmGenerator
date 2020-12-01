@@ -4,6 +4,7 @@ import threading
 import os
 import logging
 from datetime import datetime
+import math
 
 filesPlannedForCreation = set()
 fileExistanceLock = threading.Lock()
@@ -66,13 +67,12 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
       if c == b'\r':
         for p in ln.split(b' '):
           if b'*:' in p:
-            print(ln)
             try:
               tpsnr = float(p.split(b':')[-1]) 
-              if not math.isnan(tpsnr) and tpsnr != float('inf'):
+              if (not math.isnan(tpsnr)) and tpsnr != float('inf'):
                 psnr = tpsnr
-            except:
-              pass
+            except Exceptiona as e:
+              logging.error("Encode capture psnr Exception",exc_info=e)
           if b'time=' in p:
             try:
               pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')

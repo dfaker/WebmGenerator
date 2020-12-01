@@ -519,8 +519,10 @@ class FFmpegService():
         ffmpegFilterCommand += ',[outapre]anull[outa]'
 
 
-      if os.path.exists( options.get('postProcessingFilter','') ):
-        ffmpegFilterCommand += open(options.get('postProcessingFilter',''),'r').read()
+
+      postProcessingPath = os.path.join( 'postFilters', options.get('postProcessingFilter','') )
+      if os.path.exists( postProcessingPath ) and os.path.isfile( postProcessingPath ):
+        ffmpegFilterCommand += open( postProcessingPath ,'r').read()
       else:
         ffmpegFilterCommand += ',[outvpre]null[outv]'
 
@@ -810,8 +812,9 @@ class FFmpegService():
             logging.error("Concat progress Exception",exc_info=e)
             filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'
 
-      if os.path.exists( options.get('postProcessingFilter','') ):
-        filtercommand += open(options.get('postProcessingFilter',''),'r').read()
+      postProcessingPath = os.path.join( 'postFilters', options.get('postProcessingFilter','') )
+      if os.path.exists( postProcessingPath ) and os.path.isfile( postProcessingPath ):
+        filtercommand += open( postProcessingPath ,'r').read()
       else:
         filtercommand += ',[outvpre]null[outv]'
 

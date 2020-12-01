@@ -7,6 +7,7 @@ import math
 import logging
 import threading
 import time
+from tkinter.filedialog import askopenfilename
 
 from .filterSpec import selectableFilters
 
@@ -50,7 +51,7 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue = ttk.Combobox(self.frameFilterValuePair)
       self.entryFilterValueValue.config(textvariable=self.valueVar)
       self.entryFilterValueValue.config(values=self.selectableValues)
-      self.entryFilterValueValue.config(state='readonly')
+      #self.entryFilterValueValue.config(state='readonly')
     elif param['type'] == 'float':
       self.valueVar.set(param['d'])
       if param.get('range') is None:
@@ -85,6 +86,10 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
+    elif param['type'] == 'file':
+      self.valueVar.set(param['d'])
+      self.entryFilterValueValue = ttk.Button(self.frameFilterValuePair)
+      self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]),command=self.selectFile)
     else:
       logging.error("Unhandled param {}".format(str(param)))
 
@@ -92,6 +97,16 @@ class FilterValuePair(ttk.Frame):
     self.frameFilterValuePair.config(height='200', width='200')
     self.frameFilterValuePair.pack(expand='true', fill='x', side='top')
     self.valueVar.trace("w", self.valueUpdated)
+
+  def selectFile(self):
+    fn = askopenfilename()
+    if fn is None or len(fn)==0:
+      self.entryFilterValueValue.config(text='Select file')
+    else:
+      cleanPath = os.path.abspath(fn).replace('\\','/').replace(':','\\:')
+      self.valueVar.set(cleanPath)
+      print(self.valueVar.get())
+      self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
 
   def getValuePair(self):
     if self.param['type'] == 'string':
@@ -197,9 +212,13 @@ class FilterSpecification(ttk.Frame):
 
       self.frameTimeline.pack(expand='true', fill='x', side='top')
 
-
-    for param in spec.get('params',[]):      
-      self.filterValuePairs.append(FilterValuePair(self.frameFilterConfigFrame,self,param))
+    for param in spec.get('params',[]):    
+      if param.get('type') == 'timelineStart':
+        self.timelineStart.set(param.get('value',''))
+      elif param.get('type') == 'timelineEnd':
+        self.timelineEnd.set(param.get('value',''))
+      else:
+        self.filterValuePairs.append(FilterValuePair(self.frameFilterConfigFrame,self,param))
     
     if len(self.rectProps)>0:
       self.buttonFilterValuesFromSelection = ttk.Button(self.frameFilterConfigFrame)
@@ -211,6 +230,20 @@ class FilterSpecification(ttk.Frame):
     self.frameFilterDetailsWidget.config(height='200', padding='2', relief='groove', width='200')
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
 
+
+  def getTimelineValuesAsSpecifications(self):
+    specs = []
+    try:
+      ts = float(self.timelineStart.get())
+      specs.append({'type':'timelineStart','value':ts})
+    except:
+      pass  
+    try:
+      ts = float(self.timelineEnd.get())
+      specs.append({'type':'timelineEnd', 'value':ts})
+    except:
+      pass  
+    return specs
 
 
   def populateRectPropValues(self):
@@ -260,22 +293,25 @@ class FilterSpecification(ttk.Frame):
     formatDict={}
 
     for param in self.spec.get('params',[]):
-
-      if '{'+param['n']+'}' in filterExp:
-        formatDict.update({'fn':i,param['n']:values[param['n']] },)
-      else:
-        if param['type'] == 'float':
-          try:
-            filerExprams.append(':{}={:01.6f}'.format(param['n'],float(values[param['n']]) ) )
-          except:
-            filerExprams.append(':{}={:01.6f}'.format(param['n'],0) )
-        elif param['type'] == 'int':
-          try:
-            filerExprams.append(':{}={}'.format(param['n'],int(values[param['n']])))
-          except:
-            filerExprams.append(':{}={:01.2f}'.format(param['n'],0) )
+      if param.get('n') is not None:
+        if '{'+param['n']+'}' in filterExp:
+          formatDict.update({'fn':i,param['n']:values[param['n']] },)
         else:
-          filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
+          try:
+            if param['type'] == 'float':
+              try:
+                filerExprams.append(':{}={:01.6f}'.format(param['n'],float(values[param['n']]) ) )
+              except:
+                filerExprams.append(':{}={:01.6f}'.format(param['n'],0) )
+            elif param['type'] == 'int':
+              try:
+                filerExprams.append(':{}={}'.format(param['n'],int(values[param['n']])))
+              except:
+                filerExprams.append(':{}={:01.2f}'.format(param['n'],0) )
+            else:
+              filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
+          except:
+            filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
 
     if len(formatDict)>0:
       filterExp = filterExp.format( **formatDict )
@@ -389,7 +425,7 @@ class FilterSelectionUi(ttk.Frame):
     self.filterContainer = self.scrolledframeFilterContainer.innerframe
     self.filterSpecifications = []
     self.filterSpecificationCount=0
-    self.scrolledframeFilterContainer.configure(usemousewheel=True)
+    self.scrolledframeFilterContainer.configure(usemousewheel=False)
     self.scrolledframeFilterContainer.pack(expand='true', fill='both', side='top')
 
     self.labelframeFilterBrowserFrame.config(height='200', text='Filtering', width='200')
@@ -629,7 +665,6 @@ class FilterSelectionUi(ttk.Frame):
         currentClip['filterexp'] =filterExpStrReal
         currentClip['filterexpEncStage'] =filterExpEncodingStage
 
-
   def convertFilterstoSpecDefaults(self):
     filterstack=[]
     for ifilter in self.filterSpecifications:
@@ -643,6 +678,7 @@ class FilterSelectionUi(ttk.Frame):
           if param['n']==n:
             param['d']=v
             break
+      baseSpec.setdefault('params',[]).extend(ifilter.getTimelineValuesAsSpecifications())
       filterstack.append(baseSpec)
     return filterstack
 

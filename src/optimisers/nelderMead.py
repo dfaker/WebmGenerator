@@ -5,7 +5,7 @@ import math
 import numpy as np
 import copy
 
-def nelder_mead(f, x_start,extra_args={},
+def nelder_mead(f, x_start,x_upper=None,x_lower=None,extra_args={},
                 step=0.1, no_improve_thr=10e-6,
                 no_improv_break=10, max_iter=0,
                 alpha=1., gamma=2., rho=-0.5, sigma=0.5, min_iter_before_acceptable=3):
@@ -25,12 +25,17 @@ def nelder_mead(f, x_start,extra_args={},
 
   # init
 
+  def contstrain(x,lower,upper):
+    if lower is not None and upper is not None:
+      return np.minimum(np.maximum(x, lower),upper)
+    return x
 
   lastEncodeParams = None
 
   assert(len(step)==len(x_start))
 
   dim = len(x_start)
+  x_start = contstrain(x_start, x_lower, x_upper)
   prev_best,isAcceptable = f(x_start,**extra_args)
   lastEncodeParams = x_start
 
@@ -40,6 +45,7 @@ def nelder_mead(f, x_start,extra_args={},
   for i in range(dim):
     x = copy.copy(x_start)
     x[i] = x[i] + step[i]
+    x = contstrain(x, x_lower, x_upper)
     score,isAcceptable = f(x,**extra_args)
     lastEncodeParams = x
     res.append([x, score])
@@ -83,6 +89,7 @@ def nelder_mead(f, x_start,extra_args={},
 
     # reflection
     xr = x0 + alpha*(x0 - res[-1][0])
+    xr = contstrain(xr, x_lower, x_upper)
     rscore,isAcceptable = f(xr,**extra_args)
     lastEncodeParams = xr
     if isAcceptable and iters >= min_iter_before_acceptable:
@@ -95,6 +102,7 @@ def nelder_mead(f, x_start,extra_args={},
     # expansion
     if rscore < res[0][1]:
         xe = x0 + gamma*(x0 - res[-1][0])
+        xe = contstrain(xe, x_lower, x_upper)
         escore,isAcceptable = f(xe,**extra_args)
         lastEncodeParams = xe
         if isAcceptable and iters >= min_iter_before_acceptable:
@@ -110,6 +118,7 @@ def nelder_mead(f, x_start,extra_args={},
 
     # contraction
     xc = x0 + rho*(x0 - res[-1][0])
+    xc = contstrain(xc, x_lower, x_upper)
     cscore,isAcceptable = f(xc,**extra_args)
     lastEncodeParams = xc
     if isAcceptable and iters >= min_iter_before_acceptable:
@@ -124,6 +133,7 @@ def nelder_mead(f, x_start,extra_args={},
     nres = []
     for tup in res:
         redx = x1 + sigma*(tup[0] - x1)
+        redx = contstrain(redx, x_lower, x_upper)
         score,isAcceptable = f(redx,**extra_args)
         lastEncodeParams = redx
         if isAcceptable and iters >= min_iter_before_acceptable:
@@ -145,18 +155,30 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
 
   if minimumPSNR > 0.0:
     min_iter_before_acceptable = 3
+    
     x_start  = np.array([initialDependentValue,0.0])
+    x_upper = np.array([initialDependentValue*1.9,0.9])
+    x_lower = np.array([initialDependentValue/2,0.0])
+
     x_step   = [initialDependentValue*0.1,0.01]
     x_argNames = {'argNames':['br','wr']}
   elif 'Exhaustive' in optimiserName:
     min_iter_before_acceptable = float('inf')
     max_iter = 0
+
     x_start = np.array([initialDependentValue,0.0,initialDependentValue*2])
+    x_upper = np.array([initialDependentValue*1.9,0.9,initialDependentValue*2])
+    x_lower = np.array([initialDependentValue/2,0.0,initialDependentValue/5])
+
     x_step  = [initialDependentValue*0.1,0.01,initialDependentValue*0.1]
     x_argNames = {'argNames':['br','wr','buf']}
   else:
     min_iter_before_acceptable = 1
+    
     x_start = np.array([initialDependentValue])
+    x_upper = np.array([initialDependentValue*1.9])
+    x_lower = np.array([initialDependentValue/2])
+
     x_step  = [initialDependentValue*0.1]
     x_argNames = {'argNames':['br']}
 
@@ -226,6 +248,6 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
     return score,isAcceptable
     
 
-  x = nelder_mead(encodeOptimizationWrapper, x_start, extra_args=x_argNames, step=x_step, max_iter=15, min_iter_before_acceptable=min_iter_before_acceptable)
+  x = nelder_mead(encodeOptimizationWrapper, x_start, x_upper=x_upper, x_lower=x_lower, step=x_step, extra_args=x_argNames, max_iter=15, min_iter_before_acceptable=min_iter_before_acceptable)
   shutil.move(tempFilename,outputFilename)
   return outputFilename

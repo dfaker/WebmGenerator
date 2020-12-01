@@ -765,8 +765,8 @@ class MergeSelectionUi(ttk.Frame):
     self.gridLoopMergeOptionsVar.set(self.gridLoopMergeOptions[0])
 
     self.postProcessingFilterOptions = ['None']
-    if os.path.exists('postFilers'):
-      for f in os.listdir('postFilers'):
+    if os.path.exists('postFilters'):
+      for f in os.listdir('postFilters'):
         if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
           self.postProcessingFilterOptions.append(f)
     for filterElem in self.postProcessingFilterOptions:

@@ -18,9 +18,7 @@ try:
 
   from src.webmGeneratorController import WebmGeneratorController
   
-
   initialFiles = sys.argv[1:]
-
   webmGenerator = WebmGeneratorController(initialFiles)
   webmGenerator()
 

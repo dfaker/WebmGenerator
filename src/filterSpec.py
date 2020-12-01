@@ -325,12 +325,15 @@ selectableFilters = [
             },
         ],
     },
-    
+
+
     {
         "name": "IOverlay",
-        "filter": "null[vin{fn}],movie='{source}'[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
+        "timelineSupport":True,
+        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},rotate=a={a}:out_w=rotw({a}):out_h=roth({a}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
+        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},rotate=a={a}:out_w=rotw({a}):out_h=roth({a}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
         "params": [
-            {"n": "source", "d": "logo.png", "type": "file"},
+            {"n": "source", "d": "resources/logo.png", "type": "file"},
             {
                 "n": "x",
                 "d": 5,
@@ -346,6 +349,29 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "y",
                 "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            },
+            {
+                "n": "a",
+                "d": 0.0,
+                "type": "float",
+                "range": [-6.28319, 6.28319],
+                "inc": 0.0174533,
             },
         ],
     },
@@ -704,7 +730,7 @@ selectableFilters = [
         "params": [
             {
                 "n": "a",
-                "d": 0.785398,
+                "d": 0.0,
                 "type": "float",
                 "range": [-6.28319, 6.28319],
                 "inc": 0.0174533,
@@ -904,7 +930,7 @@ selectableFilters = [
         "filter": "drawtext",
         "params": [
             {"n": "text", "d": "Text", "type": "string"},
-            {"n": "fontfile", "d": "font.otf", "type": "string"},
+            {"n": "fontfile", "d": "font.otf", "type": "file"},
             {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
             {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
             {
@@ -923,7 +949,7 @@ selectableFilters = [
                 "rectProp": "y",
                 "inc": 1,
             },
-            {"n": "box", "d": "1", "type": "cycle", "cycle": [0, 1]},
+            {"n": "box", "d": "0", "type": "cycle", "cycle": [0, 1]},
             {
                 "n": "fontcolor",
                 "d": "White",

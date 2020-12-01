@@ -21,6 +21,8 @@ class FilterSelectionController:
     self.playerEnd=0
     self.player.speed=2
     self.currentlyPlayingFileName=None
+    self.installedFonts = None
+    self.getInstalledFonts()
 
   def requestAutocrop(self,rid,mid,filename,callback):
     self.ffmpegService.requestAutocrop(rid,mid,filename,callback)
@@ -108,6 +110,14 @@ class FilterSelectionController:
         result[5]='null'
       response.append( tuple(result) )
     return response
+
+
+
+  def getInstalledFonts(self):
+    if self.installedFonts is None:
+      pass
+    return self.installedFonts
+
 
   def playVideoFile(self,filename,s,e):
     self.player.start=s

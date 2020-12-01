@@ -17,7 +17,7 @@ buildOptions = dict(packages = ["os"],
                     ,'postFilers\PostFilter-rainbow.txt'
                     ,'postFilers\PostFilter-vhsishclean.txt'
                     ,'youtube-dl.exe'
-                    ,'screenspacetools.lua'
+                    ,'src\screenspacetools.lua'
                     ,'mpv-1.dll'
                     ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tcl86t.dll')
                     ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tk86t.dll')

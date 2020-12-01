@@ -10,10 +10,10 @@ buildOptions = dict(packages = ["os"],
                     include_files = [
                      ('resources\\QRCode.gif','resources\\QRCode.gif')
                     ,('resources\\quicksand.otf','resources\\quicksand.otf')
-                    ,('postFilers\\PostFilter-addQRCode.txt','postFilers\\PostFilter-addQRCode.txt')
-                    ,('postFilers\\PostFilter-chromaShift.txt','postFilers\\PostFilter-chromaShift.txt')
-                    ,('postFilers\\PostFilter-rainbow.txt','postFilers\\PostFilter-rainbow.txt')
-                    ,('postFilers\\PostFilter-vhsishclean.txt','postFilers\\PostFilter-vhsishclean.txt')
+                    ,('postFilters\\PostFilter-addQRCode.txt','postFilters\\PostFilter-addQRCode.txt')
+                    ,('postFilters\\PostFilter-chromaShift.txt','postFilters\\PostFilter-chromaShift.txt')
+                    ,('postFilters\\PostFilter-rainbow.txt','postFilters\\PostFilter-rainbow.txt')
+                    ,('postFilters\\PostFilter-vhsishclean.txt','postFilters\\PostFilter-vhsishclean.txt')
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     ,'youtube-dl.exe'
                     ,'ffmpeg.exe'

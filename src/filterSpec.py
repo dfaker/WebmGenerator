@@ -507,7 +507,7 @@ selectableFilters = [
         "name": "addroi",
         "timelineSupport":True,
         "filter": "addroi=x='{xf}*iw':y={yf}*ih:w={wf}*iw:h={hf}*ih:qoffset={qoffset}",
-        "filterPreview": "drawbox=color='Blue@0.25*1':x='{xf}*iw+({qoffset}*0)':y={yf}*ih:w={wf}*iw:h={hf}*ih:t=fill",
+        "filterPreview": "drawbox=color='Blue@0.25':x='{xf}*iw+({qoffset}*0)':y={yf}*ih:w={wf}*iw:h={hf}*ih:t=fill",
         "encodingStageFilter":True,
         "params": [
             {
@@ -542,7 +542,7 @@ selectableFilters = [
                 "rectProp": "hf",
                 "inc": 0.01,
             },
-            {"n": "qoffset", "d": -0.5, "type": "float", "range": [-1, 1], "inc": 0.01},
+            {"n": "qoffset", "d": -0.5, "type": "float", "range": [-1.0, 1.0], "inc": 0.01},
         ],
         "postScale": True,
     },

@@ -158,6 +158,21 @@ class WebmGeneratorController:
         self.cutselectionController.loadStateFromSave(saveData)
         self.videoManager.loadStateFromSave(saveData)
 
+
+  def splitClipIntoNEqualSections(self):
+    self.cutselectionController.splitClipIntoNEqualSections()
+
+  def splitClipIntoSectionsOfLengthN(self):
+    self.cutselectionController.splitClipIntoSectionsOfLengthN()
+
+  def generateSoundWaveBackgrounds(self):
+    self.cutselectionController.generateSoundWaveBackgrounds()
+
+  def clearAllSubclipsOnCurrentClip(self):
+    self.cutselectionController.clearAllSubclipsOnCurrentClip()
+
+    
+
   def getSaveData(self):
     saveData = {}
     saveData.update(self.cutselectionController.getStateForSave())

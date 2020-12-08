@@ -26,6 +26,10 @@ class VideoManager:
   def getInterestMarks(self,filename):
     return list(self.interestMarks.get(filename,[]))
 
+  def clearallSubclipsOnFile(self,filename):
+    if filename in self.subclips:
+      self.subclips[filename] = {}
+
   def clearallSubclips(self):
     self.subclips = {}
     

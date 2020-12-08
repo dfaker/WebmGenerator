@@ -656,6 +656,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.audioOverrideVar         = tk.StringVar()
     self.audiOverrideDelayVar     = tk.StringVar()
+    self.audiOverrideBiasVar      = tk.StringVar()
 
     self.automaticFileNamingVar.trace('w',self.valueChange)
     self.filenamePrefixVar.trace('w',self.valueChange)
@@ -672,7 +673,7 @@ class MergeSelectionUi(ttk.Frame):
     self.postProcessingFilterVar.trace('w',self.valueChange)
     self.minimumPSNRVar.trace('w',self.valueChange)
     self.optimizerVar.trace('w',self.valueChange)
-
+    self.audiOverrideBiasVar.trace('w',self.valueChange)
 
     self.optimziers = [
       'Linear Search',
@@ -760,6 +761,8 @@ class MergeSelectionUi(ttk.Frame):
 
     self.audioMergeOptions = ['Merge Normalize All','Merge Original Volume','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
     self.audioMergeOptionsVar.set(self.audioMergeOptions[0]) 
+
+    self.audiOverrideBiasVar.set('1.0')
 
     self.gridLoopMergeOptions = ['End on shortest Clip','Loop shorter clips to match longest']
     self.gridLoopMergeOptionsVar.set(self.gridLoopMergeOptions[0])
@@ -978,6 +981,18 @@ class MergeSelectionUi(ttk.Frame):
 
     
 
+    self.labelaudiOverrideBias = ttk.Label(self.frameSequenceValues)
+    self.labelaudiOverrideBias.config(anchor='e', text='Dub Mix Bias')
+    self.labelaudiOverrideBias.grid(row=6,column=0,sticky='e')
+    self.entryaudiOverrideBias = ttk.Spinbox(self.frameSequenceValues, 
+                                         from_=0.0, 
+                                         to=1.0, 
+                                         increment=0.05,
+                                         textvariable=self.audiOverrideBiasVar)
+    self.entryaudiOverrideBias.grid(row=6,column=1,sticky='ew')
+
+
+
     self.labelpostProcessingFilter = ttk.Label(self.frameSequenceValues)
     self.labelpostProcessingFilter.config(anchor='e', text='Post filter')
     self.labelpostProcessingFilter.grid(row=6,column=2,sticky='e')
@@ -1180,6 +1195,11 @@ class MergeSelectionUi(ttk.Frame):
     except:
       pass
 
+    try:
+      self.audiOverrideBiasValue = max(0.0,min(1.0,float(self.audiOverrideBiasVar.get())),0)
+    except:
+      pass
+
     self.updatedPredictedDuration()
   
 
@@ -1245,7 +1265,8 @@ class MergeSelectionUi(ttk.Frame):
         'audiOverrideDelay':self.audiOverrideDelayValue,
         'gridLoopMergeOption':self.gridLoopMergeOption,
         'minimumPSNR':self.minimumPSNR,
-        'optimizer':self.optimizer
+        'optimizer':self.optimizer,
+        'audioOverrideBias':self.audiOverrideBiasValue,
       }
 
       encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
@@ -1286,7 +1307,8 @@ class MergeSelectionUi(ttk.Frame):
           'audiOverrideDelay':self.audiOverrideDelayValue,
           'gridLoopMergeOption':self.gridLoopMergeOption,
           'minimumPSNR':self.minimumPSNR,
-          'optimizer':self.optimizer
+          'optimizer':self.optimizer,
+          'audioOverrideBias':self.audiOverrideBiasValue,
         }
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
@@ -1329,8 +1351,8 @@ class MergeSelectionUi(ttk.Frame):
             'audiOverrideDelay':self.audiOverrideDelayValue,
             'gridLoopMergeOption':self.gridLoopMergeOption,
             'minimumPSNR':self.minimumPSNR,
-            'optimizer':self.optimizer
-
+            'optimizer':self.optimizer,
+            'audioOverrideBias':self.audiOverrideBiasValue,
           }
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)

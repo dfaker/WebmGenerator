@@ -6,6 +6,10 @@ import webbrowser
 from tkinter.filedialog import askopenfilename,asksaveasfilename
 import sys
 import logging
+import urllib.request
+import json
+
+RELEASE_NUMVER = 'v3.0.0'
 
 class WebmGeneratorUi:
 
@@ -80,9 +84,36 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Exit", command=self.exitProject)
     self.menubar.add_cascade(label="File",  menu=self.filemenu)
 
+    def versioncheck():
+      try:
+        with urllib.request.urlopen('https://api.github.com/repos/dfaker/WebmGenerator/releases') as f:
+          data = json.loads(f.read())
+          leadTag = data[0]['tag_name']
+          if leadTag != RELEASE_NUMVER:
+            self.menubar.add_command(label="New Version {} avaliable!".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
+          else:
+            self.menubar.add_command(label="You're on the most recent version {}".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
+
+      except Exception as e:
+        logging.error(versioncheck,exc_info=e)
+        self.menubar.add_command(label="Version check failed!", command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
+
+    self.commandmenu = Menu(self.menubar, tearoff=0)
+    self.commandmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
+    self.commandmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
+    self.commandmenu.add_separator()
+    self.commandmenu.add_command(label="Toggle Generation of audio spectra", command=self.generateSoundWaveBackgrounds)
+    self.commandmenu.add_separator()
+    self.commandmenu.add_command(label="Clear all subclips on current clip", command=self.clearAllSubclipsOnCurrentClip)
+
+
+    self.menubar.add_cascade(label="Commands", menu=self.commandmenu)
+
     self.helpmenu = Menu(self.menubar, tearoff=0)
+    self.helpmenu.add_command(label="Open Check for new version", command=versioncheck)
     self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
     self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+
 
     self.master.config(menu=self.menubar)
 
@@ -104,6 +135,21 @@ class WebmGeneratorUi:
 
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
+
+  def splitClipIntoNEqualSections(self):
+    self.controller.splitClipIntoNEqualSections()
+
+  def splitClipIntoSectionsOfLengthN(self):
+    self.controller.splitClipIntoSectionsOfLengthN()
+
+  def generateSoundWaveBackgrounds(self):
+    self.controller.generateSoundWaveBackgrounds()
+
+  def clearAllSubclipsOnCurrentClip(self):
+    self.controller.clearAllSubclipsOnCurrentClip()
+
+  def gotoReleasesPage(self):
+    webbrowser.open('https://github.com/dfaker/WebmGenerator/releases', new=2)
 
   def loadVideoFiles(self):
     self.controller.cutselectionUi.loadVideoFiles()

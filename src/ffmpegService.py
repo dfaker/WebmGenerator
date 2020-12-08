@@ -470,12 +470,15 @@ class FFmpegService():
       for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
         vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
 
+        vetime = ve-vs
         loopCount=0
         if 'Loop shorter' in gridLoopMergeOption:
-          loopCount =  math.ceil(maxLength/etime) 
+          print('loop',vclipfilename,maxLength,vetime,maxLength/vetime,math.ceil(maxLength/vetime))
+          loopCount =  math.ceil(maxLength/vetime)
+
 
         inputsList.extend(['-stream_loop', str(loopCount),'-i',brickTofileLookup[k]])
-        inputScales.append('[{k}:v]setpts=PTS-STARTPTS+{st},scale={w}:{h}:flags=bicubic[vid{k}]'.format(k=snum,w=int(w),h=int(h),st=0))
+        inputScales.append('[{k}:v]setpts=PTS-STARTPTS+{st},trim=duration={maxlen},scale={w}:{h}:flags=bicubic[vid{k}]'.format(k=snum,w=int(w),h=int(h),st=0,maxlen=maxLength))
 
         srcLayer='[tmp{k}]'.format(k=snum)
         if snum==0:
@@ -502,6 +505,7 @@ class FFmpegService():
     
       audioOverride      = options.get('audioOverride',None)
       audioOverrideDelay = options.get('audiOverrideDelay',0)
+      audioOverrideBias  = options.get('audioOverrideBias',1)
 
       try:
         audioOverrideDelay = float(audioOverrideDelay)
@@ -514,11 +518,14 @@ class FFmpegService():
         inputsLen = len(inputsList)//4
         inputsList.extend(['-i',audioOverride])
         finalAudoTS = audioOverrideDelay+minLength
-        ffmpegFilterCommand += ',[outapre]anullsink,[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS)
+        weightDub    = audioOverrideBias
+        weightSource = 1-audioOverrideBias
+
+        ffmpegFilterCommand += ',[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[dubclipped],[outapre][dubclipped]amix=inputs=2:duration=first:weights=\'{srcw} {dubw}\'[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS,srcw=weightSource,dubw=weightDub)
       else:
         ffmpegFilterCommand += ',[outapre]anull[outa]'
 
-
+      print(ffmpegFilterCommand)
 
       postProcessingPath = os.path.join( 'postFilters', options.get('postProcessingFilter','') )
       if os.path.exists( postProcessingPath ) and os.path.isfile( postProcessingPath ):
@@ -834,6 +841,8 @@ class FFmpegService():
         logging.error("audioOverrideDelay exception",exc_info =e)
         audioOverrideDelay = 0
 
+      audioOverrideBias  = options.get('audioOverrideBias',1)
+
 
       if audioOverride is not None:
         inputsLen = len(inputsList)//2
@@ -842,7 +851,10 @@ class FFmpegService():
         if mode == 'GRID':
           finalAudoTS = audioOverrideDelay+shortestClipLength 
 
-        filtercommand += ',[outapre]anullsink,[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS)
+        weightDub    = audioOverrideBias
+        weightSource = 1-audioOverrideBias
+
+        filtercommand += ',[{soundind}:a]atrim={startaTS}:{endaTS}[adub],[adub]asetpts=PTS-STARTPTS[dubclipped],[outapre][dubclipped]amix=inputs=2:duration=first:weights=\'{srcw} {dubw}\'[outa]'.format(soundind=inputsLen,startaTS=audioOverrideDelay,endaTS=finalAudoTS,srcw=weightSource,dubw=weightDub)
       else:
         filtercommand += ',[outapre]anull[outa]'
 
@@ -1117,7 +1129,7 @@ class FFmpegService():
           continue
 
 
-        videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename),filters="scale={}:45:force_original_aspect_ratio=decrease:flags=bicubic".format(frameWidth))
+        videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename),filters="scale={}:45:force_original_aspect_ratio=decrease:flags=neighbor".format(frameWidth))
         outputWidth = videoInfo.width
 
         numberOfFrames = math.floor( (timelineWidth)/frameWidth )
@@ -1152,17 +1164,17 @@ class FFmpegService():
           while len(procQueue)<maxActiveInstances and len(tsl)>0:
             ts = tsl.pop(0)
             frameCommand = ["ffmpeg"
-                          ,"-an"
-                          ,"-loglevel", "quiet","-noaccurate_seek"
+                          ,"-loglevel", "quiet"
+                          ,"-noaccurate_seek"
                           ,"-ss",str(ts)
                           ,"-i", cleanFilenameForFfmpeg(filename)  
-                          ,"-filter_complex", "scale={}:45:force_original_aspect_ratio=decrease:flags=bicubic".format(frameWidth)
-                          ,"-vsync", "drop"
-                          ,"-an"
-                          ,"-pix_fmt", "rgb24"
                           ,'-frames:v', '1'
-                          ,'-c:v', 'ppm' 
+                          ,"-an"
+                          ,"-filter_complex", "scale={}:45:force_original_aspect_ratio=decrease:flags=fast_bilinear".format(frameWidth)
                           ,'-f', 'rawvideo'
+                          ,"-pix_fmt", "rgb24"
+                          ,'-c:v', 'ppm' 
+                          ,'-y'
                           ,"-"]
             procQueue.append((ts,sp.Popen(frameCommand,**popen_params)))
 
@@ -1173,21 +1185,6 @@ class FFmpegService():
               callback(filename,ts,frameWidth,currentFrame)
             else:
               break
-            if len(procQueue)<maxActiveInstances and len(tsl)>0:
-              ts = tsl.pop(0)
-              frameCommand = ["ffmpeg"
-                            ,"-an"
-                            ,"-loglevel", "quiet","-noaccurate_seek"
-                            ,"-ss",str(ts)
-                            ,"-i", cleanFilenameForFfmpeg(filename)  
-                            ,"-filter_complex", "scale={}:45:force_original_aspect_ratio=decrease:flags=bicubic".format(frameWidth)
-                            ,"-vsync", "vfr"
-                            ,"-an"
-                            ,"-pix_fmt", "rgb24"
-                            ,'-frames:v', '1'
-                            ,'-c:v', 'ppm' 
-                            ,'-f', 'rawvideo'
-                            ,"-"]
               procQueue.append((ts,sp.Popen(frameCommand,**popen_params)))
           if filename != self.lastTimelinePreviewFilenameRequested:
             break 

@@ -43,6 +43,35 @@ class CutselectionController:
     self.loadFiles(initialFiles)
     
 
+  def splitClipIntoNEqualSections(self):
+    n = self.ui.askInteger('How Many sections would you like to split into?','How Many sections would you like to split into?')
+    if n is not None and n >= 1:
+      self.clearAllSubclipsOnCurrentClip()
+      sectionLength = self.getTotalDuration()/n
+      start = 0
+      while start < self.getTotalDuration():
+        self.addNewSubclip(start, min(start+sectionLength,self.getTotalDuration()) )
+        start = start+sectionLength
+      self.updateProgressStatistics()
+
+  def splitClipIntoSectionsOfLengthN(self):
+    sectionLength = self.ui.askFloat('How Many long should the secions be?','How Many long should the secions be?')
+    if sectionLength is not None and sectionLength >= 0:
+      self.clearAllSubclipsOnCurrentClip()
+      start = 0
+      while start < self.getTotalDuration():
+        self.addNewSubclip(start, min(start+sectionLength,self.getTotalDuration()) )
+        start = start+sectionLength
+      self.updateProgressStatistics()
+
+  def generateSoundWaveBackgrounds(self):
+    self.ui.generateSoundWaveBackgrounds()
+
+  def clearAllSubclipsOnCurrentClip(self):
+    if self.currentlyPlayingFileName is not None:
+      self.videoManager.clearallSubclipsOnFile(self.currentlyPlayingFileName)
+      self.updateProgressStatistics()
+
   def updateLoopMode(self,loopMode):
     self.loopMode=loopMode
     self.currentLoop_a=None
@@ -189,6 +218,9 @@ class CutselectionController:
   def jumpFwd(self):
     self.player.command('seek','10','relative')
 
+  def isplaying(self):
+    return not self.player.pause
+  
   def play(self):
     self.player.pause=False
 

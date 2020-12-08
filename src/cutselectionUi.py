@@ -394,8 +394,12 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
         self._previewtimer.daemon = True
         self._previewtimer.start()
+        self.playingOnLastSwitchAway = True
 
 
+    def generateSoundWaveBackgrounds(self):
+      self.frameTimeLineFrame.generateWaveImages = not self.frameTimeLineFrame.generateWaveImages
+      self.frameTimeLineFrame.uiDirty = True
 
     def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
       return self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,callback)
@@ -522,8 +526,10 @@ class CutselectionUi(ttk.Frame):
 
     def tabSwitched(self, tabName):
         if str(self) == tabName:
-            self.controller.play()
+            if self.playingOnLastSwitchAway:
+              self.controller.play()
         else:
+            self.playingOnLastSwitchAway = self.controller.isplaying()
             self.controller.pause()
 
     def updateFileListing(self, files):
@@ -564,7 +570,12 @@ class CutselectionUi(ttk.Frame):
         self.previews = [x for x in self.previews if x.filename != filename]
         for preview in previewsToRemove:
             preview.destroy()
-        
+
+    def askInteger(self,title, prompt):
+      return simpledialog.askinteger(title, prompt) 
+
+    def askFloat(self,title, prompt):
+      return simpledialog.askfloat(title, prompt) 
 
     def loadVideoYTdl(self):
       url = simpledialog.askstring(title="Download video from URL",prompt="Download a video from a youtube-dl supported url")

@@ -375,7 +375,26 @@ selectableFilters = [
             },
         ],
     },
+
+
+    {
+        "name": "Fps",
+        "filter": "fps",
+        "params": [
+            {
+                "n": "fps",
+                "d": 25,
+                "type": "int",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            }
+        ],
+    },
     
+    
+
+
     {
         "name": "Scale",
         "filter": "scale",

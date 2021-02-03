@@ -455,12 +455,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.timeline_canvas.focus_set()
 
-    if str(e.type) in ('ButtonPress'):
+    if e.type in (tk.EventType.ButtonPress,):
       self.lastClickedEndpoint=None
       self.timelineMousePressOffset=0
 
-    if str(e.type) in ('ButtonPress','ButtonRelease'):
-      self.timeline_mousedownstate[e.num] = str(e.type)=='ButtonPress'
+    if e.type in (tk.EventType.ButtonPress,tk.EventType.ButtonRelease):
+      self.timeline_mousedownstate[e.num] = e.type == tk.EventType.ButtonPress
 
       if (e.num==1 and e.y<20) or e.num==2:
         self.rangeHeaderClickStart= self.currentZoomRangeMidpoint-(e.x/self.winfo_width())
@@ -493,7 +493,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             break
 
 
-    if str(e.type) in ('ButtonRelease') and e.num in (1,2):
+    if e.type in (tk.EventType.ButtonRelease,) and e.num in (1,2):
       self.clickTarget = None
       self.rangeHeaderClickStart=None
       self.controller.play()
@@ -537,7 +537,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             targetSeconds = targetSeconds+((oe-os)/2)
           self.controller.seekTo( targetSeconds-self.dragPreviewPos )
 
-    if str(e.type) == 'ButtonPress':
+    if e.type == tk.EventType.ButtonPress:
       if e.num==3:      
         self.timeline_canvas_last_right_click_x=e.x
         self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)

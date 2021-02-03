@@ -5,12 +5,18 @@ import logging
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
+  basescriptPath = os.path.split(scriptPath)[0]
   scriptPath_frozen = os.path.dirname(os.path.abspath(sys.executable))
   os.environ["PATH"] = scriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
+  print(scriptPath)
+  print(scriptPath_frozen)
+
+  
+  os.add_dll_directory(basescriptPath)
   os.add_dll_directory(scriptPath)
   os.add_dll_directory(scriptPath_frozen)
-except AttributeError:
-  pass
+except AttributeError as e:
+  print(e)
 except Exception as e:
   logging.error("scriptPath Exception",exc_info=e)
 

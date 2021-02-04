@@ -95,7 +95,8 @@ class FFmpegService():
         
         videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext)
 
-        comvcmd = ['ffmpeg', '-ss', str(s), '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-c', 'copy', '-t', str(etime), tempVideoFilePath]
+        comvcmd = ['ffmpeg', '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-c', 'copy', '-t', str(etime), tempVideoFilePath]
+        print(' '.join(comvcmd))
         proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
         
         currentEncodedTotal=0

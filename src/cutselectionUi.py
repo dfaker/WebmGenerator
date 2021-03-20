@@ -349,6 +349,10 @@ class CutselectionUi(ttk.Frame):
         self.buttonvideoInterestMark.config(command=self.addNewInterestMarkNow)
         self.buttonvideoInterestMark.pack(expand="true", fill='x', side="left")
 
+        self.buttonvideoRandomClip= ttk.Button(self.frameVideoControls,text='Random Clip', style="small.TButton")
+        self.buttonvideoRandomClip.config(command=self.randomClip)
+        self.buttonvideoRandomClip.pack(expand="true", fill='x', side="left")
+
         self.buttonvideoJumpFwd = ttk.Button(self.frameVideoControls,text='Jump >>', style="small.TButton")
         self.buttonvideoJumpFwd.config(command=self.jumpFwd)
         self.buttonvideoJumpFwd.pack(expand="true", fill='x', side="left")
@@ -418,6 +422,9 @@ class CutselectionUi(ttk.Frame):
 
     def prevClip(self):
       self.controller.jumpClips(-1)
+
+    def randomClip(self):
+      self.controller.jumpClips(None)
 
     def nextClip(self):
       self.controller.jumpClips(1)

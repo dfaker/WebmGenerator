@@ -575,24 +575,24 @@ class FilterSelectionUi(ttk.Frame):
         pass
 
   def videomousePress(self,e):
-      if str(e.type) == 'ButtonPress':
+
+      if e.type == tk.EventType.ButtonPress:
         logging.debug("videomousePress start")
         self.mouseRectDragging=True
         self.screenMouseRect[0]=e.x
         self.screenMouseRect[1]=e.y
-      elif str(e.type) in ('Motion','ButtonRelease') and self.mouseRectDragging:
+      elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and self.mouseRectDragging:
         logging.debug("videomousePress show")
         self.screenMouseRect[2]=e.x
         self.screenMouseRect[3]=e.y
         self.applyScreenSpaceAR()
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
-      if str(e.type) == 'ButtonRelease':
+      if e.type == tk.EventType.ButtonRelease:
         logging.debug("videomousePress release")
         self.mouseRectDragging=False
 
         vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
         vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
-
 
         self.videoMouseRect=[vx1,vy1,vx2,vy2]
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])

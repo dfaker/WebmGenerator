@@ -16,6 +16,8 @@ class FilterSelectionController:
                           loop='inf',
                           mute=True,
                           autofit_larger='1280')
+
+
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.playerStart=0
     self.playerEnd=0
@@ -67,6 +69,7 @@ class FilterSelectionController:
     self.player.command('stop')
 
   def setVideoRect(self,x,y,w,h):
+    print('script-message','screenspacetools_rect',x,y,w,h,'2f344bdd','69dbdbff',1,'inner')
     self.player.command('script-message','screenspacetools_rect',x,y,w,h,'2f344bdd','69dbdbff',1,'inner')
 
   def clearVideoRect(self):

@@ -166,6 +166,9 @@ class CutselectionController:
     return self.currentTotalDuration is not None and self.currentTimePos is not None
 
   def jumpClips(self,offset):
+    if offset is None:
+      offset = random.randint(0,len(self.files))
+
     try:
       nextClipInd = self.files.index(self.currentlyPlayingFileName)+offset      
       self.playVideoFile(self.files[nextClipInd%len(self.files)],0)      

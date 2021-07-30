@@ -40,7 +40,7 @@ def getFreeNameForFileAndLog(filenamePrefix,extension):
   with fileExistanceLock:
     while 1:
       fileN+=1
-      videoFileName = '{}_WmG_{}.{}'.format(filenamePrefix,fileN,extension)
+      videoFileName = '{}_{}.{}'.format(filenamePrefix,fileN,extension)
       outLogFilename = 'encoder_{}.log'.format(fileN)
       
       logFilePath        = os.path.join('tempVideoFiles',outLogFilename)
@@ -65,6 +65,7 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
       if len(c)==0:
         break
       if c == b'\r':
+        print(ln)
         for p in ln.split(b' '):
           if b'*:' in p:
             try:

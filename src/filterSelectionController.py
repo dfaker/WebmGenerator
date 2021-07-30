@@ -13,7 +13,8 @@ class FilterSelectionController:
     playerFrameWid = self.ui.getPlayerFrameWid()
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=True,
-                          loop='inf',
+                          loop='inf',log_handler=print,
+                          loglevel='debug',
                           mute=True,
                           autofit_larger='1280')
 

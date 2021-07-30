@@ -8,7 +8,7 @@ import logging
 import threading
 import time
 from tkinter.filedialog import askopenfilename
-
+import json
 from .filterSpec import selectableFilters
 
 def debounce(wait):
@@ -458,6 +458,16 @@ class FilterSelectionUi(ttk.Frame):
     self.autocropButton.config(command=self.autoCrop)
     self.autocropButton.pack(side='right')
 
+    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
+    self.autocropButton.config(text='Import Json')
+    self.autocropButton.config(command=self.importJson)
+    self.autocropButton.pack(side='right')
+
+    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
+    self.autocropButton.config(text='Export Json')
+    self.autocropButton.config(command=self.exportJson)
+    self.autocropButton.pack(side='right')
+
 
     self.speedVar = tk.StringVar()
     self.speedVar.trace('w',self.speedChange)
@@ -523,6 +533,30 @@ class FilterSelectionUi(ttk.Frame):
       newFilter.rectProps.get('h').set(int(h))
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters()
+
+  def importJson(self):
+    s = self.clipboard_get()
+    s = json.loads(s)
+
+    if self.currentSubclipIndex is not None:
+      rid = self.subClipOrder[self.currentSubclipIndex]
+      self.subclips[rid]['filters'] = copy.deepcopy(s)
+      for f in self.filterSpecifications:
+        f.destroy()
+      self.filterSpecifications=[]
+      rid = self.subClipOrder[self.currentSubclipIndex]
+      
+      for spec in self.subclips[rid].setdefault('filters',[]):
+        self.filterSpecificationCount+=1
+        self.filterSpecifications.append( 
+          FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
+        )
+      self.recaculateFilters()
+
+
+  def exportJson(self):
+    self.clipboard_clear()
+    self.clipboard_append(json.dumps(self.convertFilterstoSpecDefaults()))
 
   def autoCrop(self):
     rid = self.subClipOrder[self.currentSubclipIndex]

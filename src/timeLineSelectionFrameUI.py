@@ -92,16 +92,26 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu = tk.Menu(self, tearoff=0)
 
     self.timeline_canvas_popup_menu.add_command(label="Add new subclip",command=self.canvasPopupAddNewSubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Add new subclip to interest marks",command=self.canvasPopupAddNewSubClipToInterestMarksCallback)
+
+    self.timeline_canvas_popup_menu.add_separator()
+
     self.timeline_canvas_popup_menu.add_command(label="Delete subclip",command=self.canvasPopupRemoveSubClipCallback)
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Clone subclip",command=self.canvasPopupCloneSubClipCallback)
+    
     self.timeline_canvas_popup_menu.add_command(label="Expand subclip to interest marks",command=self.canvasPopupExpandSublcipToInterestMarksCallback)
+
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 1s",command=self.canvasPopupFindLowestError1s)
     self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 2s",command=self.canvasPopupFindLowestError2s)
     
+    self.timeline_canvas_popup_menu.add_separator()
+    self.timeline_canvas_popup_menu.add_command(label="Find loop of at most 2-3s here",command=self.canvasPopupFindContainingLoop3s)
+    self.timeline_canvas_popup_menu.add_command(label="Find loop of at most 3-6s here",command=self.canvasPopupFindContainingLoop6s)
+
     
     self.timeline_canvas_last_right_click_x=None
 
@@ -542,6 +552,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas_last_right_click_x=e.x
         self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
 
+
   def frameResponseCallback(self,filename,timestamp,frameWidth,frameData):
     previewData = tk.PhotoImage(data=frameData)
     if filename == self.controller.getcurrentFilename():
@@ -747,7 +758,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def setUiDirtyFlag(self):
     self.uiDirty=True    
 
-  def canvasPopupExpandSublcipToInterestMarksCallback(self):
+
+  def canvasPopupAddNewSubClipToInterestMarksCallback(self):
+    self.canvasPopupAddNewSubClipCallback(setDirtyAfter=False)
+    self.canvasPopupExpandSublcipToInterestMarksCallback(setDirtyAfter=False)
+    self.uiDirty=True
+
+  def canvasPopupExpandSublcipToInterestMarksCallback(self,setDirtyAfter=True):
     if self.timeline_canvas_last_right_click_x is not None:
       ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
       mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
@@ -761,6 +778,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.expandSublcipToInterestMarks((e+s)/2)
           break
     self.timeline_canvas_last_right_click_x=None
+    if setDirtyAfter:
+      self.uiDirty=True
 
 
   def canvasPopupCloneSubClipCallback(self):
@@ -777,6 +796,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.cloneSubclip((e+s)/2)
           break
     self.timeline_canvas_last_right_click_x=None
+    self.uiDirty=True
 
   def canvasPopupRemoveSubClipCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -799,7 +819,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.addNewInterestMark( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x))
       self.uiDirty=True
 
-  def canvasPopupAddNewSubClipCallback(self):
+  def canvasPopupAddNewSubClipCallback(self,setDirtyAfter=True):
     print(self.timeline_canvas_last_right_click_x,)
     if self.timeline_canvas_last_right_click_x is not None:
       pre = self.defaultSliceDuration*0.5
@@ -807,12 +827,26 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.addNewSubclip( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)-pre,self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)+post  )
 
     self.timeline_canvas_last_right_click_x=None
+    if setDirtyAfter:
+      self.uiDirty=True
 
   def canvasPopupFindLowestError1s(self):
     self.findLowestErrorForBetterLoop(1.0)
 
   def canvasPopupFindLowestError2s(self):
     self.findLowestErrorForBetterLoop(2.0)
+
+  def canvasPopupFindContainingLoop3s(self):
+    self.findLoopAroundFrame(2.0,3.0)
+
+  def canvasPopupFindContainingLoop6s(self):
+    self.findLoopAroundFrame(3.0,6.0)
+
+  def findLoopAroundFrame(self,minSeconds,maxSeconds):
+    if self.timeline_canvas_last_right_click_x is not None:
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      self.controller.findLoopAroundFrame(mid,minSeconds,maxSeconds)
+    self.timeline_canvas_last_right_click_x=None
 
   def findLowestErrorForBetterLoop(self,secondsChange):
     

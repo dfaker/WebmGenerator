@@ -56,7 +56,7 @@ class FFmpegService():
           if filters == '':
             filters='null'
           w,h=size
-          if type(timestamp) != float and '%' in timestamp:
+          if type(timestamp) != float and type(timestamp) != np.float64 and '%' in timestamp:
             pc = float(timestamp.replace('%',''))/100.0
             videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename))
             timestamp = videoInfo.duration*pc
@@ -955,9 +955,88 @@ class FFmpegService():
             proc.communicate()
             callback(x,y,w,h)
 
+          elif requestType == 'MSESearch':
+            logging.debug('new loop error seatch start')
+            filename = options.get('filename')
+            secondsCenter = options.get('secondsCenter')
+            minSeconds   = options.get('minSeconds')
+            maxSeconds   = options.get('maxSeconds')
+
+            cropRect = options.get('cropRect')
+
+            startTs = secondsCenter-(maxSeconds*1.5)
+
+            od=224
+            nbytes = 3 * od * od
+            frameDistance=0.01
+
+            if cropRect is None:
+              videofilter = "scale={}:{}:flags=bicubic".format(od,od)
+            else:
+              x,y,w,h = cropRect
+              videofilter = "crop={}:{}:{}:{},scale={}:{}:flags=bicubic".format(x,y,w,h,od,od)
+
+
+
+            popen_params = {
+              "bufsize": 10 ** 5,
+              "stdout": sp.PIPE,
+              #"stderr": sp.DEVNULL,
+            }
+
+            framesCmd = ["ffmpeg"
+                      ,'-ss',str(startTs)
+                      ,"-i", cleanFilenameForFfmpeg(filename)  
+                      ,'-s', '{}x{}'.format(od,od)
+                      ,'-ss',str(startTs)
+                      ,'-t', str((maxSeconds*1.5)*2)
+                      ,"-filter_complex", videofilter
+                      ,"-copyts"
+                      ,"-f","image2pipe"
+                      ,"-an"
+                      ,"-pix_fmt","bgr24"
+                      ,"-vcodec","rawvideo"
+                      ,"-vsync", "vfr"
+                      ,"-"]
+
+            searchFrames = np.frombuffer(sp.Popen(framesCmd,**popen_params).stdout.read(), dtype="uint8")
+            searchFrames.shape = (-1,od,od,3)
+
+            frameDistance = (((maxSeconds*1.5)*2)/searchFrames.shape[0])
+
+            print(searchFrames.shape)
+
+            distances = []
+            minMse    = float('inf')
+
+            for si,frame in enumerate(searchFrames):
+
+              mse = ((searchFrames[si] - searchFrames)**2).mean(axis=(1,2,3))
+
+              for ei,fmse in enumerate(mse):
+                matchStart = (startTs)+(si*frameDistance)
+                matchEnd   = (startTs)+(ei*frameDistance)
+
+                if fmse <= minMse and maxSeconds >= (matchEnd-matchStart) >= minSeconds:
+                  print( fmse,matchStart,matchEnd )
+                  distances.append( (fmse,matchStart,matchEnd) )
+                  minMse=fmse
+            
+              self.globalStatusCallback('Finding closest frame match',si/searchFrames.shape[0])
+
+
+
+            finalmse,finals,finale = sorted(distances)[0]
+
+            logging.debug("Frame search finalmse:{} finalstart:{} finalend:{}".format(finalmse,finals,finale))
+
+            self.globalStatusCallback('Found closest matches, updating',1)
+            callback(filename,mse,finals,finale)
+
+
 
           elif requestType == 'MSESearchImprove':
-            logging.debug('error seatch srtart')
+            logging.debug('error seatch start')
             filename = options.get('filename')
             start = options.get('start')
             end   = options.get('end')
@@ -1230,6 +1309,15 @@ class FFmpegService():
                                                                   rid=rid,
                                                                   cropRect=cropRect,
                                                                   secondsChange=secondsChange),callback) )
+
+
+  def findRangeforLoop(self,filename,secondsCenter,minSeconds,maxSeconds,cropRect,callback):
+    self.statsRequestQueue.put( (filename,'MSESearch',dict(filename=filename,
+                                                           secondsCenter=secondsCenter,
+                                                           minSeconds=minSeconds,
+                                                           maxSeconds=maxSeconds,
+                                                           cropRect=cropRect),callback) )
+
 
   def cancelEncodeRequest(self,requestId):
     cancelCurrentEncodeRequest(requestId)

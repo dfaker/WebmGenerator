@@ -384,6 +384,7 @@ class CutselectionController:
   def lowestErrorLoopCallback(self,filename,rid,mse,finals,finale):
     self.videoManager.updateDetailsForRangeId(filename,rid,finals,finale)
     self.setLoopPos(finals,finale)
+    self.ui.setUiDirtyFlag()
     self.seekTo(finals)
 
   def findLowestErrorForBetterLoop(self,rid,secondsChange,rect):
@@ -396,6 +397,26 @@ class CutselectionController:
       y1,y2 = sorted([y1,y2])
       cropCoords = (x1,y1,x2-x1,y2-y1)
     self.ffmpegService.findLowerErrorRangeforLoop( filename,start,end,rid,secondsChange,cropCoords,self.lowestErrorLoopCallback )
+
+
+  def foundLoopCallback(self,filename,mse,finals,finale):
+    self.videoManager.registerNewSubclip(filename,finals,finale)
+    self.setLoopPos(finals,finale)
+    self.ui.setUiDirtyFlag()
+    self.seekTo(finals)
+
+
+
+  def findRangeforLoop(self,secondsCenter,minSeconds,maxSeconds,rect):
+    if self.currentlyPlayingFileName is not None:
+      cropCoords=None
+      x1,y1,x2,y2 = rect
+      if x1 is not None:
+        x1,x2 = sorted([x1,x2])
+        y1,y2 = sorted([y1,y2])
+        cropCoords = (x1,y1,x2-x1,y2-y1)
+      self.ffmpegService.findRangeforLoop( self.currentlyPlayingFileName,secondsCenter,minSeconds,maxSeconds,cropCoords,self.foundLoopCallback )
+
 
   def sceneChangeCallback(self,filename,timestamp):
     self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')

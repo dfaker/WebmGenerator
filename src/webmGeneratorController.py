@@ -46,6 +46,7 @@ class WebmGeneratorController:
       "statsWorkers":1,
       "encodeWorkers":1,
       "imageWorkers":2,
+      "passCudaFlags":False,
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
       "defaultAutosaveFilename":'autosave.webgproj',
@@ -66,12 +67,12 @@ class WebmGeneratorController:
 
     open(self.configFileName,'w').write(json.dumps(self.globalOptions,indent=1))
 
-
-    self.parallelVideoJobs = self.globalOptions.get("parallelVideoJobs",3)
-    self.statsWorkers      = self.globalOptions.get("statsWorkers",1)
-    self.encodeWorkers     = self.globalOptions.get("encodeWorkers",1)
-    self.imageWorkers      = self.globalOptions.get("imageWorkers",2)
-    self.defaultProfile    = self.globalOptions.get("defaultProfile","None")
+    self.parallelVideoJobs    = self.globalOptions.get("parallelVideoJobs",3)
+    self.statsWorkers         = self.globalOptions.get("statsWorkers",1)
+    self.encodeWorkers        = self.globalOptions.get("encodeWorkers",1)
+    self.imageWorkers         = self.globalOptions.get("imageWorkers",2)
+    self.defaultProfile       = self.globalOptions.get("defaultProfile","None")
+    self.passCudaFlags        = self.globalOptions.get('passCudaFlags', False) == True
     self.tempFolder           = self.globalOptions.get('tempFolder', 'tempVideoFiles')
     self.tempDownloadFolder   = self.globalOptions.get('tempDownloadFolder', 'tempDownloadedVideoFiles') 
     self.autosaveFilename     = self.globalOptions.get('defaultAutosaveFilename', 'autosave.webgproj') 

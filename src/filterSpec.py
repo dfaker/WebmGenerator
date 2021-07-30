@@ -51,11 +51,185 @@ selectableFilters = [
             },
         ],
     },
+{
+  
+        "name": "vhsconv",
+        "filter": "convolution='-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2'",
 
-  {
+},
+ {
+        "name": "lagfun",
+        "filter": "lagfun",
+        "params": [
+            {
+                "n": "decay",
+                "d": 0.95,
+                "type": "float",
+                "range": [0, 1],
+                "inc": 0.1,
+            },
+            {
+                "n": "planes",
+                "d": 15,
+                "type": "int",
+                "range": [0,15],
+                "inc": 1,
+            }
+        ],
+    },
+
+    {
         "name": "invert",
         "filter": "ngeative"
     },
+
+
+
+    {
+        "name": "hueOutsideArea",
+        "timelineSupport":True,
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]hue=h={h}:s={s}:b={b}[bg{fn}],[vina{fn}]crop={w}:{ch}:{x}:{y}[fg{fn}],[bg{fn}][fg{fn}]overlay={x}:{y}",
+        "params": [
+            {"n": "h", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
+            {"n": "s", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
+            {"n": "b", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},     
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "ch",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            }
+        ],
+    },
+
+
+
+
+    {
+        "name": "transText",
+        "filter": "null[vin{fn}],color=s={w}x{h}:c=black[cbg],color=c=white:s={w}x{h}[abg],[abg]drawtext=text={text}:fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=black[cbox],[cbg][cbox]alphamerge[c],[vin{fn}][c]overlay=eval=init",
+        
+        "filterPreview": "drawbox=c=black:x=0:y=0:w={w}:h={h},drawtext=text={text}:fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=red",
+
+
+        "params": [ 
+
+            {"n": "text", "d": "Text", "type": "string"},
+            {"n": "fontfile", "d": "font.otf", "type": "file"},
+
+            {"n": "w", "d": 1, "type": "int", "range": None, "rectProp": "w", "inc": 1},
+            {"n": "h", "d": 1, "type": "int", "range": None, "rectProp": "h", "inc": 1},
+
+
+            {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
+            {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
+            {"n": "fontsize", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
+
+
+
+        ],
+    },
+
+
+
+
+
+    {
+        "name": "amplify",
+        "filter": "amplify",
+        "params": [
+            {"n": "radius", "d": 2, "type": "int", "range": [1, 63], "inc": 1}, 
+            {"n": "factor", "d": 2, "type": "int", "range": [0, 65535], "inc": 1}, 
+
+        ],
+    },
+
+
+    {
+        "name": "vibrance",
+        "filter": "vibrance",
+        "params": [
+            {"n": "intensity", "d": 0.5, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+            {"n": "rbal", "d": 1, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+            {"n": "gbal", "d": 1, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+            {"n": "bbal", "d": 1, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+
+            {"n": "rlum", "d": 0, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+            {"n": "glum", "d": 0, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+            {"n": "blum", "d": 0, "type": "float", "range": [-2, 2], "inc": 0.05}, 
+
+        ],
+    },
+
+    {
+        "name": "hueInsideArea",
+        "timelineSupport":True,
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},hue=h={ch}:s={s}:b={b}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "params": [
+            {"n": "h", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
+            {"n": "s", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
+            {"n": "b", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},     
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "ch",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            }
+        ],
+    },
+
 
     {
         "name": "posterizeArea",

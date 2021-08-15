@@ -1554,14 +1554,36 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeSequenceContainer._scrollBothNow()
 
   def addAllClipsInRandomOrder(self):
-    self.clearSequence()
-    for clip in sorted(self.selectableVideos.values(),key=lambda x:random.random()):
-      self.addClipToSequence(clip)
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      self.clearAllColumns()
+      for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:random.random())):
+        self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
+          SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
+        )
+    else:
+      self.clearSequence()
+      for clip in sorted(self.selectableVideos.values(),key=lambda x:random.random()):
+        self.addClipToSequence(clip)
+
+  def clearAllColumns(self):
+    for column in self.gridColumns:
+      while len(column['clips'])>0:
+        removedClip = column['clips'].pop()
+        removedClip.pack_forget()
+        removedClip.destroy()    
 
   def addAllClipsInTimelineOrder(self):
-    self.clearSequence()
-    for clip in sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s)):
-      self.addClipToSequence(clip)
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      self.clearAllColumns()
+      for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s))):
+        self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
+          SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
+        )
+
+    else:
+      self.clearSequence()
+      for clip in sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s)):
+        self.addClipToSequence(clip)
 
 
 

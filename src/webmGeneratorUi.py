@@ -105,6 +105,8 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Toggle Generation of audio spectra", command=self.generateSoundWaveBackgrounds)
     self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Clear all subclips on current clip", command=self.clearAllSubclipsOnCurrentClip)
+    self.commandmenu.add_separator()
+    self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
 
 
     self.menubar.add_cascade(label="Commands", menu=self.commandmenu)
@@ -147,6 +149,9 @@ class WebmGeneratorUi:
 
   def clearAllSubclipsOnCurrentClip(self):
     self.controller.clearAllSubclipsOnCurrentClip()
+
+  def addSubclipByTextRange(self):
+    self.controller.addSubclipByTextRange()
 
   def gotoReleasesPage(self):
     webbrowser.open('https://github.com/dfaker/WebmGenerator/releases', new=2)

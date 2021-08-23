@@ -589,6 +589,9 @@ class CutselectionUi(ttk.Frame):
     def askFloat(self,title, prompt):
       return simpledialog.askfloat(title, prompt) 
 
+    def askString(self,title, prompt):
+      return simpledialog.askstring(title, prompt) 
+
     def loadVideoYTdl(self):
       url = simpledialog.askstring(title="Download video from URL",prompt="Download a video from a youtube-dl supported url")
       if url is not None and len(url)>0:

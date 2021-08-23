@@ -54,6 +54,37 @@ class CutselectionController:
         start = start+sectionLength
       self.updateProgressStatistics()
 
+  def addSubclipByTextRange(self):
+    rawRange = self.ui.askString('Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format','Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format')
+    multipliers = [1,60,60*60,60*60*60]
+
+    startTS=0
+    endTS=0
+
+    if rawRange is not None:
+      startText = ""
+      endText   = ""
+
+      isStart = True
+      for char in rawRange.strip():
+        if char in '1234567890.:':
+          if isStart:
+            startText += char
+          else:
+            endText += char
+        else:
+          isStart=False
+
+      if len(startText)>0 and len(endText)>0:
+        for mult,val in zip(multipliers,startText.split(':')[::-1]):
+          startTS += mult*float(val)
+        for mult,val in zip(multipliers,endText.split(':')[::-1]):
+          endTS += mult*float(val)
+
+    if startTS != 0 or endTS != 0 and endTS > startTS:
+      self.addNewSubclip(max(startTS,0), min(endTS,self.getTotalDuration()) )
+
+
   def splitClipIntoSectionsOfLengthN(self):
     sectionLength = self.ui.askFloat('How Many long should the secions be?','How Many long should the secions be?')
     if sectionLength is not None and sectionLength >= 0:

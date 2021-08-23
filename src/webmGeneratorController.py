@@ -178,7 +178,8 @@ class WebmGeneratorController:
   def clearAllSubclipsOnCurrentClip(self):
     self.cutselectionController.clearAllSubclipsOnCurrentClip()
 
-    
+  def addSubclipByTextRange(self):
+    self.cutselectionController.addSubclipByTextRange()
 
   def getSaveData(self):
     saveData = {}

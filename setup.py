@@ -1,11 +1,16 @@
 from cx_Freeze import setup, Executable
 import os
 
-os.environ['TCL_LIBRARY'] = os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\tcl\tcl8.6')
-os.environ['TK_LIBRARY'] =  os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\tcl\tk8.6')
+PYTHON_INSTALL_DIR = os.path.dirname(os.path.dirname(os.__file__))
+
+os.environ['TCL_LIBRARY'] = os.path.join(PYTHON_INSTALL_DIR, 'tcl', 'tcl8.6')
+os.environ['TK_LIBRARY'] = os.path.join(PYTHON_INSTALL_DIR, 'tcl', 'tk8.6')
+
 
 # Dependencies are automatically detected, but it might need
 # fine tuning.
+
+
 buildOptions = dict(packages = ["os"], 
                     include_files = [
                      ('resources\\QRCode.gif','resources\\QRCode.gif')
@@ -17,16 +22,15 @@ buildOptions = dict(packages = ["os"],
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     ,'youtube-dl.exe'
                     ,'ffmpeg.exe'
-                    ,'ffprobe.exe'
+                    ,'ffprobe.exe'  
                     ,'mpv-1.dll'
-                    ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tcl86t.dll')
-                    ,os.path.expandvars(r'%USERPROFILE%\AppData\Local\Programs\Python\Python37\DLLs\tk86t.dll')
+                    ,os.path.join(PYTHON_INSTALL_DIR, 'DLLs', 'tk86t.dll')
+                    ,os.path.join(PYTHON_INSTALL_DIR, 'DLLs', 'tcl86t.dll')  
                     ],
-                    includes= ["tkinter","tkinter.ttk"],
+                    includes= ["tkinter","email","http","tkinter.ttk"],
                     excludes = [
                     'PIL',
-                    'distutils', 
-                    'email', 
+                    'distutils',  
                     'future', 
                     'pydoc_data',
                     'setuptools', 

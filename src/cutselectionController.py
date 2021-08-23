@@ -86,7 +86,7 @@ class CutselectionController:
 
 
   def splitClipIntoSectionsOfLengthN(self):
-    sectionLength = self.ui.askFloat('How Many long should the secions be?','How Many long should the secions be?')
+    sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be?')
     if sectionLength is not None and sectionLength >= 0:
       self.clearAllSubclipsOnCurrentClip()
       start = 0

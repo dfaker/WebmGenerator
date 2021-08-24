@@ -447,6 +447,9 @@ class FilterSelectionUi(ttk.Frame):
     self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'), increment=0.01)
     self.spinBoxArRatio.pack(expand='false', side='left')
 
+    self.flipARButton = ttk.Button(self.selectionOptionsFrame,text="Flip AR", command=self.flipAR)
+    self.flipARButton.pack(expand='false', side='left')
+
     self.fitToScreenVar = tk.BooleanVar()
     self.fitToScreenVar.trace('w',self.changeFitToScreen)
     self.fitToScreenVar.set(True)
@@ -557,6 +560,11 @@ class FilterSelectionUi(ttk.Frame):
   def exportJson(self):
     self.clipboard_clear()
     self.clipboard_append(json.dumps(self.convertFilterstoSpecDefaults()))
+
+  def flipAR(self):
+    forceAR = float(self.fixSeectionArVar.get())
+    forceAR = 1/forceAR
+    self.fixSeectionArVar.set(forceAR)
 
   def autoCrop(self):
     rid = self.subClipOrder[self.currentSubclipIndex]

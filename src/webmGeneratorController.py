@@ -79,7 +79,7 @@ class WebmGeneratorController:
     self.lastSaveFile=None
 
 
-    self.initialFiles = self.cleanInitialFiles(initialFiles+[self.tempDownloadFolder])
+    self.initialFiles = self.cleanInitialFiles(initialFiles)
     self.root = Tk()
     
     self.root.protocol("WM_DELETE_WINDOW", self.close_ui)

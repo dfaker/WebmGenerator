@@ -730,6 +730,8 @@ class FilterSelectionUi(ttk.Frame):
 
   def tabSwitched(self,tabName):
     if str(self) == tabName:
+      if (self.currentSubclipIndex is None and len(self.subclips)>0) or (self.currentSubclipIndex is not None and (len(self.subclips)-1)>self.currentSubclipIndex):
+        self.currentSubclipIndex=0
       self.recauclateSubclips()
       self.controller.play()
     else:

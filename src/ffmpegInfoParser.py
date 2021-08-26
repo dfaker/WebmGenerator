@@ -1,5 +1,6 @@
 import subprocess as sp
 from dataclasses import dataclass
+import logging
 
 @dataclass
 class VideoInfo:

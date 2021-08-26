@@ -1162,7 +1162,7 @@ class FFmpegService():
       while 1:
         filename,duration,completioncallback = self.loadImageAsVideoRequestQueue.get()
         vidInfo = getVideoInfo(filename)
-        logging.debuug(str(vidInfo))
+        logging.debug(str(vidInfo))
         imageasVideoID+=1
         
         try:

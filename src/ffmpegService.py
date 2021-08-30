@@ -595,14 +595,37 @@ class FFmpegService():
         if filterexp=='':
           filterexp='null'  
 
+        basename = os.path.basename(clipfilename)
+        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
+
+        if 'subtitles=filename=' in  filterexp:
+
+          m = hashlib.md5()
+          m.update(filterexp.encode('utf8'))
+          filterHash = m.hexdigest()[:10]
+
+          subfilename = filterexp.split('subtitles=filename=')[1].split(':force_style=')[0]
+          subfilenameStrip = subfilename.replace("'",'')
+          subOutname = os.path.join( tempPathname,'{}_{}_{}_{}_{}_{}.srt'.format(i,basename,start,end,filterHash,runNumber) )
+
+          subcmd  = ['ffmpeg','-y','-ss' , str(start), '-itsoffset', str(0-start), '-i', subfilenameStrip.replace('\\:',':'), '-c', 'copy', subOutname]
+          print(' '.join(subcmd))
+          subProc = sp.Popen(subcmd)
+          subProc.communicate()
+          
+          cleanSubPath = os.path.abspath(subOutname).replace('\\','/').replace(':','\\:')
+          filterexp = filterexp.replace(subfilenameStrip,cleanSubPath)
+
+          print(subfilenameStrip)
+          print(subOutname)
+          print(filterexp)
+
         #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
 
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 
-        key = (rid,clipfilename,start,end,filterexp,filterexpEnc)
 
-        basename = os.path.basename(clipfilename)
 
         try:
           os.path.exists(tempPathname) or os.mkdir(tempPathname)
@@ -613,6 +636,8 @@ class FFmpegService():
         m.update(filterexp.encode('utf8'))
         filterHash = m.hexdigest()[:10]
 
+        key = (rid,clipfilename,start,end,filterexp,filterexpEnc)
+        basename = os.path.basename(clipfilename)
         basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
 
         outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber)

@@ -57,6 +57,17 @@ selectableFilters = [
         "filter": "convolution='-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2'",
 
 },
+
+    {
+        "name": "scaleDown",
+        "filter": "scale=w=iw*{factor}2:h=ih*{factor}:sws_flags=area",
+        "params": [
+            {"n": "factor", "d": 1.0, "type": "float", "range": [0, 1], "inc": 0.005}
+            ]
+    },
+
+
+
  {
         "name": "lagfun",
         "filter": "lagfun",
@@ -390,19 +401,49 @@ selectableFilters = [
 
     {
         "name": "subtitles",
-        "filter": "subtitles",
+        "filter": "subtitles=filename='{filename}':force_style='Fontname={fontname},PrimaryColour={colour}'",
         "params": [
-            {"n": "filename", "d": "subtitles.srt", "type": "string"},
-            {
-                "n": "force_style",
-                "d": "Fontname=DejaVu Serif,PrimaryColour=&HCCFF0000",
-                "type": "string",
-            },
+            {"n": "filename", "d": "subtitles.srt", "type": "file"},
+            {"n": "fontname", "d": "font.otf", "type": "file"},
+            {"n": "colour", "d": "&H0059EADB", "type": "string"}
+
+
         ],
     },
 
     {"name": "normalize", "filter": "normalize"},
     
+
+
+    {
+        "name": "fade",
+        "filter": "fade",
+        "params": [
+            {
+                "n": "type",
+                "d": "in",
+                "type": "cycle",
+                "cycle": ["in", "out"],
+            },
+
+            {"n": "duration", "d": 1, "type": "float", "range": [0, None], "inc": 0.1},
+            {"n": "start_time", "d": 1, "type": "float", "range": [0, None], "inc": 0.1},
+
+
+            {
+                "n": "color",
+                "d": "Black",
+                "type": "cycle",
+                "cycle": colours,
+            }
+
+        ],
+    },
+
+
+
+
+
     {
         "name": "minterpolate",
         "filter": "minterpolate",

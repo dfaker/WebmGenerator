@@ -136,6 +136,7 @@ class WebmGeneratorController:
   def cleanInitialFiles(self,files):
     finalFiles = []
     for f in files:
+      print('Initial file',f)
       if os.path.isfile(f):
         g = mimetypes.guess_type(f)
         if g is not None and g[0] is not None and 'video' in g[0]:

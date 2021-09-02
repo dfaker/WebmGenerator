@@ -154,7 +154,7 @@ class CutselectionUi(ttk.Frame):
         self.frameSliceSettings = ttk.Frame(self.frameUpperFrame)
         self.labelFrameSlice = ttk.Labelframe(self.frameSliceSettings)
 
-        self.sliceLength = 10.0
+        self.sliceLength = 30.0
         self.sliceLengthVar = tk.StringVar()
         self.sliceLengthVar.trace("w", self.sliceLengthChangeCallback)
 
@@ -324,6 +324,9 @@ class CutselectionUi(ttk.Frame):
 
         self.frameVideoPlayerAndControls = ttk.Frame(self.frameUpperFrame)
 
+        self.labelVideoSummary = ttk.Label(self.frameVideoPlayerAndControls,text=' ',justify=tk.CENTER)
+        self.labelVideoSummary.pack(expand="false",fill="both", pady="2", side="top")
+
         self.frameVideoPlayerFrame = ttk.Frame(self.frameVideoPlayerAndControls)
         self.frameVideoPlayerFrame.config(
             borderwidth="0", height="200", relief="flat", width="200",
@@ -356,6 +359,10 @@ class CutselectionUi(ttk.Frame):
         self.buttonvideoJumpFwd = ttk.Button(self.frameVideoControls,text='Jump >>', style="small.TButton")
         self.buttonvideoJumpFwd.config(command=self.jumpFwd)
         self.buttonvideoJumpFwd.pack(expand="true", fill='x', side="left")
+
+        self.buttonvideoAddFullClip = ttk.Button(self.frameVideoControls,text='Add Full Clip', style="small.TButton")
+        self.buttonvideoAddFullClip.config(command=self.addFullClip)
+        self.buttonvideoAddFullClip.pack(expand="true", fill='x', side="left")
 
         self.buttonvideoNextClip= ttk.Button(self.frameVideoControls,text='Next Clip', style="small.TButton")
         self.buttonvideoNextClip.config(command=self.nextClip)
@@ -400,6 +407,24 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
 
+    def updateSummary( self,filename,duration=0,videoparams={},containerfps=0,estimatedvffps=0):
+      if filename is None:
+        self.labelVideoSummary.config(text ="")
+        return
+
+      if estimatedvffps is None:
+        estimatedvffps = 0
+      if containerfps is None:
+        containerfps = 0
+      try:
+        self.labelVideoSummary.config(text = "{} - {}s - {}x{} - {:2f} ({:2f})fps ".format(filename,
+                                                                                           duration,
+                                                                                           videoparams.get('w',0),
+                                                                                           videoparams.get('h',0),
+                                                                                           containerfps,
+                                                                                           estimatedvffps))
+      except:
+        self.labelVideoSummary.config(text ="")
 
     def generateSoundWaveBackgrounds(self):
       self.frameTimeLineFrame.generateWaveImages = not self.frameTimeLineFrame.generateWaveImages
@@ -597,6 +622,30 @@ class CutselectionUi(ttk.Frame):
       if url is not None and len(url)>0:
         self.controller.loadVideoYTdl(url)
 
+    def loadClipboardUrls(self):
+      import threading
+      windowRef=self
+      windowRef.cliprunWatch=True
+
+      def clipWatchWorker(windowRef):
+        foundUrls = []
+        while windowRef.cliprunWatch:
+          s=None
+          try:
+            s = windowRef.clipboard_get()
+          except Exception as e:
+            pass
+          if s is not None and s not in foundUrls:
+            windowRef.controller.loadVideoYTdl(s)
+            foundUrls.append(s)
+            print(s)
+        print("END WATCH")
+
+      t = threading.Thread(target=clipWatchWorker,args=(self,))
+      t.start()
+      tk.messagebox.showinfo(title="Watching clipboard", message="Monitoring clipboard for urls, any urls copied will be downloaded with youtube-dl.\nClick 'OK' to stop watching.")
+      windowRef.cliprunWatch=False
+
     def loadVideoFiles(self):
         fileList = askopenfilenames()
         self.controller.loadFiles(fileList)
@@ -634,6 +683,9 @@ class CutselectionUi(ttk.Frame):
 
     def getTotalDuration(self):
         return self.controller.getTotalDuration()
+
+    def addFullClip(self):
+      self.controller.addFullClip()
 
     def addNewInterestMarkNow(self):
       self.controller.addNewInterestMark(self.controller.getCurrentPlaybackPosition())

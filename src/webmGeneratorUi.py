@@ -9,7 +9,7 @@ import logging
 import urllib.request
 import json
 
-RELEASE_NUMVER = 'v3.2.0'
+RELEASE_NUMVER = 'v3.1.0'
 
 class WebmGeneratorUi:
 
@@ -76,6 +76,9 @@ class WebmGeneratorUi:
 
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles)
     self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl)
+
+    self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
+
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile)
 
     self.filemenu.add_separator()
@@ -158,6 +161,9 @@ class WebmGeneratorUi:
 
   def loadVideoFiles(self):
     self.controller.cutselectionUi.loadVideoFiles()
+
+  def loadClipboardUrls(self):
+    self.controller.cutselectionUi.loadClipboardUrls()
 
   def loadVideoYTdl(self):
     self.controller.cutselectionUi.loadVideoYTdl()

@@ -158,6 +158,7 @@ class FFmpegService():
       inputMaxWidth  = 0
       inputMaxHeight = 0
 
+
       for icol,column in enumerate(seqClips):
         col = []
 
@@ -328,13 +329,18 @@ class FFmpegService():
 
       #PRE CUT END
 
+      gridPaddingWidth =0
+      try:
+        gridPaddingWidth = int(options.get('gridPaddingWidth',0))
+      except:
+        pass
       
       logger={}
-      vow,voh = tempStack.getSizeWithContstraint('width',maximumSideLength,logger,0,0)
+      vow,voh = tempStack.getSizeWithContstraint('width',maximumSideLength,logger,0,0,gridPaddingWidth)
 
       if vow>maximumSideLength or voh>maximumSideLength:
         logger={}
-        vow,voh = tempStack.getSizeWithContstraint('height',maximumSideLength,logger,0,0)
+        vow,voh = tempStack.getSizeWithContstraint('height',maximumSideLength,logger,0,0,gridPaddingWidth)
 
       logging.debug("Grid final size {}x{}".format(vow,voh))      
       logging.debug("Grid calculated {}".format(logger))      
@@ -462,7 +468,7 @@ class FFmpegService():
       #audio calcs
 
 
-      ffmpegFilterCommand = "color=s={w}x{h}:c=black[base],".format(w=int(vow),h=int(voh))
+      ffmpegFilterCommand = "color=s={w}x{h}:c={colour}[base],".format(w=int(vow),h=int(voh),colour=options.get('gridPadColour','Black'))
       
       inputsList = []
       inputScales = []

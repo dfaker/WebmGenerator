@@ -80,13 +80,17 @@ class CutselectionController:
           startTS += mult*float(val)
         for mult,val in zip(multipliers,endText.split(':')[::-1]):
           endTS += mult*float(val)
+      elif len(startText)>0 and len(endText)==0:
+        for mult,val in zip(multipliers,startText.split(':')[::-1]):
+          startTS += mult*float(val)
+          endTS = startTS+25
 
-    if startTS != 0 or endTS != 0 and endTS > startTS:
+    if (startTS != 0 or endTS != 0) and endTS != startTS:
       self.addNewSubclip(max(startTS,0), min(endTS,self.getTotalDuration()) )
 
 
   def splitClipIntoSectionsOfLengthN(self):
-    sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be?')
+    sectionLength = self.ui.askFloat('How Many long should the secions be?','How Many long should the secions be?')
     if sectionLength is not None and sectionLength >= 0:
       self.clearAllSubclipsOnCurrentClip()
       start = 0
@@ -145,7 +149,7 @@ class CutselectionController:
     self.currentLoop_b=None
     self.currentLoopCycleStart = None
     self.currentLoopCycleEnd   = None
-    
+    self.ui.updateSummary(None)
     self.ui.updateFileListing(self.files)
     self.ui.restartForNewFile()
 
@@ -192,6 +196,8 @@ class CutselectionController:
     if value is not None:
       logging.debug('Duration updated {}'.format(value))
       self.currentTotalDuration=value
+
+      self.ui.updateSummary( self.player.filename,self.player.duration,self.player.video_params,self.player.container_fps,self.player.estimated_vf_fps)
 
   def getIsPlaybackStarted(self):
     return self.currentTotalDuration is not None and self.currentTimePos is not None
@@ -294,6 +300,7 @@ class CutselectionController:
         self.playVideoFile(self.files[0],0)
       else:
         self.player.command('stop')
+        self.ui.updateSummary(None)
         self.currentlyPlayingFileName=None
         self.ui.frameTimeLineFrame.resetForNewFile()
     self.updateProgressStatistics()
@@ -373,6 +380,9 @@ class CutselectionController:
 
   def getInterestMarks(self):
     return self.videoManager.getInterestMarks(self.currentlyPlayingFileName)
+
+  def addFullClip(self):
+    self.addNewSubclip(0,self.getTotalDuration())
 
   def addNewSubclip(self,start,end):
     if start<0:

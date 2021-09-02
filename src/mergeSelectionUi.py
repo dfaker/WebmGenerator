@@ -652,6 +652,8 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsVar         = tk.StringVar()
     self.audioMergeOptionsVar     = tk.StringVar()
     self.gridLoopMergeOptionsVar  = tk.StringVar()
+    self.gridPadColourOptionsVar  = tk.StringVar()
+    self.gridPadWidthVar  = tk.StringVar()
     self.postProcessingFilterVar  = tk.StringVar()
 
     self.audioOverrideVar         = tk.StringVar()
@@ -670,10 +672,16 @@ class MergeSelectionUi(ttk.Frame):
     self.audioChannelsVar.trace('w',self.valueChange)
     self.audioMergeOptionsVar.trace('w',self.valueChange)
     self.gridLoopMergeOptionsVar.trace('w',self.valueChange)
+    self.gridPadColourOptionsVar.trace('w',self.valueChange)
+    self.gridPadWidthVar.trace('w',self.valueChange)
     self.postProcessingFilterVar.trace('w',self.valueChange)
     self.minimumPSNRVar.trace('w',self.valueChange)
     self.optimizerVar.trace('w',self.valueChange)
     self.audiOverrideBiasVar.trace('w',self.valueChange)
+
+
+
+
 
     self.optimziers = [
       'Linear Search',
@@ -767,6 +775,12 @@ class MergeSelectionUi(ttk.Frame):
     self.gridLoopMergeOptions = ['End on shortest Clip','Loop shorter clips to match longest']
     self.gridLoopMergeOptionsVar.set(self.gridLoopMergeOptions[0])
 
+    self.gridPadColourOptions = ['Black','White','DeepPink','MintCream','DarkGray']
+    self.gridPadColourOptionsVar.set(self.gridPadColourOptions[0])
+
+    self.gridPadWidthVar.set('0')
+
+
     self.postProcessingFilterOptions = ['None']
     if os.path.exists('postFilters'):
       for f in os.listdir('postFilters'):
@@ -848,6 +862,31 @@ class MergeSelectionUi(ttk.Frame):
     self.entryGridLoopOptions = ttk.OptionMenu(self.frameGridLoopOptions,self.gridLoopMergeOptionsVar,self.gridLoopMergeOptionsVar.get(),*self.gridLoopMergeOptions)
     self.entryGridLoopOptions.pack(expand='true', fill='both', side='left')
     self.frameGridLoopOptions.pack(fill='x', side='bottom')
+
+
+    self.frameGridLoopPadColourOptions = ttk.Frame(self.frameGridSettings)
+
+    self.labelPadColourOptions = ttk.Label(self.frameGridLoopPadColourOptions)
+    self.labelPadColourOptions.config(anchor='e', padding='2', text='Grid Pad Colour', width='25')
+    self.labelPadColourOptions.pack(side='left')
+
+    self.gridPadColourOptions = ttk.OptionMenu(self.frameGridLoopPadColourOptions,self.gridPadColourOptionsVar,self.gridPadColourOptionsVar.get(),*self.gridPadColourOptions)
+    self.gridPadColourOptions.pack(expand='true', fill='both', side='left')
+    self.frameGridLoopPadColourOptions.pack(fill='x', side='bottom')
+
+    self.frameGridLoopPadWidthOptions = ttk.Frame(self.frameGridSettings)
+
+    self.labelPadWidthOptions = ttk.Label(self.frameGridLoopPadWidthOptions)
+    self.labelPadWidthOptions.config(anchor='e', padding='2', text='Grid Pad width', width='25')
+    self.labelPadWidthOptions.pack(side='left')
+
+    self.gridPadWidthOptions = ttk.Spinbox(self.frameGridLoopPadWidthOptions, 
+                                             from_=0, 
+                                             to=float('inf'), 
+                                             increment=1,
+                                             textvariable=self.gridPadWidthVar)    
+    self.gridPadWidthOptions.pack(expand='true', fill='both', side='left')
+    self.frameGridLoopPadWidthOptions.pack(fill='x', side='bottom')
 
 
     # Settings for Grid Merge Ends
@@ -1186,6 +1225,18 @@ class MergeSelectionUi(ttk.Frame):
       pass
 
     try:
+      self.gridPadColour = self.gridPadColourOptionsVar.get()
+    except:
+      self.gridPadColour='Black'
+      pass
+
+    try:
+      self.gridPadWidth = int(self.gridPadWidthVar.get())
+    except:
+      self.gridPadWidth=0
+      pass
+
+    try:
       self.minimumPSNR = self.minimumPSNRVar.get()
     except:
       pass
@@ -1267,6 +1318,8 @@ class MergeSelectionUi(ttk.Frame):
         'minimumPSNR':self.minimumPSNR,
         'optimizer':self.optimizer,
         'audioOverrideBias':self.audiOverrideBiasValue,
+        'gridPaddingWidth':self.gridPadWidth,
+        'gridPadColour':self.gridPadColour
       }
 
       encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)

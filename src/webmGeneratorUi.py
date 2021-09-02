@@ -9,7 +9,7 @@ import logging
 import urllib.request
 import json
 
-RELEASE_NUMVER = 'v3.3.1'
+RELEASE_NUMVER = 'v3.1.0'
 
 class WebmGeneratorUi:
 
@@ -43,6 +43,7 @@ class WebmGeneratorUi:
 
 
     self.style.configure('small.TButton', padding=0)
+    self.style.configure('smallTall.TButton', padding=(0,10))
     self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)
     self.style.configure('smallextra.TButton', padding=-20)
 

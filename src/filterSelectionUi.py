@@ -392,17 +392,23 @@ class FilterSelectionUi(ttk.Frame):
     
     self.buttonFilterActionClear = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonFilterActionClear.config(text='Clear filters')
-    self.buttonFilterActionClear.config(command=self.clearFilters)
+    self.buttonFilterActionClear.config(command=self.clearFilters,style="smallTall.TButton")
     self.buttonFilterActionClear.pack(expand='true', fill='x', side='left')
+
+
+    self.buttonOverrideFilters = ttk.Button(self.frameFilterActionsGlobal)
+    self.buttonOverrideFilters.config(text='Apply to all')
+    self.buttonOverrideFilters.config(command=self.overrideFilters,style="smallTall.TButton")
+    self.buttonOverrideFilters.pack(expand='true', fill='x', side='right')
 
     self.buttonPasteFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonPasteFilters.config(text='Paste filters')
-    self.buttonPasteFilters.config(command=self.pasteFilters)
+    self.buttonPasteFilters.config(command=self.pasteFilters,style="smallTall.TButton")
     self.buttonPasteFilters.pack(expand='true', fill='x', side='right')
     
     self.buttonCopyFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonCopyFilters.config(text='Copy filters')
-    self.buttonCopyFilters.config(command=self.copyfilters)
+    self.buttonCopyFilters.config(command=self.copyfilters,style="smallTall.TButton")
     self.buttonCopyFilters.pack(expand='true', fill='x', side='right')
 
     self.frameFilterActionsGlobal.config(height='200', width='200')
@@ -795,6 +801,13 @@ class FilterSelectionUi(ttk.Frame):
   def copyfilters(self):
     if self.currentSubclipIndex is not None:
       self.filterClipboard = self.convertFilterstoSpecDefaults()
+
+  def overrideFilters(self):
+    if self.currentSubclipIndex is not None:
+      tempfilterClipboard = self.convertFilterstoSpecDefaults()
+      for rid in self.subClipOrder:
+        self.subclips[rid]['filters'] = copy.deepcopy(tempfilterClipboard)
+      self.recaculateFilters()
 
   def pasteFilters(self):
     if self.currentSubclipIndex is not None:

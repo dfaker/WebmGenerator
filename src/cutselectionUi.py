@@ -633,12 +633,16 @@ class CutselectionUi(ttk.Frame):
           s=None
           try:
             s = windowRef.clipboard_get()
+            if s is not None:
+              s.replace('\n',' ')
+              for substr in s.split(' '):
+                substr = substr.strip()
+                if substr not in foundUrls and len(substr)>0:
+                  windowRef.controller.loadVideoYTdl(substr)
+                  foundUrls.append(substr)
+                  print(substr)
           except Exception as e:
             pass
-          if s is not None and s not in foundUrls:
-            windowRef.controller.loadVideoYTdl(s)
-            foundUrls.append(s)
-            print(s)
         print("END WATCH")
 
       t = threading.Thread(target=clipWatchWorker,args=(self,))
@@ -704,6 +708,12 @@ class CutselectionUi(ttk.Frame):
 
     def cloneSubclip(self, point):
         self.controller.cloneSubclip(point)
+
+    def copySubclip(self, point):
+        self.controller.copySubclip(point)
+
+    def pasteSubclip(self):
+        self.controller.pasteSubclip()
 
     def removeSubclip(self, point):
         self.controller.removeSubclip(point)

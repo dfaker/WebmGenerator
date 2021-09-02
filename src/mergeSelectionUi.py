@@ -329,12 +329,26 @@ class SequencedVideoEntry(ttk.Frame):
     self.player.start = self.s
     self.player.time_pos  = self.s
 
-    self.player.register_key_binding("CLOSE_WIN", "quit")
-    
     def quit(key_state, key_name, key_char):
-      self.player.terminate()
-            
-    self.player.register_key_binding("CLOSE_WIN", quit)
+      try:
+        self.player.stop()
+        self.player.quit()
+        self.player.terminate()
+      except Exception as e:
+        print(e)
+
+    self.quit = quit
+
+    self.player.register_key_binding("q", self.quit)
+    self.player.register_key_binding("Q", self.quit)        
+    self.player.register_key_binding("CLOSE_WIN", self.quit)
+
+    @self.player.event_callback('shutdown')
+    @self.player.event_callback('quit')
+    def quitfunc(event):
+      self.quit()
+
+    self.quitfunc=quitfunc
 
   def moveForwards(self):
     self.controller.moveSequencedClip(self,1)    

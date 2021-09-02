@@ -99,7 +99,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Delete subclip",command=self.canvasPopupRemoveSubClipCallback)
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Clone subclip",command=self.canvasPopupCloneSubClipCallback)
-    
+
+    self.timeline_canvas_popup_menu.add_separator()
+    self.timeline_canvas_popup_menu.add_command(label="Copy  subclip timestamps",command=self.canvasPopupCopySubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Paste subclip timestamps",command=self.canvasPopupPasteSubClipCallback)
+
+
     self.timeline_canvas_popup_menu.add_command(label="Expand subclip to interest marks",command=self.canvasPopupExpandSublcipToInterestMarksCallback)
 
     self.timeline_canvas_popup_menu.add_separator()
@@ -190,8 +195,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def processFileAudioToBytes(self,filename,totalDuration):
     import subprocess as sp
-    sampleRate = 2000
-    proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+    sampleRate = 4000
+    proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     n=0
     self.completedAudioByteDecoded = False
     while 1:
@@ -795,6 +800,28 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if lower<e<upper or lower<s<upper:
           self.controller.cloneSubclip((e+s)/2)
           break
+    self.timeline_canvas_last_right_click_x=None
+    self.uiDirty=True
+
+
+  def canvasPopupCopySubClipCallback(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+      upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+      for rid,(s,e) in list(ranges):
+        if s<mid<e:
+          self.controller.copySubclip((e+s)/2)
+          break
+        if lower<e<upper or lower<s<upper:
+          self.controller.copySubclip((e+s)/2)
+          break
+    self.timeline_canvas_last_right_click_x=None
+    self.uiDirty=True
+
+  def canvasPopupPasteSubClipCallback(self):
+    self.controller.pasteSubclip()
     self.timeline_canvas_last_right_click_x=None
     self.uiDirty=True
 

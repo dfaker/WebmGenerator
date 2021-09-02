@@ -30,6 +30,7 @@ class CutselectionController:
     self.currentTotalDuration=None
     self.currentLoop_a=None
     self.currentLoop_b=None
+    self.copiedTimeRange = None
 
     """
     if len(initialFiles)>1:
@@ -382,7 +383,9 @@ class CutselectionController:
     return self.videoManager.getInterestMarks(self.currentlyPlayingFileName)
 
   def addFullClip(self):
-    self.addNewSubclip(0,self.getTotalDuration())
+    self.videoManager.clearallSubclipsOnFile(self.currentlyPlayingFileName)
+    self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,0.0,self.currentTotalDuration)
+    self.updateProgressStatistics()
 
   def addNewSubclip(self,start,end):
     if start<0:
@@ -406,6 +409,19 @@ class CutselectionController:
   def cloneSubclip(self,point):
     self.videoManager.cloneSubclip(self.currentlyPlayingFileName,point)
     self.updateProgressStatistics()
+
+  def copySubclip(self,point):
+    for i,(s,e) in self.videoManager.getRangesForClip(self.currentlyPlayingFileName):
+      print(s,e,point)
+      if float(s) <= float(point) <= float(e):
+
+        self.copiedTimeRange = (float(s),float(e))
+
+  def pasteSubclip(self):
+    if self.copiedTimeRange is not None:
+      s,e = self.copiedTimeRange
+      self.addNewSubclip(s,e)
+
 
   def removeSubclip(self,point):
     self.videoManager.removeSubclip(self.currentlyPlayingFileName,point)

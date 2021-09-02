@@ -71,7 +71,6 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-c:v","libx264" 
                    ,"-stats"
                    ,"-max_muxing_queue_size", "9999"
-
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", str(bufsize)
                    ,"-threads", str(4)
@@ -79,6 +78,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-preset", "slower"
                    ,"-tune", "film"
                    ,'-psnr'
+                   ,"-vsync","2"
                    ,"-movflags","+faststart"]
 
     if sizeLimitMax == 0.0:
@@ -105,6 +105,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand += ["-sn",tempVideoFilePath]
 
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
+    print("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)

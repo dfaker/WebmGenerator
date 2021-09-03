@@ -196,7 +196,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def processFileAudioToBytes(self,filename,totalDuration):
     import subprocess as sp
     sampleRate = 4000
-    proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+    proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,highpass=f=200,lowpass=f=3000,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     n=0
     self.completedAudioByteDecoded = False
     while 1:

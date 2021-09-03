@@ -81,6 +81,8 @@ class WebmGeneratorUi:
 
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
+    self.filemenu.add_separator()
+    self.filemenu.add_command(label="Cancel current youtube-dl download", command=self.cancelCurrentYoutubeDl)
 
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Update youtube-dl", command=self.updateYoutubeDl)
@@ -165,6 +167,9 @@ class WebmGeneratorUi:
 
   def loadClipboardUrls(self):
     self.controller.cutselectionUi.loadClipboardUrls()
+
+  def cancelCurrentYoutubeDl(self):
+    self.controller.cancelCurrentYoutubeDl()
 
   def loadVideoYTdl(self):
     self.controller.cutselectionUi.loadVideoYTdl()

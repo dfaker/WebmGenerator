@@ -201,6 +201,9 @@ class WebmGeneratorController:
   def updateYoutubeDl(self):
     self.ytdlService.update()
 
+  def cancelCurrentYoutubeDl(self):
+    self.ytdlService.cancelCurrentYoutubeDl()
+
   def close_ui(self):
     if self.lastSaveFile is not None and self.lastSaveFile != self.autosaveFilename:
       lastSaveData = json.loads(open(self.lastSaveFile,'r').read())

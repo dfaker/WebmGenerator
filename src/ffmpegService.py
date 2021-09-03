@@ -1348,7 +1348,7 @@ class FFmpegService():
                                                            minSeconds=minSeconds,
                                                            maxSeconds=maxSeconds,
                                                            cropRect=cropRect),callback) )
-
+    
 
   def cancelEncodeRequest(self,requestId):
     cancelCurrentEncodeRequest(requestId)

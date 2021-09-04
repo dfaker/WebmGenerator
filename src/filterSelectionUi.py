@@ -524,6 +524,8 @@ class FilterSelectionUi(ttk.Frame):
     self.subClipOrder=[]
     self.currentSubclipIndex=None
     self.filterClipboard=[]
+    self.mouseRectMoving=False
+    self.mouseRectMoveStart=(0,0)
   
   def autoCropCallback(self,x,y,w,h):
 
@@ -625,19 +627,38 @@ class FilterSelectionUi(ttk.Frame):
   def videomousePress(self,e):
 
       if e.type == tk.EventType.ButtonPress:
-        logging.debug("videomousePress start")
-        self.mouseRectDragging=True
-        self.screenMouseRect[0]=e.x
-        self.screenMouseRect[1]=e.y
-      elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and self.mouseRectDragging:
+
+        
+        if self.screenMouseRect[0] is not None and abs(((self.screenMouseRect[0]+self.screenMouseRect[2])/2)-e.x)<10 and abs(((self.screenMouseRect[1]+self.screenMouseRect[3])/2)-e.y)<10:
+          self.mouseRectMoving=True
+          self.mouseRectMoveStart=(e.x,e.y)
+        else:
+          logging.debug("videomousePress start")
+          self.mouseRectDragging=True
+          self.screenMouseRect[0]=e.x
+          self.screenMouseRect[1]=e.y
+        
+      elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and (self.mouseRectDragging or self.mouseRectMoving):
         logging.debug("videomousePress show")
-        self.screenMouseRect[2]=e.x
-        self.screenMouseRect[3]=e.y
+
+        if self.mouseRectMoving:
+          haw = abs(self.screenMouseRect[0]-self.screenMouseRect[2])//2
+          hah = abs(self.screenMouseRect[1]-self.screenMouseRect[3])//2
+          self.screenMouseRect[0]=e.x-haw
+          self.screenMouseRect[1]=e.y-hah
+          self.screenMouseRect[2]=e.x+haw
+          self.screenMouseRect[3]=e.y+hah
+          print(self.screenMouseRect)
+        else:
+          self.screenMouseRect[2]=e.x
+          self.screenMouseRect[3]=e.y
+
         self.applyScreenSpaceAR()
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
       if e.type == tk.EventType.ButtonRelease:
         logging.debug("videomousePress release")
         self.mouseRectDragging=False
+        self.mouseRectMoving=False
 
         vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
         vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 

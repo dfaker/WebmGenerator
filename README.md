@@ -53,6 +53,7 @@ Initially the application opens in the **Cuts** tab, in the left-hand panel you 
 - Set `Slice Length` - To set the length of sub clips when they're initially added, you can always resize them later.
 - Set the `Target Length` - The final duration you want to hit.
 - Set the `Target Trim` - The expected overlap of clips if you use a transition effect to cross-cut between them, if you expect to use hard cuts set this to zero.
+- Set the `Drag offset` - The amount that the current playback location will be shifted back from the end of the subclip (hold ctrl to shift forwards from the start instead) when dragging a preview, large values can be useful in aligning an event between videos.
 
 Below that are:
 

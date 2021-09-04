@@ -98,7 +98,7 @@ Scrolling the mouse wheel on the green selection bar at the bottom of a subclip 
 
 ![Markers and Length Targeting](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/03%20-%20Multiple%20clips%20and%20markers.png)
 
-The above image shows both the presence of the timeline markers added with `Add interest mark` and multiple sub clips that have already been added and resized, Not that with these three sections selected the final output duration is at 74.69 seconds, because this is over the selected `Target Length` the progress bar is red.
+The above image shows both the presence of the timeline markers added with `Add interest mark` and multiple sub clips that have already been added and resized, Not that with these three sections selected the final output duration is at 1:56 seconds, because this is over the selected `Target Length` the progress bar is red.
 
 ### Add Effects - Filtering
 

@@ -73,15 +73,23 @@ Right clicking brings up a context menu that allows you to:
 
 - `Add new subclip` - A new subclip to be cut out will be added to the timeline centered around the point you right clicked, initially it will have the same duration as you set in `Slice Length`
 - `Delete subclip` - Removes the subclip under where you right clicked.
+- `Clone subclip` - Duplicates the subclip under where you right clicked.
+- `Copy subclip` - Copies the timestamps of the subclip under where you right clicked into an internal clipboard.
+- `Paste subclip` - Pastes the timestamps of the subclip under where you right clicked from the internal clipboard, possibly onto a different video.
+- `Expand to interest marks` - Extends the the subclip under where you right clicked to that the start and end markers align with the next other interest or scene change markers.
 - `Add interest mark` - Adds a visual indicator at a time position, no effect on the output but is useful when watching through and decing representative scenes.
 - `Nudge to the lowest error +- #s` - Attempts to move the start and end markers (no more than 1 or 2 seconds back and forth) to find a 'perfect loop' for making looping videos, will process in the background and update the subclip under where you right clicked when complete.
-- `Run scene change detection` - Starts a background process that searches for any scene transitions in the video and places visual markers on the timeline, this can take quite a while for long clips.
+- `Find loop at most #s here` - Scans around where you right clicked on the timeline to find the best 'perfect loop' at most # seconds long.
 
 Once a clip has been added you can drag the blue and red start and end markers to change the start and end points of the subclip, the player will seek to whatever position your drag the start or end point to.
+
+When a start and end marker has been clicked it will remain selected with a white border, the left and right arrow keys can be used to move the selected marker a single frame forwards and backwards for precise start and end point selection.
 
 The green central bar between the markers may also be dragged to move the whole time window back and forth while keeping the same subclip duration.
 
 Scrolling the mouse wheel on the timeline will zoom in and out, the gray bar at the top of the timeline window may then be used to scrub your zoomed view through the clip to view earlier or later sections.
+
+Scrolling the mouse wheel on the green selection bar at the bottom of a subclip will shift that sublcip (both start and end) forwards and backwards while retaining total duration.
 
 ### Cutting More - Markers and Size Targeting
 

@@ -9,7 +9,7 @@ import logging
 import urllib.request
 import json
 
-RELEASE_NUMVER = 'v3.2.0'
+RELEASE_NUMVER = 'v3.4.0'
 
 class WebmGeneratorUi:
 

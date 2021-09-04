@@ -131,14 +131,17 @@ The `Merge style` drop down allows you to switch between joining all the selecte
 
 The `Sequence` panel is the order in which your selected sub clips will appear in the output, the left and right arrow buttons move the sub clips back and forwards in the final video order, the Remove button removes the clip from the planned sequence entirely while keeping it available in the top `Avlaible Cuts` for re-adding later.
 
-The bottom frame the configuration for the output clips:
-- `Output filename prefix` - the name that will be added to the start of the final video's filename, this is automatically guessed from the input videos if possible.
-- `Output format` - Allows the selection of output format between mpv, webm and gif.
-- `Size Match Strategy` - How to handle input videos of difference sizes.
-- `Maximum File Size` - The maximum size the output is allowed to be in MB, if the final video is larger than this encoding will be attempted again at a reduced quality (or reduced size for .gifs), if set to zero any output size no matter how large is allowed.
-- `Maximum Width` - The maximum output width of the final video, if the output is larger it'll be scaled down, if smaller it'll be left untouched.
+As we're in Sequence mode we have two options to control the fade effect between clips, if any:
 - `Transition Duration` - Low long the transition effects between clips will last, if you want hard cuts set this to zero.
 - `Transition style` - The look of the transition effects between clips, examples can be seen at https://trac.ffmpeg.org/wiki/Xfade
+
+On thw loer frame we have the configuration for the output clips:
+- `Output format` - Allows the selection of output format between mpv, webm and gif.
+- `Output filename prefix` - the name that will be added to the start of the final video's filename, this is automatically guessed from the input videos if possible.
+- `Maximum File Size` - The maximum size the output is allowed to be in MB, if the final video is larger than this encoding will be attempted again at a reduced quality (or reduced size for .gifs), if set to zero any output size no matter how large is allowed.
+- `Size Match Strategy` - How to handle input videos of difference sizes.
+- `Limit Largest Dimension` - The maximum output width or height of the final video (whichever is greater), if the output is larger it'll be scaled down, if smaller it'll be left untouched.
+- `Audio Channels` - Controls the presence or absence of audio in the output, including no sound, and various mono and stereo bitrates.
 - `Speed Adjustment` - Will perform a speed-up on the final clip while keeping the sound realistic, a minimum and maximum of 0.5x and 2x are possible but generally becomes distracting over 0.12x
 
 ### Make that Video - Encoding

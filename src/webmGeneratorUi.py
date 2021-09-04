@@ -131,8 +131,11 @@ class WebmGeneratorUi:
 
     self.statusFrame = ttk.Frame(self.master,height='20')
 
-    self.statusCancel = ttk.Button(self.statusFrame,text='Stop',state='disabled',style='small.TButton',command=self.cancelAction)
+    self.statusCancel = ttk.Button(self.statusFrame,text='Stop',state='disabled',style='smallextra.TButton',command=self.cancelAction)
     self.statusCancel.pack(expand=False, fill='y',side='left')    
+
+    self.statusPreview = ttk.Button(self.statusFrame,text='Preview',state='disabled',style='small.TButton',command=self.togglePreview)
+    self.statusPreview.pack(expand=False, fill='y',side='left')    
 
     self.statusLabel = ttk.Label(self.statusFrame,text='Idle no background task')
     self.statusLabel.pack(expand=True, fill='both',side='left')
@@ -198,6 +201,9 @@ class WebmGeneratorUi:
         filename = filename+'.webgproj'
       self.controller.saveProject(filename)
 
+  def togglePreview(self):
+    self.controller.toggleYTPreview()
+
   def updateYoutubeDl(self):
     self.controller.updateYoutubeDl()
 
@@ -211,15 +217,32 @@ class WebmGeneratorUi:
     self.controller.cancelCurrentYoutubeDl()
     self.statusCancel['state']='disabled'
 
-  def updateGlobalStatus(self,message,percentage):
+  def updateGlobalStatus(self,message,percentage,progressPreview=None):
+
+    if progressPreview is not None:
+      self.controller.cutselectionUi.updateProgressPreview(progressPreview)
+    elif message is not None and 'streaming' not in message:
+      self.controller.cutselectionUi.updateProgressPreview(None)
+
     if message is not None:
+      if 'streaming' in message:
+        self.statusPreview['state']='enabled'
+      else:
+        self.statusPreview['state']='disabled'
+
       if 'Download progress' in message or 'streaming' in message:
         self.statusCancel['state']='enabled'
       else:
         self.statusCancel['state']='disabled'
       self.statusLabel['text']=message
     if percentage is not None:
-      self.statusProgress['value'] = max(0,min(100,percentage*100))
+      if percentage < 0:
+        self.statusProgress['mode']='indeterminate'
+        self.statusProgress.start()
+      else:
+        self.statusProgress.stop()
+        self.statusProgress['mode']='determinate'
+        self.statusProgress['value'] = max(0,min(100,percentage*100))
 
   def addPane(self,pane,name):
     self.panes.append(pane)

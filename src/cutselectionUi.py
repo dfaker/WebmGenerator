@@ -312,10 +312,22 @@ class CutselectionUi(ttk.Frame):
         self.scrolledframeVideoPreviewContainer.pack(
             expand="true", fill="both", side="top"
         )
+
+
+
+
         self.labelframeSourceVideos.config(
             height="200", text="Source Videos", width="200"
         )
         self.labelframeSourceVideos.pack(expand="true", fill="both", side="top")
+
+        self.progresspreviewLabel = ttk.Label(self.frameSliceSettings)
+        self.progresspreviewLabel.config(text="")
+        self.progresspreviewData = "P5\n1 1\n255\n" + ("127" * 1 * 1)
+
+        self.progressPreviewImage = tk.PhotoImage(data=self.progresspreviewData)
+        self.progresspreviewLabel.configure(image=self.progressPreviewImage)
+        self.progresspreviewLabel.pack(side="top", expand="false", fill="y")
 
         self.frameSliceSettings.config(height="200", width="200")
         self.frameSliceSettings.pack(
@@ -406,6 +418,21 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.daemon = True
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
+
+    def updateProgressPreview(self,data):
+      try:
+        if data is None:
+          self.progresspreviewData = "P5\n1 1\n255\n" + ("127" * 1 * 1)
+        else:
+          self.progresspreviewData  = data
+        
+        self.progressPreviewImage = tk.PhotoImage(data=self.progresspreviewData)
+        self.progresspreviewLabel.configure(image=self.progressPreviewImage)
+      except Exception as e:
+        print(e)
+        self.progresspreviewData = "P5\n1 1\n255\n" + ("127" * 1 * 1)
+        self.progressPreviewImage = tk.PhotoImage(data=self.progresspreviewData)
+        self.progresspreviewLabel.configure(image=self.progressPreviewImage)
 
     def updateSummary( self,filename,duration=0,videoparams={},containerfps=0,estimatedvffps=0):
       if filename is None:
@@ -637,7 +664,7 @@ class CutselectionUi(ttk.Frame):
               s.replace('\n',' ')
               for substr in s.split(' '):
                 substr = substr.strip()
-                if substr not in foundUrls and len(substr)>0:
+                if substr not in foundUrls and len(substr)>2 and ':' in substr and '.' in substr:
                   windowRef.controller.loadVideoYTdl(substr)
                   foundUrls.append(substr)
                   print(substr)

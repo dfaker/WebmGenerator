@@ -234,6 +234,7 @@ class WebmGeneratorUi:
     self.master.mainloop()
   
   def close_ui(self):
+    self.controller.cancelCurrentYoutubeDl()
     try:
       self.master.destroy()
       del self.master

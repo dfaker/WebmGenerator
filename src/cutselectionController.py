@@ -175,8 +175,16 @@ class CutselectionController:
     self.player.observe_property('duration', self.handleMpvDurationChange)
 
   def close_ui(self):
-    self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
-    self.player.unobserve_property('duration', self.handleMpvDurationChange)
+    try:
+      self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
+    except Exception as e:
+      print(e)
+
+    try:
+      self.player.unobserve_property('duration', self.handleMpvDurationChange)
+    except Exception as e:
+      print(e)
+    
     for file in self.files:
       self.removeVideoFile(file)
     try:

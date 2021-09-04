@@ -229,13 +229,18 @@ class WebmGeneratorController:
 
     if os.path.exists(self.tempFolder):
       for f in os.listdir(self.tempFolder):
-        os.remove(os.path.join(self.tempFolder,f))
+        try:
+          os.remove(os.path.join(self.tempFolder,f))
+        except Exception as e:
+          print(e)
 
     if os.path.exists(self.tempDownloadFolder):
       for f in os.listdir(self.tempDownloadFolder):
         if f.endswith('.part'):
-          os.remove(os.path.join(self.tempDownloadFolder,f))
-
+          try: 
+            os.remove(os.path.join(self.tempDownloadFolder,f))
+          except Exception as e:
+            print(e)
 
   def __call__(self):
     self.webmMegeneratorUi.run()

@@ -830,6 +830,19 @@ class FilterSelectionUi(ttk.Frame):
         self.subclips[rid]['filters'] = copy.deepcopy(tempfilterClipboard)
       self.recaculateFilters()
 
+      currentClip = self.getCurrentClip()
+      if currentClip is not None:
+        filters           = copy.deepcopy(currentClip['filters'])
+        filterexp         = copy.deepcopy(currentClip['filterexp'])
+        filterexpEncStage = copy.deepcopy(currentClip['filterexpEncStage'])
+
+        print(self.subclips)
+        for clip in self.subclips.values():
+          clip['filters']           = filters
+          clip['filterexp']         = filterexp
+          clip['filterexpEncStage'] = filterexpEncStage        
+        print(self.subclips)
+
   def pasteFilters(self):
     if self.currentSubclipIndex is not None:
       rid = self.subClipOrder[self.currentSubclipIndex]

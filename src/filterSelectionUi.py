@@ -626,9 +626,7 @@ class FilterSelectionUi(ttk.Frame):
 
   def videomousePress(self,e):
 
-      if e.type == tk.EventType.ButtonPress:
-
-        
+      if e.type == tk.EventType.ButtonPress:        
         if self.screenMouseRect[0] is not None and abs(((self.screenMouseRect[0]+self.screenMouseRect[2])/2)-e.x)<10 and abs(((self.screenMouseRect[1]+self.screenMouseRect[3])/2)-e.y)<10:
           self.mouseRectMoving=True
           self.mouseRectMoveStart=(e.x,e.y)
@@ -637,10 +635,8 @@ class FilterSelectionUi(ttk.Frame):
           self.mouseRectDragging=True
           self.screenMouseRect[0]=e.x
           self.screenMouseRect[1]=e.y
-        
       elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and (self.mouseRectDragging or self.mouseRectMoving):
         logging.debug("videomousePress show")
-
         if self.mouseRectMoving:
           haw = abs(self.screenMouseRect[0]-self.screenMouseRect[2])//2
           hah = abs(self.screenMouseRect[1]-self.screenMouseRect[3])//2
@@ -652,7 +648,6 @@ class FilterSelectionUi(ttk.Frame):
         else:
           self.screenMouseRect[2]=e.x
           self.screenMouseRect[3]=e.y
-
         self.applyScreenSpaceAR()
         self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
       if e.type == tk.EventType.ButtonRelease:
@@ -757,12 +752,11 @@ class FilterSelectionUi(ttk.Frame):
 
   def tabSwitched(self,tabName):
     if str(self) == tabName:
-      if (self.currentSubclipIndex is None and len(self.subclips)>0) or (self.currentSubclipIndex is not None and (len(self.subclips)-1)>self.currentSubclipIndex):
-        self.currentSubclipIndex=0
       self.recauclateSubclips()
       self.controller.play()
     else:
       self.controller.pause()
+
 
   def recauclateSubclips(self):
     unusedRids = set(self.subclips.keys())
@@ -786,7 +780,13 @@ class FilterSelectionUi(ttk.Frame):
     if self.currentSubclipIndex is not None:
       tempSeclectedRid = self.subClipOrder[self.currentSubclipIndex]
 
+
+
+
     self.subClipOrder = [k for k,v in sorted( self.subclips.items(), key=lambda x:(x[1]['filename'],x[1]['start']) ) ]
+
+    print('tempSeclectedRid',tempSeclectedRid)
+    print('self.subClipOrder',self.subClipOrder)
 
     if tempSeclectedRid in self.subClipOrder:
       self.setSubclipIndex(self.subClipOrder.index(tempSeclectedRid))
@@ -850,8 +850,11 @@ class FilterSelectionUi(ttk.Frame):
   def setSubclipIndex(self,newIndex):
     self.recaculateFilters()
     if self.currentSubclipIndex is not None and len(self.subClipOrder)>0:
-      rid = self.subClipOrder[self.currentSubclipIndex]
-      self.subclips[rid]['filters'] = self.convertFilterstoSpecDefaults()
+      try:
+        rid = self.subClipOrder[self.currentSubclipIndex]
+        self.subclips[rid]['filters'] = self.convertFilterstoSpecDefaults()
+      except Exception as e:
+        print(e,"Can't update old subclip by index")
 
     self.currentSubclipIndex = newIndex
     for f in self.filterSpecifications:

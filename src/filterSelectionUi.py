@@ -836,12 +836,10 @@ class FilterSelectionUi(ttk.Frame):
         filterexp         = copy.deepcopy(currentClip['filterexp'])
         filterexpEncStage = copy.deepcopy(currentClip['filterexpEncStage'])
 
-        print(self.subclips)
         for clip in self.subclips.values():
           clip['filters']           = filters
           clip['filterexp']         = filterexp
           clip['filterexpEncStage'] = filterexpEncStage        
-        print(self.subclips)
 
   def pasteFilters(self):
     if self.currentSubclipIndex is not None:

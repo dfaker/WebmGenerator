@@ -90,6 +90,8 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Exit", command=self.exitProject)
     self.menubar.add_cascade(label="File",  menu=self.filemenu)
 
+    self.showStreamPreviews = False
+
     def versioncheck():
       try:
         with urllib.request.urlopen('https://api.github.com/repos/dfaker/WebmGenerator/releases') as f:
@@ -202,7 +204,13 @@ class WebmGeneratorUi:
       self.controller.saveProject(filename)
 
   def togglePreview(self):
-    self.controller.toggleYTPreview()
+    self.showStreamPreviews = not self.showStreamPreviews
+    self.controller.toggleYTPreview(self.showStreamPreviews)
+    
+    if self.showStreamPreviews:
+      self.controller.cutselectionUi.updateProgressPreview("P5\n220 130\n255\n" + ("127" * 220 * 130))
+    else:
+      self.controller.cutselectionUi.updateProgressPreview(None)
 
   def updateYoutubeDl(self):
     self.controller.updateYoutubeDl()
@@ -219,7 +227,7 @@ class WebmGeneratorUi:
 
   def updateGlobalStatus(self,message,percentage,progressPreview=None):
 
-    if progressPreview is not None:
+    if progressPreview is not None and self.showStreamPreviews:
       self.controller.cutselectionUi.updateProgressPreview(progressPreview)
     elif message is not None and 'streaming' not in message:
       self.controller.cutselectionUi.updateProgressPreview(None)

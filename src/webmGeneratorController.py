@@ -198,8 +198,8 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("saveProject save failed",exc_info=e)
 
-  def toggleYTPreview(self):
-    self.ytdlService.togglePreview()
+  def toggleYTPreview(self,toggleValue):
+    self.ytdlService.togglePreview(toggleValue)
 
   def updateYoutubeDl(self):
     self.ytdlService.update()

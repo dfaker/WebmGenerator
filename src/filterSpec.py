@@ -152,15 +152,14 @@ selectableFilters = [
         "params": [ 
 
             {"n": "text", "d": "Text", "type": "string"},
-            {"n": "fontfile", "d": "font.otf", "type": "file"},
+            {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file"},
 
             {"n": "w", "d": 1, "type": "int", "range": None, "rectProp": "w", "inc": 1},
             {"n": "h", "d": 1, "type": "int", "range": None, "rectProp": "h", "inc": 1},
 
-
             {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
             {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
-            {"n": "fontsize", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
+            {"n": "fontsize", "d": 1, "type": "int", "range": None, "inc": 1},
 
 
 
@@ -1164,7 +1163,7 @@ selectableFilters = [
         "filter": "drawtext",
         "params": [
             {"n": "text", "d": "Text", "type": "string"},
-            {"n": "fontfile", "d": "font.otf", "type": "file"},
+            {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file"},
             {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
             {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
             {
@@ -1172,7 +1171,7 @@ selectableFilters = [
                 "d": 1,
                 "type": "int",
                 "range": None,
-                "rectProp": "y",
+
                 "inc": 1,
             },
             {
@@ -1180,7 +1179,7 @@ selectableFilters = [
                 "d": 1,
                 "type": "int",
                 "range": None,
-                "rectProp": "y",
+
                 "inc": 1,
             },
             {"n": "box", "d": "0", "type": "cycle", "cycle": [0, 1]},
@@ -1202,7 +1201,7 @@ selectableFilters = [
                 "type": "cycle",
                 "cycle": colours,
             },
-            {"n": "fontsize", "d": 16, "type": "int", "range": None, "inc": 1},
+            {"n": "fontsize", "d": 16, "type": "int", "rectProp": "h", "range": None, "inc": 1},
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1},
         ],
     },

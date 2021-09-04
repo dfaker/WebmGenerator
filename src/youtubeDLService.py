@@ -180,8 +180,8 @@ class YTDLService():
     self.downloadWorkerThread = threading.Thread(target=downloadFunc,daemon=True)
     self.downloadWorkerThread.start()
 
-  def togglePreview(self):
-    self.pushPreview = not self.pushPreview
+  def togglePreview(self,toggleValue):
+    self.pushPreview = toggleValue
 
   def loadUrl(self,url,callback):
     self.downloadRequestQueue.put((url,callback))

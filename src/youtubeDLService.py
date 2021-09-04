@@ -72,6 +72,7 @@ class YTDLService():
 
               self.cancelEvent.clear()
               print('CANCEL SENT AND CLEARED')
+              self.globalStatusCallback('Download complete (cancelled) {}'.format(finalName),1.0)
 
             l+=c
             if len(c)==0:
@@ -115,6 +116,7 @@ class YTDLService():
                 for seenfilename in seenFiles:
                   if seenfilename not in emittedFiles and len(seenfilename)>0 and seenfilename != finalName:
                     emitName = seenfilename.decode('utf8')
+                    self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
                     if os.path.exists(emitName):
                       callback(emitName)
                       emittedFiles.add(seenfilename)
@@ -127,6 +129,7 @@ class YTDLService():
             for seenfilename in seenFiles:
               if seenfilename not in emittedFiles and len(seenfilename)>0:
                 emitName = seenfilename.decode('utf8')
+                self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
                 if os.path.exists(emitName):
                   callback(emitName)
                   emittedFiles.add(seenfilename)

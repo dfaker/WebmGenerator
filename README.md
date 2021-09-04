@@ -1,5 +1,7 @@
 # WebmGenerator
 
+![UI Preview](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/UI_preview.gif)
+
 ### Windows Downloads here: https://github.com/dfaker/WebmGenerator/releases
 
 A tool for cutting, filtering and joining video clips, supports webm, mp4 and high quality gif outputs, includes realtime effect filtering and transition effects between scenes.

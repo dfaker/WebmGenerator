@@ -143,7 +143,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
     self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
-    self.canvasTimestampLabel = self.timeline_canvas.create_text(0, 0, text='XXX',fill="white")
+
+    self.canvasTimestampLabel = self.timeline_canvas.create_text(0, 0, text='',fill="white")
 
     self.targetTrim=0.25
     self.defaultSliceDuration=10.0
@@ -159,16 +160,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.uiDirty=True
     self.clickTarget=None
 
-    self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,10,self.winfo_width(),fill="#4E4E4E")
-    self.rangeHeaderActiveRange = self.timeline_canvas.create_rectangle(0,0,10,self.winfo_width(),fill="#9E9E9E")
+    self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,9,0,fill="#4E4E4E")
+    self.rangeHeaderActiveRange = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#9E9E9E")
     
-    self.rangeHeaderActiveMid = self.timeline_canvas.create_line(0,self.winfo_width()/2,10,self.winfo_width()/2,fill="#4E4E4E")
+    self.rangeHeaderActiveMid = self.timeline_canvas.create_line(0,0,0,0,fill="#4E4E4E")
 
     self.rangeHeaderClickStart=None
 
-    self.previewBG = self.timeline_canvas.create_rectangle(10,0,10+45,self.winfo_width(),fill="#353535",width=1,outline="white")
+    self.previewBG = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#353535",width=1,outline="white")
 
-    self.canvasHeaderSeekPointer = self.timeline_canvas.create_line(0, 0, 0,10,fill="white")
+    self.canvasHeaderSeekPointer = self.timeline_canvas.create_line(0, 0, 0,0,fill="white")
     self.lastSeek=None
 
     self.resumeplaybackTimer=None
@@ -191,6 +192,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.waveAsPicSections            = []
     self.waveAsPicImage               = None
     self.wavePicSectionsThread        = None
+
+    self.timeline_canvas.coords(self.canvasSeekPointer, -100,45+55,-100,0 )
+    self.timeline_canvas.coords(self.canvasTimestampLabel,-100,45+45)
+    self.timeline_canvas.delete('previewFrame')
+    self.timeline_canvas.delete('fileSpecific')
+    self.timeline_canvas.delete('ticks')
+    self.uiDirty=True
 
 
   def processFileAudioToBytes(self,filename,totalDuration):

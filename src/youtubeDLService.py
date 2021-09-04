@@ -14,6 +14,8 @@ class YTDLService():
     self.globalStatusCallback = globalStatusCallback
     self.downloadRequestQueue = Queue()
     self.cancelEvent = threading.Event()
+    self.pushPreview = False
+
 
     def downloadFunc():
       while 1:
@@ -53,7 +55,9 @@ class YTDLService():
           seenFiles = set()
           emittedFiles = set()
 
-          pcSpool=0
+          frameCapProc=None
+          picst=None
+
           while 1:
             c=proc.stdout.read(1)
 
@@ -79,12 +83,39 @@ class YTDLService():
               break
 
             if c in (b'\n',b'\r'):
-              print(l)
+
+
+              if l is not None and b"] Opening 'https:" in l:
+                picst = l
+                picst = picst[picst.index(b"'https:")+1:]
+                picst = picst[:picst.index(b"'")]
+                print("currentTSStream:",picst)
+
+              if picst is not None:
+                if self.pushPreview and frameCapProc is None:
+                  frameCapProc = sp.Popen(["ffmpeg"
+                                        ,"-loglevel", "quiet"
+                                        ,"-noaccurate_seek"
+                                        ,"-i", picst  
+                                        ,'-frames:v', '1'
+                                        ,"-an"
+                                        ,"-filter_complex", "scale=220:220:force_original_aspect_ratio=decrease:flags=area"
+                                        ,'-f', 'rawvideo'
+                                        ,"-pix_fmt", "rgb24"
+                                        ,'-c:v', 'ppm' 
+                                        ,'-y'
+                                        ,"-"],stdout=sp.PIPE)
+                  picst=None
+
               if b'time=' in l and b'bitrate=' in l:
                 timestamp = l.split(b'time=')[1].split(b'bitrate=')[0].strip().decode('utf8',errors='ignore')
-                pcSpool+=1
+                frameouts=None
+                if self.pushPreview and frameCapProc is not None:
+                  frameouts,frameerrs = frameCapProc.communicate()
+                  frameCapProc=None
 
-                self.globalStatusCallback('Download streaming {} {}'.format(finalName.decode('utf8',errors='ignore'),timestamp), (pcSpool%10)/11)
+
+                self.globalStatusCallback('Download streaming {} {}'.format(finalName.decode('utf8',errors='ignore'),timestamp), -1,progressPreview=frameouts)
               if b'[download] Destination:' in l:
                 finalName = l.replace(b'[download] Destination: ',b'').strip()
                 seenFiles.add(finalName)
@@ -149,6 +180,8 @@ class YTDLService():
     self.downloadWorkerThread = threading.Thread(target=downloadFunc,daemon=True)
     self.downloadWorkerThread.start()
 
+  def togglePreview(self):
+    self.pushPreview = not self.pushPreview
 
   def loadUrl(self,url,callback):
     self.downloadRequestQueue.put((url,callback))

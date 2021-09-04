@@ -6,6 +6,7 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 
 - 🎥 Webm, Mp4 and Gif outputs
 - ⏱️ Interactive clip selection powered by mpv
+- 📺 Youtube-dl integration to automatically download video from popular sites, incluidng live streams.  
 - 🌈 Full suite of filters from cropping to tone mapping and VR to 2D projection.
 - 💾 Automatic bitrate adjustment for file size targeting.
 - ✂️ Save single extracted clips or join multiple clips into custom edits with transition effects.

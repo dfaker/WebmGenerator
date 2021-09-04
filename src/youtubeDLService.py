@@ -105,7 +105,7 @@ class YTDLService():
                     if b'%' in tc:
                       pc = tc.replace(b'%',b'')
                   desc = l.replace(b'[download]',b'').strip().decode('utf8',errors='ignore')
-                  self.globalStatusCallback('Downloading {} {}'.format(url,desc),float(pc)/100)
+                  self.globalStatusCallback('Download progress {} {}'.format(url,desc),float(pc)/100)
                   if int(float(pc)) == 100 and len(finalName)>0:
                     self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
                 except Exception as e:

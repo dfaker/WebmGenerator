@@ -131,6 +131,9 @@ class WebmGeneratorUi:
 
     self.statusFrame = ttk.Frame(self.master,height='20')
 
+    self.statusCancel = ttk.Button(self.statusFrame,text='Stop',state='disabled',style='small.TButton',command=self.cancelAction)
+    self.statusCancel.pack(expand=False, fill='y',side='left')    
+
     self.statusLabel = ttk.Label(self.statusFrame,text='Idle no background task')
     self.statusLabel.pack(expand=True, fill='both',side='left')
 
@@ -204,8 +207,16 @@ class WebmGeneratorUi:
   def openDocs(self):
     webbrowser.open('https://github.com/dfaker/WebmGenerator/blob/master/README.md', new=2)
 
+  def cancelAction(self):
+    self.controller.cancelCurrentYoutubeDl()
+    self.statusCancel['state']='disabled'
+
   def updateGlobalStatus(self,message,percentage):
     if message is not None:
+      if 'Download progress' in message or 'streaming' in message:
+        self.statusCancel['state']='enabled'
+      else:
+        self.statusCancel['state']='disabled'
       self.statusLabel['text']=message
     if percentage is not None:
       self.statusProgress['value'] = max(0,min(100,percentage*100))

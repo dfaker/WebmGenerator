@@ -2,7 +2,7 @@
 import subprocess as sp
 import os
 import threading
-from queue import Queue
+from queue import Queue,Empty,Full
 import traceback
 import signal
 import logging
@@ -16,6 +16,34 @@ class YTDLService():
     self.cancelEvent = threading.Event()
     self.pushPreview = False
 
+
+    self.inputFrameQueue = Queue(1)
+    self.resultFrameQueue = Queue(1)
+
+    def frameWorkerthread():
+      while 1:
+        url = self.inputFrameQueue.get()
+        frameCapProc = sp.Popen(["ffmpeg"
+                              ,"-loglevel", "quiet"
+                              ,"-noaccurate_seek"
+                              ,"-i", url  
+                              ,"-to",'1'
+                              ,'-frames:v', '1'
+                              ,"-an"
+                              ,"-filter_complex", "scale=220:220:force_original_aspect_ratio=decrease:flags=area"
+                              ,'-f', 'rawvideo'
+                              ,"-pix_fmt", "rgb24"
+                              ,'-c:v', 'ppm' 
+                              ,'-y'
+                              ,"-"],stdout=sp.PIPE,bufsize=10 ** 5)
+        outs,errs = frameCapProc.communicate()
+        print('outs',len(outs))
+        self.inputFrameQueue.task_done()
+        self.resultFrameQueue.put(outs)
+
+
+    self.framePreviewWorkerThread = threading.Thread(target=frameWorkerthread,daemon=True)
+    self.framePreviewWorkerThread.start()
 
     def downloadFunc():
       while 1:
@@ -43,9 +71,9 @@ class YTDLService():
           outfolder = os.path.join(tempPathname,'%(title)s-%(id)s.%(ext)s')
 
           if hasattr(os.sys, 'winver'):
-            proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE)
+            proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
           else:
-            proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE)
+            proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
 
           l = b''
           self.globalStatusCallback('Download start {}'.format(url),0)
@@ -54,9 +82,17 @@ class YTDLService():
           
           seenFiles = set()
           emittedFiles = set()
-
-          frameCapProc=None
+          timestamp='00:00:00'
+          frameouts=None
           picst=None
+          lastpicst=None
+
+          try:
+            self.resultFrameQueue.get_nowait()
+            self.resultFrameQueue.task_done()
+          except Empty:
+            pass
+
 
           while 1:
             c=proc.stdout.read(1)
@@ -76,7 +112,7 @@ class YTDLService():
 
               self.cancelEvent.clear()
               print('CANCEL SENT AND CLEARED')
-              self.globalStatusCallback('Download complete (cancelled) {}'.format(finalName),1.0)
+              self.globalStatusCallback('Download complete (cancelled) {}'.format(finalName.decode('utf8',errors='ignore')),1.0)
 
             l+=c
             if len(c)==0:
@@ -85,37 +121,35 @@ class YTDLService():
             if c in (b'\n',b'\r'):
 
 
-              if l is not None and b"] Opening 'https:" in l:
+              if self.pushPreview and l is not None and b"] Opening 'https:" in l and (b'.m3u8'.upper() not in l.upper()):
                 picst = l
                 picst = picst[picst.index(b"'https:")+1:]
                 picst = picst[:picst.index(b"'")]
                 print("currentTSStream:",picst)
-
-              if picst is not None:
-                if self.pushPreview and frameCapProc is None:
-                  frameCapProc = sp.Popen(["ffmpeg"
-                                        ,"-loglevel", "quiet"
-                                        ,"-noaccurate_seek"
-                                        ,"-i", picst  
-                                        ,'-frames:v', '1'
-                                        ,"-an"
-                                        ,"-filter_complex", "scale=220:220:force_original_aspect_ratio=decrease:flags=area"
-                                        ,'-f', 'rawvideo'
-                                        ,"-pix_fmt", "rgb24"
-                                        ,'-c:v', 'ppm' 
-                                        ,'-y'
-                                        ,"-"],stdout=sp.PIPE)
+                if picst == lastpicst:
+                  lastpicst = picst
                   picst=None
+                else:
+                  lastpicst = picst
+
+              if picst is not None and self.pushPreview:
+                try:
+                  self.inputFrameQueue.put_nowait(picst)
+                  picst=None
+                except Full:
+                  pass
+
+              try:
+                frameouts = self.resultFrameQueue.get_nowait()
+                self.resultFrameQueue.task_done()
+                self.globalStatusCallback('Download streaming {} {}'.format(finalName.decode('utf8',errors='ignore'),timestamp), -1,progressPreview=frameouts)
+              except Empty:
+                pass
 
               if b'time=' in l and b'bitrate=' in l:
                 timestamp = l.split(b'time=')[1].split(b'bitrate=')[0].strip().decode('utf8',errors='ignore')
-                frameouts=None
-                if self.pushPreview and frameCapProc is not None:
-                  frameouts,frameerrs = frameCapProc.communicate()
-                  frameCapProc=None
-
-
                 self.globalStatusCallback('Download streaming {} {}'.format(finalName.decode('utf8',errors='ignore'),timestamp), -1,progressPreview=frameouts)
+
               if b'[download] Destination:' in l:
                 finalName = l.replace(b'[download] Destination: ',b'').strip()
                 seenFiles.add(finalName)

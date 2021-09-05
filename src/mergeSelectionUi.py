@@ -567,8 +567,6 @@ class MergeSelectionUi(ttk.Frame):
 
     self.profileVar.trace('w',self.profileChanged)
 
-
-
     self.labelframeInputCutSelection = ttk.Labelframe(self.frameMergeSelection)
     
     self.scrolledframeInputCustContainer = ScrolledFrame(self.labelframeInputCutSelection, scrolltype='horizontal')

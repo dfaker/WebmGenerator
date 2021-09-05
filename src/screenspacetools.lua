@@ -56,6 +56,10 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
         local u = math.min(tonumber(p1y), tonumber(p2y))
         local d = math.max(tonumber(p1y), tonumber(p2y))
 
+        local midy = tonumber((tonumber(p1x) + tonumber(p2x))/2)
+        local midx = tonumber((tonumber(p1y) + tonumber(p2y))/2)
+
+
         ass:rect_cw(0, 0, l, osd_h)
         ass:rect_cw(r, 0, osd_w, osd_h)
         ass:rect_cw(l, 0, r, u)
@@ -75,6 +79,40 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
 
         ass:rect_cw(tonumber(p1x), tonumber(p1y), tonumber(p2x), tonumber(p2y))
 
+
+        ass:draw_stop()
+
+
+        ass:new_event()
+        ass:draw_start()
+        ass:pos(0, 0)
+
+        ass:append(ass_set_color(1, "00000000"))
+        ass:append(ass_set_color(3, border))
+        ass:append("{\\bord1}")
+        ass:rect_cw(tonumber(p1x), tonumber(p1y), tonumber(midy), tonumber(midx))
+        ass:draw_stop()
+
+
+        ass:new_event()
+        ass:draw_start()
+        ass:pos(0, 0)
+
+        ass:append(ass_set_color(1, "00000000"))
+        ass:append(ass_set_color(3, border))
+        ass:append("{\\bord1}")
+        ass:rect_cw(tonumber(midy), tonumber(midx), tonumber(p2x), tonumber(p2y))
+        ass:draw_stop()
+
+
+        ass:new_event()
+        ass:draw_start()
+        ass:pos(0, 0)
+
+        ass:append(ass_set_color(1, "00000000"))
+        ass:append(ass_set_color(3, "FF0000FF"))
+        ass:append("{\\bord1}")
+        ass:rect_cw(tonumber(midy)-5, tonumber(midx)-5, tonumber(midy)+5, tonumber(midx)+5)
         ass:draw_stop()
 
         mp.set_osd_ass(osd_w, osd_h, ass.text)

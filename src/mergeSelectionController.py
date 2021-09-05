@@ -19,18 +19,25 @@ class MergeSelectionController:
       {'name':'Sub 100M max quality mp4','editable':False,'outputFormat':'mp4:x264','maximumSize':'100.0'}
     ]
 
-    self.customProfileSpecs = [{'name':'Custom Profile 1','editable':False,'outputFormat':'mp4:x264','maximumSize':'200.0'}]
+    self.customProfileSpecs = [
+      {'name':'Sub 8M max quality mp4','editable':False,'outputFormat':'mp4:x264','maximumSize':'8.0'}
+    ]
 
     if os.path.exists(self.profileSpecPath):
       for profileFile in os.listdir(self.profileSpecPath):
+        print('Custom profile load',profileFile)
         profileFilename = os.path.join(self.profileSpecPath,profileFile)
-        if os.path.exists(profileFilename) and os.path.isfile(os.path.exists(profileFilename)):
+        if os.path.exists(profileFilename) and os.path.isfile(profileFilename):
           try:
             profile = json.loads( open(profileFilename,'r').read() )
             profile['filename'] = profileFile
+            profile['editable'] = True
+            profileName = profile['name']
+            profile['name'] = 'Custom - '+profileName 
+            print('Custom profile:',profile)
             self.customProfileSpecs.append( profile )
-          except:
-            pass
+          except Exception as e:
+            print('Custom profile load error',profileFilename,e)
 
     self.ui.setController(self)
 

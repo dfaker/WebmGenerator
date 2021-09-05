@@ -9,7 +9,7 @@ import logging
 import urllib.request
 import json
 
-RELEASE_NUMVER = 'v3.4.0'
+RELEASE_NUMVER = 'v3.1.0'
 
 class WebmGeneratorUi:
 
@@ -71,6 +71,10 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Open Project", command=self.openProject)
     self.filemenu.add_command(label="Save Project", command=self.saveProject)
     self.filemenu.add_separator()
+
+    if self.controller.autoSaveExists():
+      self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave)
+      self.filemenu.add_separator()
 
     self.filemenu.add_command(label="Run scene change detection", command=self.controller.runSceneChangeDetection)
     self.filemenu.add_separator()

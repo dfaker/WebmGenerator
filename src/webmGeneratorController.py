@@ -122,13 +122,14 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
 
-      if lastSaveData != newSaveData:
-        response = self.cutselectionUi.confirmWithMessage('Load autosave from last session?','Load autosave from last session?',icon='warning')
-        if response=='yes':
-          try:
-            self.openProject(self.autosaveFilename)
-          except Exception as e:
-            logging.error("Audoload save failed",exc_info=e)
+  def autoSaveExists(self):
+    return os.path.exists(self.autosaveFilename)
+    
+  def loadAutoSave(self):
+    try:
+      self.openProject(self.autosaveFilename)
+    except Exception as e:
+      logging.error("Audoload save failed",exc_info=e)
 
   def runSceneChangeDetection(self):
     self.cutselectionController.runSceneChangeDetection()
@@ -153,6 +154,7 @@ class WebmGeneratorController:
 
 
   def newProject(self):
+
     self.cutselectionController.reset()
     self.videoManager.reset()
     self.lastSaveFile = None
@@ -225,6 +227,8 @@ class WebmGeneratorController:
     self.filterSelectionController.close_ui()
     logging.debug('self.filterSelectionController.close_ui()')
     self.webmMegeneratorUi.close_ui()
+
+
     try:
       self.root.destroy()
     except Exception as e:

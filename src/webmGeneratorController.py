@@ -46,6 +46,8 @@ class WebmGeneratorController:
       "statsWorkers":1,
       "encodeWorkers":1,
       "imageWorkers":2,
+      "encoderStageThreads":4,
+      "maxSizeOptimizationRetries":6,
       "passCudaFlags":False,
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
@@ -202,6 +204,9 @@ class WebmGeneratorController:
 
   def toggleYTPreview(self,toggleValue):
     self.ytdlService.togglePreview(toggleValue)
+
+  def splitStream(self):
+    self.ytdlService.splitStream()
 
   def updateYoutubeDl(self):
     self.ytdlService.update()

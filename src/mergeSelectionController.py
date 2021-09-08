@@ -33,7 +33,7 @@ class MergeSelectionController:
             profile['filename'] = profileFile
             profile['editable'] = True
             profileName = profile['name']
-            profile['name'] = 'Custom - '+profileName 
+            profile['name'] = profileName 
             print('Custom profile:',profile)
             self.customProfileSpecs.append( profile )
           except Exception as e:

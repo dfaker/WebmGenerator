@@ -10,6 +10,7 @@ import time
 from collections import deque
 import logging 
 import json
+import threading
 
 class EncodeProgress(ttk.Frame):
 
@@ -110,6 +111,7 @@ class EncodeProgress(ttk.Frame):
 
     self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
 
+
   def playFinal(self):
     if self.finalFilename is not None:
 
@@ -123,14 +125,22 @@ class EncodeProgress(ttk.Frame):
 
       self.player.play(self.finalFilename)
 
-      def quit(key_state, key_name, key_char):
-        self.player.terminate()
-        self.player = None
-      
-      self.player.register_key_binding("q", quit) 
-      self.player.register_key_binding("Q", quit)        
-      self.player.register_key_binding("CLOSE_WIN", quit)
+      def quitFunc(key_state, key_name, key_char):
+        def playerReaper():
+          print('ReaperKill')
+          player=self.player
+          self.player=None
+          player.terminate()
+          player.wait_for_shutdown()
+        self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+        self.playerReaper.start()
 
+      self.quitFunc = quitFunc
+
+      self.player.register_key_binding("q", quitFunc)
+      self.player.register_key_binding("Q", quitFunc)        
+      self.player.register_key_binding("CLOSE_WIN", quitFunc)
+      
   def cancelEncodeRequest(self):
     self.cancelled = True
     self.progressbarEncodeProgressLabel.config(style="Red.Horizontal.TProgressbar")
@@ -329,26 +339,21 @@ class SequencedVideoEntry(ttk.Frame):
     self.player.start = self.s
     self.player.time_pos  = self.s
 
-    def quit(key_state, key_name, key_char):
-      try:
-        self.player.stop()
-        self.player.quit()
-        self.player.terminate()
-      except Exception as e:
-        print(e)
+    def quitFunc(key_state, key_name, key_char):
+      def playerReaper():
+        print('ReaperKill')
+        player=self.player
+        self.player=None
+        player.terminate()
+        player.wait_for_shutdown()
+      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+      self.playerReaper.start()
 
-    self.quit = quit
+    self.quitFunc = quitFunc
 
-    self.player.register_key_binding("q", self.quit)
-    self.player.register_key_binding("Q", self.quit)        
-    self.player.register_key_binding("CLOSE_WIN", self.quit)
-
-    @self.player.event_callback('shutdown')
-    @self.player.event_callback('quit')
-    def quitfunc(event):
-      self.quit()
-
-    self.quitfunc=quitfunc
+    self.player.register_key_binding("q", quitFunc)
+    self.player.register_key_binding("Q", quitFunc)        
+    self.player.register_key_binding("CLOSE_WIN", quitFunc)
 
   def moveForwards(self):
     self.controller.moveSequencedClip(self,1)    
@@ -479,18 +484,26 @@ class SelectableVideoEntry(ttk.Frame):
 
     self.player.play(self.filename)
     
-
     self.player.ab_loop_a = self.s
     self.player.ab_loop_b = self.e
     self.player.start = self.s
     self.player.time_pos  = self.s
 
-    self.player.register_key_binding("CLOSE_WIN", "quit")
-    
-    def quit(key_state, key_name, key_char):
-      self.player.terminate()
-            
-    self.player.register_key_binding("CLOSE_WIN", quit)
+    def quitFunc(key_state, key_name, key_char):
+      def playerReaper():
+        print('ReaperKill')
+        player=self.player
+        self.player=None
+        player.terminate()
+        player.wait_for_shutdown()
+      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+      self.playerReaper.start()
+
+    self.quitFunc = quitFunc
+
+    self.player.register_key_binding("q", quitFunc)
+    self.player.register_key_binding("Q", quitFunc)        
+    self.player.register_key_binding("CLOSE_WIN", quitFunc)
 
 
 class MergeSelectionUi(ttk.Frame):
@@ -1520,7 +1533,11 @@ class MergeSelectionUi(ttk.Frame):
     for string in self.profiles:
       menu.add_command(label=string,command=lambda value=string: self.profileVar.set(value))
 
-    if self.profileVar.get() not in self.profiles:
+    print(self.profiles)
+
+    if self.defaultProfile in self.profiles:
+      self.profileVar.set(self.defaultProfile)
+    else:
       self.profileVar.set(self.profiles[0])
 
 

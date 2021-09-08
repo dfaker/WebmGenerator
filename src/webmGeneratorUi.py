@@ -140,6 +140,9 @@ class WebmGeneratorUi:
     self.statusCancel = ttk.Button(self.statusFrame,text='Stop',state='disabled',style='smallextra.TButton',command=self.cancelAction)
     self.statusCancel.pack(expand=False, fill='y',side='left')    
 
+    self.statusSplit = ttk.Button(self.statusFrame,text='Split',state='disabled',style='smallextra.TButton',command=self.splitStream)
+    self.statusSplit.pack(expand=False, fill='y',side='left')   
+
     self.statusPreview = ttk.Button(self.statusFrame,text='Preview',state='disabled',style='small.TButton',command=self.togglePreview)
     self.statusPreview.pack(expand=False, fill='y',side='left')    
 
@@ -207,6 +210,9 @@ class WebmGeneratorUi:
         filename = filename+'.webgproj'
       self.controller.saveProject(filename)
 
+  def splitStream(self):
+    self.controller.splitStream()
+
   def togglePreview(self):
     self.showStreamPreviews = not self.showStreamPreviews
     self.controller.toggleYTPreview(self.showStreamPreviews)
@@ -239,9 +245,11 @@ class WebmGeneratorUi:
     if message is not None:
       if 'streaming' in message:
         self.statusPreview['state']='enabled'
+        self.statusSplit['state']='enabled'
       else:
         self.statusPreview['state']='disabled'
-
+        self.statusSplit['state']='disabled'
+        
       if 'Download progress' in message or 'streaming' in message:
         self.statusCancel['state']='enabled'
       else:

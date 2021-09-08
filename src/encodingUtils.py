@@ -42,7 +42,7 @@ def getFreeNameForFileAndLog(filenamePrefix,extension):
       fileN+=1
       videoFileName = '{}_{}.{}'.format(filenamePrefix,fileN,extension)
       outLogFilename = 'encoder_{}.log'.format(fileN)
-      
+
       logFilePath        = os.path.join('tempVideoFiles',outLogFilename)
       tempVideoFilePath  = os.path.join('tempVideoFiles',videoFileName)
       videoFilePath      = os.path.join('finalVideos',videoFileName)

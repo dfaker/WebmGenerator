@@ -422,12 +422,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       else:
         newZoomFactor = self.timelineZoomFactor
         if e.delta>0:
-          newZoomFactor *= 1.01
+          newZoomFactor *= 1.5 if ctrl else 1.01
           self.uiDirty=True
         else:
-          newZoomFactor *= 0.99
+          newZoomFactor *= 0.666 if ctrl  else 0.99
           self.uiDirty=True
-        newZoomFactor = min(max(1,newZoomFactor),50)
+        newZoomFactor = min(max(1,newZoomFactor),100)
         if newZoomFactor == self.timelineZoomFactor:
           return
         self.timelineZoomFactor=newZoomFactor

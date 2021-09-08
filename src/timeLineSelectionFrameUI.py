@@ -442,6 +442,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.controller.seekTo(seconds)
 
   def timelineMousePress(self,e):
+
     if not self.controller.getIsPlaybackStarted():
       self.timeline_canvas.config(cursor="no")
       return    
@@ -527,6 +528,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.uiDirty=True
 
     if self.timeline_mousedownstate.get(1,False):
+      print('self.clickTarget',self.clickTarget)
       if self.clickTarget is None:
         if self.rangeHeaderClickStart is not None:
           self.currentZoomRangeMidpoint = ((e.x)/self.winfo_width())+self.rangeHeaderClickStart
@@ -542,7 +544,19 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.currentZoomRangeMidpoint+=0.001
           if e.x<2:
             self.currentZoomRangeMidpoint-=0.001
-      else:
+
+          if ctrl:
+            newRID = self.controller.addNewSubclip( seconds, seconds+1)
+            
+            self.clickTarget = (newRID,'e',seconds,seconds+1)
+            self.dirtySelectionRanges.add(newRID)
+            self.lastClickedEndpoint=(newRID,'e')
+            self.timelineMousePressOffset = 0
+            self.controller.pause()
+
+
+
+      if self.clickTarget is not None:
         rid,pos,os,oe = self.clickTarget
 
         targetSeconds = self.xCoordToSeconds(e.x+self.timelineMousePressOffset)

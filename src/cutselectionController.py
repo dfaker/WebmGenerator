@@ -406,9 +406,10 @@ class CutselectionController:
     if end>self.currentTotalDuration:
       end=self.currentTotalDuration
 
-    self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,start,end)
+    newRID = self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,start,end)
     self.updateProgressStatistics()
     self.seekTo(start+((end-start)*0.8))
+    return newRID
 
   def expandSublcipToInterestMarks(self,point):
     self.videoManager.expandSublcipToInterestMarks(self.currentlyPlayingFileName,point)

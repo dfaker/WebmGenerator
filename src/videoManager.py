@@ -48,6 +48,7 @@ class VideoManager:
     self.subClipCounter+=1
     start,end = sorted([start,end])
     self.subclips.setdefault(filename,{})[self.subClipCounter]=[start,end]
+    return self.subClipCounter
 
   def expandSublcipToInterestMarks(self,filename,point):
     targetRid = None

@@ -645,7 +645,15 @@ class CutselectionUi(ttk.Frame):
       return simpledialog.askstring(title, prompt) 
 
     def loadVideoYTdl(self):
-      url = simpledialog.askstring(title="Download video from URL",prompt="Download a video from a youtube-dl supported url")
+      defaultUrl=''
+      try:
+        s = self.clipboard_get()
+        if s is not None and len(s)>2 and '.' in s and ':' in s:
+          defaultUrl=s
+      except Exception as e:
+        print(e)
+
+      url = simpledialog.askstring(title="Download video from URL",initialvalue=defaultUrl,prompt="Download a video from a youtube-dl supported url")
       if url is not None and len(url)>0:
         self.controller.loadVideoYTdl(url)
 

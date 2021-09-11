@@ -19,6 +19,9 @@ buildOptions = dict(packages = ["os"],
                     ,('postFilters\\PostFilter-chromaShift.txt','postFilters\\PostFilter-chromaShift.txt')
                     ,('postFilters\\PostFilter-rainbow.txt','postFilters\\PostFilter-rainbow.txt')
                     ,('postFilters\\PostFilter-vhsishclean.txt','postFilters\\PostFilter-vhsishclean.txt')
+                    ,('customEncodeprofiles\\4Chan 4Meg Webm with no Sound.json','customEncodeprofiles\\4Chan 4Meg Webm with no Sound.json')
+                    ,('customEncodeprofiles\\4Chan 4Meg Webm with sound.json','customEncodeprofiles\\4Chan 4Meg Webm with sound.json')
+                    ,('customEncodeprofiles\\Discord 8M limit mp4.json','customEncodeprofiles\\Discord 8M limit mp4.json')
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     ,'youtube-dl.exe'
                     ,'ffmpeg.exe'

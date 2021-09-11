@@ -8,6 +8,7 @@ import signal
 import logging
 import ctypes
 
+
 class YTDLService():
 
   def __init__(self,globalStatusCallback=print):

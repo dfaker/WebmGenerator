@@ -26,6 +26,8 @@ from .encodingUtils import getFreeNameForFileAndLog
 from .encodingUtils import isRquestCancelled
 from .encodingUtils import cancelCurrentEncodeRequest
 
+from .subtitleCutter import trimSRTfile
+
 from .ffmpegInfoParser import getVideoInfo
 from .masonry import Brick,Stack
 
@@ -614,11 +616,8 @@ class FFmpegService():
           subfilenameStrip = subfilename.replace("'",'')
           subOutname = os.path.join( tempPathname,'{}_{}_{}_{}_{}_{}.srt'.format(i,basename,start,end,filterHash,runNumber) )
 
-          subcmd  = ['ffmpeg','-y','-ss' , str(start), '-itsoffset', str(0-start), '-i', subfilenameStrip.replace('\\:',':'), '-c', 'copy', subOutname]
-          print(' '.join(subcmd))
-          subProc = sp.Popen(subcmd)
-          subProc.communicate()
-          
+          trimSRTfile(subfilenameStrip.replace('\\:',':'),subOutname,start,end)
+                    
           cleanSubPath = os.path.abspath(subOutname).replace('\\','/').replace(':','\\:')
           filterexp = filterexp.replace(subfilenameStrip,cleanSubPath)
 

@@ -400,12 +400,16 @@ selectableFilters = [
 
     {
         "name": "subtitles",
-        "filter": "subtitles=filename='{filename}':force_style='Fontname={fontname},PrimaryColour={colour}'",
+        "filter": "subtitles=filename='{filename}':force_style='Fontname={fontname},Fontsize={fontsize},PrimaryColour={primaryColour},OutlineColour={outlineColour},Outline={outlineWidth},BackColour={shadowColour},Shadow={outlineShadowWidth}'",
         "params": [
             {"n": "filename", "d": "subtitles.srt", "type": "file"},
             {"n": "fontname", "d": "font.otf", "type": "file"},
-            {"n": "colour", "d": "&H0059EADB", "type": "string"}
-
+            {"n": "fontsize", "d": 12, "type": "float", "range": [0, None], "inc": 0.1},
+            {"n": "primaryColour", "d": "&H0000FFFF", "type": "bareString"},
+            {"n": "outlineColour", "d": "&H00000000", "type": "bareString"},
+            {"n": "shadowColour", "d": "&H00000000", "type": "bareString"},
+            {"n": "outlineWidth", "d": 1, "type": "float", "range": [0, None], "inc": 0.1},
+            {"n": "outlineShadowWidth", "d": 0, "type": "float", "range": [0, None], "inc": 0.1}
 
         ],
     },

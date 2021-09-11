@@ -67,7 +67,7 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
-    elif param['type'] == 'string':
+    elif param['type'] == 'string' or param['type'] == 'bareString':
       self.valueVar.set(param['d'])
       self.entryFilterValueValue = ttk.Entry(self.frameFilterValuePair)
       self.entryFilterValueValue.config(textvariable=self.valueVar)

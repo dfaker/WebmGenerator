@@ -7,8 +7,11 @@ from tkinter import simpledialog
 from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import threading
+import signal
 from math import floor
 import logging
+import time
+import subprocess as sp
 
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
@@ -312,9 +315,6 @@ class CutselectionUi(ttk.Frame):
         self.scrolledframeVideoPreviewContainer.pack(
             expand="true", fill="both", side="top"
         )
-
-
-
 
         self.labelframeSourceVideos.config(
             height="200", text="Source Videos", width="200"
@@ -657,8 +657,47 @@ class CutselectionUi(ttk.Frame):
       if url is not None and len(url)>0:
         self.controller.loadVideoYTdl(url)
 
+    def startScreencap(self):
+      windowRef=self
+      windowRef.cliprunScreencap=True
+      windowRef.completedScreenCapName=None
+
+      def screenCapWorker(windowRef):
+
+        capturefilename = 'DesktopCapture_'+str(time.time())+'.mkv'
+        cmd = ['ffmpeg','-f','gdigrab','-framerate','30','-i','desktop','-c:v','h264_nvenc','-qp','0', capturefilename]
+
+        if hasattr(os.sys, 'winver'):
+          proc = sp.Popen(cmd,creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.DEVNULL,stdout=sp.DEVNULL,bufsize=10 ** 5)
+        else:
+          proc = sp.Popen(cmd,stderr=sp.DEVNULL,stdout=sp.DEVNULL,bufsize=10 ** 5)
+
+        while windowRef.cliprunScreencap:
+          print('Recording',proc.poll())
+        
+        if hasattr(os.sys, 'winver'):
+          os.kill(proc.pid, signal.CTRL_BREAK_EVENT)
+        else:
+          proc.send_signal(signal.SIGTERM)
+        proc.communicate()
+
+        windowRef.completedScreenCapName = capturefilename
+
+      t = threading.Thread(target=screenCapWorker,args=(self,))
+      t.start()
+
+      tk.messagebox.showinfo(title="Recording screen", message="Recording Desktop, click 'OK' to stop Recording.")
+
+      windowRef.cliprunScreencap=False
+      t.join()
+      if self.completedScreenCapName is not None:
+        self.controller.loadFiles([windowRef.completedScreenCapName])
+      else:
+        tk.messagebox.showinfo(title="Recording screen Failed", message="Desktop recording failed.")
+
+
     def loadClipboardUrls(self):
-      import threading
+
       windowRef=self
       windowRef.cliprunWatch=True
 

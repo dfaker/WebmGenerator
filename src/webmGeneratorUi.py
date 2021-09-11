@@ -8,6 +8,7 @@ import sys
 import logging
 import urllib.request
 import json
+import os
 
 RELEASE_NUMVER = 'v3.1.0'
 
@@ -74,7 +75,10 @@ class WebmGeneratorUi:
 
     if self.controller.autoSaveExists():
       self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave)
-      self.filemenu.add_separator()
+    else:
+      self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave, state='disabled')
+
+    self.filemenu.add_separator()
 
     self.filemenu.add_command(label="Run scene change detection", command=self.controller.runSceneChangeDetection)
     self.filemenu.add_separator()
@@ -82,6 +86,12 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles)
     self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile)
+    self.filemenu.add_separator()
+    
+    if hasattr(os.sys, 'winver'):
+      self.filemenu.add_command(label="Start screen capture", command=self.startScreencap)
+    else:
+      self.filemenu.add_command(label="Start screen capture", command=self.startScreencap, state='disabled')
 
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
@@ -188,6 +198,9 @@ class WebmGeneratorUi:
 
   def loadVideoYTdl(self):
     self.controller.cutselectionUi.loadVideoYTdl()
+
+  def startScreencap(self):
+    self.controller.cutselectionUi.startScreencap()
 
   def loadImageFile(self):
     self.controller.cutselectionUi.loadImageFile()

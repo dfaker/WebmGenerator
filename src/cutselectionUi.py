@@ -738,12 +738,23 @@ class CutselectionUi(ttk.Frame):
       windowRef.cliprunWatch=False
 
     def loadVideoFiles(self):
-        fileList = askopenfilenames()
-        self.controller.loadFiles(fileList)
+      initialdir=self.controller.getGlobalOptions().get('defaultVideoFolder','.')
+      filetypes=(('All files', '*.*'),)        
+      fileList = askopenfilenames(initialdir=initialdir,filetypes=filetypes)
+      self.controller.loadFiles(fileList)
+      for fn in fileList:
+        writeBackPath = os.path.abspath(os.path.dirname(fn))
+        self.controller.getGlobalOptions()['defaultVideoFolder'] = writeBackPath
+        break
 
     def loadImageFile(self):
-      filename = askopenfilename()
+      initialdir=self.controller.getGlobalOptions().get('defaultImageFolder','.')
+      filetypes=(('All files', '*.*'),)
+      filename = askopenfilename(initialdir=initialdir,filetypes=filetypes)
       if filename is not None and len(filename)>0:
+        writeBackPath = os.path.abspath(os.path.dirname(fn))
+        self.controller.getGlobalOptions()['defaultImageFolder'] = writeBackPath
+
         duration = simpledialog.askfloat("Create video from still image {}".format(filename), "What should the durtation of the new video clip be?",parent=self,minvalue=0.0, maxvalue=100000.0)
         if duration is not None:
           self.controller.loadImageFile(filename,duration)

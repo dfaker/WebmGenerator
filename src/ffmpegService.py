@@ -1352,6 +1352,11 @@ class FFmpegService():
   def cancelEncodeRequest(self,requestId):
     cancelCurrentEncodeRequest(requestId)
 
+  def cancelAllEncodeRequests(self):
+    cancelCurrentEncodeRequest(-1)
+
+
+
   def loadImageFile(self,filename,duration,callback):
     self.loadImageAsVideoRequestQueue.put((filename,duration,callback))
 

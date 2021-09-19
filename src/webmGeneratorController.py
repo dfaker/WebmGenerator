@@ -255,13 +255,15 @@ class WebmGeneratorController:
     else:
       self.saveProject(self.autosaveFilename)
 
+    
+    logging.debug('self.ffmpegService.cancelAllEncodeRequests()')
+    self.ffmpegService.cancelAllEncodeRequests()
     logging.debug('self.cutselectionController.close_ui()')
     self.cutselectionController.close_ui()
     logging.debug('self.cutselectionController.close_ui()')
     self.filterSelectionController.close_ui()
     logging.debug('self.filterSelectionController.close_ui()')
     self.webmMegeneratorUi.close_ui()
-
 
     try:
       self.root.destroy()

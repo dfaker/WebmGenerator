@@ -13,7 +13,7 @@ cancelledEncodeIds = set()
 
 def isRquestCancelled(requestId):
   global cancelledEncodeIds
-  return requestId in cancelledEncodeIds
+  return requestId in cancelledEncodeIds or -1 in cancelledEncodeIds
 
 packageglobalStatusCallback=print
 

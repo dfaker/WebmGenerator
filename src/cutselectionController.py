@@ -44,6 +44,8 @@ class CutselectionController:
 
     self.loadFiles(initialFiles)
     
+  def getGlobalOptions(self):
+    return self.globalOptions
 
   def splitClipIntoNEqualSections(self):
     n = self.ui.askInteger('How Many sections would you like to split into?','How Many sections would you like to split into?')

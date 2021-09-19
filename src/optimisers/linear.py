@@ -47,11 +47,11 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       shutil.move(tempFilename,outputFilename)
       return outputFilename
     elif finalSize<sizeLimitMin:
-      lastFailReason = 'File too small, {} increase'.format(dependentValueName)
+      lastFailReason = 'File too small {:.2%}, {} increase'.format(finalSize/sizeLimitMin,dependentValueName)
       if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
         largestFailedUnderMinimum=val
     elif finalSize>sizeLimitMax:
-      lastFailReason = 'File too large, {} decrease'.format(dependentValueName)
+      lastFailReason = 'File too large {:.2%}, {} decrease'.format(finalSize/sizeLimitMax,dependentValueName)
       if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
         smallestFailedOverMaximum=val
     logging.debug("Encode complete {}:{} finalSize:{} targetSizeMedian:{}".format(dependentValueName,val,finalSize,targetSizeMedian))

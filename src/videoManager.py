@@ -1,10 +1,11 @@
 
 class VideoManager:
 
-  def __init__(self):
+  def __init__(self,globalOptions={}):
     self.subclips = {}
     self.interestMarks = {}
     self.subClipCounter=0
+    self.globalOptions=globalOptions
 
 
   def getStateForSave(self):

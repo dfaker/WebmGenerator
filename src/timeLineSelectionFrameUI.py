@@ -12,7 +12,7 @@ import subprocess as sp
 import numpy as np
 import math
 
-def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
+def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds:02.2F}"):
 
     if hasattr(value, 'seconds'):
         seconds = value.seconds + value.days * 24 * 3600
@@ -240,7 +240,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.audioByteValuesReadLock.release()
 
       
-
       if args != self.lastWavePicSectionsRequested:
         return
 
@@ -300,13 +299,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         return
 
   def keyboardRight(self,e):
+    shift = (e.state & 0x1) != 0
     if self.lastClickedEndpoint is not None:
-      self.incrementEndpointPosition(1,*self.lastClickedEndpoint)
+      self.incrementEndpointPosition(5 if shift else 1,*self.lastClickedEndpoint)
 
 
   def keyboardLeft(self,e):
+    shift = (e.state & 0x1) != 0
     if self.lastClickedEndpoint is not None:
-      self.incrementEndpointPosition(-1,*self.lastClickedEndpoint)
+      self.incrementEndpointPosition(-5 if shift else -1,*self.lastClickedEndpoint)
 
 
   def incrementEndpointPosition(self,increment,markerrid,pos):
@@ -395,15 +396,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def timelineMousewheel(self,e):    
       ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
       ctrl  = (e.state & 0x4) != 0
+      shift = (e.state & 0x1) != 0
       for rid,(sts,ens) in ranges:          
         st=self.secondsToXcoord(sts)
         en=self.secondsToXcoord(ens)
         if st<=e.x<=en and e.y>self.winfo_height()-(self.midrangeHeight+10):
           targetSeconds = (sts+ens)/2
           if e.delta>0:
-            targetSeconds+=0.01
+            targetSeconds+= 0.1 if shift else 0.01
           else:
-            targetSeconds-=0.01
+            targetSeconds-= 0.1 if shift else 0.01
           self.controller.pause()
           try:
               self.resumeplaybackTimer.cancel()
@@ -475,6 +477,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
 
     ctrl  = (e.state & 0x4) != 0
+
 
 
     self.timeline_canvas.focus_set()
@@ -674,12 +677,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           break
         else:          
           tm = self.timeline_canvas.create_line(tx, 45+20, tx, 45+22,fill="white",tags='ticks') 
-          tm = self.timeline_canvas.create_text(tx, 45+30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds2}'),fill="white",tags='ticks') 
+          tm = self.timeline_canvas.create_text(tx, 45+30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}'),fill="white",tags='ticks') 
 
     currentPlaybackX =  self.secondsToXcoord(self.controller.getCurrentPlaybackPosition())
     self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,45+55,currentPlaybackX,timelineHeight )
     self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45+45)
-    self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX))), '{hours_total}:{minutes2}:{seconds2}'))
+    self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX),2)), '{hours_total}:{minutes2}:{seconds:02.2F}'))
     activeRanges=set()
 
     for rid,(s,e) in list(ranges):
@@ -707,7 +710,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
-          self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds2}') ) )
+          self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}') ) )
           
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, min(trimpreend,ex), timelineHeight)
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],max(trimpostStart,sx), timelineHeight-self.midrangeHeight, ex, timelineHeight)
@@ -758,7 +761,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
               self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
 
 
-          self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds2}')),fill="white", tags='fileSpecific') 
+          self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}')),fill="white", tags='fileSpecific') 
       
 
           self.canvasRegionCache[(rid,'miniDrag')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight, fill="#2bb390",width=0, tags='fileSpecific')

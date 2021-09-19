@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk,Menu
+from tkinter import Tk,Menu,END
 import tkinter.ttk as ttk
 import webbrowser
 from tkinter.filedialog import askopenfilename,asksaveasfilename
@@ -8,9 +8,10 @@ import sys
 import logging
 import urllib.request
 import json
+import threading
 import os
 
-RELEASE_NUMVER = 'v3.5.0'
+RELEASE_NUMVER = 'v3.1.0'
 
 class WebmGeneratorUi:
 
@@ -32,6 +33,9 @@ class WebmGeneratorUi:
                            activehighlightcolor=bg,
                            relief='flat')
 
+    self.style.configure ("Bold.TLabel", font = ('Sans','10','bold'))
+
+
     self.style.configure("SelectedColumn.TFrame", 
                           background='blue',lightcolor='blue',darkcolor='blue')
 
@@ -41,6 +45,8 @@ class WebmGeneratorUi:
                            background='blue',lightcolor='blue',darkcolor='blue',border=0,relief='flat')
     self.style.configure("Green.Horizontal.TProgressbar", 
                            background='green',lightcolor='green',darkcolor='green',border=0,relief='flat')
+
+    self.style.configure("PlayerLabel.TLabel",background='#282828')
 
 
     self.style.configure('small.TButton', padding=0)
@@ -101,6 +107,12 @@ class WebmGeneratorUi:
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Update youtube-dl", command=self.updateYoutubeDl)
     self.filemenu.add_separator()
+
+    self.filemenu.add_command(label="Delete all downloaded files", command=self.clearDownloadedfiles)
+    self.clearTempMenuIndex = self.filemenu.index(END) 
+    self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files")
+
+    self.filemenu.add_separator()
     self.filemenu.add_command(label="Exit", command=self.exitProject)
     self.menubar.add_cascade(label="File",  menu=self.filemenu)
 
@@ -124,7 +136,9 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
     self.commandmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
     self.commandmenu.add_separator()
-    self.commandmenu.add_command(label="Toggle Generation of audio spectra", command=self.generateSoundWaveBackgrounds)
+
+    self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
+
     self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Clear all subclips on current clip", command=self.clearAllSubclipsOnCurrentClip)
     self.commandmenu.add_separator()
@@ -195,6 +209,9 @@ class WebmGeneratorUi:
 
   def cancelCurrentYoutubeDl(self):
     self.controller.cancelCurrentYoutubeDl()
+
+  def clearDownloadedfiles(self):
+    self.controller.clearDownloadedfiles()
 
   def loadVideoYTdl(self):
     self.controller.cutselectionUi.loadVideoYTdl()

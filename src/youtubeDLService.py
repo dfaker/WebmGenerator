@@ -11,12 +11,13 @@ import ctypes
 
 class YTDLService():
 
-  def __init__(self,globalStatusCallback=print):
+  def __init__(self,globalStatusCallback=print,globalOptions={}):
     self.globalStatusCallback = globalStatusCallback
     self.downloadRequestQueue = Queue()
     self.cancelEvent = threading.Event()
     self.splitEvent  = threading.Event()
     self.pushPreview = False
+    self.globalOptions=globalOptions
 
 
     self.inputFrameQueue = Queue(1)

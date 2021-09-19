@@ -42,9 +42,9 @@ encoderMap = {
 
 class FFmpegService():
 
-  def __init__(self,globalStatusCallback=print,imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1):
-    
+  def __init__(self,globalStatusCallback=print,imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1,globalOptions={}):
 
+    self.globalOptions={}
     self.cache={}
     self.imageRequestQueue = Queue()
     self.responseRouting = {}

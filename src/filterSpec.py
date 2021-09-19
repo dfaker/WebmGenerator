@@ -9,12 +9,153 @@ colours = [
   "Pink",
   "Thistle",
   "invert",
+  "AliceBlue",
+  "AntiqueWhite",
+  "Aqua",
+  "Aquamarine",
+  "Azure",
+  "Beige",
+  "Bisque",
+  "Black",
+  "BlanchedAlmond",
+  "Blue",
+  "BlueViolet",
+  "Brown",
+  "BurlyWood",
+  "CadetBlue",
+  "Chartreuse",
+  "Chocolate",
+  "Coral",
+  "CornflowerBlue",
+  "Cornsilk",
+  "Crimson",
+  "Cyan",
+  "DarkBlue",
+  "DarkCyan",
+  "DarkGoldenRod",
+  "DarkGray",
+  "DarkGreen",
+  "DarkKhaki",
+  "DarkMagenta",
+  "DarkOliveGreen",
+  "Darkorange",
+  "DarkOrchid",
+  "DarkRed",
+  "DarkSalmon",
+  "DarkSeaGreen",
+  "DarkSlateBlue",
+  "DarkSlateGray",
+  "DarkTurquoise",
+  "DarkViolet",
+  "DeepPink",
+  "DeepSkyBlue",
+  "DimGray",
+  "DodgerBlue",
+  "FireBrick",
+  "FloralWhite",
+  "ForestGreen",
+  "Fuchsia",
+  "Gainsboro",
+  "GhostWhite",
+  "Gold",
+  "GoldenRod",
+  "Gray",
+  "Green",
+  "GreenYellow",
+  "HoneyDew",
+  "HotPink",
+  "IndianRed",
+  "Indigo",
+  "Ivory",
+  "Khaki",
+  "Lavender",
+  "LavenderBlush",
+  "LawnGreen",
+  "LemonChiffon",
+  "LightBlue",
+  "LightCoral",
+  "LightCyan",
+  "LightGoldenRodYellow",
+  "LightGreen",
+  "LightGrey",
+  "LightPink",
+  "LightSalmon",
+  "LightSeaGreen",
+  "LightSkyBlue",
+  "LightSlateGray",
+  "LightSteelBlue",
+  "LightYellow",
+  "Lime",
+  "LimeGreen",
+  "Linen",
+  "Magenta",
+  "Maroon",
+  "MediumAquaMarine",
+  "MediumBlue",
+  "MediumOrchid",
+  "MediumPurple",
+  "MediumSeaGreen",
+  "MediumSlateBlue",
+  "MediumSpringGreen",
+  "MediumTurquoise",
+  "MediumVioletRed",
+  "MidnightBlue",
+  "MintCream",
+  "MistyRose",
+  "Moccasin",
+  "NavajoWhite",
+  "Navy",
+  "OldLace",
+  "Olive",
+  "OliveDrab",
+  "Orange",
+  "OrangeRed",
+  "Orchid",
+  "PaleGoldenRod",
+  "PaleGreen",
+  "PaleTurquoise",
+  "PaleVioletRed",
+  "PapayaWhip",
+  "PeachPuff",
+  "Peru",
+  "Pink",
+  "Plum",
+  "PowderBlue",
+  "Purple",
+  "Red",
+  "RosyBrown",
+  "RoyalBlue",
+  "SaddleBrown",
+  "Salmon",
+  "SandyBrown",
+  "SeaGreen",
+  "SeaShell",
+  "Sienna",
+  "Silver",
+  "SkyBlue",
+  "SlateBlue",
+  "SlateGray",
+  "Snow",
+  "SpringGreen",
+  "SteelBlue",
+  "Tan",
+  "Teal",
+  "Thistle",
+  "Tomato",
+  "Turquoise",
+  "Violet",
+  "Wheat",
+  "White",
+  "WhiteSmoke",
+  "Yellow",
+  "YellowGreen",
 ]
 
 selectableFilters = [
 
   {
         "name": "crop",
+        "desc":"Crops the video frame in a from point x,y out to a width and height w and h",
         "filter": "crop",
         "params": [
             {
@@ -48,7 +189,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "h",
                 "inc": 10,
-            },
+            }
         ],
     },
 {
@@ -62,10 +203,87 @@ selectableFilters = [
         "name": "scaleDown",
         "filter": "scale=w=iw*{factor}2:h=ih*{factor}:sws_flags=area",
         "params": [
-            {"n": "factor", "d": 1.0, "type": "float", "range": [0, 1], "inc": 0.005}
+            {"n": "factor","desc":"Reduction factor", "d": 1.0, "type": "float", "range": [0, 1], "inc": 0.005}
             ]
     },
 
+
+
+
+
+ {
+        "name": "decimate",
+        "filter":"decimate",
+        "params": [
+            {
+                "n": "cycle",
+                "d": 5,
+                "type": "int",
+                "range": [1,None],
+                "inc": 1,
+            },
+            {
+                "n": "dupthresh",
+                "d": 1.1,
+                "type": "float",
+                "range": [0,None],
+                "inc": 0.1,
+            },
+            {
+                "n": "scthresh",
+                "d": 15,
+                "type": "int",
+                "range": [0,None],
+                "inc": 1,
+            }
+        ]
+ },
+
+
+ {
+        "name": "pad",
+        "filter": "pad=x={x}:y={y}:w=iw+{w}:h=ih+{h}:color={color}",
+        "params": [
+            {
+                "n": "x",
+                "d": 5,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 5,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 10,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": 10,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            },
+            {
+                "n": "color",
+                "d": "White",
+                "type": "cycle",
+                "cycle": colours,
+            }
+        ],
+    },
 
 
  {
@@ -90,11 +308,103 @@ selectableFilters = [
     },
 
     {
-        "name": "invert",
-        "filter": "ngeative"
+      "name":"perspective",
+      "filter":"pad=iw+4:ih+4:2:2:{bgColor},perspective=x0={x0}:y0={y0}:x1={x1}:y1={y1}:x2={x2}:y2={y2}:x3={x3}:y3={y3}:interpolation={interpolation}:sense={sense}",
+      "params": [
+            {"n": "x0","d": 0,"type": "float","range": None,"inc": 1,  "rectProp": "px0"},
+            {"n": "y0","d": 0,"type": "float","range": None,"inc": 1,  "rectProp": "py0"},
+            {"n": "x1","d": 100,"type": "float","range": None,"inc": 1,"rectProp": "px1"},
+            {"n": "y1","d": 0,"type": "float","range": None,"inc": 1,  "rectProp": "py1"},
+            {"n": "x2","d": 0,"type": "float","range": None,"inc": 1,  "rectProp": "px2"},
+            {"n": "y2","d": 100,"type": "float","range": None,"inc": 1,"rectProp": "py2"},
+            {"n": "x3","d": 100,"type": "float","range": None,"inc": 1,"rectProp": "px3"},
+            {"n": "y3","d": 100,"type": "float","range": None,"inc": 1,"rectProp": "py3"},
+            {
+                "n": "sense",
+                "d": "destination",
+                "type": "cycle",
+                "cycle": [
+                    "destination",
+                    "source"
+                ],
+            },
+            {
+                "n": "interpolation",
+                "d": "linear",
+                "type": "cycle",
+                "cycle": ["linear","cubic"],
+            },
+            {
+                "n": "bgColor",
+                "d": "DarkGray",
+                "type": "cycle",
+                "cycle": colours,
+            }
+
+      ]
     },
 
 
+    {
+        "name": "zoomPiP",
+        
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]null[bg{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},scale=iw*{zoom}:ih*{zoom}[fg{fn}],[bg{fn}][fg{fn}]overlay={outX}:{outY}",
+        "params": [ 
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            },
+            {
+                "n": "zoom",
+                "d": 1,
+                "type": "float",
+                "range": [0, None],
+                "inc": 0.1,
+            },
+            {
+                "n": "outX",
+                "d": 1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },
+            {
+                "n": "outY",
+                "d": 1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            }
+        ],
+    },
 
     {
         "name": "hueOutsideArea",
@@ -152,7 +462,7 @@ selectableFilters = [
         "params": [ 
 
             {"n": "text", "d": "Text", "type": "string"},
-            {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file"},
+            {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file", "fileCategory":"font"},
 
             {"n": "w", "d": 1, "type": "int", "range": None, "rectProp": "w", "inc": 1},
             {"n": "h", "d": 1, "type": "int", "range": None, "rectProp": "h", "inc": 1},
@@ -352,6 +662,47 @@ selectableFilters = [
 
 
     {
+        "name": "vflipArea",
+        "timelineSupport":True,
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},vflip[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "params": [          
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            }
+        ],
+    },
+
+
+    {
         "name": "boxBlurArea",
         "timelineSupport":True,
         "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},boxblur={strength}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
@@ -402,8 +753,8 @@ selectableFilters = [
         "name": "subtitles",
         "filter": "subtitles=filename='{filename}':force_style='Fontname={fontname},Fontsize={fontsize},PrimaryColour={primaryColour},OutlineColour={outlineColour},Outline={outlineWidth},BackColour={shadowColour},Shadow={outlineShadowWidth}'",
         "params": [
-            {"n": "filename", "d": "subtitles.srt", "type": "file"},
-            {"n": "fontname", "d": "font.otf", "type": "file"},
+            {"n": "filename", "d": "subtitles.srt", "type": "file", "fileCategory":"subtitle"},
+            {"n": "fontname", "d": "font.otf", "type": "file", "fileCategory":"font"},
             {"n": "fontsize", "d": 12, "type": "float", "range": [0, None], "inc": 0.1},
             {"n": "primaryColour", "d": "&H0000FFFF", "type": "bareString"},
             {"n": "outlineColour", "d": "&H00000000", "type": "bareString"},
@@ -546,12 +897,12 @@ selectableFilters = [
 
 
     {
-        "name": "IOverlay",
+        "name": "ImageOverlay",
         "timelineSupport":True,
-        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},rotate=a={a}:out_w=rotw({a}):out_h=roth({a}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
-        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},rotate=a={a}:out_w=rotw({a}):out_h=roth({a}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
+        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
+        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
         "params": [
-            {"n": "source", "d": "resources/logo.png", "type": "file"},
+            {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
             {
                 "n": "x",
                 "d": 5,
@@ -585,11 +936,114 @@ selectableFilters = [
                 "inc": 1,
             },
             {
-                "n": "a",
+                "n": "angle",
                 "d": 0.0,
                 "type": "float",
                 "range": [-6.28319, 6.28319],
                 "inc": 0.0174533,
+            },
+
+            {
+                "n": "alpha",
+                "d": 1.0,
+                "type": "float",
+                "range": [0.0, 1.0],
+                "inc": 0.01,
+            },
+        ],
+    },
+
+    {
+        "name": "ImageBlend",
+        "timelineSupport":True,
+        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},format=gbrp[pwm{fn}],color=d=1:s=2x2:c={padcolor}[colourbg{fn}],[colourbg{fn}][vin{fn}]scale2ref=sws_flags=neighbor[colourbgscale{fn}][vinscale{fn}],[colourbgscale{fn}][pwm{fn}]overlay=x={x}:y={y},format=gbrp[pwmscale{fn}],[vinscale{fn}]format=gbrp[vingbrp{fn}],[vingbrp{fn}][pwmscale{fn}]blend=all_mode={blendMode}:all_opacity={all_opacity}",
+        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},format=gbrp[pwm{fn}],color=d=1:s=2x2:c={padcolor}[colourbg{fn}],[colourbg{fn}][vin{fn}]scale2ref=sws_flags=neighbor[colourbgscale{fn}][vinscale{fn}],[colourbgscale{fn}][pwm{fn}]overlay=x={x}:y={y},format=gbrp[pwmscale{fn}],[vinscale{fn}]format=gbrp[vingbrp{fn}],[vingbrp{fn}][pwmscale{fn}]blend=all_mode={blendMode}:all_opacity={all_opacity}",
+        "params": [
+            {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "all_opacity",
+                "d": 1,
+                "type": "float",
+                "range": [0,1],
+                "inc": 0.1,
+            },
+            {
+                "n": "blendMode",
+                "d": "addition",
+                "type": "cycle",
+                "cycle": [
+                  "addition",
+                  "grainmerge",
+                  "and",
+                  "average",
+                  "burn",
+                  "darken",
+                  "difference",
+                  "grainextract",
+                  "divide",
+                  "dodge",
+                  "freeze",
+                  "exclusion",
+                  "extremity",
+                  "glow",
+                  "hardlight",
+                  "hardmix",
+                  "heat",
+                  "lighten",
+                  "linearlight",
+                  "multiply",
+                  "multiply128",
+                  "negation",
+                  "normal",
+                  "or",
+                  "overlay",
+                  "phoenix",
+                  "pinlight",
+                  "reflect",
+                  "screen",
+                  "softlight",
+                  "subtract",
+                  "vividlight",
+                  "xor"
+                ],
+            },
+            {
+                "n": "padcolor",
+                "d": "Black",
+                "type": "cycle",
+                "cycle": colours,
+            },
+            {
+                "n": "w",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
             },
         ],
     },
@@ -646,7 +1100,7 @@ selectableFilters = [
         "name": "VOverlay",
         "filter": "null[vin{fn}],movie='{source}',loop=-1:size={frames},setpts=N/FRAME_RATE/TB[pwm{fn}],[vin{fn}][pwm{fn}]overlay=shortest=0:x={x}:y={y}",
         "params": [
-            {"n": "source", "d": "footer.png", "type": "file"},
+            {"n": "source", "d": "footer.png", "type": "file", "fileCategory":"video"},
             {
                 "n": "x",
                 "d": 100,
@@ -662,6 +1116,14 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "y",
                 "inc": 1,
+            },
+            {
+                "n": "alpha",
+                "d": 1,
+                "type": "float",
+                "range": [0,1],
+                "rectProp": "y",
+                "inc": 0.05,
             },
             {"n": "frames", "d": 100, "type": "float", "range": [0, 999], "inc": 1},
         ],
@@ -963,6 +1425,7 @@ selectableFilters = [
     
     {
         "name": "rotate",
+        "timelineSupport":True,
         "filter": "rotate=a={a}:out_w=rotw({a}):out_h=roth({a})",
         "params": [
             {
@@ -1006,6 +1469,7 @@ selectableFilters = [
     {
         "name": "transpose",
         "filter": "transpose",
+
         "params": [
             {
                 "n": "dir",
@@ -1167,7 +1631,7 @@ selectableFilters = [
         "filter": "drawtext",
         "params": [
             {"n": "text", "d": "Text", "type": "string"},
-            {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file"},
+            {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file", "fileCategory":"font"},
             {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
             {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
             {

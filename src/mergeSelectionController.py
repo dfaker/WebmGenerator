@@ -4,9 +4,9 @@ import json
 
 class MergeSelectionController:
 
-  def __init__(self,ui,videoManager,ffmpegService,filterController):
+  def __init__(self,ui,videoManager,ffmpegService,filterController,globalOptions={}):
     self.ui=ui
-    
+    self.globalOptions=globalOptions
     self.videoManager=videoManager
     self.ffmpegService=ffmpegService
     self.filterController=filterController

@@ -9,7 +9,8 @@ import logging
 
 class CutselectionController:
 
-  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService):
+  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,globalOptions={}):
+    self.globalOptions=globalOptions
     self.ui = ui
     self.ui.setController(self)
     self.videoManager = videoManager
@@ -139,6 +140,18 @@ class CutselectionController:
               jumpRangeFound=True
           if jumpRangeFound:
             self.seekTo(self.currentLoopCycleStart)
+
+  def removefileIfLoaded(self,filename):
+    fileRemoved=False
+    for file in self.files:
+      print(file,filename)
+      print(file==filename)
+      if file==filename:
+        self.removeVideoFile(file)
+        fileRemoved=True
+    if fileRemoved:
+      self.ui.updateSummary(None)
+      self.ui.updateFileListing(self.files)
 
   def reset(self):
     for file in self.files:
@@ -283,25 +296,6 @@ class CutselectionController:
     return self.currentTotalDuration
 
   def removeVideoFile(self,filename):
-    deleteFile = self.removeAllDownloads
-    _,justFilename = os.path.split(filename)
-    localNameifDownloaded = os.path.join('tempDownloadedVideoFiles',justFilename)
-    fileIsInTempFolder = os.path.isfile(localNameifDownloaded) and os.path.samefile( filename,localNameifDownloaded )
-    
-    if not deleteFile:
-      if fileIsInTempFolder:
-        response = self.ui.confirmWithMessage('Also remove downloaded video?' ,'Video "{}" was downloaded with youtube-dl, do you also want to delete the downloaded temporary file?'.format(justFilename),icon='warning')
-        if response=='yes':
-          deleteFile=True
-          self.removeDownloadRun += 1
-        else:
-          self.removeDownloadRun = 0
-
-      if self.removeDownloadRun>5:
-        response = self.ui.confirmWithMessage('Delete doownloaded videos for all all future clip removals?' ,'Do you want to delete the downloaded temporary files for all future clip removals?',icon='warning')
-        if response=='yes':
-          self.removeAllDownloads=True
-
     self.files = [x for x in self.files if x != filename]
     self.videoManager.removeVideo(filename)
     if self.currentlyPlayingFileName == filename:
@@ -313,9 +307,6 @@ class CutselectionController:
         self.currentlyPlayingFileName=None
         self.ui.frameTimeLineFrame.resetForNewFile()
     self.updateProgressStatistics()
-
-    if fileIsInTempFolder and deleteFile:
-      os.remove(filename)
 
   def returnYTDLDownlaodedVideo(self,filename):
     logging.debug('YTDL file returned {}'.format(filename))

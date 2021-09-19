@@ -4,7 +4,8 @@ import os
 
 class FilterSelectionController:
 
-  def __init__(self,ui,videoManager,ffmpegService):
+  def __init__(self,ui,videoManager,ffmpegService,globalOptions={}):
+    self.globalOptions=globalOptions
     self.ui = ui
     self.ui.setController(self)
     self.videoManager = videoManager
@@ -13,12 +14,14 @@ class FilterSelectionController:
     playerFrameWid = self.ui.getPlayerFrameWid()
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=True,
+                          log_handler=print,
+                          loglevel='debug',
                           loop='inf',
                           mute=True,
                           autofit_larger='1280')
 
-
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
+    self.player.observe_property('time-pos', self.handleMpvTimePosChange)
     self.playerStart=0
     self.playerEnd=0
     self.player.speed=2
@@ -26,8 +29,27 @@ class FilterSelectionController:
     self.installedFonts = None
     self.getInstalledFonts()
 
+
+  def getGlobalOptions(self):
+    return self.globalOptions
+
+  def handleMpvTimePosChange(self,name,value):
+    if value is not None and self.ui is not None:
+      s,e = float(self.playerStart),float(self.playerEnd)
+      if s<=value<=e:
+        self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000 )
+
+        self.ui.updateSeekLabel((value-s))
+
+
   def requestAutocrop(self,rid,mid,filename,callback):
     self.ffmpegService.requestAutocrop(rid,mid,filename,callback)
+
+  def seekToPercent(self,pc):
+    s,e = float(self.playerStart),float(self.playerEnd)
+    d = e-s
+
+    self.player.command('seek',str(s+(d*pc)),'absolute','exact')
 
   def normaliseTimestamp(self,ts):
     fts = float(ts)
@@ -46,8 +68,13 @@ class FilterSelectionController:
     self.player.video_unscaled = not fit
 
   def close_ui(self):
-    self.player.terminate()
-    del self.player
+    try:
+      self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
+    except Exception as e:
+      print(e)
+
+    #self.player.terminate()
+    #del self.player
 
   def getAllSubclips(self):
     return self.videoManager.getAllClips()
@@ -114,13 +141,14 @@ class FilterSelectionController:
       response.append( tuple(result) )
     return response
 
-
+  def setVolume(self,value):
+    self.player.volume=int(float(value))
+    self.player.mute = float(value)<=0
 
   def getInstalledFonts(self):
     if self.installedFonts is None:
       pass
     return self.installedFonts
-
 
   def playVideoFile(self,filename,s,e):
     self.player.start=s

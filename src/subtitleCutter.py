@@ -30,6 +30,9 @@ def trimSRTfile(infilename,outfilename,sliceStart,sliceEnd):
           tsstart = max(tsstart,sliceStart)-sliceStart
           tsend   = min(tsend,sliceEnd)-sliceStart
 
+          if tsstart==0:
+            tsstart+=0.1
+
           tsstart_str = datetime.strftime(datetime.utcfromtimestamp(tsstart),'%H:%M:%S,%f')          
           startP1,startP2 = tsstart_str.split(',')
           tsstart_str = startP1 + ',' + str(int(int(startP2)/1000))
@@ -37,6 +40,7 @@ def trimSRTfile(infilename,outfilename,sliceStart,sliceEnd):
           tsend_str   = datetime.strftime(datetime.utcfromtimestamp(tsend),'%H:%M:%S,%f')
           startP2,endP2 = tsstart_str.split(',')
           tsend_str = startP2 + ',' + str(int(int(endP2)/1000))
+
 
           timeString = "{}\n{} --> {}\n{}\n".format(n,
             tsstart_str,

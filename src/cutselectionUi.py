@@ -344,6 +344,18 @@ class CutselectionUi(ttk.Frame):
             borderwidth="0", height="200", relief="flat", width="200",
             takefocus=True,style="PlayerFrame.TFrame"
         )
+
+        try:
+          self.frameVideoPlayerphoto = tk.PhotoImage(file=".\\resources\\playerbg.png")
+          self.frameVideoPlayerlabel = ttk.Label(self.frameVideoPlayerFrame, image=self.frameVideoPlayerphoto)
+          self.frameVideoPlayerlabel.image = self.frameVideoPlayerphoto
+          self.frameVideoPlayerlabel.config(
+              borderwidth="0", relief="flat", style="PlayerLabel.TLabel",takefocus=False
+          )
+          self.frameVideoPlayerlabel.pack(expand="true", fill="y",side='top')
+        except Exception as e:
+          print('Failed to load player bg image',e)
+
         self.frameVideoPlayerFrame.pack(expand="true", fill="both", side="top")
 
         self.frameVideoControls = ttk.Frame(self.frameVideoPlayerAndControls)
@@ -414,6 +426,7 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<Motion>",            self.videomousePress)
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
 
+       
         self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
         self._previewtimer.daemon = True
         self._previewtimer.start()
@@ -737,6 +750,10 @@ class CutselectionUi(ttk.Frame):
 
     def restartForNewFile(self, filename=None):
         self.frameTimeLineFrame.resetForNewFile()
+        try:
+          self.frameVideoPlayerlabel.pack_forget()
+        except:
+          pass
 
     def getIsPlaybackStarted(self):
         return self.controller.getIsPlaybackStarted()

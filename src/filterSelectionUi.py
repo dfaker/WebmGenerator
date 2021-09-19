@@ -38,8 +38,19 @@ class FilterValuePair(ttk.Frame):
     self.controller=controller
     self.frameFilterValuePair = self
     self.labelfilterValueLabel = ttk.Label(self.frameFilterValuePair)
-    self.labelfilterValueLabel.config(text=param['n'])
+    self.fileCategory = param.get('fileCategory',None)
+
+    if param.get('desc','') != '':
+      self.labelfilterValueLabel.config(text=param['n']+' ('+param['desc']+')')
+    else:
+      self.labelfilterValueLabel.config(text=param['n'])
+
     self.labelfilterValueLabel.pack(expand='true', fill='x', side='left')
+
+
+
+
+
     self.valueVar = tk.StringVar()
 
     if param.get('rectProp') is not None:
@@ -99,11 +110,35 @@ class FilterValuePair(ttk.Frame):
     self.valueVar.trace("w", self.valueUpdated)
 
   def selectFile(self):
-    fn = askopenfilename()
+    initialdir='.'
+    filetypes=(('All files', '*.*'),)
+
+    if self.fileCategory=='font':
+      initialdir=self.controller.getGlobalOptions().get('defaultFontFolder','.')
+    elif self.fileCategory=='subtitle':
+      initialdir=self.controller.getGlobalOptions().get('defaultSubtitleFolder','.')
+      filetypes=(('Subtitle', '*.srt'),)
+    elif self.fileCategory=='image':
+      initialdir=self.controller.getGlobalOptions().get('defaultImageFolder','.')
+    elif self.fileCategory=='video':
+      initialdir=self.controller.getGlobalOptions().get('defaultVideoFolder','.')
+    print(initialdir,filetypes)
+    fn = askopenfilename(initialdir=initialdir,filetypes=filetypes)
     if fn is None or len(fn)==0:
       self.entryFilterValueValue.config(text='Select file')
     else:
       cleanPath = os.path.abspath(fn).replace('\\','/').replace(':','\\:')
+      writeBackPath = os.path.abspath(os.path.dirname(fn))
+
+      if self.fileCategory=='font':
+        self.controller.getGlobalOptions()['defaultFontFolder'] = writeBackPath
+      elif self.fileCategory=='subtitle':
+        self.controller.getGlobalOptions()['defaultSubtitleFolder'] = writeBackPath
+      elif self.fileCategory=='image':
+        self.controller.getGlobalOptions()['defaultImageFolder'] = writeBackPath
+      elif self.fileCategory=='video':
+        self.controller.getGlobalOptions()['defaultVideoFolder'] = writeBackPath
+
       self.valueVar.set(cleanPath)
       print(self.valueVar.get())
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
@@ -131,9 +166,21 @@ class FilterSpecification(ttk.Frame):
     self.spec=spec
     self.controller=controller
     self.frameFilterDetailsWidget = self
+
+
+
+
     self.labelFilterName = ttk.Label(self.frameFilterDetailsWidget)
-    self.labelFilterName.config(text=spec['name'])
+    self.labelFilterName.config(text=spec['name'],style="Bold.TLabel")
     self.labelFilterName.pack(side='top')
+
+    if spec.get('desc','') != '':
+      self.labelFilterDesc = ttk.Label(self.frameFilterDetailsWidget)
+      self.labelFilterDesc.config(text=spec.get('desc',''),wraplength=290,justify=tk.CENTER)
+      self.labelFilterDesc.pack(side='top',fill="x",expand="true")
+
+
+
     self.frameFilterConfigFrame = ttk.Frame(self.frameFilterDetailsWidget)
     self.frameFilterActions = ttk.Frame(self.frameFilterConfigFrame)
     self.buttonfilterActionRemove = ttk.Button(self.frameFilterActions)
@@ -230,6 +277,8 @@ class FilterSpecification(ttk.Frame):
     self.frameFilterDetailsWidget.config(height='200', padding='2', relief='groove', width='200')
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
 
+  def getGlobalOptions(self):
+    return self.controller.getGlobalOptions()
 
   def getTimelineValuesAsSpecifications(self):
     specs = []
@@ -257,7 +306,11 @@ class FilterSpecification(ttk.Frame):
     rectDerivedProps = dict(
       x=x1,y=y1,x1=x1,y1=y1,x2=x2,y2=y2,
       w=x2-x1,h=y2-y1,cx=(x1+x2)/2,cy=(y1+y2)/2,
-      xf=round(x1/iw,4),yf=round(y1/ih,4),wf=round((x2-x1)/iw,4),hf=round((y2-y1)/ih,4)
+      xf=round(x1/iw,4),yf=round(y1/ih,4),wf=round((x2-x1)/iw,4),hf=round((y2-y1)/ih,4),
+      px0=x1,py0=y1,
+      px1=x2,py1=y1,
+      px2=x1,py2=y2,
+      px3=x2,py3=y2,
     )
 
     for k,v in rectDerivedProps.items():
@@ -421,8 +474,9 @@ class FilterSelectionUi(ttk.Frame):
     self.buttonAddFilter.config(command=self.addSelectedfilter)
     self.buttonAddFilter.pack(side='right')
     self.selectedFilter=tk.StringVar()
-    self.selectableFilters = [x['name'] for x in selectableFilters]
-    self.selectedFilter.set(self.selectableFilters[0])   
+    self.selectableFilters = sorted([x['name'] for x in selectableFilters],key=lambda x:x.upper())
+    self.selectedFilter.set('crop')   
+
     self.comboboxFilterSelection = ttk.OptionMenu(self.framefilterAdditionFrame,self.selectedFilter,self.selectedFilter.get(),*self.selectableFilters)
     self.comboboxFilterSelection.pack(expand='true', fill='both', side='left')
     self.framefilterAdditionFrame.config(height='200', width='200')
@@ -443,6 +497,19 @@ class FilterSelectionUi(ttk.Frame):
 
     self.selectionOptionsFrame = ttk.Frame(self.playerContainerFrame)
 
+    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
+    self.autocropButton.config(text='Autocrop')
+    self.autocropButton.config(command=self.autoCrop)
+    self.autocropButton.pack(side='left')
+
+    self.volumeLabel = ttk.Label(self.selectionOptionsFrame)
+    self.volumeLabel.config(text='Vol')
+    self.volumeLabel.pack(expand='false', side='left')
+
+    self.scaleVolume = ttk.Scale(self.selectionOptionsFrame,from_=0, to=100)
+    self.scaleVolume.config(command=self.setVolume)
+    self.scaleVolume.pack(fill="x", padx="2", side="left")
+
     self.fixSeectionArEnabledVar = tk.BooleanVar()
     self.fixSeectionArEnabledVar.set(False)
     self.arFixCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Restrict selection aspect ratio", variable=self.fixSeectionArEnabledVar)
@@ -462,10 +529,9 @@ class FilterSelectionUi(ttk.Frame):
     self.fitToScreenCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Fit to screen", variable=self.fitToScreenVar)
     self.fitToScreenCheckbox.pack(expand='false', side='left')
 
-    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
-    self.autocropButton.config(text='Autocrop')
-    self.autocropButton.config(command=self.autoCrop)
-    self.autocropButton.pack(side='right')
+    self.volumeLabel = ttk.Label(self.selectionOptionsFrame)
+    self.volumeLabel.config(text='0.0s')
+    self.volumeLabel.pack(expand='false', side='left')
 
     self.autocropButton = ttk.Button(self.selectionOptionsFrame)
     self.autocropButton.config(text='Import Json')
@@ -477,7 +543,6 @@ class FilterSelectionUi(ttk.Frame):
     self.autocropButton.config(command=self.exportJson)
     self.autocropButton.pack(side='right')
 
-
     self.speedVar = tk.StringVar()
     self.speedVar.trace('w',self.speedChange)
     self.speedVar.set('2.0')
@@ -488,12 +553,15 @@ class FilterSelectionUi(ttk.Frame):
     self.speedLabel.config(text='Preview speed')
     self.speedLabel.pack(expand='false', side='right')
 
-
     self.selectionOptionsFrame.pack(expand='false', fill='x', side='top')
 
     self.framePlayerFrame = ttk.Frame(self.playerContainerFrame, style='PlayerFrame.TFrame')
     self.framePlayerFrame.config(height='200', width='200')
-    self.framePlayerFrame.pack(expand='true', fill='both', side='right')
+    self.framePlayerFrame.pack(expand='true', fill='both', side='top')
+
+    self.seekBar = ttk.Scale(self.playerContainerFrame,from_=0, to=1000)
+    self.seekBar.config(command=self.seekToPerThou)
+    self.seekBar.pack(fill="x", padx="0", side="bottom")
 
     self.mouseRectDragging=False
     self.videoMouseRect=[None,None,None,None]
@@ -526,6 +594,10 @@ class FilterSelectionUi(ttk.Frame):
     self.filterClipboard=[]
     self.mouseRectMoving=False
     self.mouseRectMoveStart=(0,0)
+    self.seeking=False
+
+  def getGlobalOptions(self):
+    return self.controller.getGlobalOptions()
   
   def autoCropCallback(self,x,y,w,h):
 
@@ -564,6 +636,8 @@ class FilterSelectionUi(ttk.Frame):
         )
       self.recaculateFilters()
 
+  def setVolume(self,value):
+    self.controller.setVolume(value)
 
   def exportJson(self):
     self.clipboard_clear()
@@ -694,6 +768,21 @@ class FilterSelectionUi(ttk.Frame):
     self.filterSpecifications=[]
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters()
+
+  def updateSeekLabel(self,value):
+    self.volumeLabel.config(text='{:0.2f}s'.format(value))
+
+  def updateSeekPositionThousands(self,value):
+    if not self.seeking:
+      self.seeking=True
+      self.seekBar.set(value)
+      self.seeking=False    
+
+  def seekToPerThou(self,e):
+    if not self.seeking:
+      self.seeking=True
+      self.controller.seekToPercent(float(e)/1000)
+      self.seeking=False  
 
   def seekToTimelinePoint(self,ts):
     return self.controller.seekToTimelinePoint(ts)

@@ -52,7 +52,14 @@ class WebmGeneratorController:
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
       "defaultAutosaveFilename":'autosave.webgproj',
-      "defaultProfile":"None"
+      "defaultProfile":"None",
+      "defaultPostProcessingFilter":"None",
+      "defaultCutLength":30.0,
+      "defaultVideoFolder":".",
+      "defaultImageFolder":".",
+      "defaultAudioFolder":".",
+      "defaultFontFolder":".",
+      "defaultSubtitleFolder":"."
     }
 
     if os.path.exists(self.configFileName) and os.path.isfile(self.configFileName):
@@ -88,32 +95,42 @@ class WebmGeneratorController:
 
     self.webmMegeneratorUi = WebmGeneratorUi(self,self.root)
 
-    self.cutselectionUi     = CutselectionUi(self.root)
-    self.filterSselectionUi = FilterSelectionUi(self.root)
-    self.mergeSelectionUi   = MergeSelectionUi(self.root,defaultProfile=self.defaultProfile)
+    self.cutselectionUi     = CutselectionUi(self.root,globalOptions=self.globalOptions)
+    self.filterSselectionUi = FilterSelectionUi(self.root,globalOptions=self.globalOptions)
+    self.mergeSelectionUi   = MergeSelectionUi(self.root,defaultProfile=self.defaultProfile,globalOptions=self.globalOptions)
 
     self.webmMegeneratorUi.addPane(self.cutselectionUi,'Cuts')
     self.webmMegeneratorUi.addPane(self.filterSselectionUi,'Filters')
     self.webmMegeneratorUi.addPane(self.mergeSelectionUi,'Merge')
 
-    self.videoManager  = VideoManager()
-    self.ffmpegService = FFmpegService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,imageWorkerCount=self.imageWorkers,encodeWorkerCount=self.encodeWorkers,statsWorkerCount=self.statsWorkers)
-    self.ytdlService   = YTDLService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus)
+    self.videoManager  = VideoManager(globalOptions=self.globalOptions)
+    
+    self.ffmpegService = FFmpegService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,
+                                       imageWorkerCount=self.imageWorkers,
+                                       encodeWorkerCount=self.encodeWorkers,
+                                       statsWorkerCount=self.statsWorkers,
+                                       globalOptions=self.globalOptions)
+
+    self.ytdlService   = YTDLService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,
+                                     globalOptions=self.globalOptions)
 
     self.cutselectionController = CutselectionController(self.cutselectionUi,
                                                          self.initialFiles,
                                                          self.videoManager,
                                                          self.ffmpegService,
-                                                         self.ytdlService)
+                                                         self.ytdlService,
+                                                         self.globalOptions)
 
     self.filterSelectionController = FilterSelectionController(self.filterSselectionUi,
-                                                         self.videoManager,
-                                                         self.ffmpegService)
+                                                               self.videoManager,
+                                                               self.ffmpegService,
+                                                               self.globalOptions)
 
     self.mergeSelectionController = MergeSelectionController(self.mergeSelectionUi,
                                                              self.videoManager,
                                                              self.ffmpegService,
-                                                             self.filterSelectionController
+                                                             self.filterSelectionController,
+                                                             self.globalOptions
                                                              )
 
     if os.path.exists(self.autosaveFilename) and len(self.initialFiles)==0:
@@ -132,6 +149,18 @@ class WebmGeneratorController:
       self.openProject(self.autosaveFilename)
     except Exception as e:
       logging.error("Audoload save failed",exc_info=e)
+
+  def getDownloadFilesCountAndsize(self):
+    pass
+
+  def clearDownloadedfiles(self):
+    if os.path.exists(self.tempDownloadFolder):
+      for f in os.listdir(self.tempDownloadFolder):
+        try: 
+          os.remove(os.path.join(self.tempDownloadFolder,f))
+          self.cutselectionController.removefileIfLoaded(os.path.join(self.tempDownloadFolder,f))
+        except Exception as e:
+          print(e)
 
   def runSceneChangeDetection(self):
     self.cutselectionController.runSceneChangeDetection()

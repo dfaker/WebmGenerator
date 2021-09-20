@@ -22,6 +22,10 @@ A large v2 release moving to a more standardized user interface, adds the abilit
 #### Fade Effect Output
 ![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOutput.gif)
 
+#### Overlay With Blending Mode Output
+![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOverlayOuput_StainsHD.gif)
+
+
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/
 - ffmpeg - https://www.ffmpeg.org/download.html

@@ -15,6 +15,7 @@ buildOptions = dict(packages = ["os"],
                     include_files = [
                      ('resources\\QRCode.gif','resources\\QRCode.gif')
                     ,('resources\\quicksand.otf','resources\\quicksand.otf')
+                    ,('resources\\playerbg.png','resources\\playerbg.png')
                     ,('postFilters\\PostFilter-addQRCode.txt','postFilters\\PostFilter-addQRCode.txt')
                     ,('postFilters\\PostFilter-chromaShift.txt','postFilters\\PostFilter-chromaShift.txt')
                     ,('postFilters\\PostFilter-rainbow.txt','postFilters\\PostFilter-rainbow.txt')

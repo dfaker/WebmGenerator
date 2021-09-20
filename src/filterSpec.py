@@ -3,6 +3,8 @@ colours = [
   "Black",
   "Gray",
   "White",
+  "Black@0.5",
+  "White@0.5",  
   "Red",
   "Green",
   "Blue",
@@ -149,6 +151,30 @@ colours = [
   "WhiteSmoke",
   "Yellow",
   "YellowGreen",
+]
+
+
+fonts = [
+  'System', 
+  'Terminal', 
+  'Fixedsys', 
+  'Modern', 
+  'Roman', 
+  'Script', 
+  'Courier', 
+  'Arial',
+  'Consolas',
+  'Courier New',
+  'Lucida Console',
+  'Symbol', 
+  'Tahoma',
+  'Trebuchet MS',
+  'Droid Serif', 
+  'Droid Sans', 
+  'Droid Sans Mono', 
+  'DejaVu Sans Condensed', 
+  'DejaVu Sans', 
+  'DejaVu Sans Mono'
 ]
 
 selectableFilters = [
@@ -754,9 +780,12 @@ selectableFilters = [
         "filter": "subtitles=filename='{filename}':force_style='Fontname={fontname},Fontsize={fontsize},PrimaryColour={primaryColour},OutlineColour={outlineColour},Outline={outlineWidth},BackColour={shadowColour},Shadow={outlineShadowWidth}'",
         "params": [
             {"n": "filename", "d": "subtitles.srt", "type": "file", "fileCategory":"subtitle"},
-            {"n": "fontname", "d": "font.otf", "type": "file", "fileCategory":"font"},
+            {"n": "fontname", "d": "", "type": "cycle",
+                "cycle": [""]+fonts,
+            },
+
             {"n": "fontsize", "d": 12, "type": "float", "range": [0, None], "inc": 0.1},
-            {"n": "primaryColour", "d": "&H0000FFFF", "type": "bareString"},
+            {"n": "primaryColour", "d": "&H0000CCFF", "type": "bareString"},
             {"n": "outlineColour", "d": "&H00000000", "type": "bareString"},
             {"n": "shadowColour", "d": "&H00000000", "type": "bareString"},
             {"n": "outlineWidth", "d": 1, "type": "float", "range": [0, None], "inc": 0.1},

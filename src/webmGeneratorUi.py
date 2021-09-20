@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk,Menu,END
+from tkinter import Tk,Menu,END,LEFT,PhotoImage
 import tkinter.ttk as ttk
 import webbrowser
 from tkinter.filedialog import askopenfilename,asksaveasfilename
@@ -59,7 +59,18 @@ class WebmGeneratorUi:
 
     self.master.title('WebmGenerator')
     self.master.minsize(1024,900)
-    
+
+    self.iconLookup = {}
+
+    try:
+      for iconFileName in os.listdir(os.path.join("resources","icons")):
+        key = iconFileName[:-4]
+        try:
+          self.iconLookup[key] = PhotoImage(file=os.path.join("resources","icons","{}.png".format(key)))
+        except Exception as e:
+          print(e)
+    except Exception as e:
+      print(e)
 
     try:
       self.master.state('zoomed')
@@ -74,9 +85,11 @@ class WebmGeneratorUi:
     self.menubar = Menu(self.master)
     
     self.filemenu = Menu(self.menubar, tearoff=0)
-    self.filemenu.add_command(label="New Project",  command=self.newProject)
-    self.filemenu.add_command(label="Open Project", command=self.openProject)
-    self.filemenu.add_command(label="Save Project", command=self.saveProject)
+
+    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('file-video-regular'), compound=LEFT)
+    
+    self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
+    self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
     self.filemenu.add_separator()
 
     if self.controller.autoSaveExists():
@@ -89,9 +102,9 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Run scene change detection", command=self.controller.runSceneChangeDetection)
     self.filemenu.add_separator()
 
-    self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles)
-    self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl)
-    self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile)
+    self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
+    self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
+    self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
     self.filemenu.add_separator()
     
     if hasattr(os.sys, 'winver'):

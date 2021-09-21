@@ -336,8 +336,9 @@ class CutselectionUi(ttk.Frame):
 
         self.frameVideoPlayerAndControls = ttk.Frame(self.frameUpperFrame)
 
-        self.labelVideoSummary = ttk.Label(self.frameVideoPlayerAndControls,text=' ',justify=tk.CENTER)
-        self.labelVideoSummary.pack(expand="false",fill="both", pady="2", side="top")
+        self.labelVideoSummaryVar = tk.StringVar()
+        self.labelVideoSummary = ttk.Entry(self.frameVideoPlayerAndControls,takefocus=False,style="subtle.TEntry",textvariable=self.labelVideoSummaryVar,justify=tk.CENTER)
+        self.labelVideoSummary.pack(expand="false",fill="both", padx=0, pady=0, side="top")
 
         self.frameVideoPlayerFrame = ttk.Frame(self.frameVideoPlayerAndControls)
         self.frameVideoPlayerFrame.config(
@@ -449,7 +450,7 @@ class CutselectionUi(ttk.Frame):
 
     def updateSummary( self,filename,duration=0,videoparams={},containerfps=0,estimatedvffps=0):
       if filename is None:
-        self.labelVideoSummary.config(text ="")
+        self.labelVideoSummaryVar.set("")
         return
 
       if estimatedvffps is None:
@@ -457,14 +458,14 @@ class CutselectionUi(ttk.Frame):
       if containerfps is None:
         containerfps = 0
       try:
-        self.labelVideoSummary.config(text = "{} - {}s - {}x{} - {:2f} ({:2f})fps ".format(filename,
-                                                                                           duration,
-                                                                                           videoparams.get('w',0),
-                                                                                           videoparams.get('h',0),
-                                                                                           containerfps,
-                                                                                           estimatedvffps))
+        self.labelVideoSummaryVar.set("{} - {}s - {}x{} - {:2f} ({:2f})fps ".format(filename,
+                                                                                    duration,
+                                                                                    videoparams.get('w',0),
+                                                                                    videoparams.get('h',0),
+                                                                                    containerfps,
+                                                                                    estimatedvffps))
       except:
-        self.labelVideoSummary.config(text ="")
+        self.labelVideoSummaryVar.set("")
 
     def generateSoundWaveBackgrounds(self):
       self.frameTimeLineFrame.generateWaveImages = not self.frameTimeLineFrame.generateWaveImages

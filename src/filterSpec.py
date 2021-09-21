@@ -234,7 +234,40 @@ selectableFilters = [
     },
 
 
-
+ {
+        "name": "mpdecimate",
+        "filter":"mpdecimate",
+        "params": [
+            {
+                "n": "max",
+                "d": 1,
+                "type": "int",
+                "range": [None,None],
+                "inc": 1,
+            },
+            {
+                "n": "hi",
+                "d": 768,
+                "type": "int",
+                "range": [None,None],
+                "inc": 1,
+            },
+            {
+                "n": "lo",
+                "d": 320,
+                "type": "int",
+                "range": [None,None],
+                "inc": 1,
+            },
+            {
+                "n": "frac",
+                "d": 0.33,
+                "type": "int",
+                "range": [None,None],
+                "inc": 0.1,
+            }
+        ]
+ },
 
 
  {
@@ -502,9 +535,16 @@ selectableFilters = [
         ],
     },
 
+    {
+        "name": "negate",        
+        "filter": "negate",
+    },
+
+
 
     {
         "name": "reverse",
+        "desc":"Warning! This filter will not show in preview, but ffmpeg will need to buffer the entire original clip, easily using all system memory, consider pre-cutting before applying this.",
         "filter": "reverse",
         "filterPreview":"null"
     },

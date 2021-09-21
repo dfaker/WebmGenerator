@@ -49,6 +49,7 @@ class WebmGeneratorUi:
     self.style.configure("PlayerLabel.TLabel",background='#282828')
 
 
+    self.style.configure('subtle.TEntry', border=0, padding=(0,0),background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     self.style.configure('small.TButton', padding=0)
     self.style.configure('smallTall.TButton', padding=(0,10))
     self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)

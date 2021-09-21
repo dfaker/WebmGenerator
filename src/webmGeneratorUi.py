@@ -167,11 +167,9 @@ class WebmGeneratorUi:
 
 
     self.master.config(menu=self.menubar)
-
-
+    
     self.notebook = ttk.Notebook(self.master)
     
-
     self.statusFrame = ttk.Frame(self.master,height='20')
 
     self.statusCancel = ttk.Button(self.statusFrame,text='Stop',state='disabled',style='smallextra.TButton',command=self.cancelAction)

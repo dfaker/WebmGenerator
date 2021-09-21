@@ -270,6 +270,7 @@ class WebmGeneratorController:
     except Exception as e:
       logging.error("root.destroy() Exception",exc_info=e)
 
+    print('temp clean up start')
     if os.path.exists(self.tempFolder):
       for f in os.listdir(self.tempFolder):
         try:
@@ -284,7 +285,8 @@ class WebmGeneratorController:
             os.remove(os.path.join(self.tempDownloadFolder,f))
           except Exception as e:
             print(e)
-
+    print('temp clean up end')
+    
   def __call__(self):
     self.webmMegeneratorUi.run()
     logging.debug('EXIT')

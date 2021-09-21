@@ -227,7 +227,7 @@ selectableFilters = [
 
     {
         "name": "scaleDown",
-        "filter": "scale=w=iw*{factor}2:h=ih*{factor}:sws_flags=area",
+        "filter": "scale=w=iw*{factor}:h=ih*{factor}:sws_flags=area",
         "params": [
             {"n": "factor","desc":"Reduction factor", "d": 1.0, "type": "float", "range": [0, 1], "inc": 0.005}
             ]
@@ -503,7 +503,11 @@ selectableFilters = [
     },
 
 
-
+    {
+        "name": "reverse",
+        "filter": "reverse",
+        "filterPreview":"null"
+    },
 
 
     {

@@ -73,8 +73,6 @@ class FilterSelectionController:
     except Exception as e:
       print(e)
 
-    #self.player.terminate()
-    #del self.player
 
   def getAllSubclips(self):
     return self.videoManager.getAllClips()

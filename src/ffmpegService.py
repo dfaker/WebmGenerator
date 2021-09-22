@@ -240,12 +240,16 @@ class FFmpegService():
         m.update(filterexp.encode('utf8'))
         filterHash = m.hexdigest()[:10]
 
-        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
+        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
         loopCount = 1
 
         outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,s,e,filterHash,runNumber)
         outname = os.path.join( tempPathname,outname )
+
+        print('BRICKN',brickn,(i,(rid,clipfilename,s,e,filterexp,filterexpEnc)))
+        print('key',key,outname)
+
 
         if os.path.exists(outname):
           processed[key]=outname
@@ -285,6 +289,9 @@ class FFmpegService():
                       ,'-c:v', 'libx264'
                       ,'-crf', '0'
                       ,'-ac', '1',outname]
+
+
+
 
 
           proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
@@ -361,6 +368,7 @@ class FFmpegService():
         if w*h > largestBrickArea:
           largestBrickArea=w*h
           largestBrickInd=k
+
 
 
       if audioMergeMode == 'Selected Column Only':
@@ -544,7 +552,25 @@ class FFmpegService():
 
 
 
+
       filtercommand = ffmpegFilterCommand
+
+
+      print('\nprocessed\n')
+      print(processed)
+
+      print('\nbrickTofileLookup\n')
+      print(brickTofileLookup)
+      print('\ninputsList\n')
+      print(inputsList)
+      print('\nbrickClips\n')
+      print(brickClips)
+      print('\nsorted(logger.items(),key=lambda x:int(x[0]))\n')
+      print(sorted(logger.items(),key=lambda x:int(x[0])))
+      print('\nfiltercommand\n')
+      print(filtercommand)
+      print('\n')
+
 
       outputFormat  = options.get('outputFormat','webm:VP8')
       finalEncoder  = encoderMap.get(outputFormat,encoderMap.get('webm:VP8'))
@@ -604,7 +630,7 @@ class FFmpegService():
           filterexp='null'  
 
         basename = os.path.basename(clipfilename)
-        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
+        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
         if 'subtitles=filename=' in  filterexp:
 
@@ -643,7 +669,7 @@ class FFmpegService():
 
         key = (rid,clipfilename,start,end,filterexp,filterexpEnc)
         basename = os.path.basename(clipfilename)
-        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:10]
+        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
         outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber)
         outname = os.path.join( tempPathname,outname )
@@ -774,6 +800,7 @@ class FFmpegService():
       if fadeDuration > 0.0:
         inputsList = []
 
+
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
 
@@ -849,6 +876,7 @@ class FFmpegService():
           except Exception as e:
             logging.error("Concat progress Exception",exc_info=e)
             filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'
+
 
       postProcessingPath = os.path.join( 'postFilters', options.get('postProcessingFilter','') )
       if os.path.exists( postProcessingPath ) and os.path.isfile( postProcessingPath ):

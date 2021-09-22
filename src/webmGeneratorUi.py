@@ -87,10 +87,10 @@ class WebmGeneratorUi:
     
     self.filemenu = Menu(self.menubar, tearoff=0)
 
-    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('file-video-regular'), compound=LEFT)
+    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
     
-    self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
-    self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
+    self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
+    self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
     self.filemenu.add_separator()
 
     if self.controller.autoSaveExists():

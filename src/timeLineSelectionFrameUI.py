@@ -199,6 +199,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
     self.uiDirty=True
+    self.clipped=None
 
 
   def processFileAudioToBytes(self,filename,totalDuration):
@@ -325,11 +326,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.resumeplaybackTimer.start()
 
         if pos == 's':
-          self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,sts+(increment*0.05))
+          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,sts+(increment*0.05))
           self.dirtySelectionRanges.add(rid)
           self.seekto(sts+(increment*0.05))
         elif pos == 'e':
-          self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,ens+(increment*0.05))
+          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,ens+(increment*0.05))
           self.dirtySelectionRanges.add(rid)
           self.seekto(ens+(increment*0.05)-0.001)
         break
@@ -413,7 +414,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
               pass
           self.resumeplaybackTimer = threading.Timer(0.8, self.controller.play)
           self.resumeplaybackTimer.start()
-          self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,'m',targetSeconds)
+          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,'m',targetSeconds)
           self.dirtySelectionRanges.add(rid)
           if ctrl:
             self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + self.dragPreviewPos )
@@ -564,7 +565,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         targetSeconds = self.xCoordToSeconds(e.x+self.timelineMousePressOffset)
         self.dirtySelectionRanges.add(rid)
-        self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,targetSeconds)
+        self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,targetSeconds)
         self.dirtySelectionRanges.add(rid)
         if pos == 's':
           self.controller.seekTo( targetSeconds )
@@ -709,14 +710,22 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
+          
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
-          self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}') ) )
+            
+          if self.clipped != rid:
+            self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}') ) )
           
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, min(trimpreend,ex), timelineHeight)
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],max(trimpostStart,sx), timelineHeight-self.midrangeHeight, ex, timelineHeight)
 
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'miniDrag')],sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight)
 
+          if self.clipped == rid:
+            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#ffffff")
+            self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="At Video Edge")
+          else:
+            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#69dbbe")
 
           if self.lastClickedEndpoint is None:
             self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
@@ -741,7 +750,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           henx = (e/self.controller.getTotalDuration())*timelineWidth
 
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'headerR')],hstx,10, henx, 20)
-          self.dirtySelectionRanges.remove(rid)
+
+          if self.clipped != rid:
+            self.dirtySelectionRanges.remove(rid)
+          else:
+            self.clipped=None
+
           
         else:
           print('add',rid)

@@ -78,6 +78,10 @@ class VideoFilePreview(ttk.Frame):
 
         self.previewData = "P5\n200 117\n255\n" + ("0" * 200 * 117)
         self.labelVideoPreviewImage = tk.PhotoImage(data=self.previewData)
+        try:
+          self.labelVideoPreviewImage = tk.PhotoImage(file=".\\resources\\loadingPreview.png")
+        except Exception as e:
+          print(e)
         self.previewRequested = False
 
         self.labelVideoPreviewLabel.configure(image=self.labelVideoPreviewImage)
@@ -836,7 +840,10 @@ class CutselectionUi(ttk.Frame):
         self.controller.setLoopPos(start, end)
 
     def updatePointForClip(self, filename, rid, pos, seconds):
-        self.controller.updatePointForClip(filename, rid, pos, seconds)
+        if self.controller.updatePointForClip(filename, rid, pos, seconds):
+          return rid
+        else:
+          return False
 
     def runSceneChangeDetection(self):
       self.controller.runSceneChangeDetection()

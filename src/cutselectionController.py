@@ -352,16 +352,31 @@ class CutselectionController:
     return self.currentTimePos
 
   def updatePointForClip(self,filename,rid,pos,seconds):
+    clipped = False
+
     if seconds<0:
       seconds=0
+      clipped=True
     if seconds>self.currentTotalDuration:
       seconds=self.currentTotalDuration
+      clipped=True
+
+    if pos == 'm':
+      _,rs,re = self.videoManager.getDetailsForRangeId(rid)
+      print('move',rid,rs,re,(re-rs)/2)
+      rhlen = (re-rs)/2
+      if (seconds-rhlen)<0:
+        seconds=rhlen
+        clipped=True
+      elif (seconds+rhlen)>self.currentTotalDuration:
+        seconds=self.currentTotalDuration-rhlen
+        clipped=True
 
     self.videoManager.updatePointForClip(filename,rid,pos,seconds)
     self.updateProgressStatistics()
     self.currentLoopCycleStart  = None
     self.currentLoopCycleEnd    = None
-
+    return clipped
 
   def clearallSubclips(self):
     self.videoManager.clearallSubclips()

@@ -105,10 +105,11 @@ class VideoManager:
     self.subclips.get(filename,{}).get(rid,[0,0])[1]=end
 
 
-  def getDetailsForRangeId(self,rid):
+  def getDetailsForRangeId(self,searchrid):
     for filename,clips in self.subclips.items():
       for rid,(s,e) in clips.items():
-        return filename,s,e
+        if rid == searchrid:
+          return filename,s,e
 
   def updatePointForClip(self,filename,rid,pos,ts):
     if pos == 's':
@@ -125,6 +126,9 @@ class VideoManager:
     s,e = sorted(self.subclips.get(filename,{}).get(rid,[0,0]))
     self.subclips.get(filename,{}).get(rid,[0,0])[0]=s
     self.subclips.get(filename,{}).get(rid,[0,0])[1]=e
+
+    print(self.subclips)
+
 
 if __name__ == '__main__':
   import webmGenerator

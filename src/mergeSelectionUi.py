@@ -438,6 +438,12 @@ class SelectableVideoEntry(ttk.Frame):
     
     self.previewData = "P5\n124 80\n255\n"+("0"*80*124)
     self.previewImage= tk.PhotoImage(data=self.previewData)  
+
+    try:
+      self.previewImage = tk.PhotoImage(file=".\\resources\\cutPreview.png")
+    except Exception as e:
+      print(e)
+
     self.canvasInputCutPreview = ttk.Label(self.frameInputCutWidget)
     self.canvasInputCutPreview.config(text='No Preview loaded')
     self.canvasInputCutPreview.config(image=self.previewImage)

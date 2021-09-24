@@ -141,16 +141,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind('v',       self.keyboardTempSection)
     self.timeline_canvas.bind('c',       self.keyboardCutatTime)
     self.timeline_canvas.bind('b',       self.keyboardBlockAtTime)
-
+    self.timeline_canvas.bind('d',       self.keyboardRemoveBlockAtTime)
 
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
 
 
-    self.tempRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#113a47",width=1,outline="#69bfdb", dash=(1,2,3,5,8))
-
-
+    self.tempRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#113a47",width=1,outline="#69bfdb", dash=(1, 1, 2, 3, 5, 8))
 
     self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
 
@@ -169,8 +167,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.tickmarks=[]
     self.uiDirty=True
     self.clickTarget=None
-
-
 
     self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,9,0,fill="#4E4E4E")
     self.rangeHeaderActiveRange = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#9E9E9E")
@@ -327,6 +323,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.addNewSubclip(mid,e,seekAfter=False)
       self.dirtySelectionRanges.add(selectedRange)
       self.updateCanvas()
+
+  def keyboardRemoveBlockAtTime(self,e):
+    if self.tempRangeStart is not None:
+      self.tempRangeStart=None
+      self.updateCanvas()
+    else:
+      mid = self.controller.getCurrentPlaybackPosition()
+      self.controller.removeSubclip(mid)
 
   def keyboardBlockAtTime(self,e):
     pos = self.controller.getCurrentPlaybackPosition()

@@ -148,6 +148,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.currentZoomRangeMidpoint=0.5
 
 
+    self.tempRangePreviewDurationLabel = self.timeline_canvas.create_text(0, 0, text='',fill="#69bfdb")
     self.tempRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#113a47",width=1,outline="#69bfdb", dash=(1, 1, 2, 3, 5, 8))
 
     self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
@@ -410,6 +411,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.coords(self.canvasSeekPointer, -100,45+55,-100,0 )
     self.timeline_canvas.coords(self.canvasTimestampLabel,-100,45+45)
     self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
+    self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
     self.previewFrames = {}
     self.timeline_canvas.delete('previewFrame')
     self.timeline_canvas.delete('fileSpecific')
@@ -673,12 +675,18 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if self.tempRangeStart is not None:
       a = self.tempRangeStart
       b = self.controller.getCurrentPlaybackPosition()
+      d = abs(b-a)
       #a,b = sorted([a,b])
       a = self.secondsToXcoord(a)
       b = self.secondsToXcoord(b)
       self.timeline_canvas.coords(self.tempRangePreview,a,110,b,150)
+
+      self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,(a+b)//2,102)
+      self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text=format_timedelta(datetime.timedelta(seconds=d),'{hours_total}:{minutes2}:{seconds:02.2F}') )
     else:
       self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
+      self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
+      self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text="")
 
     if self.uiDirty and self.generateWaveImages:
 

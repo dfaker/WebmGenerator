@@ -58,24 +58,22 @@ def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{secon
     })
 
 
-def debounce(wait):
-    def decorator(fn):
+def debounce(wait_time):
+    def decorator(function):
         def debounced(*args, **kwargs):
-            def call_it():
+            def call_function():
                 debounced._timer = None
-                debounced._last_call = time.time()
-                return fn(*args, **kwargs)
+                return function(*args, **kwargs)
 
-            time_since_last_call = time.time() - debounced._last_call
-            if time_since_last_call >= wait:
-                return call_it()
+            if debounced._timer is not None:
+                debounced._timer.cancel()
 
-            if debounced._timer is None:
-                debounced._timer = threading.Timer(wait - time_since_last_call, call_it)
-                debounced._timer.start()
+            debounced._timer = threading.Timer(wait_time, call_function)
+            debounced._timer.start()
+
         debounced._timer = None
-        debounced._last_call = 0
         return debounced
+
     return decorator
 
 class TimeLineSelectionFrameUI(ttk.Frame):
@@ -317,7 +315,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.wavePicSectionsThread = None
         return
 
-
   def keyboardCutatTime(self,e):
     mid = self.controller.getCurrentPlaybackPosition()
     selectedRange = None
@@ -357,6 +354,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def endTempSelection(self):
       a,b = self.tempRangeStart, self.controller.getCurrentPlaybackPosition()
+
       if a != b:
         self.controller.addNewSubclip(a,b,seekAfter=False)
       self.tempRangeStart=None
@@ -544,10 +542,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           return
         self.timelineZoomFactor=newZoomFactor
 
-
   @debounce(0.1)
   def seekto(self,seconds):
-    if self.lastSeek is not None and abs(self.lastSeek-seconds)<0.01:
+    if self.lastSeek is not None and abs(self.lastSeek-seconds)<0.001:
       return
     else:
       self.lastSeek=seconds

@@ -16,14 +16,29 @@ buildOptions = dict(packages = ["os"],
                      ('resources\\QRCode.gif','resources\\QRCode.gif')
                     ,('resources\\quicksand.otf','resources\\quicksand.otf')
                     ,('resources\\playerbg.png','resources\\playerbg.png')
+                      
+                    ,('resources\\RankImages\\Rank-0-cell.png','resources\\RankImages\\Rank-0-cell.png')
+                    ,('resources\\RankImages\\Rank-A.png','resources\\RankImages\\Rank-A.png')
+                    ,('resources\\RankImages\\Rank-B.png','resources\\RankImages\\Rank-B.png')
+                    ,('resources\\RankImages\\Rank-C.png','resources\\RankImages\\Rank-C.png')
+                    ,('resources\\RankImages\\Rank-D.png','resources\\RankImages\\Rank-D.png')
+                    ,('resources\\RankImages\\Rank-E.png','resources\\RankImages\\Rank-E.png')
+                    ,('resources\\RankImages\\Rank-F.png','resources\\RankImages\\Rank-F.png')
+                      
+                    ,('resources\\cutPreview.png','resources\\cutPreview.png')
+                    ,('resources\\loadingPreview.png','resources\\loadingPreview.png')
+                      
                     ,('postFilters\\PostFilter-addQRCode.txt','postFilters\\PostFilter-addQRCode.txt')
                     ,('postFilters\\PostFilter-chromaShift.txt','postFilters\\PostFilter-chromaShift.txt')
                     ,('postFilters\\PostFilter-rainbow.txt','postFilters\\PostFilter-rainbow.txt')
                     ,('postFilters\\PostFilter-vhsishclean.txt','postFilters\\PostFilter-vhsishclean.txt')
+                    
                     ,('customEncodeprofiles\\4Chan 4Meg Webm with no Sound.json','customEncodeprofiles\\4Chan 4Meg Webm with no Sound.json')
                     ,('customEncodeprofiles\\4Chan 4Meg Webm with sound.json','customEncodeprofiles\\4Chan 4Meg Webm with sound.json')
                     ,('customEncodeprofiles\\Discord 8M limit mp4.json','customEncodeprofiles\\Discord 8M limit mp4.json')
+                    
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
+                    
                     ,'youtube-dl.exe'
                     ,'ffmpeg.exe'
                     ,'ffprobe.exe'  

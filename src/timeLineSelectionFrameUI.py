@@ -138,10 +138,17 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind('<Left>',  self.keyboardLeft)
     self.timeline_canvas.bind('<Right>', self.keyboardRight)
     self.timeline_canvas.bind('<space>', self.keyboardSpace)
+    
     self.timeline_canvas.bind('v',       self.keyboardTempSection)
     self.timeline_canvas.bind('c',       self.keyboardCutatTime)
     self.timeline_canvas.bind('b',       self.keyboardBlockAtTime)
     self.timeline_canvas.bind('d',       self.keyboardRemoveBlockAtTime)
+
+    self.timeline_canvas.bind('V',       self.keyboardTempSection)
+    self.timeline_canvas.bind('C',       self.keyboardCutatTime)
+    self.timeline_canvas.bind('B',       self.keyboardBlockAtTime)
+    self.timeline_canvas.bind('D',       self.keyboardRemoveBlockAtTime)
+
 
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
@@ -332,6 +339,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     else:
       mid = self.controller.getCurrentPlaybackPosition()
       self.controller.removeSubclip(mid)
+      self.updateCanvas()
 
   def keyboardBlockAtTime(self,e):
     pos = self.controller.getCurrentPlaybackPosition()
@@ -340,33 +348,72 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       post = self.defaultSliceDuration*0.5
       self.controller.addNewSubclip( pos-pre,pos+post  )
 
-  def keyboardTempSection(self,e):
-    if self.tempRangeStart is None:
-      self.tempRangeStart = self.controller.getCurrentPlaybackPosition()
+
+  def startTempSelection(self,startOverride=None):
+    if startOverride is not None:
+      self.tempRangeStart = startOverride
     else:
+      self.tempRangeStart = self.controller.getCurrentPlaybackPosition()
+
+  def endTempSelection(self):
       a,b = self.tempRangeStart, self.controller.getCurrentPlaybackPosition()
       if a != b:
         self.controller.addNewSubclip(a,b,seekAfter=False)
       self.tempRangeStart=None
       self.updateCanvas()
+      self.uiDirty = True
 
+  def keyboardTempSection(self,e):
+    if self.tempRangeStart is None:
+      self.startTempSelection()
+    else:
+      self.endTempSelection()
 
   def keyboardSpace(self,e):
     self.controller.playPauseToggle()
 
   def keyboardRight(self,e):
+    
+    pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
+    ctrl  = (e.state & 0x4) != 0
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(5 if shift else 1,*self.lastClickedEndpoint)
     else:
-      self.controller.seekRelative(5 if shift else 1)
+      if not ctrl:
+        self.controller.seekRelative(5 if shift else 1)
+      else:
+        ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+        nextTarget=None
+        for rid,(sts,ens) in sorted(ranges,key=lambda x:x[1][0])[::-1]:
+          if sts > pos:
+            nextTarget = (sts+ens)/2
+        if nextTarget is not None:
+          self.seekto(nextTarget)
+        else:
+          self.controller.seekRelative(5 if shift else 1)
+
 
   def keyboardLeft(self,e):
+    pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
+    ctrl  = (e.state & 0x4) != 0
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(-5 if shift else -1,*self.lastClickedEndpoint)
     else:
-      self.controller.seekRelative(-5 if shift else -1)
+      if not ctrl:
+        self.controller.seekRelative(-5 if shift else -1)
+      else:
+        ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+        nextTarget=None
+        for rid,(sts,ens) in sorted(ranges,key=lambda x:x[1][1]):
+          if ens < pos:
+            nextTarget = (sts+ens)/2
+        if nextTarget is not None:
+          self.seekto(nextTarget)
+        else:
+          self.controller.seekRelative(-5 if shift else -1)
+
 
 
   def incrementEndpointPosition(self,increment,markerrid,pos):
@@ -549,6 +596,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.lastClickedEndpoint=None
       self.timelineMousePressOffset=0
 
+      if ctrl and self.tempRangeStart is None:
+        ctrl_seconds = self.xCoordToSeconds(e.x)
+        self.startTempSelection(startOverride=ctrl_seconds)
+
     if e.type in (tk.EventType.ButtonPress,tk.EventType.ButtonRelease):
       self.timeline_mousedownstate[e.num] = e.type == tk.EventType.ButtonPress
 
@@ -584,9 +635,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
 
     if e.type in (tk.EventType.ButtonRelease,) and e.num in (1,2):
+      if self.tempRangeStart is not None:
+        self.endTempSelection()
+
       self.clickTarget = None
       self.rangeHeaderClickStart=None
       self.controller.play()
+
 
     if self.timeline_mousedownstate.get(2,False):
       if self.rangeHeaderClickStart is not None:
@@ -611,16 +666,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           if e.x<2:
             self.currentZoomRangeMidpoint-=0.001
 
-          if ctrl:
-            newRID = self.controller.addNewSubclip( seconds, seconds+1)
-            
-            self.clickTarget = (newRID,'e',seconds,seconds+1)
-            self.dirtySelectionRanges.add(newRID)
-            self.lastClickedEndpoint=(newRID,'e')
-            self.timelineMousePressOffset = 0
-            self.controller.pause()
+          if ctrl and self.tempRangeStart is None:
+            self.startTempSelection()
 
-
+          if (not ctrl) and self.tempRangeStart is not None:
+            self.endTempSelection()
 
       if self.clickTarget is not None:
         rid,pos,os,oe = self.clickTarget

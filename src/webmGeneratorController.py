@@ -91,6 +91,7 @@ class WebmGeneratorController:
     self.initialFiles = self.cleanInitialFiles(initialFiles)
     self.root = Tk()
     
+    self.keyQueue=[]
     self.root.bind_all("<Key>", self.globalKeyCallback)
 
     self.root.protocol("WM_DELETE_WINDOW", self.close_ui)
@@ -144,6 +145,13 @@ class WebmGeneratorController:
         logging.error("Load last save Exception",exc_info=e)
 
   def globalKeyCallback(self,evt):
+    print(evt)
+    ctrl  = (evt.state & 0x4) != 0
+    if ctrl:
+      if evt.keysym=='q':
+        self.root.destroy()
+      elif evt.keysym=='n':
+        self.webmMegeneratorUi.newProject()
     self.cutselectionController.handleGlobalKeyEvent(evt)
 
   def autoSaveExists(self):

@@ -234,6 +234,9 @@ class WebmGeneratorUi:
   def loadImageFile(self):
     self.controller.cutselectionUi.loadImageFile()
 
+  def switchTab(self,ind):
+    self.notebook.select(ind)
+
   def newProject(self):
     self.controller.newProject()
     self.notebook.select(0)

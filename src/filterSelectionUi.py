@@ -907,7 +907,6 @@ class FilterSelectionUi(ttk.Frame):
       self.setSubclipIndex( (self.currentSubclipIndex-1)%len(self.subClipOrder) )
       self.updateFilterDisplay()
 
-
   def copyfilters(self):
     if self.currentSubclipIndex is not None:
       self.filterClipboard = self.convertFilterstoSpecDefaults()

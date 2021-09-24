@@ -14,11 +14,13 @@ class FilterSelectionController:
     playerFrameWid = self.ui.getPlayerFrameWid()
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=True,
-                          log_handler=print,
-                          loglevel='debug',
+                          #log_handler=print,
+                          #loglevel='debug',
                           loop='inf',
                           mute=True,
-                          autofit_larger='1280')
+                          autofit_larger='1280',
+                          audio_file_auto='no',
+                          sub_auto='no')
 
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)

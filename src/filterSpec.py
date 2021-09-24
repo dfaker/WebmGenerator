@@ -1204,11 +1204,11 @@ selectableFilters = [
     
     {
         "name": "tonemap",
-        "filter": "zscale=transfer=linear,tonemap={mapping}:param={param},zscale=transfer=bt709,format=yuv420p",
+        "filter": "zscale=transfer=linear,tonemap={mapping}:param={param}:desat={desat},zscale=transfer=bt709,format=yuv420p",
         "params": [
             {
                 "n": "mapping",
-                "d": "none",
+                "d": "mobius",
                 "type": "cycle",
                 "cycle": [
                     "none",
@@ -1220,7 +1220,8 @@ selectableFilters = [
                     "mobius",
                 ],
             },
-            {"n": "param", "d": 1.0, "type": "float", "inc": 0.01},
+            {"n": "param", "d": 0.3, "type": "float", "inc": 0.01},
+            {"n": "desat", "d": 2.0, "type": "float", "inc": 0.01},
         ],
     },
     

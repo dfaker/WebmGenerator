@@ -135,13 +135,23 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind('<Configure>',self.reconfigure)
 
     self.timeline_canvas.focus_set()
-    self.timeline_canvas.bind('<Left>', self.keyboardLeft)
+    self.timeline_canvas.bind('<Left>',  self.keyboardLeft)
     self.timeline_canvas.bind('<Right>', self.keyboardRight)
+    self.timeline_canvas.bind('<space>', self.keyboardSpace)
+    self.timeline_canvas.bind('v',       self.keyboardTempSection)
+    self.timeline_canvas.bind('c',       self.keyboardCutatTime)
+    self.timeline_canvas.bind('b',       self.keyboardBlockAtTime)
 
 
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
+
+
+    self.tempRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#113a47",width=1,outline="#69bfdb", dash=(1,2,3,5,8))
+
+
+
     self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
 
     self.canvasTimestampLabel = self.timeline_canvas.create_text(0, 0, text='',fill="white")
@@ -159,6 +169,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.tickmarks=[]
     self.uiDirty=True
     self.clickTarget=None
+
+
 
     self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,9,0,fill="#4E4E4E")
     self.rangeHeaderActiveRange = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#9E9E9E")
@@ -192,6 +204,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.waveAsPicSections            = []
     self.waveAsPicImage               = None
     self.wavePicSectionsThread        = None
+
+    self.tempRangeStart=None
 
     self.timeline_canvas.coords(self.canvasSeekPointer, -100,45+55,-100,0 )
     self.timeline_canvas.coords(self.canvasTimestampLabel,-100,45+45)
@@ -299,16 +313,55 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.wavePicSectionsThread = None
         return
 
+
+  def keyboardCutatTime(self,e):
+    mid = self.controller.getCurrentPlaybackPosition()
+    selectedRange = None
+    ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+    for rid,(s,e) in list(ranges):
+      if s<mid<e:
+        selectedRange=rid
+        break
+    if selectedRange is not None:
+      self.controller.updatePointForClip(self.controller.getcurrentFilename(),selectedRange,'e',mid)
+      self.controller.addNewSubclip(mid,e,seekAfter=False)
+      self.dirtySelectionRanges.add(selectedRange)
+      self.updateCanvas()
+
+  def keyboardBlockAtTime(self,e):
+    pos = self.controller.getCurrentPlaybackPosition()
+    if pos is not None:
+      pre = self.defaultSliceDuration*0.5
+      post = self.defaultSliceDuration*0.5
+      self.controller.addNewSubclip( pos-pre,pos+post  )
+
+  def keyboardTempSection(self,e):
+    if self.tempRangeStart is None:
+      self.tempRangeStart = self.controller.getCurrentPlaybackPosition()
+    else:
+      a,b = self.tempRangeStart, self.controller.getCurrentPlaybackPosition()
+      if a != b:
+        self.controller.addNewSubclip(a,b,seekAfter=False)
+      self.tempRangeStart=None
+      self.updateCanvas()
+
+
+  def keyboardSpace(self,e):
+    self.controller.playPauseToggle()
+
   def keyboardRight(self,e):
     shift = (e.state & 0x1) != 0
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(5 if shift else 1,*self.lastClickedEndpoint)
-
+    else:
+      self.controller.seekRelative(5 if shift else 1)
 
   def keyboardLeft(self,e):
     shift = (e.state & 0x1) != 0
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(-5 if shift else -1,*self.lastClickedEndpoint)
+    else:
+      self.controller.seekRelative(-5 if shift else -1)
 
 
   def incrementEndpointPosition(self,increment,markerrid,pos):
@@ -346,15 +399,18 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def resetForNewFile(self):
     self.timelineZoomFactor=1.0
     self.currentZoomRangeMidpoint=0.5
+    self.tempRangeStart=None
     self.canvasRegionCache={}
     self.controller.requestTimelinePreviewFrames(None,None,None,None,None,self.frameResponseCallback)
     self.framesRequested = False;
     self.timeline_canvas.coords(self.canvasSeekPointer, -100,45+55,-100,0 )
     self.timeline_canvas.coords(self.canvasTimestampLabel,-100,45+45)
+    self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
     self.previewFrames = {}
     self.timeline_canvas.delete('previewFrame')
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
+
     self.uiDirty=True
 
   @staticmethod
@@ -609,6 +665,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
     endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
 
+
+    if self.tempRangeStart is not None:
+      a = self.tempRangeStart
+      b = self.controller.getCurrentPlaybackPosition()
+      #a,b = sorted([a,b])
+      a = self.secondsToXcoord(a)
+      b = self.secondsToXcoord(b)
+      self.timeline_canvas.coords(self.tempRangePreview,a,110,b,150)
+    else:
+      self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
 
     if self.uiDirty and self.generateWaveImages:
 
@@ -913,6 +979,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
       self.controller.findLoopAroundFrame(mid,minSeconds,maxSeconds)
     self.timeline_canvas_last_right_click_x=None
+
 
   def findLowestErrorForBetterLoop(self,secondsChange):
     

@@ -462,12 +462,14 @@ class CutselectionUi(ttk.Frame):
       if containerfps is None:
         containerfps = 0
       try:
-        self.labelVideoSummaryVar.set("{} - {}s - {}x{} - {:2f} ({:2f})fps ".format(filename,
+        self.labelVideoSummaryVar.set("{} - {}s - {}x{} - {:2f} ({:2f})fps {} {}".format(filename,
                                                                                     duration,
                                                                                     videoparams.get('w',0),
                                                                                     videoparams.get('h',0),
                                                                                     containerfps,
-                                                                                    estimatedvffps))
+                                                                                    estimatedvffps,
+                                                                                    videoparams.get('pixelformat',''),
+                                                                                    videoparams.get('hw-pixelformat','') ))
       except:
         self.labelVideoSummaryVar.set("")
 
@@ -485,6 +487,7 @@ class CutselectionUi(ttk.Frame):
       self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
       self._previewtimer.daemon = True
       self._previewtimer.start()
+
 
     def setinitialFocus(self):
       self.master.deiconify()
@@ -554,6 +557,8 @@ class CutselectionUi(ttk.Frame):
      self.controller.findRangeforLoop(mid,minSeconds,maxSeconds,self.videoMouseRect)
 
 
+    def seekRelative(self,offset):
+      self.controller.seekRelative(offset)
 
     def setVolume(self,value):
       self.controller.setVolume(value)
@@ -809,8 +814,8 @@ class CutselectionUi(ttk.Frame):
     def getInterestMarks(self):
       return self.controller.getInterestMarks()
 
-    def addNewSubclip(self, start, end):
-        return self.controller.addNewSubclip(start, end)
+    def addNewSubclip(self, start, end,seekAfter=True):
+        return self.controller.addNewSubclip(start, end, seekAfter=seekAfter)
 
     def expandSublcipToInterestMarks(self, point):
       self.controller.expandSublcipToInterestMarks(point)

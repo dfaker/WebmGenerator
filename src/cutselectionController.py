@@ -33,6 +33,7 @@ class CutselectionController:
     self.currentLoop_b=None
     self.copiedTimeRange = None
 
+
     """
     if len(initialFiles)>1:
       response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
@@ -119,7 +120,6 @@ class CutselectionController:
       self.player.ab_loop_a=-1
       self.player.ab_loop_b=-1
 
-
   def checkLoopCycleJump(self):
     if self.loopMode == 'Loop all':
       if (self.currentLoopCycleStart is None or
@@ -155,6 +155,9 @@ class CutselectionController:
       self.ui.updateSummary(None)
       self.ui.updateFileListing(self.files)
 
+  def handleGlobalKeyEvent(self,evt):
+    pass
+
   def reset(self):
     for file in self.files:
       self.removeVideoFile(file)
@@ -184,7 +187,9 @@ class CutselectionController:
                           loop='inf',
                           mute=True,
                           volume=0,
-                          autofit_larger='1280')
+                          autofit_larger='1280',
+                          audio_file_auto='no',
+                          sub_auto='no')
 
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)
     self.player.observe_property('duration', self.handleMpvDurationChange)
@@ -270,8 +275,9 @@ class CutselectionController:
     return vx1,vy1
 
   def seekRelative(self,amount):
+    print(amount)
     if self.currentTotalDuration is not None:
-      self.player.command('seek',str(amount),'relative')
+      self.player.command('seek',str(amount),'relative','exact')
 
   def jumpBack(self):
     self.player.command('seek','-10','relative')
@@ -292,6 +298,9 @@ class CutselectionController:
     self.player.pause=True
 
   def seekTo(self,seconds):
+    if self.currentTotalDuration is not None:
+      self.ui.updateSummary( self.player.filename,self.player.duration,self.player.video_params,self.player.container_fps,self.player.estimated_vf_fps)
+    
     self.player.command('seek',str(seconds),'absolute','exact')
 
   def getTotalDuration(self):
@@ -354,6 +363,7 @@ class CutselectionController:
   def updatePointForClip(self,filename,rid,pos,seconds):
     clipped = False
 
+    print(self,filename,rid,pos,seconds)
     if seconds<0:
       seconds=0
       clipped=True
@@ -403,7 +413,7 @@ class CutselectionController:
     self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,0.0,self.currentTotalDuration)
     self.updateProgressStatistics()
 
-  def addNewSubclip(self,start,end):
+  def addNewSubclip(self,start,end,seekAfter=True):
     if start<0:
       start=0
     if start>self.currentTotalDuration:
@@ -416,7 +426,8 @@ class CutselectionController:
 
     newRID = self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,start,end)
     self.updateProgressStatistics()
-    self.seekTo(start+((end-start)*0.8))
+    if seekAfter:
+      self.seekTo(start+((end-start)*0.8))
     return newRID
 
   def expandSublcipToInterestMarks(self,point):

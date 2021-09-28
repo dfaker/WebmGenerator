@@ -1409,9 +1409,10 @@ class FFmpegService():
                                                                   rid=rid,
                                                                   start=mid),callback) )
 
-  def runSceneChangeDetection(self,filename,duration,callback,addCuts=False):
+  def runSceneChangeDetection(self,filename,duration,callback,threshold=0.3,addCuts=False):
     self.statsRequestQueue.put( (filename,'SceneChangeSearch',dict(filename=filename,
                                                                    addCuts=addCuts,
+                                                                   threshold=threshold,
                                                                    duration=duration),callback) )
 
 

@@ -506,15 +506,16 @@ class CutselectionController:
     if kind == 'Mark':
       self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')
     elif kind == 'Cut':
-      self.videoManager.registerNewSubclip(filename,timestamp,max(timestamp+0.01,timestampEnd-0.01))
+      self.videoManager.registerNewSubclip(filename,timestamp,max(timestamp+0.0|1,timestampEnd-0.01))
 
     self.ui.setUiDirtyFlag()
 
 
-
   def runSceneChangeDetection(self,addCuts=False):
     threshold = self.ui.askFloat('What should the threshold of scene detection be?','Scene change proportion', initialvalue=0.3)
-    self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,addCuts=True)
+    if threshold is not None:
+      threshold = abs(threshold)
+      self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,threshold=threshold,addCuts=True)
 
   def scanAndAddLoudSectionsCallback(self,filename,start,end):
     self.videoManager.registerNewSubclip(filename,start,end)

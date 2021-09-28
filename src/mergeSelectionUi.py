@@ -739,7 +739,7 @@ class MergeSelectionUi(ttk.Frame):
     self.audiOverrideDelayVar.trace('w',self.valueChange)
 
     self.automaticFileNamingVar.set(True)
-    self.filenamePrefixVar.set('Sequence')
+    self.filenamePrefixVar.set('')
 
     self.audioOverrideVar.set('None')
     self.audiOverrideDelayVar.set('0')
@@ -1518,7 +1518,7 @@ class MergeSelectionUi(ttk.Frame):
                                      td=totalTime,
                                      tdext=totalTime-timeTrimmedByFade
                                     ))
-    if self.automaticFileNamingVar.get() or self.filenamePrefixVar.get().strip() == 'Sequence':
+    if self.automaticFileNamingVar.get():
       for sv in self.sequencedClips[:1]:        
         self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
       else:

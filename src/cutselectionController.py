@@ -506,7 +506,7 @@ class CutselectionController:
     if kind == 'Mark':
       self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')
     elif kind == 'Cut':
-      self.videoManager.registerNewSubclip(filename,timestamp,min(timestamp,timestampEnd-0.01))
+      self.videoManager.registerNewSubclip(filename,timestamp,max(timestamp+0.01,timestampEnd-0.01))
 
     self.ui.setUiDirtyFlag()
 

@@ -1290,6 +1290,8 @@ class MergeSelectionUi(ttk.Frame):
 
   def encodeCurrent(self):
 
+    if (not self.automaticFileNamingValue) and self.filenamePrefixValue is None or self.filenamePrefixValue.strip() == '':
+      self.filenamePrefixValue = 'output'
 
     if self.mergeStyleVar.get().split('-')[0].strip()=='Stream Copy':
      
@@ -1516,7 +1518,7 @@ class MergeSelectionUi(ttk.Frame):
                                      td=totalTime,
                                      tdext=totalTime-timeTrimmedByFade
                                     ))
-    if self.filenamePrefixVar.get().strip() in ('','Sequence'):
+    if self.automaticFileNamingVar.get() or self.filenamePrefixVar.get().strip() == 'Sequence':
       for sv in self.sequencedClips[:1]:        
         self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
       else:

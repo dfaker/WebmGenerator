@@ -32,7 +32,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm')
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm', requestId)
 
   def encoderStatusCallback(text,percentage,**kwargs):
     statusCallback(text,percentage,**kwargs)

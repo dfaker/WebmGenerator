@@ -19,7 +19,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*0.85
 
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif')
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif', requestId)
 
   def encoderStatusCallback(text,percentage,**kwargs):
     statusCallback(text,percentage,**kwargs)

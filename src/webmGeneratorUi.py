@@ -100,9 +100,6 @@ class WebmGeneratorUi:
 
     self.filemenu.add_separator()
 
-    self.filemenu.add_command(label="Run scene change detection", command=self.controller.runSceneChangeDetection)
-    self.filemenu.add_separator()
-
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
     self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
@@ -134,7 +131,9 @@ class WebmGeneratorUi:
 
     def versioncheck():
       try:
-        with urllib.request.urlopen('https://api.github.com/repos/dfaker/WebmGenerator/releases') as f:
+        req = urllib.request.Request('https://api.github.com/repos/dfaker/WebmGenerator/releases')
+        req.add_header('Referer', 'http://localhost/dfaker/WebmGenerator/updateCheck')
+        with urllib.request.urlopen(req) as f:
           data = json.loads(f.read())
           leadTag = data[0]['tag_name']
           if leadTag != RELEASE_NUMVER:
@@ -151,11 +150,19 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
     self.commandmenu.add_separator()
 
-    self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
-
+    self.commandmenu.add_command(label="Run scene change detection and add Marks", command=self.controller.runSceneChangeDetection)
+    self.commandmenu.add_command(label="Run scene change detection and add SubClips", command=self.controller.runSceneChangeDetectionCuts)
     self.commandmenu.add_separator()
+
+    self.commandmenu.add_command(label="Run audio loudness threshold detection", command=self.scanAndAddLoudSections)
+    self.commandmenu.add_separator()
+
+    self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
+    self.commandmenu.add_separator()
+
     self.commandmenu.add_command(label="Clear all subclips on current clip", command=self.clearAllSubclipsOnCurrentClip)
     self.commandmenu.add_separator()
+    
     self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
 
 
@@ -197,6 +204,9 @@ class WebmGeneratorUi:
 
   def splitClipIntoNEqualSections(self):
     self.controller.splitClipIntoNEqualSections()
+
+  def scanAndAddLoudSections(self):
+    self.controller.scanAndAddLoudSections()
 
   def splitClipIntoSectionsOfLengthN(self):
     self.controller.splitClipIntoSectionsOfLengthN()

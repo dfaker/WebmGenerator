@@ -35,8 +35,14 @@ def cancelCurrentEncodeRequest(requestId):
   cancelledEncodeIds.add(requestId)
 
 
-def getFreeNameForFileAndLog(filenamePrefix,extension):
-  fileN=0
+def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=0):
+
+  try:
+    fileN=int(initialFileN)
+  except Exception as e:
+    print(e)
+    fileN=0
+
   with fileExistanceLock:
     while 1:
       fileN+=1

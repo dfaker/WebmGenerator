@@ -1329,7 +1329,6 @@ class MergeSelectionUi(ttk.Frame):
       if len(encodeSequence)==0:
         return
 
-
       self.encodeRequestId+=1
       options={
         'frameSizeStrategy':self.frameSizeStrategyValue,
@@ -1358,9 +1357,11 @@ class MergeSelectionUi(ttk.Frame):
       outputPrefix = self.filenamePrefixValue
       if self.automaticFileNamingValue:
         try:
-          outputPrefix = self.convertFilenameToBaseName(encodeSequence[0][0].filename)
-        except:
-          pass
+          print(encodeSequence)
+          outputPrefix = self.convertFilenameToBaseName(encodeSequence[0][0][1])
+        except Exception as e:
+          print(e)
+
       self.controller.encode(self.encodeRequestId,
                              'GRID',
                              encodeSequence,
@@ -1518,6 +1519,18 @@ class MergeSelectionUi(ttk.Frame):
     if self.filenamePrefixVar.get().strip() in ('','Sequence'):
       for sv in self.sequencedClips[:1]:        
         self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+      else:
+        namefound=False
+        for col in self.gridColumns:
+          for sv in col['clips']:
+            try:
+              self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+              namefound = True
+              break
+            except Exception as e:
+              print(e)
+          if namefound:
+            break 
 
   def convertFilenameToBaseName(self,filename):
     usableChars = string.ascii_letters+string.digits+'-_'

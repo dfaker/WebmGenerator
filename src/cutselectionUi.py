@@ -658,14 +658,14 @@ class CutselectionUi(ttk.Frame):
         for preview in previewsToRemove:
             preview.destroy()
 
-    def askInteger(self,title, prompt):
-      return simpledialog.askinteger(title, prompt) 
+    def askInteger(self,title, prompt, initialvalue=None):
+      return simpledialog.askinteger(title, prompt, initialvalue=initialvalue) 
 
-    def askFloat(self,title, prompt):
-      return simpledialog.askfloat(title, prompt) 
+    def askFloat(self,title, prompt, initialvalue=None):
+      return simpledialog.askfloat(title, prompt, initialvalue=initialvalue) 
 
-    def askString(self,title, prompt):
-      return simpledialog.askstring(title, prompt) 
+    def askString(self,title, prompt, initialvalue=None):
+      return simpledialog.askstring(title, prompt, initialvalue=initialvalue) 
 
     def loadVideoYTdl(self):
       defaultUrl=''

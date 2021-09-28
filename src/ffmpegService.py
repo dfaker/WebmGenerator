@@ -49,6 +49,7 @@ class FFmpegService():
     self.imageRequestQueue = Queue()
     self.responseRouting = {}
     self.globalStatusCallback=globalStatusCallback
+    self.abortflag=False
 
     def imageWorker():
       while 1:
@@ -95,7 +96,7 @@ class FFmpegService():
         basename = os.path.basename(clipfilename)
         ext = basename.split('.')[-1]
         
-        videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext)
+        videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext,i)
 
         comvcmd = ['ffmpeg', '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-c', 'copy', '-t', str(etime), tempVideoFilePath]
         print(' '.join(comvcmd))
@@ -978,10 +979,52 @@ class FFmpegService():
       while 1:
         try:
           filename,requestType,options,callback = self.statsRequestQueue.get()
-          if requestType == 'GetAutoCropCoords':
 
-            start = options.get('start')
-            audocropcmd = ["ffmpeg", "-ss", str(start), "-i", filename, "-t", "1", "-filter_complex", "cropdetect", "-f", "null", "NUL"]
+          if requestType == 'AddLoudSections':
+            threshold = options.get('threshold',90)
+            totalDuration=float(options.get('duration',1))
+            mergeDistance = options.get('mergeDistance',3)
+
+            proc = sp.Popen(["ffmpeg","-i",cleanFilenameForFfmpeg(filename) ,"-af","silencedetect=n=-{threshold}dB:d=10".format(threshold=threshold),"-f","null","-"],stderr=sp.PIPE,stdout=sp.DEVNULL)
+
+            l=b''
+            pair=[]
+            self.globalStatusCallback('Detecting loud sections',0)
+
+            while 1:
+              c = proc.stderr.read(1)
+              if len(c)==0:
+                break
+
+              if c in b'\n\r':
+                t=None
+                if b'silence_start:' in l:
+                  t=float(l.split(b' ')[4])
+                elif b'silence_end:' in l:
+                  t=float(l.split(b' ')[4])
+                elif b'time=' in l:
+                  try:
+                    tstamp = l.split(b'time=')[1].split(b' ')[0].strip()
+                    pt = datetime.strptime(tstamp.decode('utf8'),'%H:%M:%S.%f')
+                    tstamp = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                    self.globalStatusCallback('Detecting loud sections',tstamp/totalDuration)
+                  except Exception as e:
+                    print(e)
+                if t is not None and t>0:
+                  pair.append(t)
+                  if len(pair)==2:
+                    callback(filename,pair[0],pair[1])
+                    pair=[]
+                l=b''
+              else:
+                l += c 
+
+            self.globalStatusCallback('Detecting loud sections',1)
+
+          elif requestType == 'GetAutoCropCoords':
+
+            start = options.get('start',0)
+            audocropcmd = ["ffmpeg", "-ss", str(start), "-i", cleanFilenameForFfmpeg(filename) , "-t", "1", "-filter_complex", "cropdetect", "-f", "null", "NUL"]
             popen_params = {
               "bufsize": 10 ** 5,
               "stdout": sp.PIPE,
@@ -1184,11 +1227,13 @@ class FFmpegService():
 
           elif requestType == 'SceneChangeSearch':
             expectedLength = options.get('duration',0)
+            threshold = float(options.get('threshold',0.3))
             self.globalStatusCallback('Starting scene change detection ',0/expectedLength)
             proc = sp.Popen(
-              ['ffmpeg','-i',cleanFilenameForFfmpeg(filename),'-filter_complex', 'select=gt(scene\\,0.3),showinfo', '-f', 'null', 'NUL']
+              ['ffmpeg','-i',cleanFilenameForFfmpeg(filename),'-filter_complex', 'select=gt(scene\\,{threshold}),showinfo'.format(threshold=threshold), '-f', 'null', 'NUL']
               ,stderr=sp.PIPE)
             ln=b''
+            lastTimestamp=0
             while 1:
               c=proc.stderr.read(1)
               if len(c)==0:
@@ -1199,10 +1244,18 @@ class FFmpegService():
                     if b'pts_time' in e:
                       ts = float(e.split(b':')[-1])
                       self.globalStatusCallback('Scene change detection ',ts/expectedLength)
-                      callback(filename,ts)
+                      if options.get('addCuts',False):
+                        callback(filename,lastTimestamp,ts,kind='Cut')
+                        lastTimestamp=ts
+                      else:
+                        callback(filename,ts,kind='Mark')
                 ln=b''
               else:
                 ln+=c
+            if lastTimestamp != 0:
+              if options.get('addCuts',False):
+                callback(filename,lastTimestamp,ts,kind='Cut')
+                lastTimestamp=ts
             proc.communicate()
         except Exception as e:
           logging.error("Scene Change Search progress Exception",exc_info=e)
@@ -1356,9 +1409,19 @@ class FFmpegService():
                                                                   rid=rid,
                                                                   start=mid),callback) )
 
-  def runSceneChangeDetection(self,filename,duration,callback):
+  def runSceneChangeDetection(self,filename,duration,callback,addCuts=False):
     self.statsRequestQueue.put( (filename,'SceneChangeSearch',dict(filename=filename,
+                                                                   addCuts=addCuts,
                                                                    duration=duration),callback) )
+
+
+
+
+  def scanAndAddLoudSections(self,filename,totalDuration,threshold,callback):
+    self.statsRequestQueue.put( (filename,'AddLoudSections',dict(filename=filename, 
+                                                                  duration=totalDuration,                                                                 
+                                                                  threshold=threshold),callback) )    
+
 
   def findLowerErrorRangeforLoop(self,filename,start,end,rid,secondsChange,cropRect,callback):
     self.statsRequestQueue.put( (filename,'MSESearchImprove',dict(filename=filename,
@@ -1381,6 +1444,7 @@ class FFmpegService():
     cancelCurrentEncodeRequest(requestId)
 
   def cancelAllEncodeRequests(self):
+    self.abortflag=True
     cancelCurrentEncodeRequest(-1)
 
 

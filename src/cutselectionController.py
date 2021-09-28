@@ -49,7 +49,7 @@ class CutselectionController:
     return self.globalOptions
 
   def splitClipIntoNEqualSections(self):
-    n = self.ui.askInteger('How Many sections would you like to split into?','How Many sections would you like to split into?')
+    n = self.ui.askInteger('How Many sections would you like to split into?','How Many sections would you like to split into?',initialvalue=10)
     if n is not None and n >= 1:
       self.clearAllSubclipsOnCurrentClip()
       sectionLength = self.getTotalDuration()/n
@@ -95,7 +95,7 @@ class CutselectionController:
 
 
   def splitClipIntoSectionsOfLengthN(self):
-    sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be?')
+    sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be? (Seconds)', initialvalue=30)
     if sectionLength is not None and sectionLength >= 0:
       self.clearAllSubclipsOnCurrentClip()
       start = 0
@@ -491,7 +491,6 @@ class CutselectionController:
     self.seekTo(finals)
 
 
-
   def findRangeforLoop(self,secondsCenter,minSeconds,maxSeconds,rect):
     if self.currentlyPlayingFileName is not None:
       cropCoords=None
@@ -503,12 +502,30 @@ class CutselectionController:
       self.ffmpegService.findRangeforLoop( self.currentlyPlayingFileName,secondsCenter,minSeconds,maxSeconds,cropCoords,self.foundLoopCallback )
 
 
-  def sceneChangeCallback(self,filename,timestamp):
-    self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')
+  def sceneChangeCallback(self,filename,timestamp,timestampEnd=None,kind='Mark'):
+    if kind == 'Mark':
+      self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')
+    elif kind == 'Cut':
+      self.videoManager.registerNewSubclip(filename,timestamp,min(timestamp,timestampEnd-0.01))
+
     self.ui.setUiDirtyFlag()
 
-  def runSceneChangeDetection(self):
-    self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback)
+
+
+  def runSceneChangeDetection(self,addCuts=False):
+    threshold = self.ui.askFloat('What should the threshold of scene detection be?','Scene change proportion', initialvalue=0.3)
+    self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,addCuts=True)
+
+  def scanAndAddLoudSectionsCallback(self,filename,start,end):
+    self.videoManager.registerNewSubclip(filename,start,end)
+    self.ui.setUiDirtyFlag()
+
+
+  def scanAndAddLoudSections(self):
+    threshold = self.ui.askFloat('How loud does the section have to be to add it?','Loudness Threshold (-dB)', initialvalue=20)
+    if threshold is not None:
+      threshold=abs(threshold)
+      self.ffmpegService.scanAndAddLoudSections(self.currentlyPlayingFileName,self.currentTotalDuration,threshold,self.scanAndAddLoudSectionsCallback)
 
   def setLoopPos(self,start,end):
     if self.loopMode == 'Loop current':

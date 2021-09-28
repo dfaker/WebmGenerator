@@ -178,6 +178,12 @@ class WebmGeneratorController:
   def runSceneChangeDetection(self):
     self.cutselectionController.runSceneChangeDetection()
 
+  def runSceneChangeDetectionCuts(self):
+    self.cutselectionController.runSceneChangeDetection(addCuts=True)    
+
+  def scanAndAddLoudSections(self):
+    self.cutselectionController.scanAndAddLoudSections()
+
   def cleanInitialFiles(self,files):
     finalFiles = []
     for f in files:

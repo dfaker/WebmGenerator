@@ -39,7 +39,7 @@ class FilterSelectionController:
     if value is not None and self.ui is not None:
       s,e = float(self.playerStart),float(self.playerEnd)
       if s<=value<=e:
-        self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000 )
+        self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000,e-s )
 
         self.ui.updateSeekLabel((value-s))
 
@@ -52,6 +52,10 @@ class FilterSelectionController:
     d = e-s
 
     self.player.command('seek',str(s+(d*pc)),'absolute','exact')
+
+  def getCurrentPlaybackPosition(self):
+    s = float(self.playerStart)
+    return self.player.time_pos-s
 
   def normaliseTimestamp(self,ts):
     fts = float(ts)

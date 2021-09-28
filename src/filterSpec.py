@@ -298,46 +298,45 @@ selectableFilters = [
         ]
  },
 
-
  {
         "name": "pad",
-        "filter": "pad=x={x}:y={y}:w=iw+{w}:h=ih+{h}:color={color}",
+        "filter": "pad=x={left}:y={top}:w=iw+{left}+{right}:h=ih+{top}+{bottom}:color={color}",
         "params": [
             {
-                "n": "x",
-                "d": 5,
+                "n": "top",
+                "d": 10,
                 "type": "float",
-                "range": None,
+                "range": [0,None],
                 "rectProp": "x",
                 "inc": 1,
             },
             {
-                "n": "y",
-                "d": 5,
+                "n": "right",
+                "d": 10,
                 "type": "float",
-                "range": None,
+                "range": [0,None],
                 "rectProp": "y",
                 "inc": 1,
             },
             {
-                "n": "w",
+                "n": "bottom",
                 "d": 10,
                 "type": "float",
-                "range": None,
+                "range": [0,None],
                 "rectProp": "w",
                 "inc": 1,
             },
             {
-                "n": "h",
+                "n": "left",
                 "d": 10,
                 "type": "float",
-                "range": None,
+                "range": [0,None],
                 "rectProp": "h",
                 "inc": 1,
             },
             {
                 "n": "color",
-                "d": "White",
+                "d": "Black",
                 "type": "cycle",
                 "cycle": colours,
             }
@@ -904,6 +903,7 @@ selectableFilters = [
     
     {
         "name": "v360 - VR Correction",
+        "timelineSupport":True,
         "filter": "v360={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:w={w}:h={h}:interp={interp}:in_trans={in_trans}:out_trans={out_trans}:h_flip={h_flip}:ih_flip={ih_flip}:iv_flip={iv_flip}:alpha_mask=1",
         "params": [
             {
@@ -952,13 +952,13 @@ selectableFilters = [
                 "type": "cycle",
                 "cycle": ["sbs", "2d", "tb"],
             },
-            {"n": "w", "d": 800.0, "type": "float", "range": None, "inc": 1},
-            {"n": "h", "d": 800.0, "type": "float", "range": None, "inc": 1},
-            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 1},
-            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 1},
-            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180], "inc": 1},
-            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180], "inc": 1},
-            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1},
+            {"n": "w", "d": 0.0, "type": "float", "range": None, "inc": 10},
+            {"n": "h", "d": 0.0, "type": "float", "range": None, "inc": 10},
+            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5},
+            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5},
+            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180], "inc": 5},
+            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180], "inc": 5},
+            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 5},
             {
                 "n": "interp",
                 "d": "cubic",
@@ -1025,7 +1025,6 @@ selectableFilters = [
             },
         ],
     },
-
     {
         "name": "ImageBlend",
         "timelineSupport":True,

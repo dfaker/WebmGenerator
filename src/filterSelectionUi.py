@@ -8,6 +8,7 @@ import logging
 import threading
 import time
 from tkinter.filedialog import askopenfilename
+from tkinter import messagebox
 import json
 from .filterSpec import selectableFilters
 
@@ -242,6 +243,10 @@ class FilterSpecification(ttk.Frame):
       self.entryTimelineStart.config(to=100)
       self.entryTimelineStart.config(increment=0.1)
       self.entryTimelineStart.pack(expand='false', fill='x', side='right')
+
+      self.entryTimelineStartGetNow = ttk.Button(self.frameTimelineStart,text='Current Time',style="small.TButton",command=self.getCurrenttimeForStart)
+      self.entryTimelineStartGetNow.pack(expand='false', fill='x', side='right')
+
       self.frameTimelineStart.pack(expand='true', fill='x', side='top')
 
 
@@ -255,6 +260,10 @@ class FilterSpecification(ttk.Frame):
       self.entryTimelineEnd.config(to=100)
       self.entryTimelineEnd.config(increment=0.1)
       self.entryTimelineEnd.pack(expand='false', fill='x', side='right')
+
+      self.entryTimelineEndGetNow = ttk.Button(self.frameTimelineEnd,text='Current Time',style="small.TButton",command=self.getCurrenttimeForEnd)
+      self.entryTimelineEndGetNow.pack(expand='false', fill='x', side='right')
+
       self.frameTimelineEnd.pack(expand='true', fill='x', side='top')
 
       self.frameTimeline.pack(expand='true', fill='x', side='top')
@@ -279,6 +288,12 @@ class FilterSpecification(ttk.Frame):
 
   def getGlobalOptions(self):
     return self.controller.getGlobalOptions()
+
+  def getCurrenttimeForStart(self):
+    self.timelineStart.set(self.controller.getCurrentPlaybackPosition())
+
+  def getCurrenttimeForEnd(self):
+    self.timelineEnd.set(self.controller.getCurrentPlaybackPosition())
 
   def getTimelineValuesAsSpecifications(self):
     specs = []
@@ -573,16 +588,18 @@ class FilterSelectionUi(ttk.Frame):
 
     self.frameFilterSelectionFrame.config(height='200', width='200')
     self.frameFilterSelectionFrame.pack(expand='true', fill='both', side='top')
-    """
+    
+
     self.frameValueTimelineFrame = ttk.Frame(self.frameFilterFrame)
     
     self.canvasValueTimeline = tk.Canvas(self.frameValueTimelineFrame)
-    self.canvasValueTimeline.config(background='#373737', height='200', highlightthickness='0')
+    self.canvasValueTimeline.config(background='#373737', height='75', highlightthickness='0')
     self.canvasValueTimeline.pack(expand='true', fill='both', side='top')
     
-    self.frameValueTimelineFrame.config(height='10', width='200')
+    self.frameValueTimelineFrame.config(height='75', width='100')
     self.frameValueTimelineFrame.pack(expand='false', fill='x', side='bottom')
-    """
+    
+
     self.frameFilterFrame.config(height='200', width='200')
     self.frameFilterFrame.pack(expand='true', fill='both', side='top')
     
@@ -599,6 +616,9 @@ class FilterSelectionUi(ttk.Frame):
   def getGlobalOptions(self):
     return self.controller.getGlobalOptions()
   
+  def getCurrentPlaybackPosition(self):
+    return self.controller.getCurrentPlaybackPosition()
+
   def autoCropCallback(self,x,y,w,h):
 
 
@@ -772,7 +792,7 @@ class FilterSelectionUi(ttk.Frame):
   def updateSeekLabel(self,value):
     self.volumeLabel.config(text='{:0.2f}s'.format(value))
 
-  def updateSeekPositionThousands(self,value):
+  def updateSeekPositionThousands(self,value,seconds):
     if not self.seeking:
       self.seeking=True
       self.seekBar.set(value)
@@ -913,21 +933,23 @@ class FilterSelectionUi(ttk.Frame):
 
   def overrideFilters(self):
     if self.currentSubclipIndex is not None:
-      tempfilterClipboard = self.convertFilterstoSpecDefaults()
-      for rid in self.subClipOrder:
-        self.subclips[rid]['filters'] = copy.deepcopy(tempfilterClipboard)
-      self.recaculateFilters()
+      resp = messagebox.askyesno(title="Apply these filters to all clips?", message="This will clear the filters on all other clips and override them with these filters, are you sure?")
+      if resp:
+        tempfilterClipboard = self.convertFilterstoSpecDefaults()
+        for rid in self.subClipOrder:
+          self.subclips[rid]['filters'] = copy.deepcopy(tempfilterClipboard)
+        self.recaculateFilters()
 
-      currentClip = self.getCurrentClip()
-      if currentClip is not None:
-        filters           = copy.deepcopy(currentClip['filters'])
-        filterexp         = copy.deepcopy(currentClip['filterexp'])
-        filterexpEncStage = copy.deepcopy(currentClip['filterexpEncStage'])
+        currentClip = self.getCurrentClip()
+        if currentClip is not None:
+          filters           = copy.deepcopy(currentClip['filters'])
+          filterexp         = copy.deepcopy(currentClip['filterexp'])
+          filterexpEncStage = copy.deepcopy(currentClip['filterexpEncStage'])
 
-        for clip in self.subclips.values():
-          clip['filters']           = filters
-          clip['filterexp']         = filterexp
-          clip['filterexpEncStage'] = filterexpEncStage        
+          for clip in self.subclips.values():
+            clip['filters']           = filters
+            clip['filterexp']         = filterexp
+            clip['filterexpEncStage'] = filterexpEncStage        
 
   def pasteFilters(self):
     if self.currentSubclipIndex is not None:

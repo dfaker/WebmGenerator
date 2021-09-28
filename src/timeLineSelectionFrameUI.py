@@ -58,19 +58,24 @@ def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{secon
     })
 
 
-def debounce(wait_time):
+def debounce(wait_time,max_gap):
     def decorator(function):
         def debounced(*args, **kwargs):
             def call_function():
                 debounced._timer = None
+                debounced._last_call = time.time()
                 return function(*args, **kwargs)
 
             if debounced._timer is not None:
                 debounced._timer.cancel()
 
-            debounced._timer = threading.Timer(wait_time, call_function)
-            debounced._timer.start()
-
+            if debounced._last_call is not None and abs(time.time()-debounced._last_call)>=max_gap:
+              function(*args, **kwargs)
+              debounced._last_call = time.time()
+            else:
+              debounced._timer = threading.Timer(wait_time, call_function)
+              debounced._timer.start()
+        debounced._last_call = time.time()
         debounced._timer = None
         return debounced
 
@@ -108,13 +113,17 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu.add_separator()
     self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
     self.timeline_canvas_popup_menu.add_separator()
-    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 1s",command=self.canvasPopupFindLowestError1s)
-    self.timeline_canvas_popup_menu.add_command(label="Nudge to lowest error +- 2s",command=self.canvasPopupFindLowestError2s)
-    
-    self.timeline_canvas_popup_menu.add_separator()
-    self.timeline_canvas_popup_menu.add_command(label="Find loop of at most 2-3s here",command=self.canvasPopupFindContainingLoop3s)
-    self.timeline_canvas_popup_menu.add_command(label="Find loop of at most 3-6s here",command=self.canvasPopupFindContainingLoop6s)
 
+    self.perfectLoopMenu = tk.Menu(self, tearoff=0)
+
+    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most 1s",command=self.canvasPopupFindLowestError1s)
+    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most 2s",command=self.canvasPopupFindLowestError2s)
+    
+    self.perfectLoopMenu.add_separator()
+    self.perfectLoopMenu.add_command(label="Find best loop between 2 and 3s centered here",command=self.canvasPopupFindContainingLoop3s)
+    self.perfectLoopMenu.add_command(label="Find best loop between 3 and 6s  centered here",command=self.canvasPopupFindContainingLoop6s)
+
+    self.timeline_canvas_popup_menu.add_cascade(label="Loop tools",  menu=self.perfectLoopMenu)
     
     self.timeline_canvas_last_right_click_x=None
 
@@ -331,6 +340,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def keyboardRemoveBlockAtTime(self,e):
     if self.tempRangeStart is not None:
+      a,b = sorted([self.tempRangeStart,self.controller.getCurrentPlaybackPosition()])
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      for rid,(s,e) in list(ranges):
+        if a<=s<=b and a<=e<=b:
+          self.controller.removeSubclip((s+e)/2)
       self.tempRangeStart=None
       self.updateCanvas()
     else:
@@ -375,12 +389,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
+    print(ctrl,shift)
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(5 if shift else 1,*self.lastClickedEndpoint)
     else:
-      if not ctrl:
-        self.controller.seekRelative(5 if shift else 1)
-      else:
+      if ctrl and shift:
+        self.controller.seekRelative(0.1)
+      elif shift:
+        self.controller.seekRelative(5)
+      elif ctrl:    
         ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
         nextTarget=None
         for rid,(sts,ens) in sorted(ranges,key=lambda x:x[1][0])[::-1]:
@@ -389,19 +406,25 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if nextTarget is not None:
           self.seekto(nextTarget)
         else:
-          self.controller.seekRelative(5 if shift else 1)
+          self.controller.seekRelative(1)
+      else:
+        self.controller.seekRelative(1)
+
 
 
   def keyboardLeft(self,e):
     pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
+    print(ctrl,shift)
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(-5 if shift else -1,*self.lastClickedEndpoint)
     else:
-      if not ctrl:
-        self.controller.seekRelative(-5 if shift else -1)
-      else:
+      if ctrl and shift:
+        self.controller.seekRelative(-0.1)
+      elif shift:
+        self.controller.seekRelative(-5)
+      elif ctrl:      
         ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
         nextTarget=None
         for rid,(sts,ens) in sorted(ranges,key=lambda x:x[1][1]):
@@ -410,7 +433,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if nextTarget is not None:
           self.seekto(nextTarget)
         else:
-          self.controller.seekRelative(-5 if shift else -1)
+          self.controller.seekRelative(-1)
+      else:
+        self.controller.seekRelative(-1)
+
 
 
 
@@ -542,7 +568,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           return
         self.timelineZoomFactor=newZoomFactor
 
-  @debounce(0.1)
+  @debounce(0.1,0.5)
   def seekto(self,seconds):
     if self.lastSeek is not None and abs(self.lastSeek-seconds)<0.001:
       return
@@ -610,12 +636,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           en=self.secondsToXcoord(ens)
 
           if (st<e.x<en and e.y>self.winfo_height()-self.midrangeHeight) or (st-self.handleWidth<e.x<en+self.handleWidth and e.y>self.winfo_height()-self.miniMidrangeHeight):
+            self.tempRangeStart=None
             self.clickTarget = (rid,'m',sts,ens)
             self.dirtySelectionRanges.add(rid)
             self.timelineMousePressOffset = ((st+en)/2)-e.x
             self.controller.pause()
             break
           elif st-self.handleWidth<e.x<st+2:
+            self.tempRangeStart=None
             self.clickTarget = (rid,'s',sts,ens)
             self.dirtySelectionRanges.add(rid)
             self.lastClickedEndpoint=(rid,'s')
@@ -623,6 +651,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.controller.pause()
             break
           elif en-2<e.x<en+self.handleWidth:
+            self.tempRangeStart=None
             self.clickTarget = (rid,'e',sts,ens)
             self.dirtySelectionRanges.add(rid)
             self.lastClickedEndpoint=(rid,'e')

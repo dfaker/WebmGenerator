@@ -1019,7 +1019,7 @@ class FFmpegService():
               else:
                 l += c 
 
-            self.globalStatusCallback('Detecting loud sections',1)
+            self.globalStatusCallback('Loud section detection complete',1)
 
           elif requestType == 'GetAutoCropCoords':
 

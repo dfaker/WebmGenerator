@@ -35,17 +35,17 @@ def cancelCurrentEncodeRequest(requestId):
   cancelledEncodeIds.add(requestId)
 
 
-def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=0):
+def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=1):
 
   try:
     fileN=int(initialFileN)
   except Exception as e:
     print(e)
-    fileN=0
+    fileN=1
 
   with fileExistanceLock:
-    while 1:
-      fileN+=1
+    while True:
+      
       videoFileName = '{}_{}.{}'.format(filenamePrefix,fileN,extension)
       outLogFilename = 'encoder_{}.log'.format(fileN)
 
@@ -56,6 +56,8 @@ def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=0):
       if not os.path.exists(tempVideoFilePath) and not os.path.exists(videoFilePath) and not os.path.exists(logFilePath) and videoFileName not in filesPlannedForCreation:
         filesPlannedForCreation.add(videoFileName)
         return videoFileName,logFilePath,tempVideoFilePath,videoFilePath
+
+      fileN+=1
 
 def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None):
   currentEncodedTotal=0

@@ -1238,20 +1238,23 @@ class FFmpegService():
               c=proc.stderr.read(1)
               if len(c)==0:
                 break
-              if c in b'\r\n':
-                if b'pts_time' in ln:
-                  for e in ln.split(b' '):
-                    if b'pts_time' in e:
-                      ts = float(e.split(b':')[-1])
-                      self.globalStatusCallback('Scene change detection ',ts/expectedLength)
-                      if options.get('addCuts',False):
-                        callback(filename,lastTimestamp,ts,kind='Cut')
-                        lastTimestamp=ts
-                      else:
-                        callback(filename,ts,kind='Mark')
-                ln=b''
-              else:
-                ln+=c
+              try:
+                if c in b'\r\n':
+                  if b'pts_time' in ln:
+                    for e in ln.split(b' '):
+                      if b'pts_time' in e:
+                        ts = float(e.split(b':')[-1])
+                        self.globalStatusCallback('Scene change detection ',ts/expectedLength)
+                        if options.get('addCuts',False):
+                          callback(filename,lastTimestamp,ts,kind='Cut')
+                          lastTimestamp=ts
+                        else:
+                          callback(filename,ts,kind='Mark')
+                  ln=b''
+                else:
+                  ln+=c
+              except Exception as e:
+                print(e)
             if lastTimestamp != 0:
               if options.get('addCuts',False):
                 callback(filename,lastTimestamp,ts,kind='Cut')

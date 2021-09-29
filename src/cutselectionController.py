@@ -456,6 +456,11 @@ class CutselectionController:
     self.updateProgressStatistics()
     self.currentLoopCycleStart  = None
     self.currentLoopCycleEnd    = None
+    self.currentLoop_a=None
+    self.currentLoop_b=None
+    self.player.ab_loop_a=-1
+    self.player.ab_loop_b=-1
+
 
   def updateProgressStatistics(self):
     totalExTrim=0.0

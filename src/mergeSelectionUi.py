@@ -1513,7 +1513,7 @@ class MergeSelectionUi(ttk.Frame):
       totalTime+=(sv.e-sv.s)
       timeTrimmedByFade+=self.transDurationValue*2 
 
-    self.labelSequenceSummary.config(text='Number of Subclips: {n} Total subclip duration {td}s Output Duration {tdext}s'.format(
+    self.labelSequenceSummary.config(text='Number of Subclips: {n} Total subclip duration {td:0.2f}s Output Duration {tdext:0.2f}s'.format(
                                      n=len(self.sequencedClips),
                                      td=totalTime,
                                      tdext=totalTime-timeTrimmedByFade

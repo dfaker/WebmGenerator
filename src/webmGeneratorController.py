@@ -56,7 +56,7 @@ class WebmGeneratorController:
       "defaultProfile":"None",
       "defaultPostProcessingFilter":"None",
       
-      "defaultCutLength":30.0,
+      "defaultSliceLength":30.0,
       "defaultTargetLength":60.0,
       "defaultTrimLength":0.5,
       "defaultDragOffset":0.1,
@@ -71,22 +71,30 @@ class WebmGeneratorController:
       "loopNudgeLimit2":2,
       
       "loopSearchLower1":2,
-      "loopSearchLower1":3,
+      "loopSearchUpper1":3,
       
       "loopSearchLower2":3,
       "loopSearchUpper2":6,
 
-      "seekSpeedNormal":1,
-      "seekSpeedFast":1,
-      "seekSpeedSlow":1,
+      "seekSpeedNormal":1.0,
+      "seekSpeedFast":5.0,
+      "seekSpeedSlow":0.1,
     }
 
     if os.path.exists(self.configFileName) and os.path.isfile(self.configFileName):
-      tempConfig = json.loads(open(self.configFileName,'r').read())
+      try:
+        tempConfig = json.loads(open(self.configFileName,'r').read())
+      except Exception as e:
+        tempConfig = {}
+
 
       for key in self.globalOptions.keys():
         try:
-          if type(self.globalOptions.get(key)) == int:
+          if type(self.globalOptions.get(key)) == bool:
+            self.globalOptions[key] = bool(tempConfig.get(key,self.globalOptions[key]))
+          elif type(self.globalOptions.get(key)) == float:
+            self.globalOptions[key] = float(tempConfig.get(key,self.globalOptions[key]))
+          elif type(self.globalOptions.get(key)) == int:
             self.globalOptions[key] = int(tempConfig.get(key,self.globalOptions[key]))
           else:
             self.globalOptions[key] = str(tempConfig.get(key,self.globalOptions[key]))

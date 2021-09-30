@@ -151,29 +151,30 @@ class VideoFilePreview(ttk.Frame):
 
 
 class CutselectionUi(ttk.Frame):
-    def __init__(self, master=None, controller=None, *args, **kwargs):
+    def __init__(self, master=None, controller=None,globalOptions={},*args, **kwargs):
         ttk.Frame.__init__(self, master)
         self.master=master
         self.controller = controller
+
 
         self.frameCutSelection = self
         self.frameUpperFrame = ttk.Frame(self.frameCutSelection)
         self.frameSliceSettings = ttk.Frame(self.frameUpperFrame)
         self.labelFrameSlice = ttk.Labelframe(self.frameSliceSettings)
 
-        self.sliceLength = 30.0
+        self.sliceLength = globalOptions.get('defaultSliceLength',30.0)
         self.sliceLengthVar = tk.StringVar()
         self.sliceLengthVar.trace("w", self.sliceLengthChangeCallback)
 
-        self.targetLength = 60.0
+        self.targetLength = globalOptions.get('defaultTargetLength',60.0)
         self.targetLengthVar = tk.StringVar()
         self.targetLengthVar.trace("w", self.targetLengthChangeCallback)
 
-        self.targetTrim = 0.5
+        self.targetTrim = globalOptions.get('defaultTrimLength',0.5)
         self.targetTrimVar = tk.StringVar()
         self.targetTrimVar.trace("w", self.targetTrimChangeCallback)
 
-        self.dragPreviewPos = 0.1
+        self.dragPreviewPos = globalOptions.get('defaultDragOffset',0.1)
         self.dragPreviewPosVar = tk.StringVar()
         self.dragPreviewPosVar.trace("w", self.dragPreviewPosCallback)
 

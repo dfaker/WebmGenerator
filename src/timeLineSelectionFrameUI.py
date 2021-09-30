@@ -83,9 +83,14 @@ def debounce(wait_time,max_gap):
 
 class TimeLineSelectionFrameUI(ttk.Frame):
 
-  def __init__(self, master, controller, *args, **kwargs):
+  def __init__(self, master, controller, globalOptions={}, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     self.controller = controller
+    self.globalOptions=globalOptions
+
+    self.seekSpeedNormal = self.globalOptions.get("seekSpeedNormal",1)
+    self.seekSpeedFast   = self.globalOptions.get("seekSpeedFast",2)
+    self.seekSpeedSlow   = self.globalOptions.get("seekSpeedSlow",0.1)
 
     self.timeline_canvas = tk.Canvas(self,width=200, height=150, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
     self.timeline_canvas.grid(row=1,column=0,sticky="nesw")
@@ -116,12 +121,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.perfectLoopMenu = tk.Menu(self, tearoff=0)
 
-    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most 1s",command=self.canvasPopupFindLowestError1s)
-    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most 2s",command=self.canvasPopupFindLowestError2s)
+    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}s".format(self.globalOptions.get('loopNudgeLimit1',1)),command=self.canvasPopupFindLowestError1s)
+    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}s".format(self.globalOptions.get('loopNudgeLimit2',2)),command=self.canvasPopupFindLowestError2s)
     
     self.perfectLoopMenu.add_separator()
-    self.perfectLoopMenu.add_command(label="Find best loop between 2 and 3s centered here",command=self.canvasPopupFindContainingLoop3s)
-    self.perfectLoopMenu.add_command(label="Find best loop between 3 and 6s  centered here",command=self.canvasPopupFindContainingLoop6s)
+    self.perfectLoopMenu.add_command(label="Find best loop between {} and {}s centered here".format(  self.globalOptions.get('loopSearchLower1',2), self.globalOptions.get('loopSearchUpper1',3)),command=self.canvasPopupFindContainingLoop3s)
+    self.perfectLoopMenu.add_command(label="Find best loop between {} and {}s  centered here".format( self.globalOptions.get('loopSearchLower2',3), self.globalOptions.get('loopSearchUpper2',6)),command=self.canvasPopupFindContainingLoop6s)
 
     self.timeline_canvas_popup_menu.add_cascade(label="Loop tools",  menu=self.perfectLoopMenu)
     
@@ -160,7 +165,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
-
 
     self.tempRangePreviewDurationLabel = self.timeline_canvas.create_text(0, 0, text='',fill="#69bfdb")
     self.tempRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#113a47",width=1,outline="#69bfdb", dash=(1, 1, 2, 3, 5, 8))
@@ -391,12 +395,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     ctrl  = (e.state & 0x4) != 0
     print(ctrl,shift)
     if self.lastClickedEndpoint is not None:
-      self.incrementEndpointPosition(5 if shift else 1,*self.lastClickedEndpoint)
+      self.incrementEndpointPosition(self.seekSpeedFast if shift else self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
       if ctrl and shift:
-        self.controller.seekRelative(0.1)
+        self.controller.seekRelative(self.seekSpeedSlow)
       elif shift:
-        self.controller.seekRelative(5)
+        self.controller.seekRelative(self.seekSpeedFast)
       elif ctrl:    
         ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
         nextTarget=None
@@ -406,10 +410,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if nextTarget is not None:
           self.seekto(nextTarget)
         else:
-          self.controller.seekRelative(1)
+          self.controller.seekRelative(self.seekSpeedNormal)
       else:
-        self.controller.seekRelative(1)
-
+        self.controller.seekRelative(self.seekSpeedNormal)
 
 
   def keyboardLeft(self,e):
@@ -418,12 +421,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     ctrl  = (e.state & 0x4) != 0
     print(ctrl,shift)
     if self.lastClickedEndpoint is not None:
-      self.incrementEndpointPosition(-5 if shift else -1,*self.lastClickedEndpoint)
+      self.incrementEndpointPosition(-self.seekSpeedFast if shift else -self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
       if ctrl and shift:
-        self.controller.seekRelative(-0.1)
+        self.controller.seekRelative(-self.seekSpeedSlow)
       elif shift:
-        self.controller.seekRelative(-5)
+        self.controller.seekRelative(-self.seekSpeedFast)
       elif ctrl:      
         ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
         nextTarget=None
@@ -433,12 +436,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if nextTarget is not None:
           self.seekto(nextTarget)
         else:
-          self.controller.seekRelative(-1)
+          self.controller.seekRelative(-self.seekSpeedNormal)
       else:
-        self.controller.seekRelative(-1)
-
-
-
+        self.controller.seekRelative(-self.seekSpeedNormal)
 
   def incrementEndpointPosition(self,increment,markerrid,pos):
     ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
@@ -1051,16 +1051,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.uiDirty=True
 
   def canvasPopupFindLowestError1s(self):
-    self.findLowestErrorForBetterLoop(1.0)
+    self.findLowestErrorForBetterLoop( self.globalOptions.get('loopNudgeLimit1',1.0))
 
   def canvasPopupFindLowestError2s(self):
-    self.findLowestErrorForBetterLoop(2.0)
+    self.findLowestErrorForBetterLoop( self.globalOptions.get('loopNudgeLimit2',2.0) )
 
   def canvasPopupFindContainingLoop3s(self):
-    self.findLoopAroundFrame(2.0,3.0)
+    self.findLoopAroundFrame(self.globalOptions.get('loopSearchLower1',2), self.globalOptions.get('loopSearchUpper1',3))
 
   def canvasPopupFindContainingLoop6s(self):
-    self.findLoopAroundFrame(3.0,6.0)
+    self.findLoopAroundFrame(self.globalOptions.get('loopSearchLower2',3), self.globalOptions.get('loopSearchUpper2',6))
 
   def findLoopAroundFrame(self,minSeconds,maxSeconds):
     if self.timeline_canvas_last_right_click_x is not None:

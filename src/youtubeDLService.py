@@ -80,7 +80,7 @@ class YTDLService():
 
             tempPathname='tempDownloadedVideoFiles'
             os.path.exists(tempPathname) or os.mkdir(tempPathname)
-            outfolder = os.path.join(tempPathname,'%(title)s-%(id)s.{}.%(ext)s'.format(cutPassName))
+            outfolder = os.path.join(tempPathname,'%(title)s-%(id)s.%(uploader,creator,channel)s.{}.%(ext)s'.format(cutPassName))
 
             if hasattr(os.sys, 'winver'):
               proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)

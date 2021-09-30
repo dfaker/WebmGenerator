@@ -52,6 +52,9 @@ class WebmGeneratorController:
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
       "defaultAutosaveFilename":'autosave.webgproj',
+
+
+      "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       
       "defaultProfile":"None",
       "defaultPostProcessingFilter":"None",

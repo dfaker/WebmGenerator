@@ -463,7 +463,6 @@ class FilterSelectionUi(ttk.Frame):
     self.buttonFilterActionClear.config(command=self.clearFilters,style="smallTall.TButton")
     self.buttonFilterActionClear.pack(expand='true', fill='x', side='left')
 
-
     self.buttonOverrideFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonOverrideFilters.config(text='Apply to all')
     self.buttonOverrideFilters.config(command=self.overrideFilters,style="smallTall.TButton")
@@ -548,15 +547,24 @@ class FilterSelectionUi(ttk.Frame):
     self.volumeLabel.config(text='0.0s')
     self.volumeLabel.pack(expand='false', side='left')
 
-    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
-    self.autocropButton.config(text='Import Json')
-    self.autocropButton.config(command=self.importJson)
-    self.autocropButton.pack(side='right')
+    self.templatePopupMenu = tk.Menu(self, tearoff=0)
+    self.templatePopupMenu.add_command(label="No filter templates found")
 
-    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
-    self.autocropButton.config(text='Export Json')
-    self.autocropButton.config(command=self.exportJson)
-    self.autocropButton.pack(side='right')
+    self.templateButton = ttk.Button(self.selectionOptionsFrame)
+    self.templateButton.config(text='Apply Template')
+    self.templateButton.config(command=self.showTemplateMenuPopup)
+
+    self.templateButton.pack(side='right')
+
+    self.importButton = ttk.Button(self.selectionOptionsFrame)
+    self.importButton.config(text='Import Json')
+    self.importButton.config(command=self.importJson)
+    self.importButton.pack(side='right')
+
+    self.exportButton = ttk.Button(self.selectionOptionsFrame)
+    self.exportButton.config(text='Export Json')
+    self.exportButton.config(command=self.exportJson)
+    self.exportButton.pack(side='right')
 
     self.speedVar = tk.StringVar()
     self.speedVar.trace('w',self.speedChange)
@@ -613,6 +621,9 @@ class FilterSelectionUi(ttk.Frame):
     self.mouseRectMoveStart=(0,0)
     self.seeking=False
 
+  def showTemplateMenuPopup(self):
+    self.templatePopupMenu.tk_popup(self.winfo_pointerx(),self.winfo_pointery())
+
   def getGlobalOptions(self):
     return self.controller.getGlobalOptions()
   
@@ -620,7 +631,6 @@ class FilterSelectionUi(ttk.Frame):
     return self.controller.getCurrentPlaybackPosition()
 
   def autoCropCallback(self,x,y,w,h):
-
 
     self.filterSpecificationCount+=1
     newFilter = None
@@ -637,9 +647,12 @@ class FilterSelectionUi(ttk.Frame):
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters()
 
-  def importJson(self):
-    s = self.clipboard_get()
-    s = json.loads(s)
+  def importJson(self,jsonOverride=None):
+    if jsonOverride is None:
+      s = self.clipboard_get()
+      s = json.loads(s)
+    else:
+      s=jsonOverride
 
     if self.currentSubclipIndex is not None:
       rid = self.subClipOrder[self.currentSubclipIndex]
@@ -858,6 +871,17 @@ class FilterSelectionUi(ttk.Frame):
 
   def setController(self,controller):
     self.controller=controller
+
+    if len(self.controller.getTemplateListing())==0:
+      self.templateButton["state"] = "disabled"
+    else:
+      self.templatePopupMenu.delete(0)
+
+    for name,value in self.controller.getTemplateListing():
+      self.templatePopupMenu.add_command(label=name,command=lambda val=value:self.importJson(jsonOverride=val))
+
+
+
 
   def tabSwitched(self,tabName):
     if str(self) == tabName:

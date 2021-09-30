@@ -155,6 +155,7 @@ class CutselectionUi(ttk.Frame):
         ttk.Frame.__init__(self, master)
         self.master=master
         self.controller = controller
+        self.globalOptions=globalOptions
 
 
         self.frameCutSelection = self
@@ -406,7 +407,7 @@ class CutselectionUi(ttk.Frame):
         self.frameUpperFrame.config(height="200", width="200")
         self.frameUpperFrame.pack(expand="true", fill="both", side="top")
 
-        self.frameTimeLineFrame = TimeLineSelectionFrameUI(self.frameCutSelection, self)
+        self.frameTimeLineFrame = TimeLineSelectionFrameUI(self.frameCutSelection, self, globalOptions=self.globalOptions)
 
         self.frameTimeLineFrame.config(borderwidth="0", height="200", width="200",takefocus=True)
         self.frameTimeLineFrame.pack(fill="x", side="bottom")

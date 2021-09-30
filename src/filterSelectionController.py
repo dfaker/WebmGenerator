@@ -1,12 +1,27 @@
 import mpv
 import math
 import os
+import json
 
 class FilterSelectionController:
 
   def __init__(self,ui,videoManager,ffmpegService,globalOptions={}):
     self.globalOptions=globalOptions
     self.ui = ui
+    self.templates = {}
+
+    for fn in os.listdir('filterTemplates'):
+      if fn.endswith('.json'):
+        try:
+          name = fn.rpartition('.')[0]
+          value = json.loads(open(os.path.join('filterTemplates',fn),'r').read())
+          self.templates[name]=value
+          print(name,value)
+        except Exception as e:
+          print(e)
+
+    print(self.templates)
+
     self.ui.setController(self)
     self.videoManager = videoManager
     self.ffmpegService = ffmpegService
@@ -29,8 +44,14 @@ class FilterSelectionController:
     self.player.speed=2
     self.currentlyPlayingFileName=None
     self.installedFonts = None
-    self.getInstalledFonts()
+    
 
+    
+
+
+
+  def getTemplateListing(self):
+    return self.templates.items()
 
   def getGlobalOptions(self):
     return self.globalOptions

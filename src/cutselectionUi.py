@@ -299,7 +299,7 @@ class CutselectionUi(ttk.Frame):
         self.buttonLoadVideos.pack(fill="x", side="top")
 
         self.buttonLoadYTdl = ttk.Button(self.labelframeSourceVideos)
-        self.buttonLoadYTdl.config(text="Load youtube-dl supported url")
+        self.buttonLoadYTdl.config(text="Load youtube-dlp supported url")
         self.buttonLoadYTdl.config(style="small.TButton")
         self.buttonLoadYTdl.config(command=self.loadVideoYTdl)
         self.buttonLoadYTdl.pack(fill="x", side="top")

@@ -101,7 +101,7 @@ class WebmGeneratorUi:
     self.filemenu.add_separator()
 
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
-    self.filemenu.add_command(label="Load Video from youtube-dl supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
+    self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
     self.filemenu.add_separator()
     
@@ -113,10 +113,10 @@ class WebmGeneratorUi:
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
     self.filemenu.add_separator()
-    self.filemenu.add_command(label="Cancel current youtube-dl download", command=self.cancelCurrentYoutubeDl)
+    self.filemenu.add_command(label="Cancel current youtube-dlp download", command=self.cancelCurrentYoutubeDl)
 
     self.filemenu.add_separator()
-    self.filemenu.add_command(label="Update youtube-dl", command=self.updateYoutubeDl)
+    self.filemenu.add_command(label="Update youtube-dlp", command=self.updateYoutubeDl)
     self.filemenu.add_separator()
 
     self.filemenu.add_command(label="Delete all downloaded files", command=self.clearDownloadedfiles)

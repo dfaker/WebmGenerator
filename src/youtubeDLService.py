@@ -58,9 +58,9 @@ class YTDLService():
           streamHasBeenCut = True
 
           if url == 'UPDATE':
-            self.globalStatusCallback('youtube-dl upgrade',0.0)
+            self.globalStatusCallback('yt-dlp upgrade',0.0)
             print(url)
-            proc = sp.Popen(['youtube-dl','--update'],stdout=sp.PIPE)
+            proc = sp.Popen(['yt-dlp','--update'],stdout=sp.PIPE)
             l = b''
             while 1:
               c=proc.stdout.read(1)
@@ -68,8 +68,8 @@ class YTDLService():
               if len(c)==0:
                 break
               if c in (b'\n',b'\r'):
-                self.globalStatusCallback('youtube-dl upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),0.0)
-            self.globalStatusCallback('youtube-dl upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),1.0)
+                self.globalStatusCallback('yt-dlp upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),0.0)
+            self.globalStatusCallback('yt-dlp upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),1.0)
             continue
 
 
@@ -83,9 +83,9 @@ class YTDLService():
             outfolder = os.path.join(tempPathname,'%(title)s-%(id)s.{}.%(ext)s'.format(cutPassName))
 
             if hasattr(os.sys, 'winver'):
-              proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
             else:
-              proc = sp.Popen(['youtube-dl','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
 
             l = b''
             self.globalStatusCallback('Download start {}'.format(url),0)

@@ -8,7 +8,7 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 
 - 🎥 Webm, Mp4 and Gif outputs
 - ⏱️ Interactive clip selection powered by mpv
-- 📺 Youtube-dl integration to automatically download video from popular sites, incluidng live streams.  
+- 📺 Youtube-dlp integration to automatically download video from popular sites, incluidng live streams.  
 - 🌈 Full suite of filters from cropping to tone mapping and VR to 2D projection.
 - 🤖 Automatic isolation of clips based on scene change or audio levels/silence removal detection.
 - 💾 Automatic bitrate adjustment for file size targeting.
@@ -30,7 +30,7 @@ A large v2 release moving to a more standardized user interface, adds the abilit
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/
 - ffmpeg - https://www.ffmpeg.org/download.html
-- youtube-dl - https://ytdl-org.github.io/youtube-dl/ (optional)
+- youtube-dlp - https://github.com/yt-dlp/yt-dlp (optional)
 
 All of these should be placed into the same folder as the script or on the PATH.
 
@@ -168,11 +168,11 @@ A number of options and utilities are placed within the three menus at the top o
 - `Open Project` - Opens a previously saved project from a *.webmproj file.
 - `Save Project` - Saves a previously save project to a *.webmproj file.
 - `Run Scene Change Detection` - Scans through the current video looking for scene changes, adds a timeline marker when scene chages are detected.
-- `Load Video From Youtube-dl supported URL` - Load a video or stream from any youtube-dl supported site, hudreds of sites supported: https://github.com/ytdl-org/youtube-dl/tree/master/youtube_dl/extractor
+- `Load Video From Youtube-dlp supported URL` - Load a video or stream from any youtube-dlp supported site, hudreds of sites supported.
 - `Load Image as static video` - Load an image as a video clip, will ask that duration the image should be padded out to on load.
 - `Watch Clipboard and automatically add urls` - Starts a watcher thread that monitors your clipboard for urls and attempts to download them autoamtically.
-- `Cancel Current youtube-dl download` - For live streams in particular the stream may continue for hours after the event you wish to capature, this ends it gracefully and save the file.
-- `Update Yuoutube-dl` - As sites change their layouts and apis youtube-dl goes out of date and stops working, this allows you to update with new extractors.
+- `Cancel Current youtube-dlp download` - For live streams in particular the stream may continue for hours after the event you wish to capature, this ends it gracefully and save the file.
+- `Update Yuoutube-dl` - As sites change their layouts and apis youtube-dlp goes out of date and stops working, this allows you to update with new extractors.
 - `Split clip into n equal subclips` - Splits the current video into however many equal subclips you request, good for splitting up long videos where the edit points don't matter.
 - `Split clip into sibclips of n seconds` - Similar but cuts the clip into however many sections of n seconds will fit, with the last section being cut shorter if required.
 - `Toggle Generation of audio spectra` - Shows the video clips soundwave in the back of the timeline to help with positioning cuts relative to audio events.

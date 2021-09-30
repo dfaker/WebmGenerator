@@ -88,7 +88,7 @@ buildOptions = dict(packages = ["os"],
 base = "console"
 
 executables = [
-Executable('webmGenerator.py', base=base)
+Executable('webmGenerator.py', base=base, icon = 'resources\\icon.ico')
 ]
 
 setup(name='WebmGenerator',

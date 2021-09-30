@@ -39,7 +39,7 @@ buildOptions = dict(packages = ["os"],
                     
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     
-                    ,'youtube-dl.exe'
+                    ,'yt-dlp.exe'
                     ,'ffmpeg.exe'
                     ,'ffprobe.exe'  
                     ,'mpv-1.dll'

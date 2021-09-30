@@ -160,7 +160,8 @@ class WebmGeneratorUi:
     self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
     self.commandmenu.add_separator()
 
-    self.commandmenu.add_command(label="Clear all subclips on current clip", command=self.clearAllSubclipsOnCurrentClip)
+    self.commandmenu.add_command(label="Clear all SubClips on current clip", command=self.clearAllSubclipsOnCurrentClip)
+    self.commandmenu.add_command(label="Clear all Interest Marks on current clip", command=self.clearAllInterestMarksOnCurrentClip)
     self.commandmenu.add_separator()
     
     self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
@@ -216,6 +217,9 @@ class WebmGeneratorUi:
 
   def clearAllSubclipsOnCurrentClip(self):
     self.controller.clearAllSubclipsOnCurrentClip()
+
+  def clearAllInterestMarksOnCurrentClip(self):
+    self.controller.clearAllInterestMarksOnCurrentClip()
 
   def addSubclipByTextRange(self):
     self.controller.addSubclipByTextRange()

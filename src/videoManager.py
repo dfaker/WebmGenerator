@@ -31,6 +31,10 @@ class VideoManager:
     if filename in self.subclips:
       self.subclips[filename] = {}
 
+  def clearallInterestMarksOnFile(self,filename):
+    if filename in self.subclips:
+      self.interestMarks[filename]=set()
+
   def clearallSubclips(self):
     self.subclips = {}
     

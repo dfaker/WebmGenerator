@@ -112,6 +112,12 @@ class CutselectionController:
       self.videoManager.clearallSubclipsOnFile(self.currentlyPlayingFileName)
       self.updateProgressStatistics()
 
+  def clearAllInterestMarksOnCurrentClip(self):
+    if self.currentlyPlayingFileName is not None:
+      self.videoManager.clearallInterestMarksOnFile(self.currentlyPlayingFileName)
+      self.updateProgressStatistics()
+      self.ui.setUiDirtyFlag()
+
   def updateLoopMode(self,loopMode):
     self.loopMode=loopMode
     self.currentLoop_a=None

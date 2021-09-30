@@ -52,14 +52,33 @@ class WebmGeneratorController:
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
       "defaultAutosaveFilename":'autosave.webgproj',
+      
       "defaultProfile":"None",
       "defaultPostProcessingFilter":"None",
+      
       "defaultCutLength":30.0,
+      "defaultTargetLength":60.0,
+      "defaultTrimLength":0.5,
+      "defaultDragOffset":0.1,
+
       "defaultVideoFolder":".",
       "defaultImageFolder":".",
       "defaultAudioFolder":".",
       "defaultFontFolder":".",
-      "defaultSubtitleFolder":"."
+      "defaultSubtitleFolder":".",
+
+      "loopNudgeLimit1":1,
+      "loopNudgeLimit2":2,
+      
+      "loopSearchLower1":2,
+      "loopSearchLower1":3,
+      
+      "loopSearchLower2":3,
+      "loopSearchUpper2":6,
+
+      "seekSpeedNormal":1,
+      "seekSpeedFast":1,
+      "seekSpeedSlow":1,
     }
 
     if os.path.exists(self.configFileName) and os.path.isfile(self.configFileName):
@@ -230,6 +249,9 @@ class WebmGeneratorController:
 
   def clearAllSubclipsOnCurrentClip(self):
     self.cutselectionController.clearAllSubclipsOnCurrentClip()
+
+  def clearAllInterestMarksOnCurrentClip(self):
+    self.cutselectionController.clearAllInterestMarksOnCurrentClip()
 
   def addSubclipByTextRange(self):
     self.cutselectionController.addSubclipByTextRange()

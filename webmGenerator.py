@@ -28,5 +28,5 @@ except Exception as e:
   logging.error(traceback.format_exc())
 
 logging.info('DONE')
-sys.exit('QUIT')
+sys.exit()
 os.kill()

@@ -179,4 +179,50 @@ A number of options and utilities are placed within the three menus at the top o
 - `Clear all clips on current clip` - Clears all of the subclips defined on the current video.
 - `Add Subclip by text Range` - Accepts ranges as text for example "1:23 to 1:48.2" or "12s - 13.5s" and adds them as new subclips, a range of formats accepted.
 
+### configuration.json
 
+`statsWorkers` - The number of threads that are allowed to run, have responsibility for background analysis of video such as scene changes and audio loudness isolation. 
+
+`encodeWorkers` - The number of ffmpeg instances that will run to perform the final encodes in parallel.
+
+`imageWorkers` - The number of threads dedicated to providding the filter preview images and timeline thumbnails.
+
+`encoderStageThreads` - The number of threads used by the final encoder if it supports multi-threaded encoding.
+
+`maxSizeOptimizationRetries` - The maximim number of times the system will attempt to get under the file size target before giving up.
+
+`tempFolder`- The folder where in-progress video files are stored.
+
+`tempDownloadFolder` - The folder where downloads from youtube-dlp are placed. 
+
+`downloadNameFormat` - A naming mask that controls how youtube-dlp formats the final filename output.
+
+`defaultProfile` - The default profile that is initially selected and set in the encode tab.
+
+`defaultPostProcessingFilter` - The default post filter that's applied in the encode tab.
+
+`defaultSliceLength` - The default length of a subclip added with the 'b' key or add new subclip menu option.
+
+`defaultTargetLength` - The target duration the length counter and warning bar is set to on the cuts tab.
+
+`defaultTrimLength` - The default amount of time assumed to be taken up in fades between scenes.
+
+`defaultDragOffset` - The amount of time the seek position will skip back into the video when dragging the wntire subclip.
+
+`defaultVideoFolder` - Default folder to open when opeining a new video file.
+
+`defaultImageFolder` - Default folder to open when opeining a new image file.
+
+`defaultAudioFolder` - Default folder to open when opeining a new audio file.
+
+`defaultFontFolder` - Default folder to open when opeining a new font file.
+
+`defaultSubtitleFolder` - Default folder to open when opeining a new subtitle *.srt file.
+
+`loopNudgeLimit1`,`loopNudgeLimit2`,`loopSearchLower1`,`loopSearchUpper1`,`loopSearchLower2`,`loopSearchUpper2` - The maximum and minimum ranges that the 'loop tools' menu will use during scans. 
+
+`seekSpeedNormal` - Standard seek speed.
+
+`seekSpeedFast` - Seek speed when holding down shift.
+
+`seekSpeedSlow` - Seek speed when holding down ctrl-shift.

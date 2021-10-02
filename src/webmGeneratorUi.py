@@ -51,6 +51,9 @@ class WebmGeneratorUi:
 
     self.style.configure('subtle.TEntry', border=0, padding=(0,0),background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     self.style.configure('small.TButton', padding=0)
+    self.style.configure('smallOnechar.TButton', padding=(-28,0))
+    self.style.configure('smallOnecharenabled.TButton', padding=(-28,0),background='green',foreground='white',lightcolor='green',darkcolor='green')
+
     self.style.configure('smallTall.TButton', padding=(0,10))
     self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)
     self.style.configure('smallextra.TButton', padding=-20)
@@ -85,7 +88,7 @@ class WebmGeneratorUi:
 
     self.menubar = Menu(self.master)
     
-    self.filemenu = Menu(self.menubar, tearoff=0)
+    self.filemenu = Menu(self.menubar, tearoff=0, postcommand=self.updateDownloadCounts)
 
     self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
     
@@ -203,6 +206,22 @@ class WebmGeneratorUi:
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
 
+  def sizeof_fmt(self,num, suffix="B"):
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"
+
+  def updateDownloadCounts(self):
+    count,sz = self.controller.getDownloadFilesCountAndsize()
+    if count==0:
+      self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files (Downloads empty)")
+      self.filemenu.entryconfigure(self.clearTempMenuIndex, state='disabled')
+    else:
+      self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files ({} files {})".format(count,self.sizeof_fmt(sz)))
+      self.filemenu.entryconfigure(self.clearTempMenuIndex, state='normal')
+
   def splitClipIntoNEqualSections(self):
     self.controller.splitClipIntoNEqualSections()
 
@@ -238,6 +257,7 @@ class WebmGeneratorUi:
 
   def clearDownloadedfiles(self):
     self.controller.clearDownloadedfiles()
+    self.updateDownloadCounts()
 
   def loadVideoYTdl(self):
     self.controller.cutselectionUi.loadVideoYTdl()

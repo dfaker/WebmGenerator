@@ -179,10 +179,66 @@ fonts = [
 
 selectableFilters = [
 
+    {
+        "name": "drawbox",
+        "filter": "drawbox@{fn}",
+        "timelineSupport":True,
+        "params": [
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+                "commandVar":['Box-X',[['drawbox@{fn}','x']]]
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+                "commandVar":['Box-Y',[['drawbox@{fn}','y']]]
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+                "commandVar":['Box-Width',[['drawbox@{fn}','w']]]
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+                "commandVar":['Box-Height',[['drawbox@{fn}','h']]]
+            },
+            {
+                "n": "t",
+                "d": "fill",
+                "type": "cycle",
+                "cycle": ["fill", "1", "2", "5", "w/3" "w/5" "w/10"],
+            },
+            {
+                "n": "color",
+                "d": "Black",
+                "type": "cycle",
+                "cycle": colours,
+            },
+        ],
+    },
+
   {
         "name": "crop",
         "desc":"Crops the video frame in a from point x,y out to a width and height w and h",
-        "filter": "crop",
+        "filter": "crop@{fn}",
         "params": [
             {
                 "n": "x",
@@ -191,6 +247,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "x",
                 "inc": 10,
+                "commandVar":['Crop-X',[['crop@{fn}','x']]]
             },
             {
                 "n": "y",
@@ -199,6 +256,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "y",
                 "inc": 10,
+                "commandVar":['Crop-Y',[['crop@{fn}','y']]]
             },
             {
                 "n": "w",
@@ -677,7 +735,7 @@ selectableFilters = [
   {
         "name": "gaussianBlurArea",
         "timelineSupport":True,
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},gblur={strength}:steps={steps}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop@{fn}=w={w}:h={h}:x={x}:y={y},gblur={strength}:steps={steps}[fg{fn}],[vinb{fn}][fg{fn}]overlay@{fn}={x}:{y}",
         "params": [
             {
                 "n": "strength",
@@ -701,6 +759,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "x",
                 "inc": 1,
+                "commandVar":['Box-X',[['crop@{fn}','x'],['overlay@{fn}','x']]]
             },
             {
                 "n": "y",
@@ -709,6 +768,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "y",
                 "inc": 1,
+                "commandVar":['Box-Y',[['crop@{fn}','y'],['overlay@{fn}','y']]]
             },
             {
                 "n": "w",
@@ -717,6 +777,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "w",
                 "inc": 1,
+                "commandVar":['Box-Width',[['crop@{fn}','w']]]
             },
             {
                 "n": "h",
@@ -725,6 +786,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "h",
                 "inc": 1,
+                "commandVar":['Box-Height',[['crop@{fn}','h']]]
             }
         ],
     },
@@ -970,10 +1032,68 @@ selectableFilters = [
 
 
     {
-        "name": "ImageOverlay",
+        "name": "Overlay",
         "timelineSupport":True,
-        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
-        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
+        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
+        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
+        "params": [
+            {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
+            {
+                "n": "x",
+                "d": 5,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+                "commandVar":['Overlay-X',[['overlay@{fn}','x']]]
+            },
+            {
+                "n": "y",
+                "d": 5,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+                "commandVar":['Overlay-Y',[['overlay@{fn}','y']]]
+            },
+            {
+                "n": "w",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            },
+            {
+                "n": "angle",
+                "d": 0.0,
+                "type": "float",
+                "range": [-6.28319, 6.28319],
+                "inc": 0.0174533,
+                "commandVar":['Overlay-Rotation',[['rotate@{fn}','a']]]
+            },
+            {
+                "n": "alpha",
+                "d": 1.0,
+                "type": "float",
+                "range": [0.0, 1.0],
+                "inc": 0.01
+            },
+        ],
+    },
+    {
+        "name": "OverlayWithDelay",
+        "timelineSupport":True,
+        "filter": "setpts=PTS+{bg_start_Trim}/TB[vin{fn}],movie='{source}':loop=1:seek_point={seek_point},setpts=PTS+{overlay_start_Trim}/TB,scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
+        "filterPreview": "setpts=PTS+{bg_start_Trim}/TB[vin{fn}],movie='{source}':seek_point={seek_point},setpts=PTS+{overlay_start_Trim}/TB,scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay=x={x}:y={y}",
         "params": [
             {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
             {
@@ -1015,6 +1135,27 @@ selectableFilters = [
                 "range": [-6.28319, 6.28319],
                 "inc": 0.0174533,
             },
+            {
+                "n": "bg_start_Trim",
+                "d": 0.0,
+                "type": "float",
+                "range": [None, None],
+                "inc": 0.01,
+            },
+            {
+                "n": "overlay_start_Trim",
+                "d": 0.0,
+                "type": "float",
+                "range": [None, None],
+                "inc": 0.01,
+            },
+            {
+                "n": "seek_point",
+                "d": 0.0,
+                "type": "float",
+                "range": [None, None],
+                "inc": 0.01,
+            },
 
             {
                 "n": "alpha",
@@ -1026,7 +1167,7 @@ selectableFilters = [
         ],
     },
     {
-        "name": "ImageBlend",
+        "name": "OverlayBlend",
         "timelineSupport":True,
         "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},format=gbrp[pwm{fn}],color=d=1:s=2x2:c={padcolor}[colourbg{fn}],[colourbg{fn}][vin{fn}]scale2ref=sws_flags=neighbor[colourbgscale{fn}][vinscale{fn}],[colourbgscale{fn}][pwm{fn}]overlay=x={x}:y={y},format=gbrp[pwmscale{fn}],[vinscale{fn}]format=gbrp[vingbrp{fn}],[vingbrp{fn}][pwmscale{fn}]blend=all_mode={blendMode}:all_opacity={all_opacity}",
         "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},format=gbrp[pwm{fn}],color=d=1:s=2x2:c={padcolor}[colourbg{fn}],[colourbg{fn}][vin{fn}]scale2ref=sws_flags=neighbor[colourbgscale{fn}][vinscale{fn}],[colourbgscale{fn}][pwm{fn}]overlay=x={x}:y={y},format=gbrp[pwmscale{fn}],[vinscale{fn}]format=gbrp[vingbrp{fn}],[vingbrp{fn}][pwmscale{fn}]blend=all_mode={blendMode}:all_opacity={all_opacity}",
@@ -1168,38 +1309,6 @@ selectableFilters = [
         ],
     },
     
-    {
-        "name": "VOverlay",
-        "filter": "null[vin{fn}],movie='{source}',loop=-1:size={frames},setpts=N/FRAME_RATE/TB[pwm{fn}],[vin{fn}][pwm{fn}]overlay=shortest=0:x={x}:y={y}",
-        "params": [
-            {"n": "source", "d": "footer.png", "type": "file", "fileCategory":"video"},
-            {
-                "n": "x",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "x",
-                "inc": 1,
-            },
-            {
-                "n": "y",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "y",
-                "inc": 1,
-            },
-            {
-                "n": "alpha",
-                "d": 1,
-                "type": "float",
-                "range": [0,1],
-                "rectProp": "y",
-                "inc": 0.05,
-            },
-            {"n": "frames", "d": 100, "type": "float", "range": [0, 999], "inc": 1},
-        ],
-    },
     
     {
         "name": "tonemap",
@@ -1266,12 +1375,12 @@ selectableFilters = [
     
     {
         "name": "chromashift",
-        "filter": "chromashift",
+        "filter": "chromashift@{fn}",
         "params": [
-            {"n": "cbh", "d": 0.0, "type": "float", "range": None, "inc": 0.5},
-            {"n": "cbv", "d": 0.0, "type": "float", "range": None, "inc": 0.5},
-            {"n": "crh", "d": 0.0, "type": "float", "range": None, "inc": 0.5},
-            {"n": "crv", "d": 0.0, "type": "float", "range": None, "inc": 0.5},
+            {"n": "cbh", "d": 0.0, "type": "float", "range": None, "inc": 0.5,"commandVar":['Chroma-Blue-horiz',[['chromashift@{fn}','cbh']]]},
+            {"n": "cbv", "d": 0.0, "type": "float", "range": None, "inc": 0.5,"commandVar":['Chroma-Blue-vert',[['chromashift@{fn}','cbv']]]},
+            {"n": "crh", "d": 0.0, "type": "float", "range": None, "inc": 0.5,"commandVar":['Chroma-rh',[['chromashift@{fn}','crh']]]},
+            {"n": "crv", "d": 0.0, "type": "float", "range": None, "inc": 0.5,"commandVar":['Chroma-rv',[['chromashift@{fn}','crv']]]},
         ],
     },
     
@@ -1425,66 +1534,15 @@ selectableFilters = [
             },
         ],
     },
-    
-    {
-        "name": "drawbox",
-        "filter": "drawbox",
-        "timelineSupport":True,
-        "params": [
-            {
-                "n": "x",
-                "d": 0,
-                "type": "float",
-                "range": None,
-                "rectProp": "x",
-                "inc": 1,
-            },
-            {
-                "n": "y",
-                "d": 0,
-                "type": "float",
-                "range": None,
-                "rectProp": "y",
-                "inc": 1,
-            },
-            {
-                "n": "w",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "w",
-                "inc": 1,
-            },
-            {
-                "n": "h",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "h",
-                "inc": 1,
-            },
-            {
-                "n": "t",
-                "d": "fill",
-                "type": "cycle",
-                "cycle": ["fill", "1", "2", "5", "w/3" "w/5" "w/10"],
-            },
-            {
-                "n": "color",
-                "d": "Black",
-                "type": "cycle",
-                "cycle": colours,
-            },
-        ],
-    },
+  
     
     {
         "name": "greyedge",
         "filter": "greyedge",
         "params": [
-            {"n": "difford", "d": 1, "type": "float", "range": [0, 2], "inc": 0.1},
+            {"n": "difford", "d": 1,  "type": "float", "range": [0, 2], "inc": 0.1},
             {"n": "minknorm", "d": 5, "type": "float", "range": [0, 20], "inc": 0.1},
-            {"n": "sigma", "d": 2, "type": "float", "range": [0, 1024.0], "inc": 5},
+            {"n": "sigma", "d": 2,    "type": "float", "range": [0, 1024.0], "inc": 5},
         ],
     },
     

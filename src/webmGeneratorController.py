@@ -194,7 +194,13 @@ class WebmGeneratorController:
       logging.error("Audoload save failed",exc_info=e)
 
   def getDownloadFilesCountAndsize(self):
-    pass
+    sz = 0
+    count = 0
+    if os.path.exists(self.tempDownloadFolder):
+      for f in os.listdir(self.tempDownloadFolder):
+        sz+=os.stat(os.path.join(self.tempDownloadFolder,f)).st_size
+        count+=1
+    return count,sz
 
   def clearDownloadedfiles(self):
     if os.path.exists(self.tempDownloadFolder):

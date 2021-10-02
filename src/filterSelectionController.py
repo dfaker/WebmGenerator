@@ -46,9 +46,11 @@ class FilterSelectionController:
     self.installedFonts = None
     
 
-    
-
-
+  
+  def getClipDuration(self):
+    s,e = float(self.playerStart),float(self.playerEnd)
+    d = e-s
+    return d
 
   def getTemplateListing(self):
     return self.templates.items()
@@ -60,10 +62,12 @@ class FilterSelectionController:
     if value is not None and self.ui is not None:
       s,e = float(self.playerStart),float(self.playerEnd)
       if s<=value<=e:
-        self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000,e-s )
+        self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000,value-s )
 
         self.ui.updateSeekLabel((value-s))
 
+  def gettempVideoFilePath(self):
+    return self.globalOptions.get('tempFolder','tempVideoFiles')
 
   def requestAutocrop(self,rid,mid,filename,callback):
     self.ffmpegService.requestAutocrop(rid,mid,filename,callback)
@@ -71,7 +75,6 @@ class FilterSelectionController:
   def seekToPercent(self,pc):
     s,e = float(self.playerStart),float(self.playerEnd)
     d = e-s
-
     self.player.command('seek',str(s+(d*pc)),'absolute','exact')
 
   def getCurrentPlaybackPosition(self):
@@ -190,6 +193,8 @@ class FilterSelectionController:
         self.player.play(filename)
 
     self.currentlyPlayingFileName=filename
+    self.ui.setActiveTimeLineValue(None)
+    
 
 if __name__ == '__main__':
   import webmGenerator

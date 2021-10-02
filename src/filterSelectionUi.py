@@ -232,6 +232,12 @@ class FilterValuePair(ttk.Frame):
       print(self.valueVar.get())
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
 
+  def copyCommandTimelineToParams(self):
+    pass
+
+  def copyParamsToCommandTimeline(self):
+    pass
+
   def getValuePair(self):
     if self.param['type'] == 'string':
       val = self.valueVar.get()
@@ -848,7 +854,8 @@ class FilterSelectionUi(ttk.Frame):
         valMax=max(valMax,value)
         valMin=min(valMin,value)
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-        self.canvasValueTimeline.create_line(tx, 20, tx, 175,fill="blue",tags='KeyValuePoints') 
+        self.canvasValueTimeline.create_line(tx, 20, tx, 130,fill="#375e6b",width=5,tags='KeyValuePoints') 
+        self.canvasValueTimeline.create_line(tx, 20, tx, 130,fill="#69bfdb",tags='KeyValuePoints') 
 
       valRange = abs(valMax-valMin)*0.1
       if valRange == 0:
@@ -863,16 +870,25 @@ class FilterSelectionUi(ttk.Frame):
 
       lastX,lastY=None,None
 
+      effectiveHeight = self.canvasValueTimeline.winfo_height()-20
+      heightOffset    = 10
+
       for timeStamp,value in self.activeCommandFilterValuePair.getKeyValues():
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-        ty = self.canvasValueTimeline.winfo_height()-(((value-valMin)/valRange)*self.canvasValueTimeline.winfo_height())
-        print(value,tx,ty,self.canvasValueTimeline.winfo_height())
-        self.canvasValueTimeline.create_line(tx-5, ty, tx+5, ty,fill="red",tags='KeyValuePoints')
-        if lastX is not None and lastY is not None:
-          self.canvasValueTimeline.create_line(lastX, lastY, tx, ty,fill="grey",tags='KeyValuePoints')
+        ty = heightOffset+(effectiveHeight-(((value-valMin)/valRange)*effectiveHeight))
+
+        if lastX is None and lastY is None:
+          lastX=0
+          lastY=ty
+
+        self.canvasValueTimeline.create_line(lastX, lastY, tx, ty,fill="#113a47",tags='KeyValuePoints')
+        self.canvasValueTimeline.create_oval(tx-5, ty-4, tx+5, ty+4,fill="#db6986",tags='KeyValuePoints')
+
         lastX,lastY=tx,ty
         self.canvasValueTimeline.create_text(tx, 140,text="{:0.2f}".format(value),fill="white",tags='ticks')
 
+      if lastX is not None and lastY is not None:
+        self.canvasValueTimeline.create_line(lastX, lastY, self.canvasValueTimeline.winfo_width(), ty,fill="#113a47",tags='KeyValuePoints')
 
   def showTemplateMenuPopup(self):
     self.templatePopupMenu.tk_popup(self.winfo_pointerx(),self.winfo_poinstery())

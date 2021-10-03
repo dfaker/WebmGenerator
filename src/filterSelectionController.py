@@ -10,6 +10,7 @@ class FilterSelectionController:
     self.ui = ui
     self.templates = {}
 
+    os.path.exists('filterTemplates') or os.mkdir('filterTemplates')
     for fn in os.listdir('filterTemplates'):
       if fn.endswith('.json'):
         try:

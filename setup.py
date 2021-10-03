@@ -17,6 +17,8 @@ buildOptions = dict(packages = ["os"],
                     ,('resources\\quicksand.otf','resources\\quicksand.otf')
                     ,('resources\\playerbg.png','resources\\playerbg.png')
                       
+                    ,('filterTemplates\\4 Second Header Text.json','filterTemplates\\4 Second Header Text.json')
+                      
                     ,('resources\\RankImages\\Rank-0-cell.png','resources\\RankImages\\Rank-0-cell.png')
                     ,('resources\\RankImages\\Rank-A.png','resources\\RankImages\\Rank-A.png')
                     ,('resources\\RankImages\\Rank-B.png','resources\\RankImages\\Rank-B.png')

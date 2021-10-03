@@ -46,8 +46,12 @@ class FilterSelectionController:
     self.currentlyPlayingFileName=None
     self.installedFonts = None
     
+  def seekRelative(self,amount):
+    self.player.command('seek',str(amount),'relative','exact')
 
-  
+  def togglePause(self):
+    self.player.pause = not(self.player.pause)
+
   def getClipDuration(self):
     s,e = float(self.playerStart),float(self.playerEnd)
     d = e-s

@@ -45,13 +45,15 @@ class FilterValuePair(ttk.Frame):
     self.keyValues= self.param.get('keyValues',{})
     self.valueVar = tk.StringVar()
     self.n = self.param['n']
-
+    self.vmin,self.vmax = float('-inf'),float('inf')
     if param.get('rectProp') is not None:
       self.controller.registerRectProp(param.get('rectProp'),self.valueVar)
 
+    self.commandVarSelected   = False
     self.commandVarAvaliable = False 
     self.commandVarEnabled   = False
     self.commandvarName = None
+    self.commandInterpolationMode = 'lerp'
     self.commandVarTarget = []
     self.commandVarProperty = []
 
@@ -101,6 +103,7 @@ class FilterValuePair(ttk.Frame):
           vmin = float('-inf')
         if vmax is None:
           vmax = float('inf')
+      self.vmin,self.vmax = vmin,vmax
       self.entryFilterValueValue = ttk.Spinbox(self.frameFilterValuePair)
       self.entryFilterValueValue.config(textvariable=self.valueVar)
       self.entryFilterValueValue.config(from_=vmin)
@@ -122,6 +125,7 @@ class FilterValuePair(ttk.Frame):
           vmin = float('-inf')
         if vmax is None:
           vmax = float('inf')
+      self.vmin,self.vmax = vmin,vmax
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
@@ -131,6 +135,7 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]),command=self.selectFile)
     else:
       logging.error("Unhandled param {}".format(str(param)))
+
 
     self.entryFilterValueValue.pack(side='right')
     self.frameFilterValuePair.config(height='200', width='200')
@@ -142,8 +147,10 @@ class FilterValuePair(ttk.Frame):
       self.commandVarSelected = self.param.get('commandVarSelected',False)
       if self.commandVarSelected:
         self.commandSelectButton.config(style='smallOnecharenabled.TButton')
+        self.entryFilterValueValue['state']='disabled'
       else:
         self.commandSelectButton.config(style='smallOnechar.TButton') 
+        self.entryFilterValueValue['state']='normal'
 
       self.commandVarEnabled  = self.param.get('commandVarEnabled',False)
       if self.commandVarEnabled:
@@ -155,21 +162,27 @@ class FilterValuePair(ttk.Frame):
 
   def addKeyValue(self,seconds):
     try:      
-      lower = [v for k,v in sorted(self.keyValues.items()) if k<seconds][-1:]
-      upper = [v for k,v in sorted(self.keyValues.items(),reverse=True) if k>seconds][-1:]
+      lower = [(k,v) for k,v in sorted(self.keyValues.items()) if k<seconds][-1:]
+      upper = [(k,v) for k,v in sorted(self.keyValues.items(),reverse=True) if k>seconds][-1:]
 
       if len(lower)==1 and len(upper)==1:
-        self.keyValues[seconds]= self.convertKeyValueToType(  (lower[0]+upper[0])/2 )
+        neighbourRange    = upper[0][1]-lower[0][1]
+        neighbourDuration = upper[0][0]-lower[0][0]
+        percent = (seconds-lower[0][0])/neighbourDuration
+
+        self.keyValues[seconds]= self.convertKeyValueToType(  lower[0][1]+(neighbourRange*percent) )
+      
       elif len(lower)==1:
-        self.keyValues[seconds]= self.convertKeyValueToType( lower[0] )
+        self.keyValues[seconds]= self.convertKeyValueToType( lower[0][1] )
       elif len(upper)==1:
-        self.keyValues[seconds]= self.convertKeyValueToType( upper[0] )
+        self.keyValues[seconds]= self.convertKeyValueToType( upper[0][1] )
       else:
         self.keyValues[seconds]= self.convertKeyValueToType(self.valueVar.get())
+
     except Exception as e:
       self.keyValues[seconds]= self.convertKeyValueToType(self.param['d'])
       print(e)
-    self.valueVar.set(self.keyValues[seconds])
+    #self.valueVar.set(self.keyValues[seconds])
     print(self.keyValues)
 
   def removeKeyValue(self,seconds):
@@ -178,10 +191,14 @@ class FilterValuePair(ttk.Frame):
 
   def incrementKeyValue(self,seconds,valueOffset):
     if seconds in self.keyValues:
-      self.keyValues[seconds] = self.convertKeyValueToType(self.keyValues[seconds]+(valueOffset*self.param['inc']))
+      
+      newval = self.keyValues[seconds]+(valueOffset*self.param['inc'])
+      newval = max(min(newval,self.vmax),self.vmin)
+
+      self.keyValues[seconds] = self.convertKeyValueToType(newval)
       lower = [v for k,v in sorted(self.keyValues.items()) if k<seconds][-1:]
       upper = [v for k,v in sorted(self.keyValues.items(),reverse=True) if k>seconds][-1:]
-      self.valueVar.set(self.keyValues[seconds])
+      #self.valueVar.set(self.keyValues[seconds])
       self.controller.recaculateFilters()
     print(self.keyValues)
 
@@ -291,7 +308,8 @@ class FilterSpecification(ttk.Frame):
 
 
 
-
+    self.timelineReinit = self.spec.get('timelineReinit',False)
+    
     self.labelFilterName = ttk.Label(self.frameFilterDetailsWidget)
     self.labelFilterName.config(text=spec['name'],style="Bold.TLabel")
     self.labelFilterName.pack(side='top')
@@ -581,7 +599,9 @@ class FilterSpecification(ttk.Frame):
     self.controller.recaculateFilters()
 
   def remove(self):
-    self.deselectNonMatchingFilterValuePairs(None)
+    for fvp in self.filterValuePairs:
+      if fvp.commandVarSelected:
+        self.controller.setActiveTimeLineValue(None)
     self.controller.removeFilter(self.filterId)
 
 
@@ -750,7 +770,6 @@ class FilterSelectionUi(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Add key value",command=self.addKeyValue)
     self.timeline_canvas_popup_menu.add_command(label="Remove key value",command=self.removeKeyValue)
 
-
     self.frameValueTimelineFrame = ttk.Frame(self.frameFilterFrame)
     
     self.canvasValueTimeline = tk.Canvas(self.frameValueTimelineFrame)
@@ -765,9 +784,17 @@ class FilterSelectionUi(ttk.Frame):
     self.canvasValueTimeline.bind("<Motion>",            self.timelineClickHandler)
     self.canvasValueTimeline.bind("<MouseWheel>",        self.timelineMousewheel)
 
-    self.canvasValueTimeline.bind("b",        self.addtimeLineValue)
-    self.canvasValueTimeline.bind("B",        self.addtimeLineValue)
+    self.canvasValueTimeline.bind("d",        self.keyboardD)
 
+    self.canvasValueTimeline.focus_set()
+
+    self.canvasValueTimeline.bind('<Up>',    self.keyboardUp)
+    self.canvasValueTimeline.bind('<Down>',  self.keyboardDown)
+    self.canvasValueTimeline.bind('<Left>',  self.keyboardLeft)
+    self.canvasValueTimeline.bind('<Right>', self.keyboardRight)
+    self.canvasValueTimeline.bind('<space>', self.keyboardSpace)
+
+    self.canvasValueTimeline.bind('<Configure>',self.reconfigure)
 
     self.canvasMouseDown = False
 
@@ -789,8 +816,54 @@ class FilterSelectionUi(ttk.Frame):
     self.activeCommandFilterValuePair = None
     self.timeline_canvas_last_right_click_x=0
 
-  def addtimeLineValue(self):
-    pass
+
+  def keyboardD(self,e):
+    if self.activeCommandFilterValuePair is not None:
+      duration      = self.controller.getClipDuration()
+      posSeconds = self.controller.getCurrentPlaybackPosition()
+      posX = (posSeconds/duration)*self.canvasValueTimeline.winfo_width()
+
+      for timeStamp,value in self.activeCommandFilterValuePair.getKeyValues():
+        tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
+        if posX-5<tx<posX+5:
+          self.activeCommandFilterValuePair.removeKeyValue(timeStamp)
+          self.controller.seekToPercent(tx/self.canvasValueTimeline.winfo_width())
+          self.refreshtimeLineForNewClip()
+          break
+
+  def keyboardUp(self,e):
+    self.incrementAtCurrentPlaybackPosition(1,e)
+
+  def keyboardDown(self,e):
+    self.incrementAtCurrentPlaybackPosition(-1,e)
+  
+  def incrementAtCurrentPlaybackPosition(self,increment,e):
+    ctrl  = (e.state & 0x4) != 0
+    if self.activeCommandFilterValuePair is not None:
+      duration      = self.controller.getClipDuration()
+      posSeconds = self.controller.getCurrentPlaybackPosition()
+      posX = (posSeconds/duration)*self.canvasValueTimeline.winfo_width()
+      existingTS=None
+      for timeStamp,value in self.activeCommandFilterValuePair.getKeyValues():
+        tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
+        if posX-5<tx<posX+5:
+          existingTS=timeStamp
+      if existingTS is None:
+        self.activeCommandFilterValuePair.addKeyValue(posSeconds)
+      self.activeCommandFilterValuePair.incrementKeyValue(posSeconds,increment*10 if ctrl else increment)
+        
+      self.refreshtimeLineForNewClip()
+
+  def keyboardLeft(self,e):
+    self.controller.seekRelative(-0.05)
+    
+
+  def keyboardRight(self,e):
+    self.controller.seekRelative(0.05)
+    
+
+  def keyboardSpace(self,e):
+    self.controller.togglePause()
 
 
   def addKeyValue(self):
@@ -837,7 +910,7 @@ class FilterSelectionUi(ttk.Frame):
     self.refreshtimeLineForNewClip()
 
   def timelineClickHandler(self,e):
-
+    self.canvasValueTimeline.focus_set()
     if e.type == tk.EventType.ButtonPress and e.num==1:
       self.canvasMouseDown=True
     elif e.type == tk.EventType.ButtonRelease and e.num==1:
@@ -856,7 +929,11 @@ class FilterSelectionUi(ttk.Frame):
     tx = tx*self.canvasValueTimeline.winfo_width()
     self.canvasValueTimeline.coords(self.timelineSeekHandle, tx, 20, tx, 175)  
 
+  def reconfigure(self,e):
+    self.refreshtimeLineForNewClip()
+
   def refreshtimeLineForNewClip(self):
+
     self.canvasValueTimeline.delete('ticks')
     duration      = self.controller.getClipDuration()
     tickStart     = 0
@@ -881,6 +958,13 @@ class FilterSelectionUi(ttk.Frame):
       self.canvasValueTimeline.create_text(5, 140, text="{}".format(self.activeCommandFilterValuePair.commandvarName),fill="white",tags='ActiveFilterName')
 
       valMax,valMin = float('-inf'),float('inf')
+
+      if self.activeCommandFilterValuePair.vmin not in (float('-inf'),float('inf'),None):
+        valMin=self.activeCommandFilterValuePair.vmin
+
+      if self.activeCommandFilterValuePair.vmax not in (float('-inf'),float('inf'),None):
+        valMax=self.activeCommandFilterValuePair.vmax
+
       for timeStamp,value in self.activeCommandFilterValuePair.getKeyValues():
         valMax=max(valMax,value)
         valMin=min(valMin,value)
@@ -888,9 +972,9 @@ class FilterSelectionUi(ttk.Frame):
         self.canvasValueTimeline.create_line(tx, 20, tx, 130,fill="#375e6b",width=5,tags='KeyValuePoints') 
         self.canvasValueTimeline.create_line(tx, 20, tx, 130,fill="#69bfdb",tags='KeyValuePoints') 
 
-      valRange = abs(valMax-valMin)*0.1
+      valRange = abs(valMax-valMin)*0.25
       if valRange == 0:
-        valRange = 0.1
+        valRange = 0.25
 
       valMin -= valRange
       valMax += valRange
@@ -1143,14 +1227,14 @@ class FilterSelectionUi(ttk.Frame):
           norm_k = self.controller.normaliseTimestamp(k)
           norm_lastTime = self.controller.normaliseTimestamp(lastTime)
 
-          commandStr_preview += "{:0.3f}-{:0.3f} [expr] {} {} 'lerp({:0.3f},{:0.3f},(T-{:0.3f})/{:0.3f})';\n".format(norm_lastTime,norm_k,cmdTarget,cmdProperty, lastValue, cmdValue, norm_lastTime, k-lastTime)
-          commandStr_real    += "{:0.3f}-{:0.3f} [expr] {} {} 'lerp({:0.3f},{:0.3f},(T-{:0.3f})/{:0.3f})';\n".format(lastTime,k,cmdTarget,cmdProperty, lastValue, cmdValue, lastTime, k-lastTime)
+          commandStr_preview += "{:0.4f}-{:0.4f} [expr] {} {} 'lerp({:0.4f},{:0.4f},(T-{:0.4f})/{:0.4f})';\n".format(norm_lastTime,norm_k,cmdTarget,cmdProperty, lastValue, cmdValue, norm_lastTime, k-lastTime)
+          commandStr_real    += "{:0.4f}-{:0.4f} [expr] {} {} 'lerp({:0.4f},{:0.4f},(T-{:0.4f})/{:0.4f})';\n".format(lastTime,k,cmdTarget,cmdProperty, lastValue, cmdValue, lastTime, k-lastTime)
           lastCommandValues[(cmdTarget,cmdProperty)] = (k,cmdValue)
 
     for (cmdTarget,cmdProperty),(lastTime,cmdValue) in lastCommandValues.items():
       norm_lastTime = self.controller.normaliseTimestamp(lastTime)
-      commandStr_preview += "{:0.3f} [enter] {} {} {:0.3f};\n".format(norm_lastTime,cmdTarget,cmdProperty, cmdValue)
-      commandStr_real    += "{:0.3f} [enter] {} {} {:0.3f};\n".format(lastTime,cmdTarget,cmdProperty, cmdValue)
+      commandStr_preview += "{:0.4f} [enter] {} {} {:0.4f};\n".format(norm_lastTime,cmdTarget,cmdProperty, cmdValue)
+      commandStr_real    += "{:0.4f} [enter] {} {} {:0.4f};\n".format(lastTime,cmdTarget,cmdProperty, cmdValue)
 
 
 

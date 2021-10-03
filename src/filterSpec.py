@@ -464,7 +464,7 @@ selectableFilters = [
     {
         "name": "zoomPiP",
         
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]null[bg{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},scale=iw*{zoom}:ih*{zoom}[fg{fn}],[bg{fn}][fg{fn}]overlay={outX}:{outY}",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]null[bg{fn}],[vina{fn}]crop@{fn}=w={w}:h={h}:x={x}:y={y},scale@{fn}=iw*{zoom}:ih*{zoom}[fg{fn}],[bg{fn}][fg{fn}]overlay@{fn}=x={outX}:y={outY}",
         "params": [ 
             {
                 "n": "x",
@@ -473,6 +473,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "x",
                 "inc": 1,
+                "commandVar":['Crop-X',[['crop@{fn}','x']]]
             },
             {
                 "n": "y",
@@ -481,6 +482,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "y",
                 "inc": 1,
+                "commandVar":['Crop-Y',[['crop@{fn}','y']]]
             },
             {
                 "n": "w",
@@ -489,6 +491,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "w",
                 "inc": 1,
+                "commandVar":['Crop-W',[['crop@{fn}','w']]]
             },
             {
                 "n": "h",
@@ -497,6 +500,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "h",
                 "inc": 1,
+                "commandVar":['Crop-h',[['crop@{fn}','h']]]
             },
             {
                 "n": "zoom",
@@ -511,6 +515,7 @@ selectableFilters = [
                 "type": "int",
                 "range": None,
                 "inc": 1,
+                "commandVar":['Overlay-x',[['overlay@{fn}','x']]]
             },
             {
                 "n": "outY",
@@ -518,6 +523,7 @@ selectableFilters = [
                 "type": "int",
                 "range": None,
                 "inc": 1,
+                "commandVar":['Overlay-Y',[['overlay@{fn}','y']]]
             }
         ],
     },
@@ -637,11 +643,11 @@ selectableFilters = [
     {
         "name": "hueInsideArea",
         "timelineSupport":True,
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},hue=h={ch}:s={s}:b={b}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},hue=h={ch}:s={cs}:b={cb}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
         "params": [
-            {"n": "h", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
-            {"n": "s", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
-            {"n": "b", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},     
+            {"n": "ch", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
+            {"n": "cs", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
+            {"n": "cb", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},     
             {
                 "n": "x",
                 "d": 0,
@@ -667,7 +673,7 @@ selectableFilters = [
                 "inc": 1,
             },
             {
-                "n": "ch",
+                "n": "h",
                 "d": 100,
                 "type": "float",
                 "range": None,
@@ -1042,8 +1048,6 @@ selectableFilters = [
             },
             {"n": "w", "d": 0.0, "type": "float", "range": None, "inc": 10},
             {"n": "h", "d": 0.0, "type": "float", "range": None, "inc": 10},
-
-
 
 
             {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5     ,"commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
@@ -1538,7 +1542,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "x",
-                "inc": 1,
+                "inc": 1
             },
             {
                 "n": "y",
@@ -1546,7 +1550,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
-                "inc": 1,
+                "inc": 1
             },
             {
                 "n": "w",
@@ -1554,7 +1558,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "w",
-                "inc": 1,
+                "inc": 1
             },
             {
                 "n": "h",
@@ -1562,7 +1566,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "h",
-                "inc": 1,
+                "inc": 1
             },
         ],
     },
@@ -1792,12 +1796,13 @@ selectableFilters = [
     {
         "name": "drawtext",
         "timelineSupport":True,
-        "filter": "drawtext",
+        "timelineReinit":True,
+        "filter": "drawtext@{fn}",
         "params": [
             {"n": "text", "d": "Text", "type": "string"},
             {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file", "fileCategory":"font"},
-            {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
-            {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
+            {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1, "_commandVar":['Text-X',[['drawtext@{fn}','x']]] },
+            {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1, "_commandVar":['Text-Y',[['drawtext@{fn}','y']]]},
             {
                 "n": "borderw",
                 "d": 1,
@@ -1833,8 +1838,8 @@ selectableFilters = [
                 "type": "cycle",
                 "cycle": colours,
             },
-            {"n": "fontsize", "d": 16, "type": "int", "rectProp": "h", "range": None, "inc": 1},
-            {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1},
+            {"n": "fontsize", "d": 16, "type": "int", "rectProp": "h", "range": None, "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
+            {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] },
         ],
     },
 ]

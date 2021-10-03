@@ -131,6 +131,16 @@ Below that is the stack of filters applied to the current subclip, this clip has
 
 Each of the filters may be Removed, Enabled, or moved up and down the filtering order with the buttons that appear below its title, if the filter has any input options they will be displayed as input fields below these buttons, the hue filter in the image for example has been configured to shift the 'h' hue value by 0.42 and increase the 's' saturation value by 3.4.
 
+### Adjust effects in time - Timeline Filtering
+
+![Timeline Filtering](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/04b%20-%20Timeline%20Filtering.png)
+
+Certain filter values have two buttons to their left `T` and `S`, clicking `T` will stop using the supplied filter value and switch the parameter to use timeline keyframed values, pressing `S` selects the parameter and displays that parameter's currently keyframe values on the lower timeline.
+
+The example shows an overlay filer in use, both the `x` and `y` cordindate parameters are both enabed as timeline keyframed values, te `y` parameter is selected and has 4 keyframed values set causing the overlaid batman mask to drif up slowly to follow the actor's face during the scene.
+
+Right clicking on the lower timeline displays a menu allowing addition or removal of Keyframed valyes, scrolling the mousewheel will increment or decrement an existing keyframed value and seek to the keyframed time in the clip - it's recomended to reduce the Preview speed during this operation for more accurate adjustments.
+
 ### Join - Sequencing and Transitions
 
 ![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)

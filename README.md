@@ -24,9 +24,8 @@ A large v2 release moving to a more standardized user interface, adds the abilit
 #### Fade Effect Output
 ![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOutput.gif)
 
-#### Keyframed Interpolayed Filter Value Examples
+#### Keyframed Interpolated Filter Value Examples
 ![Crop Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Example_KeyframedCropValues.gif)
-
 ![Overlay Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Tracking-Example.gif)
 
 Tracking-Example.gif

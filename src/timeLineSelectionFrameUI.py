@@ -910,7 +910,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           else:
             self.clipped=None
 
-          
         else:
           print('add',rid)
               

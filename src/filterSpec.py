@@ -732,6 +732,32 @@ selectableFilters = [
         ],
     },
 
+
+  {
+        "name": "gaussianBlur",
+        "timelineSupport":True,
+        "filter": "gblur@{fn}",
+        "params": [
+            {
+                "n": "sigma",
+                "d": 20,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+                "commandVar":['GBlur-Sigma',[['gblur@{fn}','sigma']]]
+            },
+            {
+                "n": "steps",
+                "d": 1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+                "commandVar":['GBlur-Steps',[['gblur@{fn}','steps']]]
+            },
+        ]
+  },
+
+
   {
         "name": "gaussianBlurArea",
         "timelineSupport":True,
@@ -966,7 +992,7 @@ selectableFilters = [
     {
         "name": "v360 - VR Correction",
         "timelineSupport":True,
-        "filter": "v360={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:w={w}:h={h}:interp={interp}:in_trans={in_trans}:out_trans={out_trans}:h_flip={h_flip}:ih_flip={ih_flip}:iv_flip={iv_flip}:alpha_mask=1",
+        "filter": "v360@{fn}={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:w={w}:h={h}:interp={interp}:in_trans={in_trans}:out_trans={out_trans}:h_flip={h_flip}:ih_flip={ih_flip}:iv_flip={iv_flip}:alpha_mask=1",
         "params": [
             {
                 "n": "in_proj",
@@ -1016,11 +1042,15 @@ selectableFilters = [
             },
             {"n": "w", "d": 0.0, "type": "float", "range": None, "inc": 10},
             {"n": "h", "d": 0.0, "type": "float", "range": None, "inc": 10},
-            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5},
-            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5},
-            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180], "inc": 5},
-            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180], "inc": 5},
-            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 5},
+
+
+
+
+            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5     ,"commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
+            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5   ,"commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
+            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180], "inc": 5  ,"commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
+            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180], "inc": 5   ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
+            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 5 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
                 "n": "interp",
                 "d": "cubic",
@@ -1034,8 +1064,8 @@ selectableFilters = [
     {
         "name": "Overlay",
         "timelineSupport":True,
-        "filter": "null[vin{fn}],movie='{source}':loop=1,scale={w}:{h},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
-        "filterPreview": "null[vin{fn}],movie='{source}',scale={w}:{h},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
+        "filter": "null[vin{fn}],movie='{source}':loop=1,scale=w={w}:h={h},format=argb,colorchannelmixer@{fn}=aa={alpha},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
+        "filterPreview": "null[vin{fn}],movie='{source}',scale=w={w}:h={h},format=argb,colorchannelmixer@{fn}=aa={alpha},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
         "params": [
             {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
             {
@@ -1063,6 +1093,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "w",
                 "inc": 1,
+
             },
             {
                 "n": "h",
@@ -1085,7 +1116,8 @@ selectableFilters = [
                 "d": 1.0,
                 "type": "float",
                 "range": [0.0, 1.0],
-                "inc": 0.01
+                "inc": 0.01,
+                "commandVar":['Overlay-Transparency',[['colorchannelmixer@{fn}','aa']]]
             },
         ],
     },
@@ -1430,7 +1462,7 @@ selectableFilters = [
     
     {
         "name": "lenscorrection",
-        "filter": "format=gbrp,lenscorrection=cx={cx}:cy={cy}:k1={k1}:k2={k2},format=yuv420p",
+        "filter": "format=gbrp,lenscorrection@{fn}=cx={cx}:cy={cy}:k1={k1}:k2={k2},format=yuv420p",
         "params": [
             {
                 "n": "cx",
@@ -1448,24 +1480,24 @@ selectableFilters = [
                 "rectProp": "yc",
                 "inc": 0.01,
             },
-            {"n": "k1", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "k2", "d": 0, "type": "float", "range": None, "inc": 0.01},
+            {"n": "k1", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['Lens-K1',[['lenscorrection@{fn}','k1']]]},
+            {"n": "k2", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['Lens-K2',[['lenscorrection@{fn}','k2']]]},
         ],
     },
     
     {
         "name": "colorbalance",
-        "filter": "colorbalance",
+        "filter": "colorbalance@{fn}",
         "params": [
-            {"n": "rs", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "gs", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "bs", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "rm", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "gm", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "bm", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "rh", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "gh", "d": 0, "type": "float", "range": None, "inc": 0.01},
-            {"n": "bh", "d": 0, "type": "float", "range": None, "inc": 0.01},
+            {"n": "rs", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-rs',[['chromashift@{fn}','rs']]]},
+            {"n": "gs", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-gs',[['chromashift@{fn}','gs']]]},
+            {"n": "bs", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-bs',[['chromashift@{fn}','bs']]]},
+            {"n": "rm", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-rm',[['chromashift@{fn}','rm']]]},
+            {"n": "gm", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-gm',[['chromashift@{fn}','gm']]]},
+            {"n": "bm", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-bm',[['chromashift@{fn}','bm']]]},
+            {"n": "rh", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-rh',[['chromashift@{fn}','rh']]]},
+            {"n": "gh", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-gh',[['chromashift@{fn}','gh']]]},
+            {"n": "bh", "d": 0, "type": "float", "range": None, "inc": 0.01,"commandVar":['ColorBal-bh',[['chromashift@{fn}','bh']]] },
         ],
     },
     
@@ -1557,7 +1589,7 @@ selectableFilters = [
     {
         "name": "rotate",
         "timelineSupport":True,
-        "filter": "rotate=a={a}:out_w=rotw({a}):out_h=roth({a})",
+        "filter": "rotate@{fn}=a={a}:out_w=rotw({a}):out_h=roth({a})",
         "params": [
             {
                 "n": "a",
@@ -1565,6 +1597,7 @@ selectableFilters = [
                 "type": "float",
                 "range": [-6.28319, 6.28319],
                 "inc": 0.0174533,
+                "commandVar":['Overlay-Rotation',[['rotate@{fn}','a']]]
             },
         ],
     },
@@ -1585,11 +1618,11 @@ selectableFilters = [
     
     {
         "name": "hue",
-        "filter": "hue",
+        "filter": "hue@{fn}",
         "params": [
-            {"n": "h", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
-            {"n": "s", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
-            {"n": "b", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},
+            {"n": "h", "d": 0, "type": "float", "range": [0, 360], "inc": 1, "commandVar":['Hue',[['hue@{fn}','h']]] },
+            {"n": "s", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2,      "commandVar":['Saturation',[['hue@{fn}','s']]]},
+            {"n": "b", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2,      "commandVar":['Brightness',[['hue@{fn}','b']]]},
         ],
     },
     

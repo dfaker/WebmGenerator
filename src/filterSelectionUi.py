@@ -42,8 +42,9 @@ class FilterValuePair(ttk.Frame):
     self.frameFilterValuePair = self
     self.labelfilterValueLabel = ttk.Label(self.frameFilterValuePair)
     self.fileCategory = param.get('fileCategory',None)
-    self.keyValues={}
+    self.keyValues= self.param.get('keyValues',{})
     self.valueVar = tk.StringVar()
+    self.n = self.param['n']
 
     if param.get('rectProp') is not None:
       self.controller.registerRectProp(param.get('rectProp'),self.valueVar)
@@ -74,6 +75,7 @@ class FilterValuePair(ttk.Frame):
       self.commandSelectButton = ttk.Button(self.frameFilterValuePair)
       self.commandSelectButton.config(text='S',state='disabled', style='smallOnechar.TButton',command=self.toggleTimelineSelection) 
       self.commandSelectButton.pack(expand='false', side='left')
+
 
     if param.get('desc','') != '':
       self.labelfilterValueLabel.config(text=param['n']+' ('+param['desc']+')')
@@ -135,12 +137,39 @@ class FilterValuePair(ttk.Frame):
     self.frameFilterValuePair.pack(expand='true', fill='x', side='top')
     self.valueVar.trace("w", self.valueUpdated)
 
+    if self.commandVarAvaliable:
+      
+      self.commandVarSelected = self.param.get('commandVarSelected',False)
+      if self.commandVarSelected:
+        self.commandSelectButton.config(style='smallOnecharenabled.TButton')
+      else:
+        self.commandSelectButton.config(style='smallOnechar.TButton') 
+
+      self.commandVarEnabled  = self.param.get('commandVarEnabled',False)
+      if self.commandVarEnabled:
+        self.commandButton.config(style='smallOnecharenabled.TButton') 
+        self.commandSelectButton['state']='normal'
+      else:
+        self.commandButton.config(style='smallOnechar.TButton')
+        self.commandSelectButton['state']='disabled' 
+
   def addKeyValue(self,seconds):
-    try:
-      self.keyValues[seconds]= self.convertKeyValueToType(self.valueVar.get())
+    try:      
+      lower = [v for k,v in sorted(self.keyValues.items()) if k<seconds][-1:]
+      upper = [v for k,v in sorted(self.keyValues.items(),reverse=True) if k>seconds][-1:]
+
+      if len(lower)==1 and len(upper)==1:
+        self.keyValues[seconds]= self.convertKeyValueToType(  (lower[0]+upper[0])/2 )
+      elif len(lower)==1:
+        self.keyValues[seconds]= self.convertKeyValueToType( lower[0] )
+      elif len(upper)==1:
+        self.keyValues[seconds]= self.convertKeyValueToType( upper[0] )
+      else:
+        self.keyValues[seconds]= self.convertKeyValueToType(self.valueVar.get())
     except Exception as e:
-      self.keyValues[seconds]= self.convertKeyValueToType(0.0)
+      self.keyValues[seconds]= self.convertKeyValueToType(self.param['d'])
       print(e)
+    self.valueVar.set(self.keyValues[seconds])
     print(self.keyValues)
 
   def removeKeyValue(self,seconds):
@@ -150,6 +179,8 @@ class FilterValuePair(ttk.Frame):
   def incrementKeyValue(self,seconds,valueOffset):
     if seconds in self.keyValues:
       self.keyValues[seconds] = self.convertKeyValueToType(self.keyValues[seconds]+(valueOffset*self.param['inc']))
+      lower = [v for k,v in sorted(self.keyValues.items()) if k<seconds][-1:]
+      upper = [v for k,v in sorted(self.keyValues.items(),reverse=True) if k>seconds][-1:]
       self.valueVar.set(self.keyValues[seconds])
       self.controller.recaculateFilters()
     print(self.keyValues)
@@ -169,34 +200,36 @@ class FilterValuePair(ttk.Frame):
       self.commandVarSelected   = False
       self.commandSelectButton.config(style='smallOnechar.TButton') 
 
-  def toggleTimelineSelection(self):
+  def toggleTimelineSelection(self,toggle=True):
     if self.commandVarAvaliable:
       if self.commandVarSelected:
-        self.commandVarSelected   = False
+        if toggle:
+          self.commandVarSelected   = False
         self.commandSelectButton.config(style='smallOnechar.TButton') 
         self.controller.setActiveTimeLineValue(None)
       else:
-        self.commandVarSelected   = True
+        if toggle:
+          self.commandVarSelected   = True
         self.commandSelectButton.config(style='smallOnecharenabled.TButton')
         self.controller.setActiveTimeLineValue(self)
 
-
-  def toggleTimelineCmdMode(self):
+  def toggleTimelineCmdMode(self,toggle=True):
     if self.commandVarAvaliable:
       if self.commandVarEnabled:
-        self.commandVarEnabled   = False
+        if toggle:
+          self.commandVarEnabled   = False
+          self.commandVarSelected=False
         self.entryFilterValueValue['state']='normal'
         self.commandButton.config(style='smallOnechar.TButton') 
-        self.commandVarSelected=False
         self.commandSelectButton.config(style='smallOnechar.TButton') 
         self.commandSelectButton['state']='disabled'
       else:
-        self.commandVarEnabled   = True
+        if toggle:
+          self.commandVarEnabled   = True
         self.commandButton.config(style='smallOnecharenabled.TButton')
         self.entryFilterValueValue['state']='disabled'
         self.commandSelectButton['state']='normal'
         self.toggleTimelineSelection()
-
 
   def selectFile(self):
     initialdir='.'
@@ -231,12 +264,6 @@ class FilterValuePair(ttk.Frame):
       self.valueVar.set(cleanPath)
       print(self.valueVar.get())
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
-
-  def copyCommandTimelineToParams(self):
-    pass
-
-  def copyParamsToCommandTimeline(self):
-    pass
 
   def getValuePair(self):
     if self.param['type'] == 'string':
@@ -539,7 +566,6 @@ class FilterSpecification(ttk.Frame):
 
   def getTimeLimeCommandValues(self):
     commands = {}
-
     for fvp in self.filterValuePairs:
       if fvp.commandVarEnabled:
         for varTarget in fvp.commandVarTarget:  
@@ -739,6 +765,10 @@ class FilterSelectionUi(ttk.Frame):
     self.canvasValueTimeline.bind("<Motion>",            self.timelineClickHandler)
     self.canvasValueTimeline.bind("<MouseWheel>",        self.timelineMousewheel)
 
+    self.canvasValueTimeline.bind("b",        self.addtimeLineValue)
+    self.canvasValueTimeline.bind("B",        self.addtimeLineValue)
+
+
     self.canvasMouseDown = False
 
     self.frameValueTimelineFrame.config(height='175', width='100')
@@ -758,6 +788,9 @@ class FilterSelectionUi(ttk.Frame):
     self.mouseRectMoveStart=(0,0)
     self.activeCommandFilterValuePair = None
     self.timeline_canvas_last_right_click_x=0
+
+  def addtimeLineValue(self):
+    pass
 
 
   def addKeyValue(self):
@@ -780,7 +813,7 @@ class FilterSelectionUi(ttk.Frame):
           break
 
   def timelineMousewheel(self,e):
-
+    ctrl  = (e.state & 0x4) != 0
     duration      = self.controller.getClipDuration()
     secondsClicked = (e.x/self.canvasValueTimeline.winfo_width())*self.controller.getClipDuration()
     
@@ -789,15 +822,13 @@ class FilterSelectionUi(ttk.Frame):
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
         if e.x-5<tx<e.x+5:
           if e.delta>0:
-            self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,1)
+            self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,10 if ctrl else 1)
           else:
-            self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,-1)
+            self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,-10 if ctrl else -1)
           self.refreshtimeLineForNewClip()
           self.timeline_canvas_last_right_click_x=e.x
           self.controller.seekToPercent(self.timeline_canvas_last_right_click_x/self.canvasValueTimeline.winfo_width())
           break
-
-    
 
   def setActiveTimeLineValue(self,activeValuePair):
     for flt in self.filterSpecifications:
@@ -1089,6 +1120,7 @@ class FilterSelectionUi(ttk.Frame):
     commandSet = {}
 
     for filter in self.filterSpecifications:
+
       commandSet.update(filter.getTimeLimeCommandValues())
 
       filterexpPreview.append(filter.getFilterExpression(preview=True)) 
@@ -1114,6 +1146,13 @@ class FilterSelectionUi(ttk.Frame):
           commandStr_preview += "{:0.3f}-{:0.3f} [expr] {} {} 'lerp({:0.3f},{:0.3f},(T-{:0.3f})/{:0.3f})';\n".format(norm_lastTime,norm_k,cmdTarget,cmdProperty, lastValue, cmdValue, norm_lastTime, k-lastTime)
           commandStr_real    += "{:0.3f}-{:0.3f} [expr] {} {} 'lerp({:0.3f},{:0.3f},(T-{:0.3f})/{:0.3f})';\n".format(lastTime,k,cmdTarget,cmdProperty, lastValue, cmdValue, lastTime, k-lastTime)
           lastCommandValues[(cmdTarget,cmdProperty)] = (k,cmdValue)
+
+    for (cmdTarget,cmdProperty),(lastTime,cmdValue) in lastCommandValues.items():
+      norm_lastTime = self.controller.normaliseTimestamp(lastTime)
+      commandStr_preview += "{:0.3f} [enter] {} {} {:0.3f};\n".format(norm_lastTime,cmdTarget,cmdProperty, cmdValue)
+      commandStr_real    += "{:0.3f} [enter] {} {} {:0.3f};\n".format(lastTime,cmdTarget,cmdProperty, cmdValue)
+
+
 
     print(commandStr_preview)
 
@@ -1165,6 +1204,13 @@ class FilterSelectionUi(ttk.Frame):
           if param['n']==n:
             param['d']=v
             break
+      for valPair in ifilter.filterValuePairs:
+        for param in baseSpec['params']:
+          if param['n'] == valPair.n and valPair.commandVarAvaliable:
+            param['commandVarEnabled']=valPair.commandVarEnabled
+            param['commandVarSelected']=valPair.commandVarSelected
+            param['keyValues'] = valPair.keyValues
+
       baseSpec.setdefault('params',[]).extend(ifilter.getTimelineValuesAsSpecifications())
       filterstack.append(baseSpec)
     return filterstack

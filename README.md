@@ -10,6 +10,7 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 - ⏱️ Interactive clip selection powered by mpv
 - 📺 Youtube-dlp integration to automatically download video from popular sites, incluidng live streams.  
 - 🌈 Full suite of filters from cropping to tone mapping and VR to 2D projection.
+- 🧲 Keyframe filter adjustment during playback, shift hue to the beat, track objects in frame & reposition text or overlay images.
 - 🤖 Automatic isolation of clips based on scene change or audio levels/silence removal detection.
 - 💾 Automatic bitrate adjustment for file size targeting.
 - ✂️ Save single extracted clips or join multiple clips into custom edits with transition effects.
@@ -22,6 +23,10 @@ A large v2 release moving to a more standardized user interface, adds the abilit
 
 #### Fade Effect Output
 ![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOutput.gif)
+
+#### Keyframed Interpolayed Filter Values
+![Crop Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Example_KeyframedCropValues.gif)
+
 
 #### Overlay With Blending Mode Output
 ![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOverlayOuput_StainsHD.gif)

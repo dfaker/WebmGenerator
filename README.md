@@ -26,8 +26,6 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 ![Crop Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Example_KeyframedCropValues.gif)
 ![Overlay Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Tracking-Example.gif)
 
-Tracking-Example.gif
-
 #### Overlay With Blending Mode Output
 ![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOverlayOuput_StainsHD.gif)
 

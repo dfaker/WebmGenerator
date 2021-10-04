@@ -16,8 +16,6 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 - ✂️ Save single extracted clips or join multiple clips into custom edits with transition effects.
 - 🍱 Pack multiple videos into dynamically sized grids.
 
-A large v2 release moving to a more standardized user interface, adds the ability to track the output size of video clip in order to reach some time limit and introduces options to merge clips together into a sequence at the end including cross-filtering transition effects.
-
 #### Grid Output
 ![Grid Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/GridOutput.gif)
 

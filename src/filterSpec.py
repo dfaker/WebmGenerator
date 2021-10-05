@@ -1050,11 +1050,11 @@ selectableFilters = [
             {"n": "h", "d": 0.0, "type": "float", "range": None, "inc": 10},
 
 
-            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5     ,"commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
-            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90], "inc": 5   ,"commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
-            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180], "inc": 5  ,"commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
-            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180], "inc": 5   ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
-            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 5 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
+            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90],     "inc": 1     ,"commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
+            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90],   "inc": 1   ,"commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
+            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180],  "inc": 1  ,"commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
+            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180],   "inc": 1   ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
+            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
                 "n": "interp",
                 "d": "cubic",

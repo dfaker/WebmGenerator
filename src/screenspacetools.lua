@@ -2,6 +2,12 @@ local msg = require('mp.msg')
 local assdraw = require('mp.assdraw')
 
 local script_name = "screenspacetools"
+local regmarks = {};
+
+local registrationAss = "";
+local cropAss = "";
+local vectorAss = "";
+
 
 local ass_set_color = function (idx, color)
     assert(color:len() == 8 or color:len() == 6)
@@ -19,8 +25,98 @@ end
 
 function screenspacetools_clear(p1x,p1y,p2x,p2y,fill,border,width,visible)
     local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
-    mp.set_osd_ass(osd_w, osd_h, "")
+    cropAss="";
+    draw_merged_ssa()
 end
+
+function screenspacetools_drawVector(x1,y1,x2,y2)
+    if x1==0 and y1==0 and x2 ==0 and y2 ==0 then
+        vectorAss = "";
+    else
+        local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
+
+        ass = assdraw.ass_new()
+        ass:pos(0,0)
+        ass:new_event()
+        ass:draw_start()
+        ass:pos(0,0)
+
+        ass:append(ass_set_color(1, "00000000"))
+        ass:append(ass_set_color(3, "69dbdbff"))
+        ass:append("{\\bord0.5}")
+
+        ass:move_to(tonumber(x1), tonumber(y1))
+        ass:line_to(tonumber(x2), tonumber(y2))
+
+        ass:draw_stop()
+        ass:pos(0,0)
+        vectorAss = ass.text;
+    
+
+    end
+
+    draw_merged_ssa()
+
+end
+
+function screenspacetools_regMark(x,y,type)
+    
+    if type == "clear" then
+        regmarks = {};
+    elseif type ~= "" then
+        table.insert(regmarks, {px=x,py=y,t=type});
+    end
+
+
+    local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
+    
+    ass = assdraw.ass_new()
+
+
+
+
+    for k, v in pairs(regmarks) do
+
+        ass:pos(0,0)
+        ass:new_event()
+        ass:draw_start()
+        ass:pos(0,0)
+
+        ass:append(ass_set_color(1, "00000000"))
+        if v["t"] == "tvec" then
+            ass:append(ass_set_color(3, "ff0000ff"))
+            ass:append("{\\bord1}")
+        else
+            ass:append(ass_set_color(3, "69dbdbff"))
+            ass:append("{\\bord0.5}")
+        end
+        
+
+        if v["t"] == "cross" or v["t"] == "tvec" then
+            ass:move_to(tonumber(v["px"]-15), tonumber(v["py"]))
+            ass:line_to(tonumber(v["px"]+15), tonumber(v["py"]))
+            ass:move_to(tonumber(v["px"]),    tonumber(v["py"]-15))
+            ass:line_to(tonumber(v["px"]),    tonumber(v["py"]+15))
+        end
+        if v["t"] == "vline" then
+            ass:move_to(tonumber(v["px"]), tonumber(0))
+            ass:line_to(tonumber(v["px"]), tonumber(osd_h))
+        end
+        if v["t"] == "hline" then
+            ass:move_to(tonumber(0), tonumber(v["py"]))
+            ass:line_to(tonumber(osd_w), tonumber(v["py"]))
+        end
+
+        ass:draw_stop()
+        ass:pos(0,0)
+
+    end
+
+
+    registrationAss = ass.text;
+    draw_merged_ssa()
+end
+
 
 function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
 
@@ -29,6 +125,7 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
     if visible == "outer" then
         ass = assdraw.ass_new()
         ass:new_event()
+        ass:pos(0, 0)
         ass:draw_start()
         ass:pos(0, 0)
 
@@ -38,6 +135,7 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
 
         ass:rect_cw(tonumber(p1x), tonumber(p1y), tonumber(p2x), tonumber(p2y))
 
+        ass:pos(0, 0)
         ass:draw_stop()
 
         mp.set_osd_ass(osd_w, osd_h, ass.text)
@@ -145,13 +243,21 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
 
         ass:rect_cw(tonumber(p1x), tonumber(p1y), tonumber(p2x), tonumber(p2y))
 
-
+        ass:pos(0, 0)
         ass:draw_stop()
-
-        mp.set_osd_ass(osd_w, osd_h, ass.text)
+        cropAss = ass.text;
+        draw_merged_ssa()
     end
+end
+
+function draw_merged_ssa()
+    local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
+    mp.set_osd_ass(osd_w, osd_h, cropAss .. registrationAss .. vectorAss )
 end
 
 
 mp.register_script_message("screenspacetools_rect",  screenspacetools_rect)
 mp.register_script_message("screenspacetools_clear", screenspacetools_clear)
+mp.register_script_message("screenspacetools_regMark", screenspacetools_regMark)
+mp.register_script_message("screenspacetools_drawVector", screenspacetools_drawVector)
+

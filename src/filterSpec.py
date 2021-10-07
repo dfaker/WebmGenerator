@@ -179,6 +179,9 @@ fonts = [
 
 selectableFilters = [
 
+
+
+
     {
         "name": "drawbox",
         "filter": "drawbox@{fn}",
@@ -190,6 +193,8 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "x",
+                "videoSpaceAxis":"x",
+                "videoSpaceSign":1,
                 "inc": 1,
                 "commandVar":['Box-X',[['drawbox@{fn}','x']]]
             },
@@ -199,6 +204,8 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
+                "videoSpaceAxis":"y",
+                "videoSpaceSign":1,
                 "inc": 1,
                 "commandVar":['Box-Y',[['drawbox@{fn}','y']]]
             },
@@ -246,7 +253,9 @@ selectableFilters = [
                 "type": "int",
                 "range": None,
                 "rectProp": "x",
-                "inc": 10,
+                "videoSpaceAxis":"x",
+                "videoSpaceSign":1,
+                "inc": 1,
                 "commandVar":['Crop-X',[['crop@{fn}','x']]]
             },
             {
@@ -255,7 +264,9 @@ selectableFilters = [
                 "type": "int",
                 "range": None,
                 "rectProp": "y",
-                "inc": 10,
+                "videoSpaceAxis":"y",
+                "videoSpaceSign":1,
+                "inc": 1,
                 "commandVar":['Crop-Y',[['crop@{fn}','y']]]
             },
             {
@@ -265,6 +276,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "w",
                 "inc": 10,
+                "commandVar":['Crop-W',[['crop@{fn}','w']]]
             },
             {
                 "n": "h",
@@ -273,6 +285,7 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "h",
                 "inc": 10,
+                "commandVar":['Crop-H',[['crop@{fn}','h']]]
             }
         ],
     },
@@ -357,7 +370,7 @@ selectableFilters = [
  },
 
  {
-        "name": "pad",
+        "name": "Pad - Pad Borders",
         "filter": "pad=x={left}:y={top}:w=iw+{left}+{right}:h=ih+{top}+{bottom}:color={color}",
         "params": [
             {
@@ -365,7 +378,6 @@ selectableFilters = [
                 "d": 10,
                 "type": "float",
                 "range": [0,None],
-                "rectProp": "x",
                 "inc": 1,
             },
             {
@@ -373,7 +385,6 @@ selectableFilters = [
                 "d": 10,
                 "type": "float",
                 "range": [0,None],
-                "rectProp": "y",
                 "inc": 1,
             },
             {
@@ -381,11 +392,56 @@ selectableFilters = [
                 "d": 10,
                 "type": "float",
                 "range": [0,None],
-                "rectProp": "w",
                 "inc": 1,
             },
             {
                 "n": "left",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "inc": 1,
+            },
+            {
+                "n": "color",
+                "d": "Black",
+                "type": "cycle",
+                "cycle": colours,
+            }
+        ],
+    },
+
+ {
+        "name": "Pad - Place Frame in Padding",
+        "filter": "pad@{fn}",
+        "params": [
+            {
+                "n": "x",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "rectProp": "x",
+                "inc": 1,
+                "commandVar":['Origin-X',[['pad@{fn}','x']]]
+            },
+            {
+                "n": "y",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "rectProp": "y",
+                "inc": 1,
+                "commandVar":['Origin-Y',[['pad@{fn}','y']]]
+            },
+            {
+                "n": "w",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
                 "d": 10,
                 "type": "float",
                 "range": [0,None],
@@ -400,7 +456,6 @@ selectableFilters = [
             }
         ],
     },
-
 
  {
         "name": "lagfun",
@@ -572,7 +627,13 @@ selectableFilters = [
     },
 
 
-
+{'desc': 'Scale the input using EPX algorithm.',
+ 'filter': 'epx',
+ 'kind': 'V->V',
+ 'name': 'epx',
+ 'params': [{'d': 3.0, 'inc': 1, 'n': 'n', 'range': [2.0, 3.0], 'type': 'int'}],
+ 'support': '.S.'}
+,
 
     {
         "name": "transText",
@@ -602,6 +663,57 @@ selectableFilters = [
         "name": "negate",        
         "filter": "negate",
     },
+
+
+    {
+        "name": "colortemperature",
+        "filter": "colortemperature",
+        "params": [
+            {"n": "temperature", "d": 6500 , "type": "int", "range": [1000, 40000], "inc": 100}, 
+            {"n": "mix", "d": 1, "type": "float", "range": [0, 1], "inc": 0.01}, 
+            {"n": "pl", "d": 0, "type": "float", "range": [0, 1], "inc": 0.01}, 
+
+        ],
+    },
+
+    {
+        "name": "colorcontrast",
+        "filter": "colorcontrast",
+        "params": [
+            {"n": "rc", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01}, 
+            {"n": "gm", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01},
+            {"n": "by", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01},
+            {"n": "rcw", "d": 0.0 , "type": "float", "range": [0, 1], "inc": 0.01}, 
+            {"n": "rcw", "d": 0.0 , "type": "float", "range": [0, 1], "inc": 0.01},
+            {"n": "rcw", "d": 0.0 , "type": "float", "range": [0, 1], "inc": 0.01},
+            {"n": "pl", "d": 0, "type": "float", "range": [0, 1], "inc": 0.01},
+        ],
+    },
+
+    {
+        "name": "colorcorrect",
+        "filter": "colorcorrect",
+        "params": [
+            {"n": "rl", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01}, 
+            {"n": "bl", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01},
+            {"n": "rh", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01},
+            {"n": "bh", "d": 0.0 , "type": "float", "range": [-1, 1], "inc": 0.01}, 
+
+            {"n": "saturation", "d": 1.0 , "type": "float", "range": [-3, 3], "inc": 0.01},
+            {
+                "n": "analyze",
+                "d": "manual",
+                "type": "cycle",
+                "cycle": ["manual","average","minmax","median"],
+            },
+
+        ],
+    },
+
+
+
+
+
 
 
 
@@ -1050,9 +1162,23 @@ selectableFilters = [
             {"n": "h", "d": 0.0, "type": "float", "range": None, "inc": 10},
 
 
-            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90],     "inc": 1     ,"commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
-            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90],   "inc": 1   ,"commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
-            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180],  "inc": 1  ,"commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
+            {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90],     "inc": 1,
+            "interpMode":"neighbour-relative",
+            "restrictedInterpModes":["neighbour-relative"],
+            "commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
+            
+            {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90],   "inc": 1,
+            "interpMode":"neighbour-relative",
+            "restrictedInterpModes":["neighbour-relative"],
+            "commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
+            
+            {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180],  "inc": 1,
+            "interpMode":"neighbour-relative",
+            "restrictedInterpModes":["neighbour-relative"],
+            "commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
+            
+
+
             {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180],   "inc": 1   ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
             {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
@@ -1842,6 +1968,17 @@ selectableFilters = [
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] },
         ],
     },
+
+
+
+
+
+#############################AUTOGEN###########################
+
+
+
+
+
 ]
 
 if __name__ == "__main__":

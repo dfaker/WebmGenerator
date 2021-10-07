@@ -30,8 +30,8 @@ class FilterSelectionController:
     playerFrameWid = self.ui.getPlayerFrameWid()
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=True,
-                          #log_handler=print,
-                          #loglevel='debug',
+                          log_handler=self.errorHandler,
+                          loglevel='error',
                           loop='inf',
                           mute=True,
                           autofit_larger='1280',
@@ -40,11 +40,30 @@ class FilterSelectionController:
 
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)
+
+    @self.player.event_callback('video-reconfig')
+    def videoReconfigCallback(event):
+        print(event)
+
     self.playerStart=0
     self.playerEnd=0
     self.player.speed=2
     self.currentlyPlayingFileName=None
     self.installedFonts = None
+
+  def errorHandler(self,kind,module,err):
+    print('a',kind,module,err)
+    if kind=='error' and 'Disabling filter filterStack' in err:
+      self.clearFilter()
+      print('Clearing filters interally')
+    print('##################################################')
+
+
+  def stepRelative(self,amount):
+    if amount>0:
+      self.player.command('frame-step')
+    else:
+      self.player.command('frame-back-step')
     
   def seekRelative(self,amount):
     self.player.command('seek',str(amount),'relative','exact')
@@ -70,6 +89,8 @@ class FilterSelectionController:
         self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000,value-s )
 
         self.ui.updateSeekLabel((value-s))
+
+    self.screenSpaceToVideoSpace(-1,-1)
 
   def gettempVideoFilePath(self):
     return self.globalOptions.get('tempFolder','tempVideoFiles')
@@ -117,7 +138,7 @@ class FilterSelectionController:
 
   def setFilter(self,filterExpStr):
     print(filterExpStr)
-    self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr))
+    print(self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr)))
 
   def play(self):
     self.player.pause=False
@@ -128,8 +149,14 @@ class FilterSelectionController:
   def stop(self):
     self.player.command('stop')
 
+  def setVideoVector(self,x1,y1,x2,y2):
+    self.player.command('script-message','screenspacetools_drawVector',x1,y1,x2,y2)
+
+
+  def addVideoRegMark(self,x,y,style='cross'):
+    self.player.command('script-message','screenspacetools_regMark',x,y,style)
+
   def setVideoRect(self,x,y,w,h):
-    print('script-message','screenspacetools_rect',x,y,w,h,'2f344bdd','69dbdbff',1,'inner')
     self.player.command('script-message','screenspacetools_rect',x,y,w,h,'2f344bdd','69dbdbff',1,'inner')
 
   def clearVideoRect(self):
@@ -141,22 +168,32 @@ class FilterSelectionController:
     return osd_w,osd_h
 
   def screenSpaceToVideoSpace(self,x,y):
-    vid_w = self.player.width
-    vid_h = self.player.height
+
+    #soruce video    
+    vid_w = self.player.video_out_params['dw']
+    vid_h = self.player.video_out_params['dh']
+
+    #displayframe
     osd_w = self.player.osd_width
     osd_h = self.player.osd_height
 
-    scale = min(osd_w/vid_w, osd_h/vid_h)
-    vid_sw, vid_sh = scale*vid_w, scale*vid_h
+    #paddingAroundFrame
+    osd_dim = self.player.osd_dimensions
+    osd_top = osd_dim['mt']
+    osd_bottom = osd_dim['mb']
+    osd_left = osd_dim['ml']
+    osd_right = osd_dim['mr']
 
-    off_x = math.floor((osd_w - vid_sw)/2)
-    off_y = math.floor((osd_h - vid_sh)/2)
+    boxw = osd_w-osd_right-osd_left
+    boxh = osd_h-osd_top-osd_bottom
 
-    vx1 = min(max(x, off_x), off_x + vid_sw)
-    vy1 = min(max(y, off_y), off_y + vid_sh)
-    vx1 = math.floor((vx1 - off_x) / scale)
-    vy1 = math.floor((vy1 - off_y) / scale)
-    return vx1,vy1
+    try:
+      return (x-osd_right)*(vid_w/boxw),(y-osd_top)*(vid_h/boxh)
+    except Exception as e:
+      print(e)
+      return 0,0
+
+    
 
   def getClipsWithFilters(self):
     response=[]

@@ -376,6 +376,7 @@ selectableFilters = [
 
 {
         "name": "fillborders",
+        "filter": "fillborders",
         "category":'Resizing and Cropping',
         "params": [
             {

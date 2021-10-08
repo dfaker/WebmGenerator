@@ -11,7 +11,7 @@ import json
 import threading
 import os
 
-RELEASE_NUMVER = 'v3.9.0'
+RELEASE_NUMVER = 'v3.8.0'
 
 class WebmGeneratorUi:
 
@@ -35,6 +35,11 @@ class WebmGeneratorUi:
 
     self.style.configure ("Bold.TLabel", font = ('Sans','10','bold'))
 
+  
+
+    self.style.configure("selectedCommandFrame.TFrame", 
+                          background='#a8e4a0',lightcolor='#a8e4a0',darkcolor='#a8e4a0')
+    self.style.configure("selectedCommandFrame.TLabel",background='#a8e4a0')
 
     self.style.configure("SelectedColumn.TFrame", 
                           background='blue',lightcolor='blue',darkcolor='blue')
@@ -48,6 +53,9 @@ class WebmGeneratorUi:
 
     self.style.configure("PlayerLabel.TLabel",background='#282828')
 
+    self.style.configure("filterDisabled.TButton",background='#e4a8a0',lightcolor='#e4a8a0',darkcolor='#e4a8a0')
+    self.style.configure("filterDisabled.TFrame",background='#e4a8a0',lightcolor='#e4a8a0',darkcolor='#e4a8a0')
+    self.style.configure("filterDisabled.TLabel",background='#e4a8a0',lightcolor='#e4a8a0',darkcolor='#e4a8a0')
 
     self.style.configure('subtle.TEntry', border=0, padding=(0,0),background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     self.style.configure('small.TButton', padding=0)

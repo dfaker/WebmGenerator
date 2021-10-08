@@ -3,459 +3,32 @@ import tkinter.ttk as ttk
 from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import copy
-import math
+
 import logging
-import threading
-import time
-from tkinter.filedialog import askopenfilename
+
+
+
 from tkinter import messagebox
+
 import json
+
 from .filterSpec import selectableFilters
 from .encodingUtils import cleanFilenameForFfmpeg
+from .filterValuePair import FilterValuePair
 
-import numpy as np
-from math import sqrt
+
+from math import atan2,pi
 
 from threading import Lock
 
+specCounter=0
+def getSpecificationNumber():
+  global specCounter
+  specCounter+=1
+  return specCounter
 
 
-def cubic_interp1d(x0, x, y):
-    """
-    Interpolate a 1-D function using cubic splines.
-      x0 : a float or an 1d-array
-      x : (N,) array_like
-          A 1-D array of real/complex values.
-      y : (N,) array_like
-          A 1-D array of real values. The length of y along the
-          interpolation axis must be equal to the length of x.
 
-    Implement a trick to generate at first step the cholesky matrice L of
-    the tridiagonal matrice A (thus L is a bidiagonal matrice that
-    can be solved in two distinct loops).
-
-    additional ref: www.math.uh.edu/~jingqiu/math4364/spline.pdf 
-    """
-    x = np.asfarray(x)
-    y = np.asfarray(y)
-
-    # remove non finite values
-    # indexes = np.isfinite(x)
-    # x = x[indexes]
-    # y = y[indexes]
-
-    # check if sorted
-    if np.any(np.diff(x) < 0):
-        indexes = np.argsort(x)
-        x = x[indexes]
-        y = y[indexes]
-
-    size = len(x)
-
-    xdiff = np.diff(x)
-    ydiff = np.diff(y)
-
-    # allocate buffer matrices
-    Li = np.empty(size)
-    Li_1 = np.empty(size-1)
-    z = np.empty(size)
-
-    # fill diagonals Li and Li-1 and solve [L][y] = [B]
-    Li[0] = sqrt(2*xdiff[0])
-    Li_1[0] = 0.0
-    B0 = 0.0 # natural boundary
-    z[0] = B0 / Li[0]
-
-    for i in range(1, size-1, 1):
-        Li_1[i] = xdiff[i-1] / Li[i-1]
-        Li[i] = sqrt(2*(xdiff[i-1]+xdiff[i]) - Li_1[i-1] * Li_1[i-1])
-        Bi = 6*(ydiff[i]/xdiff[i] - ydiff[i-1]/xdiff[i-1])
-        z[i] = (Bi - Li_1[i-1]*z[i-1])/Li[i]
-
-    i = size - 1
-    Li_1[i-1] = xdiff[-1] / Li[i-1]
-    Li[i] = sqrt(2*xdiff[-1] - Li_1[i-1] * Li_1[i-1])
-    Bi = 0.0 # natural boundary
-    z[i] = (Bi - Li_1[i-1]*z[i-1])/Li[i]
-
-    # solve [L.T][x] = [y]
-    i = size-1
-    z[i] = z[i] / Li[i]
-    for i in range(size-2, -1, -1):
-        z[i] = (z[i] - Li_1[i-1]*z[i+1])/Li[i]
-
-    # find index
-    index = x.searchsorted(x0)
-    np.clip(index, 1, size-1, index)
-
-    xi1, xi0 = x[index], x[index-1]
-    yi1, yi0 = y[index], y[index-1]
-    zi1, zi0 = z[index], z[index-1]
-    hi1 = xi1 - xi0
-
-    # calculate cubic
-    f0 = zi0/(6*hi1)*(xi1-x0)**3 + \
-         zi1/(6*hi1)*(x0-xi0)**3 + \
-         (yi1/hi1 - zi1*hi1/6)*(x0-xi0) + \
-         (yi0/hi1 - zi0*hi1/6)*(xi1-x0)
-    return f0
-
-
-
-def debounce(wait):
-    def decorator(fn):
-        def debounced(*args, **kwargs):
-            def call_it():
-                debounced._timer = None
-                debounced._last_call = time.time()
-                return fn(*args, **kwargs)
-
-            time_since_last_call = time.time() - debounced._last_call
-            if time_since_last_call >= wait:
-                return call_it()
-
-            if debounced._timer is None:
-                debounced._timer = threading.Timer(wait - time_since_last_call, call_it)
-                debounced._timer.start()
-        debounced._timer = None
-        debounced._last_call = 0
-        return debounced
-    return decorator
-
-class FilterValuePair(ttk.Frame):
-  def __init__(self, master,controller,param, *args, **kwargs):
-    ttk.Frame.__init__(self, master)
-    self.param = param
-    self.controller=controller
-    self.frameFilterValuePair = self
-    self.labelfilterValueLabel = ttk.Label(self.frameFilterValuePair)
-    self.fileCategory = param.get('fileCategory',None)
-    self.keyValues= self.param.get('keyValues',{})
-    self.valueVar = tk.StringVar()
-
-    self.videoSpaceAxis = self.param.get('videoSpaceAxis',None)
-    self.videoSpaceSign = self.param.get('videoSpaceSign',0)
-
-    self.n = self.param['n']
-    self.vmin,self.vmax = float('-inf'),float('inf')
-    if param.get('rectProp') is not None:
-      self.controller.registerRectProp(param.get('rectProp'),self.valueVar,param.get('type','int'))
-
-    self.commandVarSelected  = False
-    self.commandVarAvaliable = False 
-    self.commandVarEnabled   = False
-    self.commandvarName      = None
-    self.interpolationFactor = param.get('interpolationFactor',0)
-    self.commandInterpolationMode = param.get('interpMode','lerp')
-    self.interpolationModes = param.get('restrictedInterpModes',['lerp','lerp-smooth','lerp-smooth-2nd','lerp-sigmoid','lerp-smooth-inv','neighbour','neighbour-relative'])
-    self.interpVar = tk.StringVar()
-    self.interpVar.set(self.commandInterpolationMode)
-
-    self.interpVar.trace('w',self.interpolationChanged)
-
-    self.commandVarTarget = []
-    self.commandVarProperty = []
-
-    if len(param.get('commandVar',[]))==2:
-      self.commandVarAvaliable  = True 
-      self.commandVarEnabled    = False
-      self.commandVarSelected   = False
-      self.commandvarName, targetPairs = param['commandVar']
-
-      for cmdTarget,cmdProp in targetPairs:
-        self.commandVarTarget.append(cmdTarget)
-        self.commandVarProperty.append(cmdProp)
-
-
-      self.commandButton = ttk.Button(self.frameFilterValuePair)
-      self.commandButton.config(text='T', style='smallOnechar.TButton',command=self.toggleTimelineCmdMode) 
-      self.commandButton.pack(expand='false', side='left')
-
-      self.commandSelectButton = ttk.Button(self.frameFilterValuePair)
-      self.commandSelectButton.config(text='S',state='disabled', style='smallOnechar.TButton',command=self.toggleTimelineSelection) 
-      self.commandSelectButton.pack(expand='false', side='left')
-
-    self.entryInterpValue = ttk.Combobox(self.frameFilterValuePair)
-    self.entryInterpValue.config(textvariable=self.interpVar)
-    self.entryInterpValue.config(values=self.interpolationModes)
-
-
-    if param.get('desc','') != '':
-      self.labelfilterValueLabel.config(text=param['n']+' ('+param['desc']+')')
-    else:
-      self.labelfilterValueLabel.config(text=param['n'])
-
-    self.labelfilterValueLabel.pack(expand='true', fill='x', side='left')
-
-    if param['type'] == 'cycle':
-      self.selectableValues = param['cycle']
-      self.valueVar.set(param['d'])
-      self.entryFilterValueValue = ttk.Combobox(self.frameFilterValuePair)
-      self.entryFilterValueValue.config(textvariable=self.valueVar)
-      self.entryFilterValueValue.config(values=self.selectableValues)
-      #self.entryFilterValueValue.config(state='readonly')
-    elif param['type'] == 'float':
-      self.valueVar.set(param['d'])
-      if param.get('range') is None:
-        vmin,vmax = float('-inf'),float('inf')
-      else:
-        vmin,vmax = param['range']
-        if vmin is None:
-          vmin = float('-inf')
-        if vmax is None:
-          vmax = float('inf')
-      self.vmin,self.vmax = vmin,vmax
-      self.entryFilterValueValue = ttk.Spinbox(self.frameFilterValuePair)
-      self.entryFilterValueValue.config(textvariable=self.valueVar)
-      self.entryFilterValueValue.config(from_=vmin)
-      self.entryFilterValueValue.config(to=vmax)
-      self.entryFilterValueValue.config(increment=param['inc'])
-    elif param['type'] == 'string' or param['type'] == 'bareString':
-      self.valueVar.set(param['d'])
-      self.entryFilterValueValue = ttk.Entry(self.frameFilterValuePair)
-      self.entryFilterValueValue.config(textvariable=self.valueVar)
-    elif param['type'] == 'int':
-      self.entryFilterValueValue = ttk.Spinbox(self.frameFilterValuePair)
-      self.entryFilterValueValue.config(textvariable=self.valueVar)
-      self.valueVar.set(param['d'])
-      if param.get('range') is None:
-        vmin,vmax = float('-inf'),float('inf')
-      else:
-        vmin,vmax = param['range']
-        if vmin is None:
-          vmin = float('-inf')
-        if vmax is None:
-          vmax = float('inf')
-      self.vmin,self.vmax = vmin,vmax
-      self.entryFilterValueValue.config(from_=vmin)
-      self.entryFilterValueValue.config(to=vmax)
-      self.entryFilterValueValue.config(increment=param['inc'])
-    elif param['type'] == 'file':
-      self.valueVar.set(param['d'])
-      self.entryFilterValueValue = ttk.Button(self.frameFilterValuePair)
-      self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]),command=self.selectFile)
-    else:
-      logging.error("Unhandled param {}".format(str(param)))
-
-
-    self.entryFilterValueValue.pack(side='right')
-
-    self.frameFilterValuePair.config(height='200', width='200')
-    self.frameFilterValuePair.pack(expand='true', fill='x', side='top')
-    self.valueVar.trace("w", self.valueUpdated)
-
-    if self.commandVarAvaliable:
-      
-      self.commandVarSelected = self.param.get('commandVarSelected',False)
-      if self.commandVarSelected:
-        self.commandSelectButton.config(style='smallOnecharenabled.TButton')
-        self.entryInterpValue['state']='disabled'
-        self.entryFilterValueValue.pack_forget()
-        self.entryInterpValue.pack(side='right')
-      else:
-        self.commandSelectButton.config(style='smallOnechar.TButton') 
-        self.entryInterpValue['state']='normal'
-        self.entryInterpValue.pack_forget()
-        self.entryFilterValueValue.pack(side='right')
-
-      self.commandVarEnabled  = self.param.get('commandVarEnabled',False)
-      if self.commandVarEnabled:
-        self.commandButton.config(style='smallOnecharenabled.TButton') 
-        self.commandSelectButton['state']='normal'
-      else:
-        self.commandButton.config(style='smallOnechar.TButton')
-        self.commandSelectButton['state']='disabled' 
-
-  def interpolationChanged(self,*args):
-    newmode = self.interpVar.get()
-    if newmode in self.interpolationModes:
-      self.commandInterpolationMode = newmode
-      self.controller.recaculateFilters()
-    else:
-      self.interpVar.set(self.commandInterpolationMode)
-
-  def addKeyValue(self,seconds):
-    try:      
-      kvs = self.getKeyValues()
-
-      lower = [(k,v) for k,v,_ in kvs if k<seconds][-1:]
-      upper = [(k,v) for k,v,_ in sorted(kvs,reverse=True) if k>seconds][-1:]
-
-      if len(lower)==1 and len(upper)==1:
-        neighbourRange    = upper[0][1]-lower[0][1]
-        neighbourDuration = upper[0][0]-lower[0][0]
-        percent = (seconds-lower[0][0])/neighbourDuration
-
-        self.keyValues[seconds]= self.convertKeyValueToType(  lower[0][1]+(neighbourRange*percent) )
-      
-      elif len(lower)==1:
-        self.keyValues[seconds]= self.convertKeyValueToType( lower[0][1] )
-      elif len(upper)==1:
-        self.keyValues[seconds]= self.convertKeyValueToType( upper[0][1] )
-      else:
-        self.keyValues[seconds]= self.convertKeyValueToType(self.valueVar.get())
-
-    except Exception as e:
-      self.keyValues[seconds]= self.convertKeyValueToType(self.param['d'])
-      print(e)
-
-    if self.commandInterpolationMode == 'neighbour-relative' and self.isInitialTS(seconds):
-      self.valueVar.set(self.keyValues[seconds])
-
-    self.controller.recaculateFilters()
-
-  def removeKeyValue(self,seconds):
-    del self.keyValues[seconds]
-    self.controller.recaculateFilters()
-
-  def isInitialTS(self,seconds):
-    if len(self.keyValues)>0:
-      return sorted(self.keyValues.keys())[0]==seconds
-    else:
-      return False
-
-  def incrementKeyValue(self,seconds,valueOffset,useIncrementMultiplier=True,isAsoluteValue=False):
-    if seconds in self.keyValues:
-      
-      if isAsoluteValue:
-        newval = (valueOffset*(self.param['inc'] if useIncrementMultiplier else 1))
-      else:
-        newval = self.keyValues[seconds]+(valueOffset*(self.param['inc'] if useIncrementMultiplier else 1))
-
-      newval = max(min(newval,self.vmax),self.vmin)
-
-      self.keyValues[seconds] = self.convertKeyValueToType(newval)
-
-      if self.commandInterpolationMode == 'neighbour-relative' and self.isInitialTS(seconds):
-        self.valueVar.set(self.keyValues[seconds])
-
-      self.valueUpdated()
-
-  def convertKeyValueToType(self,value):
-    if self.param['type'] == 'int':
-      return int(value)
-    elif self.param['type'] == 'float':
-      return float(value)
-    return value
-
-  def getKeyValues(self,interpolation=True):
-    
-    sortedKVs = sorted(list(self.keyValues.items()).copy())
-    try:
-      if self.interpolationFactor>0 and interpolation and len(sortedKVs)>1:
-
-        x = np.array([x[0] for x in sortedKVs])
-        y = np.array([x[1] for x in sortedKVs])
-
-        x_new = np.linspace(x[0], x[-1] , int((x[-1]-x[0])*int(self.interpolationFactor)) )
-        x_new = np.append(x_new,list(self.keyValues.keys()))
-
-        y_new  = cubic_interp1d(x_new, x, y)
-
-        oldKVS = [(k,v,True) for k,v in sortedKVs]
-        newKVS = [(k,v,False) for k,v, in zip(x_new,y_new) if k not in self.keyValues]
-
-        return sorted( newKVS + oldKVS )
-      else:
-        return [(a,b,True) for a,b, in sortedKVs]
-    except Exception as e:
-      print(e)
-    return [(a,b,True) for a,b, in sortedKVs]
-
-  def deactivateTimeLineSection(self):
-    if self.commandVarAvaliable:
-      self.commandVarSelected   = False
-      self.entryInterpValue['state']='disabled'
-      self.commandSelectButton.config(style='smallOnechar.TButton') 
-
-  def toggleTimelineSelection(self):
-    if self.commandVarAvaliable:
-      if self.commandVarSelected:
-        self.commandVarSelected   = False
-        self.commandSelectButton.config(style='smallOnechar.TButton') 
-        self.entryInterpValue['state']='disabled'
-        self.controller.setActiveTimeLineValue(None)
-      else:
-        self.commandVarSelected   = True
-        self.commandSelectButton.config(style='smallOnecharenabled.TButton')
-        self.entryInterpValue['state']='normal'
-        self.controller.setActiveTimeLineValue(self)
-
-  def toggleTimelineCmdMode(self):
-    if self.commandVarAvaliable:
-      if self.commandVarEnabled:
-        
-        self.commandVarEnabled  = False
-        self.commandVarSelected =False
-        self.entryInterpValue['state']='disabled'
-        
-        self.entryInterpValue.pack_forget()
-        self.entryFilterValueValue.pack(side='right')
-
-        self.commandButton.config(style='smallOnechar.TButton') 
-        self.commandSelectButton.config(style='smallOnechar.TButton') 
-        self.commandSelectButton['state']='disabled'
-      else:
-        
-        self.commandVarEnabled   = True
-        self.commandButton.config(style='smallOnecharenabled.TButton')
-        self.entryInterpValue['state']='disabled'
-
-        self.entryFilterValueValue.pack_forget()
-        self.entryInterpValue.pack(side='right')
-
-        self.commandSelectButton['state']='normal'
-        self.toggleTimelineSelection()
-      self.controller.recaculateFilters()
-
-  def selectFile(self):
-    initialdir='.'
-    filetypes=(('All files', '*.*'),)
-
-    if self.fileCategory=='font':
-      initialdir=self.controller.getGlobalOptions().get('defaultFontFolder','.')
-    elif self.fileCategory=='subtitle':
-      initialdir=self.controller.getGlobalOptions().get('defaultSubtitleFolder','.')
-      filetypes=(('Subtitle', '*.srt'),)
-    elif self.fileCategory=='image':
-      initialdir=self.controller.getGlobalOptions().get('defaultImageFolder','.')
-    elif self.fileCategory=='video':
-      initialdir=self.controller.getGlobalOptions().get('defaultVideoFolder','.')
-    print(initialdir,filetypes)
-    fn = askopenfilename(initialdir=initialdir,filetypes=filetypes)
-    if fn is None or len(fn)==0:
-      self.entryFilterValueValue.config(text='Select file')
-    else:
-      cleanPath = os.path.abspath(fn).replace('\\','/').replace(':','\\:')
-      writeBackPath = os.path.abspath(os.path.dirname(fn))
-
-      if self.fileCategory=='font':
-        self.controller.getGlobalOptions()['defaultFontFolder'] = writeBackPath
-      elif self.fileCategory=='subtitle':
-        self.controller.getGlobalOptions()['defaultSubtitleFolder'] = writeBackPath
-      elif self.fileCategory=='image':
-        self.controller.getGlobalOptions()['defaultImageFolder'] = writeBackPath
-      elif self.fileCategory=='video':
-        self.controller.getGlobalOptions()['defaultVideoFolder'] = writeBackPath
-
-      self.valueVar.set(cleanPath)
-      print(self.valueVar.get())
-      self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
-
-  def getValuePair(self):
-    if self.param['type'] == 'string':
-      val = self.valueVar.get()
-      if not val.endswith("'"):
-        val=val+"'"
-      if not val.startswith("'"):
-        val="'"+val
-      return (self.param['n'],"{}".format(val))
-    else:
-      return (self.param['n'],self.valueVar.get())
-
-  @debounce(0.1)
-  def valueUpdated(self,*args):
-    self.controller.recaculateFilters()
 
 class FilterSpecification(ttk.Frame):
   def __init__(self, master,controller,spec, filterId, *args, **kwargs):
@@ -466,7 +39,7 @@ class FilterSpecification(ttk.Frame):
     self.controller=controller
     self.frameFilterDetailsWidget = self
 
-
+    self.autoNumber = getSpecificationNumber()
 
     self.timelineReinit = self.spec.get('timelineReinit',False)
     
@@ -474,10 +47,14 @@ class FilterSpecification(ttk.Frame):
     self.labelFilterName.config(text=spec['name'],style="Bold.TLabel")
     self.labelFilterName.pack(side='top')
 
+    self.labelFilterDesc = None
     if spec.get('desc','') != '':
       self.labelFilterDesc = ttk.Label(self.frameFilterDetailsWidget)
       self.labelFilterDesc.config(text=spec.get('desc',''),wraplength=290,justify=tk.CENTER)
       self.labelFilterDesc.pack(side='top',fill="x",expand="true")
+
+
+
 
 
 
@@ -492,10 +69,10 @@ class FilterSpecification(ttk.Frame):
     self.buttonfilterActionToggleEnabled.config(command=self.toggleEnabled)
     self.buttonfilterActionToggleEnabled.pack(expand='true', fill='x', side='left')
     self.buttonFilterActionDownStack = ttk.Button(self.frameFilterActions)
-    self.buttonFilterActionDownStack.config(text='▼', width='2')
+    self.buttonFilterActionDownStack.config(text='▼', width='2', command=self.moveFilterUpStack)
     self.buttonFilterActionDownStack.pack(side='left')
     self.buttonFilterActionUpStack = ttk.Button(self.frameFilterActions)
-    self.buttonFilterActionUpStack.config(text='▲', width='2')
+    self.buttonFilterActionUpStack.config(text='▲', width='2', command=self.moveFilterDownStack)
     self.buttonFilterActionUpStack.pack(side='left')
     self.frameFilterActions.config(height='200', width='200')
     self.frameFilterActions.pack(expand='true', fill='x', side='top')
@@ -511,7 +88,7 @@ class FilterSpecification(ttk.Frame):
     if self.timelineSupport:
 
       def timelineStartChanged(*args):
-        self.recaculateFilters()
+        self.recaculateFilters('timelineStartChanged')
         try:
           ts = float(self.timelineStart.get())
           self.controller.seekToTimelinePoint(ts)
@@ -519,7 +96,7 @@ class FilterSpecification(ttk.Frame):
           pass  
 
       def timelineEndChanged(*args):
-        self.recaculateFilters()
+        self.recaculateFilters('timelineEndChanged')
         try:
           ts = float(self.timelineEnd.get())
           self.controller.seekToTimelinePoint(ts)
@@ -584,10 +161,22 @@ class FilterSpecification(ttk.Frame):
     self.frameFilterConfigFrame.pack(expand='true', fill='x', side='top')
     self.frameFilterDetailsWidget.config(height='200', padding='2', relief='groove', width='200')
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
+    self.packself()
+
+  def packself(self):
+    self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
+
 
   def setActiveTimeLineValue(self,activeValuePair):
     self.controller.setActiveTimeLineValue(activeValuePair)
+    self.controller.canvasValueTimeline.focus_set()
   
+  def moveFilterUpStack(self):
+    self.controller.shiftFilterOnStack(self,1)
+
+  def moveFilterDownStack(self):
+    self.controller.shiftFilterOnStack(self,-1)
+
   def hasKeyValueCommandsSet(self):
     for fvp in self.filterValuePairs:
       if len(fvp.getKeyValues())>0:
@@ -655,13 +244,28 @@ class FilterSpecification(ttk.Frame):
   def registerRectProp(self,prop,var,var_type):
     self.rectProps[prop]=(var,var_type)
 
+
+
   def toggleEnabled(self):
     self.enabled = not self.enabled
     if self.enabled:
-      self.buttonfilterActionToggleEnabled.config(text='Enabled')
+      self.buttonfilterActionToggleEnabled.config(text='Enabled',style='TButton')
+      self.frameFilterDetailsWidget.config(style='TFrame')
+
+      self.labelFilterName.config(style='TLabel')
+      if self.labelFilterDesc is not None:
+        self.labelFilterDesc.config(style='TLabel')
+
+      
     else:
-      self.buttonfilterActionToggleEnabled.config(text='Disabled')
-    self.controller.recaculateFilters()
+      self.buttonfilterActionToggleEnabled.config(text='Disabled',style='filterDisabled.TButton')
+      self.frameFilterDetailsWidget.config(style='filterDisabled.TFrame')
+      self.labelFilterName.config(style='filterDisabled.TLabel')
+      if self.labelFilterDesc is not None:
+        self.labelFilterDesc.config(style='filterDisabled.TLabel')
+
+
+    self.controller.recaculateFilters('toggleEnabled')
 
   def getFilterExpression(self,preview=False,encodingStage=False):
     if not self.enabled:
@@ -676,7 +280,9 @@ class FilterSpecification(ttk.Frame):
     
 
     filerExprams=[]
-    i=id(self)
+    
+    i=self.autoNumber
+
     values = dict( x.getValuePair() for x in self.filterValuePairs )
     formatDict={}
 
@@ -717,19 +323,21 @@ class FilterSpecification(ttk.Frame):
       tsStart = None
       tsEnd   = None
 
-      try:
-        tsStart = float(self.timelineStart.get())
-        if preview:
-          tsStart = self.controller.normaliseTimestamp(tsStart)
-      except Exception as e:
-        print(e)
+      if self.timelineStart.get() != '':
+        try:
+          tsStart = float(self.timelineStart.get())
+          if preview:
+            tsStart = self.controller.normaliseTimestamp(tsStart)
+        except Exception as e:
+          print('timelineSupport tsStart Exception',e)
 
-      try:
-        tsEnd = float(self.timelineEnd.get())
-        if preview:
-          tsEnd = self.controller.normaliseTimestamp(tsEnd)
-      except Exception as e:
-        print(e)
+      if self.timelineEnd.get() != '':
+        try:
+          tsEnd = float(self.timelineEnd.get())
+          if preview:
+            tsEnd = self.controller.normaliseTimestamp(tsEnd)
+        except Exception as e:
+          print('timelineSupport tsEnd Exception',e)
 
       timelineExpression = ''
       if tsStart is not None and tsEnd is not None:
@@ -751,16 +359,15 @@ class FilterSpecification(ttk.Frame):
     for fvp in self.filterValuePairs:
       if fvp.commandVarEnabled:
         for varTarget in fvp.commandVarTarget:  
-          varTarget = varTarget.format(fn=id(self))
+          varTarget = varTarget.format(fn=self.autoNumber)
           for varProperty  in  fvp.commandVarProperty:
             for timeStamp,commandValue,_ in fvp.getKeyValues():
               commands.setdefault(timeStamp,[]).append((varTarget,varProperty,commandValue,fvp.commandInterpolationMode))
 
     return commands
 
-  def recaculateFilters(self):
-    print('recaculateFilters')
-    self.controller.recaculateFilters()
+  def recaculateFilters(self,caller):
+    self.controller.recaculateFilters('recaculateFilters-FilterSpecification'+caller)
 
   def remove(self):
     for fvp in self.filterValuePairs:
@@ -826,8 +433,9 @@ class FilterSelectionUi(ttk.Frame):
     self.buttonAddFilter.pack(side='right')
     self.selectedFilter=tk.StringVar()
     self.selectableFilters = sorted([x['name'] for x in selectableFilters],key=lambda x:x.upper())
-    self.selectedFilter.set('crop')   
 
+
+    self.selectedFilter.set('crop')
     self.comboboxFilterSelection = ttk.OptionMenu(self.framefilterAdditionFrame,self.selectedFilter,self.selectedFilter.get(),*self.selectableFilters)
     self.comboboxFilterSelection.pack(expand='true', fill='both', side='left')
     self.framefilterAdditionFrame.config(height='200', width='200')
@@ -838,6 +446,19 @@ class FilterSelectionUi(ttk.Frame):
     self.filterSpecificationCount=0
     self.scrolledframeFilterContainer.configure(usemousewheel=False)
     self.scrolledframeFilterContainer.pack(expand='true', fill='both', side='top')
+
+    self.filterMenu = tk.Menu(self, tearoff=0)
+    self.submenuMap = {}
+
+    for fltx in sorted(selectableFilters,key=lambda x:x.get('name','').upper()):
+      submenu = self.submenuMap.setdefault( fltx.get('category','General'), tk.Menu(self.filterMenu, tearoff=0) )
+      submenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))
+
+    for k,v in self.submenuMap.items():
+      self.filterMenu.add_cascade(label=k,  menu=v)
+
+    self.comboboxFilterSelection.bind("<Button-3>",          self.showFilterMenu)
+
 
     self.labelframeFilterBrowserFrame.config(height='200', text='Filtering', width='200')
     self.labelframeFilterBrowserFrame.pack(anchor='w', expand='false', fill='y', side='left')
@@ -929,11 +550,10 @@ class FilterSelectionUi(ttk.Frame):
     self.video_canvas_popup_menu.add_command(label="Add Vertical Line Registration Mark"    ,command=lambda :self.addRegistrationMark("vline"))
     self.video_canvas_popup_menu.add_command(label="Add Horizontal Line Registration Mark"  ,command=lambda :self.addRegistrationMark("hline"))
     self.video_canvas_popup_menu.add_separator()
-    self.video_canvas_popup_menu.add_command(label="Add Target Vector Registration Mark"  ,command=lambda :self.addRegistrationMark("tvec"))
+    self.video_canvas_popup_menu.add_command(label="Set target position for X and Y warping."  ,command=lambda :self.addRegistrationMark("tvec"))
     self.video_canvas_popup_menu.add_separator()
     self.video_canvas_popup_menu.add_command(label="Clear Registration Marks"               ,command=lambda :self.addRegistrationMark("clear"))
                                 
-
 
     self.framePlayerFrame.bind("<Button-1>",          self.videomousePress)
     self.framePlayerFrame.bind("<ButtonRelease-1>",   self.videomousePress)
@@ -942,6 +562,8 @@ class FilterSelectionUi(ttk.Frame):
     self.lastVideoRCX=0
     self.lastVideoRCY=0
     self.framePlayerFrame.bind("<Button-3>",          self.showRegMarkMenu)
+    self.framePlayerFrame.bind("<MouseWheel>",         self.videoMouseScroll)
+
 
     self.frameFilterSelectionFrame.config(height='200', width='200')
     self.frameFilterSelectionFrame.pack(expand='true', fill='both', side='top')
@@ -949,6 +571,7 @@ class FilterSelectionUi(ttk.Frame):
     self.timeline_canvas_popup_menu = tk.Menu(self, tearoff=0)
     self.timeline_canvas_popup_menu.add_command(label="Add key value",command=self.addKeyValue)
     self.timeline_canvas_popup_menu.add_command(label="Remove key value",command=self.removeKeyValue)
+    self.timeline_canvas_popup_menu.add_command(label="Clear all key values",command=self.clearKeyValues)
 
     self.frameValueTimelineFrame = ttk.Frame(self.frameFilterFrame)
     
@@ -1003,37 +626,81 @@ class FilterSelectionUi(ttk.Frame):
     self.timeline_canvas_last_right_click_x=0
 
     self.sourceTargetVectorSet=False
-    self.sourceTargetScreenVectorStart = [0,0]
-    self.sourceTargetScreenVectorEnd   = [0,0]
+    self.sourceRegistrationMark = [0,0]
+
+    self.vrPanStartSet=False
+    self.vrPanLastStart=[0,0]
+
+    self.AngleDragStartSet=False
+    self.sourceAngleDragStart   = [0,0]
 
     self.timelineModificationLock = Lock()
+    self.filterFailed=0
+    self.timelineFileIndex=0    
 
-  def applyVectorOffset(self,x1,y1,x2,y2,isAsoluteValue=False):
+  def filterFailure(self):
+    print('SET FILTER FAILED')
+    self.filterFailed=30
+    self.refreshtimeLineForNewClip()
+
+  def applyVectorOffset(self,x1,y1,x2,y2,isAsoluteValue=False,isAngle=False):
     if self.activeCommandFilterValuePair is not None:
       horizD = x2-x1
       vertD  = y2-y1
 
-      if isAsoluteValue:
-        if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
-          self.incrementAtCurrentPlaybackPosition(x1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True) 
-        elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
-          self.incrementAtCurrentPlaybackPosition(y1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True)
+      if isAngle:
+        if self.activeCommandFilterValuePair.videoSpaceAxis ==  'deg':
+          angle = 0
+          angle = -atan2(y2-y1, x2-x1)
+
+          snapPositions = 4
+          minSnap=float('inf')
+          snapOffset=0
+          for i in range(snapPositions):
+            snapAngle=(i*((2*pi)/snapPositions))
+            if abs(angle-snapAngle)<minSnap:
+              minSnap=abs(angle-snapAngle)
+              snapOffset=snapAngle
+          angle=angle-snapOffset
+
+          self.incrementAtCurrentPlaybackPosition(angle*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
       else:
-        if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
-          self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True) 
-        elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
-          self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+        if isAsoluteValue:
+          if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
+            self.incrementAtCurrentPlaybackPosition(x1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True) 
+          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
+            self.incrementAtCurrentPlaybackPosition(y1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True)
+        else:
+          if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
+            self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True) 
+          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
+            self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+
+          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'pitch' and abs(vertD) > 0.1:
+            print('pitch',vertD)
+            self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'yaw' and abs(horizD) > 0.1:
+            self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+            print('pitch',horizD)
+
 
 
   def addRegistrationMark(self,markType):
     if markType=="tvec":
       vx,vy = self.controller.screenSpaceToVideoSpace(self.lastVideoRCX,self.lastVideoRCY)
-      self.sourceTargetScreenVectorStart = [self.lastVideoRCX,self.lastVideoRCY]
+      self.sourceRegistrationMark = [self.lastVideoRCX,self.lastVideoRCY]
       self.controller.addVideoRegMark(0,0,"clear")
       self.sourceTargetVectorSet=True
     if markType=="clear":
       self.sourceTargetVectorSet=False
     self.controller.addVideoRegMark(self.lastVideoRCX,self.lastVideoRCY,markType)
+
+
+  def showFilterMenu(self,e):
+    self.lastVideoRCX=e.x
+    self.lastVideoRCY=e.y
+    self.filterMenu.tk_popup(e.x_root,e.y_root)
+    
 
 
   def showRegMarkMenu(self,e):
@@ -1044,7 +711,7 @@ class FilterSelectionUi(ttk.Frame):
   def keyboardI(self,e):
     if self.activeCommandFilterValuePair is not None:
       self.activeCommandFilterValuePair.interpolationFactor = (self.activeCommandFilterValuePair.interpolationFactor+1)%24
-      self.recaculateFilters()
+      self.recaculateFilters('keyboardI')
       self.refreshtimeLineForNewClip()
 
   def keyboardD(self,e):
@@ -1060,6 +727,12 @@ class FilterSelectionUi(ttk.Frame):
           self.controller.seekToPercent(tx/self.canvasValueTimeline.winfo_width())
           self.refreshtimeLineForNewClip()
           break
+
+  def videoMouseScroll(self,e):
+    if e.delta>0:
+      self.controller.stepRelative(1)
+    else:
+      self.controller.stepRelative(-1)
 
   def keyboardUp(self,e):
     self.incrementAtCurrentPlaybackPosition(1,e)
@@ -1083,9 +756,7 @@ class FilterSelectionUi(ttk.Frame):
         if posX-5<tx<posX+5:
           existingTS=timeStamp
       if existingTS is None:
-        self.activeCommandFilterValuePair.addKeyValue(posSeconds)
-        if applyImmediate:
-          self.activeCommandFilterValuePair.incrementKeyValue(posSeconds,increment,useIncrementMultiplier=useIncrementMultiplier,isAsoluteValue=isAsoluteValue)
+        self.activeCommandFilterValuePair.addKeyValue(posSeconds,value=increment,useIncrementMultiplier=useIncrementMultiplier,isAsoluteValue=isAsoluteValue)
       else:
         self.activeCommandFilterValuePair.incrementKeyValue(posSeconds,increment*10 if ctrl else increment,useIncrementMultiplier=useIncrementMultiplier,isAsoluteValue=isAsoluteValue)
         
@@ -1099,9 +770,10 @@ class FilterSelectionUi(ttk.Frame):
 
 
   def keyboardN(self,e):
+    self.controller.pause()
     points = [0,self.controller.getClipDuration()]
     points.extend([x[0] for x in self.activeCommandFilterValuePair.getKeyValues() if x[2]])
-    points = sorted(points)
+    points = sorted(points,reverse=True)
     mids = sorted([ (abs(x-y),(x+y)/2) for x,y in zip(points[1:], points)],reverse=True)[0][1]
     self.seekToTimelinePoint(mids)
     self.refreshtimeLineForNewClip()
@@ -1130,6 +802,10 @@ class FilterSelectionUi(ttk.Frame):
   def keyboardSpace(self,e):
     self.controller.togglePause()
 
+  def clearKeyValues(self):
+    if self.activeCommandFilterValuePair is not None:
+      self.activeCommandFilterValuePair.clearKeyValues()   
+      self.refreshtimeLineForNewClip() 
 
   def addKeyValue(self):
     secondsClicked = (self.timeline_canvas_last_right_click_x/self.canvasValueTimeline.winfo_width())*self.controller.getClipDuration()
@@ -1195,11 +871,19 @@ class FilterSelectionUi(ttk.Frame):
     tx = seconds/self.controller.getClipDuration()
     tx = tx*self.canvasValueTimeline.winfo_width()
     self.canvasValueTimeline.coords(self.timelineSeekHandle, tx, 20, tx, 175)  
+    if self.filterFailed > 0:
+      self.filterFailed -= 1      
+      print('filterFailed',self.filterFailed)
+      self.canvasValueTimeline.create_rectangle(0,(self.canvasValueTimeline.winfo_height()/2)-10,self.canvasValueTimeline.winfo_width(),(self.canvasValueTimeline.winfo_height()/2)+10,fill="#ff0000",tags='filterFailed')
+      self.canvasValueTimeline.create_text(self.canvasValueTimeline.winfo_width()/2, self.canvasValueTimeline.winfo_height()/2,text="Filter Failed!",fill="white",tags='filterFailed') 
+    else:
+      self.canvasValueTimeline.delete('filterFailed')
 
   def reconfigure(self,e):
     self.refreshtimeLineForNewClip()
 
   def refreshtimeLineForNewClip(self):
+
 
     self.canvasValueTimeline.delete('ticks')
     duration      = self.controller.getClipDuration()
@@ -1219,20 +903,22 @@ class FilterSelectionUi(ttk.Frame):
         tm = self.canvasValueTimeline.create_line(tx, 0, tx, 5,fill="white",tags='ticks') 
         tm = self.canvasValueTimeline.create_text(tx, 10,text="{:0.2f}".format(tickStart),fill="white",tags='ticks') 
     
+
+
     self.canvasValueTimeline.delete('ActiveFilterName')
     self.canvasValueTimeline.delete('KeyValuePoints')
-    if self.activeCommandFilterValuePair is not None:
+    
 
+    if self.activeCommandFilterValuePair is not None:
       self.canvasValueTimeline.create_rectangle(0,130,self.canvasValueTimeline.winfo_width(),150,fill="#26414a",tags='ActiveFilterName')
-      self.canvasValueTimeline.create_text(2, 148, text="{} subdiv:{}".format(self.activeCommandFilterValuePair.commandvarName,self.activeCommandFilterValuePair.interpolationFactor),fill="white",tags='ActiveFilterName',anchor=tk.SW)
 
       valMax,valMin = float('-inf'),float('inf')
 
-      if self.activeCommandFilterValuePair.vmin not in (float('-inf'),float('inf'),None):
-        valMin=self.activeCommandFilterValuePair.vmin
+      #if self.activeCommandFilterValuePair.vmin not in (float('-inf'),float('inf'),None):
+      #  valMin=self.activeCommandFilterValuePair.vmin
 
-      if self.activeCommandFilterValuePair.vmax not in (float('-inf'),float('inf'),None):
-        valMax=self.activeCommandFilterValuePair.vmax
+      #if self.activeCommandFilterValuePair.vmax not in (float('-inf'),float('inf'),None):
+      #  valMax=self.activeCommandFilterValuePair.vmax
 
       for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues():
         valMax=max(valMax,value)
@@ -1256,7 +942,9 @@ class FilterSelectionUi(ttk.Frame):
       effectiveHeight = self.canvasValueTimeline.winfo_height()-20
       heightOffset    = 10
 
-      for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues():
+
+      keyList= self.activeCommandFilterValuePair.getKeyValues()
+      for timeStamp,value,real in keyList:
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
         ty = heightOffset+(effectiveHeight-(((value-valMin)/valRange)*effectiveHeight))
 
@@ -1271,11 +959,28 @@ class FilterSelectionUi(ttk.Frame):
           self.canvasValueTimeline.create_oval(tx-2, ty-2, tx+2, ty+1,fill="white",outline=None,tags='KeyValuePoints')
 
         lastX,lastY=tx,ty
-        if real:
+
+      posSeconds = self.controller.getCurrentPlaybackPosition()
+      for timeStamp,value,real in sorted(keyList,key=lambda lent:abs(lent[0]-posSeconds),reverse=True):
+       if real:
+          tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
+          ty = heightOffset+(effectiveHeight-(((value-valMin)/valRange)*effectiveHeight))
+          bbox = self.canvasValueTimeline.bbox(self.canvasValueTimeline.create_text(tx, 140,text="{:0.2f}".format(value),fill="black",tags='ticks'))
+          self.canvasValueTimeline.create_rectangle(bbox, outline="#69bfdb", fill="#375e6b",tags='ticks')
           self.canvasValueTimeline.create_text(tx, 140,text="{:0.2f}".format(value),fill="white",tags='ticks')
 
       if lastX is not None and lastY is not None:
         self.canvasValueTimeline.create_line(lastX, lastY, self.canvasValueTimeline.winfo_width(), ty,fill="#db6986",tags='KeyValuePoints')
+
+      modeText='No Mode'
+      if self.activeCommandFilterValuePair.videoSpaceAxis in ('yaw','pitch'):
+        modeText='[VR Look Mode - Ctrl-Click once on video to control head {} with mouse.]'.format(self.activeCommandFilterValuePair.videoSpaceAxis)
+      elif self.activeCommandFilterValuePair.videoSpaceAxis=='deg':
+        modeText='[Angle Snap Mode - Ctrl click on video to difine a rotation angle, snapped to 90 degrees.]'
+      elif self.sourceTargetVectorSet:
+        modeText='[XY Warp Mode - Ctrl click a point on the video to warp it to the target position.]'
+
+      self.canvasValueTimeline.create_text(2, 128, text="{} {} subdiv:{}".format(self.activeCommandFilterValuePair.commandvarName,modeText,self.activeCommandFilterValuePair.interpolationFactor),fill="white",tags='ActiveFilterName',anchor=tk.SW)
 
 
   def showTemplateMenuPopup(self):
@@ -1305,7 +1010,7 @@ class FilterSelectionUi(ttk.Frame):
       newFilter.rectProps.get('w').set(int(w))
       newFilter.rectProps.get('h').set(int(h))
     self.scrolledframeFilterContainer.reposition()
-    self.recaculateFilters()
+    self.recaculateFilters('autoCropCallback')
 
   def importJson(self,jsonOverride=None):
     if jsonOverride is None:
@@ -1327,7 +1032,7 @@ class FilterSelectionUi(ttk.Frame):
         self.filterSpecifications.append( 
           FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
         )
-      self.recaculateFilters()
+      self.recaculateFilters('importJson')
 
   def setVolume(self,value):
     self.controller.setVolume(value)
@@ -1392,23 +1097,78 @@ class FilterSelectionUi(ttk.Frame):
         pass
 
   def videomousePress(self,e):
-
+      shift = (e.state & 0x1) != 0
       ctrl  = (e.state & 0x4) != 0
-
       
+      if self.vrPanStartSet:
+        if e.type == tk.EventType.Motion:
+          x1,y1 = self.controller.screenSpaceToVideoSpace(int((self.playerContainerFrame.winfo_rootx())+(self.playerContainerFrame.winfo_width()/2)),
+                                                          int((self.playerContainerFrame.winfo_y()+self.playerContainerFrame.winfo_rooty())+(self.playerContainerFrame.winfo_height()/2)) )
+          x2,y2 = self.controller.screenSpaceToVideoSpace(self.playerContainerFrame.winfo_pointerx(),self.playerContainerFrame.winfo_pointery())
+          self.applyVectorOffset(x1,y1,
+                                 x2,y2,isAsoluteValue=False,isAngle=False)
+          self.vrPanStartSet=False
+          self.event_generate('<Motion>', warp=True, 
+                                          x=int(self.playerContainerFrame.winfo_x()+(self.playerContainerFrame.winfo_width()/2)),
+                                          y=int(self.playerContainerFrame.winfo_y()+(self.playerContainerFrame.winfo_height()/2))  
+
+                                          )
+          
+          self.vrPanStartSet=True
+
+
+        if e.type == tk.EventType.ButtonPress:
+          self.playerContainerFrame.config(cursor="crosshair")
+          self.controller.setVideoVector(0,0,0,0)
+          self.vrPanStartSet=False
+
+      elif self.AngleDragStartSet:
+        if e.type == tk.EventType.Motion:
+          self.controller.setVideoVector(self.sourceAngleDragStart[0],self.sourceAngleDragStart[1],e.x,e.y)
+
+        elif e.type == tk.EventType.ButtonRelease:
+          x1,y1 = self.controller.screenSpaceToVideoSpace(self.sourceAngleDragStart[0],self.sourceAngleDragStart[1])
+          x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
+          self.applyVectorOffset(x1,y1,
+                                 x2,y2,isAsoluteValue=True,isAngle=True)
+          self.controller.setVideoVector(0,0,0,0)
+          self.AngleDragStartSet=False
+          self.playerContainerFrame.config(cursor="crosshair")
+          if ctrl and shift:
+            self.controller.stepRelative(1)
+          elif ctrl:
+            self.keyboardN(e)
       if self.sourceTargetVectorSet:
         if e.type == tk.EventType.ButtonPress:
-          x1,y1 = self.controller.screenSpaceToVideoSpace(self.sourceTargetScreenVectorStart[0],self.sourceTargetScreenVectorStart[1])
+          x1,y1 = self.controller.screenSpaceToVideoSpace(self.sourceRegistrationMark[0],self.sourceRegistrationMark[1])
           x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
           self.applyVectorOffset(x1,y1,
                                  x2,y2,isAsoluteValue=False)
-          if ctrl:
+          if ctrl and shift:
+            self.controller.stepRelative(1)
+          elif ctrl:
             self.keyboardN(e)
-
       elif ctrl:
-        if e.type == tk.EventType.ButtonPress:
+
+        if self.activeCommandFilterValuePair is not None and self.activeCommandFilterValuePair.videoSpaceAxis in ('yaw','pitch') and e.type == tk.EventType.ButtonPress:
+          
+          self.playerContainerFrame.configure(cursor='diamond_cross')
+          self.event_generate('<Motion>', warp=True, 
+                                          x=int(self.playerContainerFrame.winfo_x()+(self.playerContainerFrame.winfo_width()/2)),
+                                          y=int(self.playerContainerFrame.winfo_y()+(self.playerContainerFrame.winfo_height()/2))  
+
+                                          )
+          self.vrPanStartSet=True
+
+        if self.activeCommandFilterValuePair is not None and self.activeCommandFilterValuePair.videoSpaceAxis=='deg' and e.type == tk.EventType.ButtonPress:
+          self.playerContainerFrame.config(cursor="none")
+          self.AngleDragStartSet=True
+          self.sourceAngleDragStart   = [e.x,e.y]
+
+        elif e.type == tk.EventType.ButtonPress:
           x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
           self.applyVectorOffset(x2,y2,0,0,isAsoluteValue=True)        
+      
       else:
 
         if e.type == tk.EventType.ButtonPress:        
@@ -1464,7 +1224,7 @@ class FilterSelectionUi(ttk.Frame):
     if newFilter is not None and self.videoMouseRect[2] is not None:
       newFilter.populateRectPropValues()
     self.scrolledframeFilterContainer.reposition()
-    self.recaculateFilters()
+    self.recaculateFilters('addSelectedfilter')
 
   def removeFilter(self,filterId):
     for filter in self.filterSpecifications:
@@ -1472,14 +1232,14 @@ class FilterSelectionUi(ttk.Frame):
         filter.destroy()
     self.filterSpecifications = [x for x in self.filterSpecifications if x.filterId != filterId]
     self.scrolledframeFilterContainer.reposition()
-    self.recaculateFilters()
+    self.recaculateFilters('removeFilter')
 
   def clearFilters(self):
     for filter in self.filterSpecifications:
       filter.destroy()
     self.filterSpecifications=[]
     self.scrolledframeFilterContainer.reposition()
-    self.recaculateFilters()
+    self.recaculateFilters('clearFilters')
 
   def updateSeekLabel(self,value):
     self.volumeLabel.config(text='{:0.2f}s'.format(value))
@@ -1491,11 +1251,11 @@ class FilterSelectionUi(ttk.Frame):
     return self.controller.normaliseTimestamp(ts)
 
 
-  def recaculateFilters(self):
+  def recaculateFilters(self,caller):
     filterexpPreview=[]
     filterExpReal=[]
     filterExpEncodingStage=[]
-
+    print('recaculateFilters',caller)
     commandSet = {}
 
     for filter in self.filterSpecifications:
@@ -1535,16 +1295,16 @@ class FilterSelectionUi(ttk.Frame):
             commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},sin(TI*(PI/2)))';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
 
           elif interpolationMode == 'lerp-smooth':
-            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f}, (TI * TI * (3 - 2 * TI)) )';{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, lv=lastValue, cv=cmdValue)
-            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f}, (TI * TI * (3 - 2 * TI)) )';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
+            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},(TI*TI*(3-2*TI)))';{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, lv=lastValue, cv=cmdValue)
+            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},(TI*TI*(3-2*TI)))';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
 
           elif interpolationMode == 'lerp-smooth-inv':
-            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f}, (0.5 - sin(asin(1.0 - 2.0 * TI) / 3.0)) )';{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, lv=lastValue, cv=cmdValue)
-            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f}, (0.5 - sin(asin(1.0 - 2.0 * TI) / 3.0)) )';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
+            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},(0.5-sin(asin(1.0-2.0*TI)/3.0)))';{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, lv=lastValue, cv=cmdValue)
+            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},(0.5-sin(asin(1.0-2.0*TI)/3.0)))';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
                    
           elif interpolationMode == 'lerp-smooth-2nd':
-            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f}, (TI * TI * TI * (TI * (TI * 6 - 15) + 10)) )';{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, lv=lastValue, cv=cmdValue)
-            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f}, (TI * TI * TI * (TI * (TI * 6 - 15) + 10)) )';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
+            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},(TI*TI*TI*(TI*(TI*6-15)+10)))';{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, lv=lastValue, cv=cmdValue)
+            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},(TI*TI*TI*(TI*(TI*6-15)+10)))';{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
 
           elif interpolationMode == 'neighbour':
             commandStr_preview += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, cv=cmdValue)
@@ -1575,17 +1335,26 @@ class FilterSelectionUi(ttk.Frame):
     filterExpStrReal = ','.join(filterExpReal)
     filterExpEncodingStage = ','.join(filterExpEncodingStage)
 
+    currentClip=0
+    try:
+      if self.currentSubclipIndex is not None:
+        currentClip = self.subClipOrder[self.currentSubclipIndex]
+    except Exception as e:
+      print(e)
+      return
+
+    preLockClip = self.getCurrentClip()
     with self.timelineModificationLock:
       if len(commandSet)>0:
 
-
         if useFile:
-          commandFilename_preview = os.path.join( self.controller.gettempVideoFilePath(), "commands_{}_preview.txt".format(id(self)) )
+          self.timelineFileIndex = (self.timelineFileIndex+1)%5
+          commandFilename_preview = os.path.join( self.controller.gettempVideoFilePath(), "commands_{}_{}_{}_preview.txt".format(currentClip,self.timelineFileIndex,id(self)) )
           with open(commandFilename_preview,'w') as cmdf:
             cmdf.write(commandStr_preview)
           commandFilename_preview_clean = cleanFilenameForFfmpeg(os.path.abspath(commandFilename_preview)).replace('\\','/').replace(':','\\:') 
 
-          commandFilename_real = os.path.join( self.controller.gettempVideoFilePath(), "commands_{}_real.txt".format(id(self)) )
+          commandFilename_real = os.path.join( self.controller.gettempVideoFilePath(), "commands_{}_{}_real.txt".format(currentClip,id(self)) )
           with open(commandFilename_real,'w') as cmdf:
             cmdf.write(commandStr_real)
           commandFilename_real_clean  = cleanFilenameForFfmpeg(os.path.abspath(commandFilename_real)).replace('\\','/').replace(':','\\:')
@@ -1601,13 +1370,16 @@ class FilterSelectionUi(ttk.Frame):
 
         filterExpStrPreview = sndCmdFilter_preview+filterExpStrPreview
         filterExpStrReal    = sndCmdFilter_real+filterExpStrReal
-        
-      if len(filterexpPreview)==0:
+      
+
+      postLockClip = self.getCurrentClip()
+
+      if preLockClip != postLockClip or len(filterexpPreview)==0:
         self.controller.clearFilter()
       else:
         self.controller.setFilter(filterExpStrPreview)
 
-    if self.currentSubclipIndex is not None:
+    if self.currentSubclipIndex is not None and preLockClip == postLockClip:
       currentClip = self.getCurrentClip()
       if currentClip is not None:
         currentClip['filters'] = self.convertFilterstoSpecDefaults()
@@ -1669,6 +1441,7 @@ class FilterSelectionUi(ttk.Frame):
       self.buttonCopyFilters['state'] = buttonState
       self.buttonAddFilter['state'] = buttonState
       self.comboboxFilterSelection['state'] = buttonState
+      self.refreshtimeLineForNewClip()
 
       self.controller.play()
     else:
@@ -1695,7 +1468,10 @@ class FilterSelectionUi(ttk.Frame):
 
     tempSeclectedRid=None
     if self.currentSubclipIndex is not None:
-      tempSeclectedRid = self.subClipOrder[self.currentSubclipIndex]
+      try:
+        tempSeclectedRid = self.subClipOrder[self.currentSubclipIndex]
+      except Exception as e:
+        return
 
     self.subClipOrder = [k for k,v in sorted( self.subclips.items(), key=lambda x:(x[1]['filename'],x[1]['start']) ) ]
 
@@ -1725,13 +1501,17 @@ class FilterSelectionUi(ttk.Frame):
 
   def goToNextSubclip(self):
     if self.currentSubclipIndex is not None:
+      self.activeCommandFilterValuePair=None
       self.setSubclipIndex( (self.currentSubclipIndex+1)%len(self.subClipOrder) )
       self.updateFilterDisplay()
+      self.refreshtimeLineForNewClip()
 
   def goToPreviousSubclip(self):
     if self.currentSubclipIndex is not None:
+      self.activeCommandFilterValuePair=None
       self.setSubclipIndex( (self.currentSubclipIndex-1)%len(self.subClipOrder) )
       self.updateFilterDisplay()
+      self.refreshtimeLineForNewClip()
 
   def copyfilters(self):
     if self.currentSubclipIndex is not None:
@@ -1744,7 +1524,7 @@ class FilterSelectionUi(ttk.Frame):
         tempfilterClipboard = self.convertFilterstoSpecDefaults()
         for rid in self.subClipOrder:
           self.subclips[rid]['filters'] = copy.deepcopy(tempfilterClipboard)
-        self.recaculateFilters()
+        self.recaculateFilters('overrideFilters')
 
         currentClip = self.getCurrentClip()
         if currentClip is not None:
@@ -1756,6 +1536,25 @@ class FilterSelectionUi(ttk.Frame):
             clip['filters']           = filters
             clip['filterexp']         = filterexp
             clip['filterexpEncStage'] = filterexpEncStage        
+
+  def shiftFilterOnStack(self,filter,direction):
+    filterInd = self.filterSpecifications.index(filter)
+    print(filterInd,filterInd+direction,len(self.filterSpecifications))
+    
+    if filterInd+direction>=0 and (filterInd+direction)<=(len(self.filterSpecifications)-1):
+
+      if direction==1:
+        self.filterSpecifications.insert(filterInd+direction,self.filterSpecifications.pop(filterInd))
+      elif direction==-1:
+        self.filterSpecifications.insert(filterInd+direction,self.filterSpecifications.pop(filterInd))
+
+      for flt in self.filterSpecifications:
+        flt.pack_forget()
+      for flt in self.filterSpecifications:
+        flt.packself()
+
+      self.recaculateFilters("shiftFilterOnStack")
+
 
   def pasteFilters(self):
     if self.currentSubclipIndex is not None:
@@ -1771,11 +1570,11 @@ class FilterSelectionUi(ttk.Frame):
         self.filterSpecifications.append( 
           FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
         )
-      self.recaculateFilters()
+      self.recaculateFilters('pasteFilters')
 
 
   def setSubclipIndex(self,newIndex):
-    self.recaculateFilters()
+    self.recaculateFilters('setSubclipIndex')
     if self.currentSubclipIndex is not None and len(self.subClipOrder)>0:
       try:
         rid = self.subClipOrder[self.currentSubclipIndex]
@@ -1783,6 +1582,10 @@ class FilterSelectionUi(ttk.Frame):
       except Exception as e:
         print(e,"Can't update old subclip by index")
 
+    if self.currentSubclipIndex != newIndex:
+      self.canvasValueTimeline.coords(self.timelineSeekHandle, -1, 20, -1, 175) 
+      self.activeCommandFilterValuePair=None
+    
     self.currentSubclipIndex = newIndex
     for f in self.filterSpecifications:
       f.destroy()
@@ -1795,7 +1598,7 @@ class FilterSelectionUi(ttk.Frame):
         self.filterSpecifications.append( 
           FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
         )
-      self.recaculateFilters()
+      self.recaculateFilters('setSubclipIndex')
 
   def updateFilterDisplay(self):
     currentClip = self.getCurrentClip()

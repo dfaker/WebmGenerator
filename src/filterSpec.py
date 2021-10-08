@@ -180,11 +180,10 @@ fonts = [
 selectableFilters = [
 
 
-
-
     {
         "name": "drawbox",
         "filter": "drawbox@{fn}",
+        "category":'Overlays, text and masks',
         "timelineSupport":True,
         "params": [
             {
@@ -244,6 +243,7 @@ selectableFilters = [
 
   {
         "name": "crop",
+        "category":'Resizing and Cropping',
         "desc":"Crops the video frame in a from point x,y out to a width and height w and h",
         "filter": "crop@{fn}",
         "params": [
@@ -292,12 +292,14 @@ selectableFilters = [
 {
   
         "name": "vhsconv",
+        "category":'Filter Effects',
         "filter": "convolution='-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2'",
 
 },
 
     {
         "name": "scaleDown",
+        "category":'Resizing and Cropping',
         "filter": "scale=w=iw*{factor}:h=ih*{factor}:sws_flags=area",
         "params": [
             {"n": "factor","desc":"Reduction factor", "d": 1.0, "type": "float", "range": [0, 1], "inc": 0.005}
@@ -307,6 +309,7 @@ selectableFilters = [
 
  {
         "name": "mpdecimate",
+        "category":'Frame Rate and Decimation',
         "filter":"mpdecimate",
         "params": [
             {
@@ -343,6 +346,7 @@ selectableFilters = [
 
  {
         "name": "decimate",
+        "category":'Frame Rate and Decimation',
         "filter":"decimate",
         "params": [
             {
@@ -369,8 +373,51 @@ selectableFilters = [
         ]
  },
 
+
+{
+        "name": "fillborders",
+        "category":'Resizing and Cropping',
+        "params": [
+            {
+                "n": "left",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "inc": 1,
+            },
+            {
+                "n": "right",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "inc": 1,
+            },
+            {
+                "n": "top",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "inc": 1,
+            },
+            {
+                "n": "bottom",
+                "d": 10,
+                "type": "float",
+                "range": [0,None],
+                "inc": 1,
+            },
+            {
+                "n": "mode",
+                "d": "smear",
+                "type": "cycle",
+                "cycle": ["smear","mirror","fixed","reflect","wrap","fade","margins"],
+            }
+        ],
+    },
+
  {
         "name": "Pad - Pad Borders",
+        "category":'Resizing and Cropping',
         "filter": "pad=x={left}:y={top}:w=iw+{left}+{right}:h=ih+{top}+{bottom}:color={color}",
         "params": [
             {
@@ -412,6 +459,7 @@ selectableFilters = [
 
  {
         "name": "Pad - Place Frame in Padding",
+        "category":'Resizing and Cropping',
         "filter": "pad@{fn}",
         "params": [
             {
@@ -480,6 +528,7 @@ selectableFilters = [
 
     {
       "name":"perspective",
+      "category":'Resizing and Cropping',
       "filter":"pad=iw+4:ih+4:2:2:{bgColor},perspective=x0={x0}:y0={y0}:x1={x1}:y1={y1}:x2={x2}:y2={y2}:x3={x3}:y3={y3}:interpolation={interpolation}:sense={sense}",
       "params": [
             {"n": "x0","d": 0,"type": "float","range": None,"inc": 1,  "rectProp": "px0"},
@@ -628,6 +677,7 @@ selectableFilters = [
 
 
 {'desc': 'Scale the input using EPX algorithm.',
+ "category":'Resizing and Cropping',
  'filter': 'epx',
  'kind': 'V->V',
  'name': 'epx',
@@ -1158,16 +1208,20 @@ selectableFilters = [
                 "type": "cycle",
                 "cycle": ["sbs", "2d", "tb"],
             },
-            {"n": "w", "d": 0.0, "type": "float", "range": None, "inc": 10},
-            {"n": "h", "d": 0.0, "type": "float", "range": None, "inc": 10},
+            {"n": "w", "d": 100, "type": "float", "range": None, "inc": 10},
+            {"n": "h", "d": 100, "type": "float", "range": None, "inc": 10},
 
 
             {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90],     "inc": 1,
-            "interpMode":"neighbour-relative",
-            "restrictedInterpModes":["neighbour-relative"],
-            "commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
+             "videoSpaceAxis":"yaw",
+             "videoSpaceSign":1,
+             "interpMode":"neighbour-relative",
+             "restrictedInterpModes":["neighbour-relative"],
+             "commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
             
             {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90],   "inc": 1,
+             "videoSpaceAxis":"pitch",
+             "videoSpaceSign":-0.5,
             "interpMode":"neighbour-relative",
             "restrictedInterpModes":["neighbour-relative"],
             "commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
@@ -1183,9 +1237,9 @@ selectableFilters = [
             {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
                 "n": "interp",
-                "d": "cubic",
+                "d": "nearest",
                 "type": "cycle",
-                "cycle": ["linear", "lagrange9", "cubic", "spline16", "gaussian",],
+                "cycle": ["nearest","linear", "lagrange9", "cubic", "spline16", "gaussian","mitchell"],
             },
         ],
     },
@@ -1444,6 +1498,7 @@ selectableFilters = [
 
     {
         "name": "Scale",
+        "category":'Resizing and Cropping',
         "filter": "scale",
         "params": [
             {
@@ -1727,7 +1782,9 @@ selectableFilters = [
                 "type": "float",
                 "range": [-6.28319, 6.28319],
                 "inc": 0.0174533,
-                "commandVar":['Overlay-Rotation',[['rotate@{fn}','a']]]
+                "videoSpaceAxis":"deg",
+                "videoSpaceSign":1,
+                "commandVar":['Rotation',[['rotate@{fn}','a']]]
             },
         ],
     },
@@ -1968,12 +2025,6 @@ selectableFilters = [
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] },
         ],
     },
-
-
-
-
-
-#############################AUTOGEN###########################
 
 
 

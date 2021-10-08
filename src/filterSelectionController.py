@@ -34,16 +34,13 @@ class FilterSelectionController:
                           loglevel='error',
                           loop='inf',
                           mute=True,
+                          cursor_autohide="always",
                           autofit_larger='1280',
                           audio_file_auto='no',
                           sub_auto='no')
 
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)
-
-    @self.player.event_callback('video-reconfig')
-    def videoReconfigCallback(event):
-        print(event)
 
     self.playerStart=0
     self.playerEnd=0
@@ -55,9 +52,7 @@ class FilterSelectionController:
     print('a',kind,module,err)
     if kind=='error' and 'Disabling filter filterStack' in err:
       self.clearFilter()
-      print('Clearing filters interally')
-    print('##################################################')
-
+      self.ui.filterFailure()
 
   def stepRelative(self,amount):
     if amount>0:
@@ -87,7 +82,6 @@ class FilterSelectionController:
       s,e = float(self.playerStart),float(self.playerEnd)
       if s<=value<=e:
         self.ui.updateSeekPositionThousands( ((value-s)/(e-s))*1000,value-s )
-
         self.ui.updateSeekLabel((value-s))
 
     self.screenSpaceToVideoSpace(-1,-1)
@@ -104,8 +98,11 @@ class FilterSelectionController:
     self.player.command('seek',str(s+(d*pc)),'absolute','exact')
 
   def getCurrentPlaybackPosition(self):
-    s = float(self.playerStart)
-    return self.player.time_pos-s
+    try:
+      s = float(self.playerStart)
+      return self.player.time_pos-s
+    except Exception as e:
+      return 0
 
   def normaliseTimestamp(self,ts):
     fts = float(ts)
@@ -129,7 +126,6 @@ class FilterSelectionController:
     except Exception as e:
       print(e)
 
-
   def getAllSubclips(self):
     return self.videoManager.getAllClips()
 
@@ -137,8 +133,7 @@ class FilterSelectionController:
     self.player.command('async','vf', 'del',    "@filterStack")
 
   def setFilter(self,filterExpStr):
-    print(filterExpStr)
-    print(self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr)))
+    self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr))
 
   def play(self):
     self.player.pause=False
@@ -168,26 +163,26 @@ class FilterSelectionController:
     return osd_w,osd_h
 
   def screenSpaceToVideoSpace(self,x,y):
-
-    #soruce video    
-    vid_w = self.player.video_out_params['dw']
-    vid_h = self.player.video_out_params['dh']
-
-    #displayframe
-    osd_w = self.player.osd_width
-    osd_h = self.player.osd_height
-
-    #paddingAroundFrame
-    osd_dim = self.player.osd_dimensions
-    osd_top = osd_dim['mt']
-    osd_bottom = osd_dim['mb']
-    osd_left = osd_dim['ml']
-    osd_right = osd_dim['mr']
-
-    boxw = osd_w-osd_right-osd_left
-    boxh = osd_h-osd_top-osd_bottom
-
     try:
+      #soruce video    
+      vid_w = self.player.video_out_params['dw']
+      vid_h = self.player.video_out_params['dh']
+
+      #displayframe
+      osd_w = self.player.osd_width
+      osd_h = self.player.osd_height
+
+      #paddingAroundFrame
+      osd_dim = self.player.osd_dimensions
+      osd_top = osd_dim['mt']
+      osd_bottom = osd_dim['mb']
+      osd_left = osd_dim['ml']
+      osd_right = osd_dim['mr']
+
+      boxw = osd_w-osd_right-osd_left
+      boxh = osd_h-osd_top-osd_bottom
+
+    
       return (x-osd_right)*(vid_w/boxw),(y-osd_top)*(vid_h/boxh)
     except Exception as e:
       print(e)

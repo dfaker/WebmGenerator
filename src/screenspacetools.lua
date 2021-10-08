@@ -45,13 +45,21 @@ function screenspacetools_drawVector(x1,y1,x2,y2)
         ass:append(ass_set_color(3, "69dbdbff"))
         ass:append("{\\bord0.5}")
 
+        ass:move_to(tonumber(x1-4), tonumber(y1-4))
+        ass:rect_cw(x1-4,y1-4,x1+4,y1+4)
+
         ass:move_to(tonumber(x1), tonumber(y1))
         ass:line_to(tonumber(x2), tonumber(y2))
+
+        ass:move_to(tonumber(x2-10), tonumber(y2))
+        ass:line_to(tonumber(x2+10), tonumber(y2))
+
+        ass:move_to(tonumber(x2), tonumber(y2-10))
+        ass:line_to(tonumber(x2), tonumber(y2+10))
 
         ass:draw_stop()
         ass:pos(0,0)
         vectorAss = ass.text;
-    
 
     end
 
@@ -85,12 +93,18 @@ function screenspacetools_regMark(x,y,type)
         ass:append(ass_set_color(1, "00000000"))
         if v["t"] == "tvec" then
             ass:append(ass_set_color(3, "ff0000ff"))
-            ass:append("{\\bord1}")
+            ass:append("{\\bord0.2}")
         else
             ass:append(ass_set_color(3, "69dbdbff"))
             ass:append("{\\bord0.5}")
         end
         
+        if v["t"] == "cross" or v["t"] == "tvec" then
+            ass:move_to(tonumber(0),     tonumber(v["py"]))
+            ass:line_to(tonumber(osd_w), tonumber(v["py"]))
+            ass:move_to(tonumber(v["px"]),    tonumber(0))
+            ass:line_to(tonumber(v["px"]),    tonumber(osd_h))
+        end
 
         if v["t"] == "cross" or v["t"] == "tvec" then
             ass:move_to(tonumber(v["px"]-15), tonumber(v["py"]))
@@ -98,6 +112,8 @@ function screenspacetools_regMark(x,y,type)
             ass:move_to(tonumber(v["px"]),    tonumber(v["py"]-15))
             ass:line_to(tonumber(v["px"]),    tonumber(v["py"]+15))
         end
+
+
         if v["t"] == "vline" then
             ass:move_to(tonumber(v["px"]), tonumber(0))
             ass:line_to(tonumber(v["px"]), tonumber(osd_h))

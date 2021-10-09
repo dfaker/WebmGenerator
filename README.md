@@ -147,6 +147,7 @@ On lower timeline bar:
 - `Ctrl+Left`, `Ctrl+Right` - Seeks bakwards and between the midpoints of th gaps of already defined keyframes.
 - `UpArrow`,`DownArrow` - Add a new keyframe at the current time to the selected property, if a keyframe exists at this time increment or decrement it.
 - `N` - Jump to the middle of the largest gap between the currently placed keyframes.
+- `I` - Add spline interpolated inbetween keyframes, adding more interpolated points to your keyframes and smoothing motion, between 0-23 interpolated keyframes will be added for each second of video, tap the key to increase the count and then cycle back to zero.
 
 When an angle property is slected on the video player:
 - `Ctrl+Shift+LeftClick+Drag Mouse` - Draw a line, when the mouse is released a keyframe will be created to rotate the video so that line aligns with the closest 90Degree angle, making the line you've just drawn horiontal or vertical.

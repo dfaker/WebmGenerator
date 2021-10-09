@@ -137,6 +137,27 @@ The example shows an overlay filer in use, both the `x` and `y` cordindate param
 
 Right clicking on the lower timeline displays a menu allowing addition or removal of Keyframed valyes, scrolling the mousewheel will increment or decrement an existing keyframed value and seek to the keyframed time in the clip - it's recomended to reduce the Preview speed during this operation for more accurate adjustments.
 
+### Advanced controls for rotation and alignment- Timeline Filtering
+
+Some pretty experimental controls for the timeline at the moment, we'll no doubt refine them:
+
+On lower timeline bar:
+- `Left`, `Right` - Seeks bakwards and forwards single frames.
+- `Shift+Left`, `Shift+Right` - Seeks bakwards and forwards in jumps.
+- `Ctrl+Left`, `Ctrl+Right` - Seeks bakwards and between the midpoints of th gaps of already defined keyframes.
+- `UpArrow`,`DownArrow` - Add a new keyframe at the current time to the selected property, if a keyframe exists at this time increment or decrement it.
+- `N` - Jump to the middle of the largest gap between the currently placed keyframes.
+
+When an angle property is slected on the video player:
+- `Ctrl+Shift+LeftClick+Drag Mouse` - Draw a line, when the mouse is released a keyframe will be created to rotate the video so that line aligns with the closest 90Degree angle, making the line you've just drawn horiontal or vertical.
+- `Ctrl+LeftClick+Drag Mouse` - As above but after adding the rotated video keyframe, Jump to the middle of the largest gap between the currently placed keyframes. 
+
+When an X or Y property is slected on the video player:
+- Right click on the video and select `Set target position for X and Y warping` this will be the place that further points are slifted to align with.
+- `LeftClick` on the video and the point you clicked will be incrmented aginst the current keyframe, effectively shifting that point to match the X or Y position of the red target set in `Set target position for X and Y warping`
+- `Ctrl+LeftClick` - As above but after adding the shifted X or Y video keyframe, Jump to the middle of the largest gap between the currently placed keyframes. 
+
+
 ### Join - Sequencing and Transitions
 
 ![Sequencing and Transitions](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/05%20-%20Sequencing%20and%20Transitions.png)

@@ -1,6 +1,31 @@
 [
  {
   "support": "...",
+  "category": "Resizing, Padding and Cropping",
+  "name": "Set SAR",
+  "filter": "setsar",
+  "kind": "V->V",
+  "desc": "Set the pixel sample aspect ratio.",
+  "params": [
+      {"n": "sar", "d": 1, "type": "float","range": [null,null],"inc": 0.01}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Resizing, Padding and Cropping",
+  "name": "Set DAR",
+  "filter": "setdar",
+  "kind": "V->V",
+  "desc": "Set the frame display aspect ratio.",
+  "params": [
+      {"n": "dar", "d": 1, "type": "float","range": [null,null],"inc": 0.01}
+  ]
+ },
+
+
+ {
+  "support": "...",
   "category": "Colour manipulation",
   "name": "Alpha extract",
   "filter": "alphaextract",

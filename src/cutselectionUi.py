@@ -464,14 +464,17 @@ class CutselectionUi(ttk.Frame):
       if containerfps is None:
         containerfps = 0
       try:
-        self.labelVideoSummaryVar.set("{} - {}s - {}x{} - {:2f} ({:2f})fps {} {}".format(filename,
+        self.labelVideoSummaryVar.set("{} - {}s - {}x{} - {:3.3f} ({:3.3f})fps {} {} [SAR {:2.2f} DAR {:2.2f}]".format(filename,
                                                                                     duration,
                                                                                     videoparams.get('w',0),
                                                                                     videoparams.get('h',0),
                                                                                     containerfps,
                                                                                     estimatedvffps,
                                                                                     videoparams.get('pixelformat',''),
-                                                                                    videoparams.get('hw-pixelformat','') ))
+                                                                                    videoparams.get('hw-pixelformat',''),
+                                                                                    videoparams.get('par',1),
+                                                                                    videoparams.get('aspect',1)
+                                                                                     ))
       except:
         self.labelVideoSummaryVar.set("")
 

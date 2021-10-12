@@ -28,7 +28,6 @@ fonts = [
 
 selectableFilters = [
 
-
     {
         "name": "Draw Box",
         "filter": "drawbox@{fn}",
@@ -87,7 +86,7 @@ selectableFilters = [
                 "d": "Black",
                 "type": "cycle",
                 "cycle": '@COLOURS',
-            },
+            }
         ],
     },
 
@@ -1545,12 +1544,12 @@ selectableFilters = [
     },
 
     {
-        "name": "Draw text",
+        "name":"Draw text",
         "desc":"Draw text on top of video frames using libfreetype library.",
         "category":['Basic','Overlay, text and masks'],
         "timelineSupport":True,
         "timelineReinit":True,
-        "filter": "setsar=1/1,drawtext@{fn}",
+        "filter": "drawtext@{fn}",
         "params": [
             {"n": "text", "d": "Text", "type": "string"},
             {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file", "fileCategory":"font"},

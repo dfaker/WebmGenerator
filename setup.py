@@ -6,10 +6,18 @@ PYTHON_INSTALL_DIR = os.path.dirname(os.path.dirname(os.__file__))
 os.environ['TCL_LIBRARY'] = os.path.join(PYTHON_INSTALL_DIR, 'tcl', 'tcl8.6')
 os.environ['TK_LIBRARY'] = os.path.join(PYTHON_INSTALL_DIR, 'tcl', 'tk8.6')
 
-
 # Dependencies are automatically detected, but it might need
 # fine tuning.
 
+buildVersion = None
+
+for line in open(os.path.join('src','webmGeneratorUi.py') ).readlines():
+  if 'RELEASE_NUMVER = ' in line:
+     buildVersion = line.split("'")[1]
+if buildVersion is not None and 'v' in buildVersion:
+  print('buildVersion=',buildVersion)
+else:
+  print('buildVersion invalid=',buildVersion)
 
 buildOptions = dict(packages = ["os"], 
                     include_files = [
@@ -107,3 +115,17 @@ import os
 import glob
 for tkinterfolder in glob.glob(os.path.join('build','*','lib','Tkinter')):
   os.rename(tkinterfolder,tkinterfolder.replace('Tkinter','tkinter'))
+
+
+for existingArch in glob.glob(os.path.join('build','*','*.zip')):
+  os.remove(existingArch)
+
+for buildPath in glob.glob(os.path.join('build','*')):
+  os.chdir(buildPath)
+  finalZipLocation = os.path.join('.','WebmGenerator-win64-{}.zip'.format(buildVersion))
+  print(finalZipLocation)
+  print(buildPath)
+  z7cmd = '"C:\\Program Files\\7-Zip\\7z" a -mm=Deflate -mfb=258 -mpass=15 -r {} {}'.format(finalZipLocation,'.')
+  print(z7cmd)
+  os.system(z7cmd)
+  break

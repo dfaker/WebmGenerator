@@ -1,0 +1,2003 @@
+[
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Alpha extract",
+  "filter": "alphaextract",
+  "kind": "V->N",
+  "desc": "Extract an alpha channel as a grayscale image component.",
+  "params": []
+ },
+
+ {
+  "support": "...",
+  "category": "Overlay, text and masks",
+  "name": "Ass subtitles",
+  "filter": "ass",
+  "kind": "V->V",
+  "desc": "Render ASS subtitles onto input video using the libass library.",
+  "params": [
+   {"n": "filename", "d": 0, "type": "file"},
+   {"n": "original_size", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "fontsdir", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "alpha", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "shaping", "d": "auto", "type": "cycle","cycle": [ "auto", "simple", "complex"]}
+  ]
+ },
+
+ {
+  "support": "T.C",
+  "category": "Blur and blending",
+  "name": "Bilateral",
+  "filter": "bilateral@{fn}",
+  "kind": "V->V",
+  "desc": "Apply Bilateral filter.",
+  "params": [
+   {"n": "sigmaS", "d": 0.1, "type": "float","range": [0.0, 512.0],"inc": 1},
+   {"n": "sigmaR", "d": 0.1, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "planes", "d": 1,   "type": "int","range": [0, 15],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Denoising",
+  "name": "Block marching 3D denoise",
+  "filter": "bm3d",
+  "kind": "N->V",
+  "desc": "Block-Matching 3D denoiser.",
+  "params": [
+   {"n": "sigma", "d": 1.0, "type": "float","range": [0.0, 99999.9],"inc": 1},
+   {"n": "block", "d": 4, "type": "int","range": [4, 6],"inc": 1},
+   {"n": "bstep", "d": 4, "type": "int","range": [1, 64],"inc": 1},
+   {"n": "group", "d": 1, "type": "int","range": [1, 256],"inc": 1},
+   {"n": "range", "d": 9, "type": "int","range": [1,null],"inc": 1},
+   {"n": "mstep", "d": 1, "type": "int","range": [1, 64],"inc": 1},
+   {"n": "thmse", "d": 0.0, "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "hdthr", "d": 2.7, "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "estim", "d": "basic", "type": "cycle","cycle": [ "basic", "final"]},
+   {"n": "ref", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "planes", "d": 7, "type": "int","range": [0, 15],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Blur and blending",
+  "name": "Box blur",
+  "filter": "boxblur",
+  "kind": "V->V",
+  "desc": "Blur the input.",
+  "params": [
+   {"n": "luma_radius", "d": 2.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "luma_power", "d": 2, "type": "int","range": [0,null],"inc": 1},
+   {"n": "chroma_radius", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "chroma_power", "d": -1, "type": "int","range": [-1,null],"inc": 1},
+   {"n": "alpha_radius", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "alpha_power", "d": -1, "type": "int","range": [-1,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Deinterlacing",
+  "name": "Bwdif",
+  "filter": "bwdif",
+  "kind": "V->V",
+  "desc": "Deinterlace the input image.",
+  "params": [
+   {"n": "mode", "d": "send_field", "type": "cycle","cycle": [ "send_frame", "send_field"]},
+   {"n": "parity", "d": "auto", "type": "cycle","cycle": [ "tff", "bff", "auto"]},
+   {"n": "deint", "d": "all", "type": "cycle","cycle": [ "all", "interlaced"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "CIE scope",
+  "filter": "ciescope",
+  "kind": "V->V",
+  "desc": "Video CIE scope.",
+  "params": [
+   {"n": "system", "d": "hdtv", "type": "cycle","cycle": [ "ntsc", "470m", "ebu", "470bg", "smpte", "240m", "apple", "widergb", "cie1931", "hdtv", "rec709", "uhdtv", "rec2020", "dcip3"]},
+   {"n": "cie", "d": "xyy", "type": "cycle","cycle": [ "xyy", "ucs", "luv"]},
+   {"n": "gamuts", "d": 0.0, "type": "cycle","cycle": [ "ntsc", "470m", "ebu", "470bg", "smpte", "240m", "apple", "widergb", "cie1931", "hdtv", "rec709", "uhdtv", "rec2020", "dcip3"]},
+   {"n": "size", "d": 512, "type": "int","range": [256, 8192],"inc": 1},
+   {"n": "intensity", "d": 0.001, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "contrast", "d": 0.75, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "corrgamma", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "showwhite", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "gamma", "d": 2.6, "type": "float","range": [0.1, 6.0],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Visualiszation",
+  "name": "Codec view",
+  "filter": "codecview",
+  "kind": "V->V",
+  "desc": "Visualize information about some codecs.",
+  "params": [
+   {"n": "mv",          "d": "pf", "type": "cycle","cycle": [ "pf", "bf", "bb"]},
+   {"n": "qp",          "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "mv_type",     "d": "fp", "type": "cycle","cycle": [ "fp", "bp"]},
+   {"n": "frame_type",  "d": "if", "type": "cycle","cycle": [ "if", "pf", "bf"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Color matrix",
+  "filter": "colormatrix",
+  "kind": "V->V",
+  "desc": "Convert color matrix.",
+  "params": [
+   {"n": "src", "d": "bt709", "type": "cycle","cycle": [ "bt709", "fcc", "bt601", "bt470", "bt470bg", "smpte170m", "smpte240m", "bt2020"]},
+   {"n": "dst", "d": "bt709", "type": "cycle","cycle": [ "bt709", "fcc", "bt601", "bt470", "bt470bg", "smpte170m", "smpte240m", "bt2020"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Color space",
+  "filter": "colorspace",
+  "kind": "V->V",
+  "desc": "Convert between colorspaces.",
+  "params": [
+   {"n": "all",         "d": "bt470m",      "type": "cycle","cycle": [ "bt470m", "bt470bg", "bt601-6-525", "bt601-6-625", "bt709", "smpte170m", "smpte240m", "bt2020"]},
+   {"n": "space",       "d": "bt470bg",     "type": "cycle","cycle": [ "bt709", "fcc", "bt470bg", "smpte170m", "smpte240m", "ycgco", "gbr", "bt2020nc", "bt2020ncl"]},
+   {"n": "range",       "d": "tv",          "type": "cycle","cycle": [ "tv", "mpeg", "pc", "jpeg"]},
+   {"n": "primaries",   "d": "bt470bg",     "type": "cycle","cycle": [ "bt709", "bt470m", "bt470bg", "smpte170m", "smpte240m", "smpte428", "film", "smpte431", "smpte432", "bt2020", "jedec-p22", "ebu3213"]},
+   {"n": "trc",         "d": "gamma22",     "type": "cycle","cycle": [ "bt709", "bt470m", "gamma22", "bt470bg", "gamma28", "smpte170m", "smpte240m", "linear", "srgb", "iec61966-2-1", "xvycc", "iec61966-2-4", "bt2020-10", "bt2020-12"]},
+   {"n": "format",      "d": -1,            "type": "cycle","cycle": [ "yuv420p", "yuv420p10", "yuv420p12", "yuv422p", "yuv422p10", "yuv422p12", "yuv444p", "yuv444p10", "yuv444p12"]},
+   {"n": "fast",        "d": "false",       "type": "cycle","cycle": [ "true","false"]},
+   {"n": "dither",      "d": "none",        "type": "cycle","cycle": [ "none", "fsb"]},
+   {"n": "wpadapt",     "d": "bradford",    "type": "cycle","cycle": [ "bradford", "vonkries", "identity"]},
+   {"n": "iall",        "d": "bt470m",      "type": "cycle","cycle": [ "bt470m", "bt470bg", "bt601-6-525", "bt601-6-625", "bt709", "smpte170m", "smpte240m", "bt2020"]},
+   {"n": "ispace",      "d": "bt470bg",     "type": "cycle","cycle": [ "bt709", "fcc", "bt470bg", "smpte170m", "smpte240m", "ycgco", "gbr", "bt2020nc", "bt2020ncl"]},
+   {"n": "irange",      "d": "tv",          "type": "cycle","cycle": [ "tv", "mpeg", "pc", "jpeg"]},
+   {"n": "iprimaries",  "d": "bt470bg",     "type": "cycle","cycle": [ "bt709", "bt470m", "bt470bg", "smpte170m", "smpte240m", "smpte428", "film", "smpte431", "smpte432", "bt2020", "jedec-p22", "ebu3213"]},
+   {"n": "itrc",        "d": "gamma22",     "type": "cycle","cycle": [ "bt709", "bt470m", "gamma22", "bt470bg", "gamma28", "smpte170m", "smpte240m", "linear", "srgb", "iec61966-2-1", "xvycc", "iec61966-2-4", "bt2020-10", "bt2020-12"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Overlay, text and masks",
+  "name": "Cover rect",
+  "filter": "cover_rect",
+  "kind": "V->V",
+  "desc": "Find and cover a user specified object.",
+  "params": [
+   {"n": "cover", "d": "", "type": "file"},
+   {"n": "mode", "d": "blur", "type": "cycle","cycle": [ "cover", "blur"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization",
+  "name": "Cue",
+  "filter": "cue",
+  "kind": "V->V",
+  "desc": "Delay filtering to match a cue.",
+  "params": [
+   {"n": "cue", "d": 0.0, "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "preroll", "d": 0.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "buffer", "d": 0.0, "type": "float","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": ".SC",
+  "category": "Visualiszation",
+  "name": "Data scope",
+  "filter": "datascope@{fn}",
+  "kind": "V->V",
+  "desc": "Video data analysis.",
+  "params": [
+   {"n": "size", "d": "hd720", "type": "float","range": [null,null],"inc": 1},
+   {"n": "x", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "y", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "mode", "d": "mono", "type": "cycle","cycle": [ "mono", "color", "color2"]},
+   {"n": "axis", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "opacity", "d": 0.75, "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "format", "d": "hex", "type": "cycle","cycle": [ "hex", "dec"]},
+   {"n": "components", "d": 15, "type": "int","range": [1, 15],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T.C",
+  "category": "Blur and blending",
+  "name": "Directional blur",
+  "filter": "dblur@{fn}",
+  "kind": "V->V",
+  "desc": "Apply Directional Blur filter.",
+  "params": [
+   {"n": "angle", "d": 45.0, "type": "float","range": [0.0, 360.0],"inc": 1},
+   {"n": "radius", "d": 5.0, "type": "float","range": [1.0, 8192.0],"inc": 1},
+   {"n": "planes", "d": 15, "type": "int","range": [0, 15],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Denoising",
+  "name": "DCT denoising",
+  "filter": "dctdnoiz",
+  "kind": "V->V",
+  "desc": "Denoise frames using 2D DCT.",
+  "params": [
+   {"n": "sigma", "d": 0.0, "type": "float","range": [0.0, 999.0],"inc": 1},
+   {"n": "overlap", "d": -1, "type": "int","range": [-1, 15],"inc": 1},
+   {"n": "expr", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "n", "d": 3, "type": "int","range": [3, 4],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Denoising",
+  "name": "Deblock",
+  "filter": "deblock@{fn}",
+  "kind": "V->V",
+  "desc": "Deblock video.",
+  "params": [
+   {"n": "filter", "d": "strong", "type": "cycle","cycle": [ "weak", "strong"]},
+   {"n": "block", "d": 8, "type": "int","range": [4, 512],"inc": 1},
+   {"n": "alpha", "d": 0.098, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "beta", "d": 0.05, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "gamma", "d": 0.05, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "delta", "d": 0.05, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "planes", "d": 15, "type": "int","range": [0, 15],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization",
+  "name": "Decimate",
+  "filter": "decimate",
+  "kind": "N->V",
+  "desc": "Decimate frames (post field matching filter).",
+  "params": [
+   {"n": "cycle", "d": 5, "type": "int","range": [2, 25],"inc": 1},
+   {"n": "dupthresh", "d": 1.1, "type": "float","range": [0.0, 100.0],"inc": 1},
+   {"n": "scthresh", "d": 15.0, "type": "float","range": [0.0, 100.0],"inc": 1},
+   {"n": "blockx", "d": 32, "type": "int","range": [4, 512],"inc": 1},
+   {"n": "blocky", "d": 32, "type": "int","range": [4, 512],"inc": 1},
+   {"n": "ppsrc", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "chroma", "d": "true", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Dedot",
+  "filter": "dedot",
+  "kind": "V->V",
+  "desc": "Reduce cross-luminance and cross-color.",
+  "params": [
+   {"n": "m", "d": "dotcrawl+rainbows", "type": "cycle","cycle": [ "dotcrawl+rainbows","dotcrawl", "rainbows"]},
+   {"n": "lt", "d": 0.079, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "tl", "d": 0.079, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "tc", "d": 0.058, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "ct", "d": 0.019, "type": "float","range": [0.0,1.0],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Deflicker",
+  "filter": "deflicker",
+  "kind": "V->V",
+  "desc": "Remove temporal frame luminance variations.",
+  "params": [
+   {"n": "size", "d": 5, "type": "int","range": [2, 129],"inc": 1},
+   {"n": "mode", "d": "am", "type": "cycle","cycle": [ "am", "gm", "hm", "qm", "cm", "pm", "median"]},
+   {"n": "bypass", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Deinterlacing",
+  "name": "Deinterlace QuickSync",
+  "filter": "deinterlace_qsv",
+  "kind": "V->V",
+  "desc": "QuickSync video deinterlacing",
+  "params": [
+   {"n": "mode", "d": "advanced", "type": "cycle","cycle": [ "bob", "advanced"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Stabilization",
+  "name": "Dejudder",
+  "filter": "dejudder",
+  "kind": "V->V",
+  "desc": "Remove judder produced by pullup.",
+  "params": [
+   {"n": "cycle", "d": 4, "type": "int","range": [2, 240],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Overlay, text and masks",
+  "name": "Delogo",
+  "filter": "delogo",
+  "filterPreview": "delogo=show=1:x={x}:y={y}:w={w}:h={h}",
+  "kind": "V->V",
+  "desc": "Remove logo from input video.",
+  "params": [
+   {"n": "x", "d": -1.0, "type": "float","range": [null,null],"inc": 1,"rectProp": "x"},
+   {"n": "y", "d": -1.0, "type": "float","range": [null,null],"inc": 1,"rectProp": "y"},
+   {"n": "w", "d": -1.0, "type": "float","range": [null,null],"inc": 1,"rectProp": "w"},
+   {"n": "h", "d": -1.0, "type": "float","range": [null,null],"inc": 1,"rectProp": "h"}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Denoising",
+  "name": "Derain",
+  "filter": "derain",
+  "kind": "V->V",
+  "desc": "Apply derain filter to the input.",
+  "params": [
+   {"n": "filter_type", "d": "derain", "type": "cycle","cycle": [ "derain", "dehaze"]},
+   {"n": "dnn_backend", "d": "native", "type": "cycle","cycle": [ "native"]},
+   {"n": "model", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "input", "d": "x", "type": "string","range": [null,null],"inc": 1},
+   {"n": "output", "d": "y", "type": "string","range": [null,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Stabilization",
+  "name": "Deshake",
+  "filter": "deshake",
+  "kind": "V->V",
+  "desc": "Stabilize shaky video.",
+  "params": [
+   {"n": "x", "d": -1, "type": "int","range": [-1,null],"inc": 1, "rectProp": "x"},
+   {"n": "y", "d": -1, "type": "int","range": [-1,null],"inc": 1, "rectProp": "y"},
+   {"n": "w", "d": -1, "type": "int","range": [-1,null],"inc": 1, "rectProp": "w"},
+   {"n": "h", "d": -1, "type": "int","range": [-1,null],"inc": 1, "rectProp": "h"},
+   {"n": "rx", "d": 16, "type": "int","range": [0, 64],"inc": 1},
+   {"n": "ry", "d": 16, "type": "int","range": [0, 64],"inc": 1},
+   {"n": "edge", "d": "mirror", "type": "cycle","cycle": [ "blank", "original", "clamp", "mirror"]},
+   {"n": "blocksize", "d": 8, "type": "int","range": [4, 128],"inc": 1},
+   {"n": "contrast", "d": 125, "type": "int","range": [1, 255],"inc": 1},
+   {"n": "search", "d": "exhaustive", "type": "cycle","cycle": [ "exhaustive", "less"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "DNN processing",
+  "filter": "dnn_processing",
+  "kind": "V->V",
+  "desc": "Apply DNN processing filter to the input.",
+  "params": [
+   {"n": "dnn_backend", "d": "native", "type": "cycle","cycle": [ "native"]},
+   {"n": "model", "d": 0, "type": "filename"},
+   {"n": "input", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "output", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "backend_configs", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "options", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "async", "d": "true", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Frame and pixel reordering",
+  "name": "Double weave",
+  "filter": "doubleweave",
+  "kind": "V->V",
+  "desc": "Weave input video fields into double number of frames.",
+  "params": [
+   {"n": "first_field", "d": "top", "type": "cycle","cycle": [ "top", "t", "bottom", "b"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Draw graph",
+  "filter": "drawgraph",
+  "kind": "V->V",
+  "desc": "Draw a graph using input video metadata.",
+  "params": [
+   {"n": "m1", "d": "", "type": "string","range": [null,null],"inc": 1},
+   {"n": "fg1", "d": "0xffff0000", "type": "string","range": [null,null],"inc": 1},
+   {"n": "m2", "d": "", "type": "string","range": [null,null],"inc": 1},
+   {"n": "fg2", "d": "0xff00ff00", "type": "string","range": [null,null],"inc": 1},
+   {"n": "m3", "d": "", "type": "string","range": [null,null],"inc": 1},
+   {"n": "fg3", "d": "0xffff00ff", "type": "string","range": [null,null],"inc": 1},
+   {"n": "m4", "d": "", "type": "string","range": [null,null],"inc": 1},
+   {"n": "fg4", "d": "0xffffff00", "type": "string","range": [null,null],"inc": 1},
+   {"n": "bg", "d": "white", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "min", "d": -1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "max", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "mode", "d": "line", "type": "cycle","cycle": [ "bar", "dot", "line"]},
+   {"n": "slide", "d": "frame", "type": "cycle","cycle": [ "frame", "replace", "scroll", "rscroll", "picture"]},
+   {"n": "size", "d": "900x256", "type": "float","range": [null,null],"inc": 1},
+   {"n": "rate", "d": 25.0, "type": "float","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T.C",
+  "category": "Overlay, text and masks",
+  "name": "Draw grid",
+  "filter": "drawgrid@{fn}",
+  "kind": "V->V",
+  "desc": "Draw a colored grid on the input video.",
+  "params": [
+   {"n": "x", "d": 0.0, "type": "int","range": [0,null],"inc": 1, "rectProp": "x"},
+   {"n": "y", "d": 0.0, "type": "int","range": [0,null],"inc": 1, "rectProp": "y"},
+   {"n": "width", "d": 0.0, "type": "int","range": [0,null],"inc": 1, "rectProp": "w"},
+   {"n": "height", "d": 0.0, "type": "int","range": [0,null],"inc": 1, "rectProp": "h"},
+   {"n": "color", "d": "blue", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "thickness", "d": 1.0, "type": "float","range": [0,null],"inc": 0.1},
+   {"n": "replace", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Overlay, text and masks",
+  "name": "Draw text Full",
+  "filter": "drawtext@{fn}",
+  "kind": "V->V",
+  "desc": "Draw text on top of video frames using libfreetype library.",
+  "params": [
+   {"n": "fontfile", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "text", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "textfile", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "fontcolor", "d": "White", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "fontcolor_expr", "d": "", "type": "string","range": [null,null],"inc": 1},
+   {"n": "boxcolor", "d": "white", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "bordercolor", "d": "black", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "shadowcolor", "d": "black", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "box", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "boxborderw", "d": 0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "line_spacing", "d": 0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "fontsize", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "x", "d": 0.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "y", "d": 0.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "shadowx", "d": 0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "shadowy", "d": 0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "borderw", "d": 0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "tabsize", "d": 4, "type": "int","range": [0,null],"inc": 1},
+   {"n": "basetime", "d": "I64_MIN", "type": "float","range": [null,null],"inc": 1},
+   {"n": "font", "d": "Sans", "type": "string","range": [null,null],"inc": 1},
+   {"n": "expansion", "d": "normal", "type": "cycle","cycle": [ "none", "normal", "strftime"]},
+   {"n": "timecode", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "tc24hmax", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "timecode_rate", "d": "0/1", "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "rate", "d": "0/1", "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "reload", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "alpha", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "fix_bounds", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "start_number", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "text_shaping", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "ft_load_flags", "d": 0.0, "type": "cycle","cycle": [ "default", "no_scale", "no_hinting", "render", "no_bitmap", "vertical_layout", "force_autohint", "crop_bitmap", "pedantic", "ignore_global_advance_width", "no_recurse", "ignore_transform", "monochrome", "linear_design", "no_autohint"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Filter Effects",
+  "name": "Edge detect",
+  "filter": "edgedetect",
+  "kind": "V->V",
+  "desc": "Detect and draw edge.",
+  "params": [
+   {"n": "high", "d": 0.196078, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "low", "d": 0.0784314, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "mode", "d": "wires", "type": "cycle","cycle": [ "wires", "colormix", "canny"]},
+   {"n": "planes", "d": "y+u+v+r+g+b", "type": "cycle","cycle": [ "y", "u", "v", "r", "g", "b"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Filter Effects",
+  "name": "Posterize ELBG",
+  "filter": "elbg",
+  "kind": "V->V",
+  "desc": "Apply posterize effect, using the ELBG algorithm.",
+  "params": [
+   {"n": "codebook_length", "d": 256, "type": "int","range": [1,null],"inc": 1},
+   {"n": "nb_steps", "d": 1, "type": "int","range": [1,null],"inc": 1},
+   {"n": "seed", "d": -1.0, "type": "float","range": [-1.0,null],"inc": 1},
+   {"n": "pal8", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Resizing, Padding and Cropping",
+  "name": "EPX scale",
+  "filter": "epx",
+  "kind": "V->V",
+  "desc": "Scale the input using EPX algorithm.",
+  "params": [
+   {"n": "n", "d": 3, "type": "int","range": [2, 3],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T.C",
+  "category": "Colour manipulation",
+  "name": "Equalization",
+  "filter": "eq@{fn}",
+  "kind": "V->V",
+  "desc": "Adjust brightness, contrast, gamma, and saturation.",
+  "params": [
+   {"n": "contrast", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "brightness", "d": 0.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "saturation", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "gamma", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "gamma_r", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "gamma_g", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "gamma_b", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "gamma_weight", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "eval", "d": "init", "type": "cycle","cycle": [ "init", "frame"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Timing and scynchronization",
+  "name": "Fade",
+  "filter": "fade",
+  "kind": "V->V",
+  "desc": "Fade in/out input video.",
+  "params": [
+   {"n": "type",        "d": "in",      "type": "cycle","cycle": [ "in", "out"]},
+   {"n": "start_frame", "d": 0,         "type": "int","range": [0,null],"inc": 1},
+   {"n": "nb_frames",   "d": 25,        "type": "int","range": [1,null],"inc": 1},
+   {"n": "alpha",       "d": "false",   "type": "cycle","cycle": ["true","false"]},
+   {"n": "start_time",  "d": 0.0,       "type": "float","range": [null,null],"inc": 1},
+   {"n": "duration",    "d": 0.0,       "type": "float","range": [null,null],"inc": 1},
+   {"n": "color",       "d": "black",   "type": "cycle","cycle": "@COLOURS"}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Denoising",
+  "name": "FFT denoise",
+  "filter": "fftdnoiz",
+  "kind": "V->V",
+  "desc": "Denoise frames using 3D FFT.",
+  "params": [
+   {"n": "sigma", "d": 1.0, "type": "float","range": [0.0, 30.0],"inc": 1},
+   {"n": "amount", "d": 1.0, "type": "float","range": [0.01,1.0],"inc": 1},
+   {"n": "block", "d": 4, "type": "int","range": [3, 6],"inc": 1},
+   {"n": "overlap", "d": 0.5, "type": "float","range": [0.2, 0.8],"inc": 1},
+   {"n": "prev", "d": 0, "type": "int","range": [0, 1],"inc": 1},
+   {"n": "next", "d": 0, "type": "int","range": [0, 1],"inc": 1},
+   {"n": "planes", "d": 7, "type": "int","range": [0, 15],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Colour manipulation",
+  "name": "Frequency expression",
+  "filter": "fftfilt",
+  "kind": "V->V",
+  "desc": "Apply arbitrary expressions to pixels in frequency domain.",
+  "params": [
+   {"n": "dc_Y", "d": 0, "type": "int","range": [0, 1000],"inc": 1},
+   {"n": "dc_U", "d": 0, "type": "int","range": [0, 1000],"inc": 1},
+   {"n": "dc_V", "d": 0, "type": "int","range": [0, 1000],"inc": 1},
+   {"n": "weight_Y", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "weight_U", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "weight_V", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "eval", "d": "init", "type": "cycle","cycle": [ "init", "frame"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Overlay, text and masks",
+  "name": "Fill borders",
+  "filter": "fillborders@{fn}",
+  "kind": "V->V",
+  "desc": "Fill borders of the input video.",
+  "params": [
+   {"n": "left", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "right", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "top", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "bottom", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "mode", "d": "smear", "type": "cycle","cycle": [ "smear", "mirror", "fixed", "reflect", "wrap", "fade"]},
+   {"n": "color", "d": "black", "type": "cycle","cycle": "@COLOURS"}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Overlay, text and masks",
+  "name": "Flood fill",
+  "filter": "floodfill",
+  "kind": "V->V",
+  "desc": "Fill area with same color with another color.",
+  "params": [
+   {"n": "x", "d": 0, "type": "int","range": [0, 65535],"inc": 1},
+   {"n": "y", "d": 0, "type": "int","range": [0, 65535],"inc": 1},
+   {"n": "s0", "d": 0, "type": "int","range": [-1, 65535],"inc": 1},
+   {"n": "s1", "d": 0, "type": "int","range": [-1, 65535],"inc": 1},
+   {"n": "s2", "d": 0, "type": "int","range": [-1, 65535],"inc": 1},
+   {"n": "s3", "d": 0, "type": "int","range": [-1, 65535],"inc": 1},
+   {"n": "d0", "d": 0, "type": "int","range": [0, 65535],"inc": 1},
+   {"n": "d1", "d": 0, "type": "int","range": [0, 65535],"inc": 1},
+   {"n": "d2", "d": 0, "type": "int","range": [0, 65535],"inc": 1},
+   {"n": "d3", "d": 0, "type": "int","range": [0, 65535],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization",
+  "name": "Fps",
+  "filter": "fps",
+  "kind": "V->V",
+  "desc": "Force constant framerate.",
+  "params": [
+   {"n": "fps", "d": 25.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "start_time", "d": "DBL_MAX", "type": "float","range": [null,null],"inc": 1},
+   {"n": "round", "d": "near", "type": "cycle","cycle": [ "zero", "inf", "down", "up", "near"]},
+   {"n": "eof_action", "d": "round", "type": "cycle","cycle": [ "round", "pass"]}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Timing and scynchronization",
+  "name": "Frame rate",
+  "filter": "framerate",
+  "kind": "V->V",
+  "desc": "Upsamples or downsamples progressive source between specified frame rates.",
+  "params": [
+   {"n": "fps", "d": 50, "type": "float","range": [null,null],"inc": 1},
+   {"n": "interp_start", "d": 15, "type": "int","range": [0, 255],"inc": 1},
+   {"n": "interp_end", "d": 240, "type": "int","range": [0, 255],"inc": 1},
+   {"n": "scene", "d": 8.2, "type": "float","range": [0.0, 100.0],"inc": 1},
+   {"n": "flags", "d": "scene_change_detect+scd", "type": "cycle","cycle": [ "scene_change_detect+scd", "scene_change_detect", "scd"]}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Timing and scynchronization",
+  "name": "Frame step",
+  "filter": "framestep",
+  "kind": "V->V",
+  "desc": "Select one frame every N frames.",
+  "params": [
+   {"n": "step", "d": 1, "type": "int","range": [1,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Filter Effects",
+  "name": "Frei0r",
+  "filter": "frei0r@{fn}",
+  "kind": "V->V",
+  "desc": "Apply a frei0r effect.",
+  "params": [
+   {"n": "filter_name", "d": "distort0r", "type": "cycle","cycle":[    "3dflippo","addition","addition_alpha","aech0r","alpha0ps","alphaatop","alphagrad","alphain","alphainjection","alphaout","alphaover",    
+                                                                       "alphaspot","alphaxor","AUTHORS","B","balanc0r","baltan","bgsubtract0r","blend","bluescreen0r","brightness","burn","bw0r","c0rners",
+                                                                       "cartoon","ChangeLog","cluster","colgate","coloradj_RGB","colordistance","colorhalftone","colorize","colortap","color_only","composition",
+                                                                       "contrast0r","curves","d90stairsteppingfix","darken","defish0r","delay0r","delaygrab","difference","distort0r","dither","divide",
+                                                                       "dodge","edgeglow","elastic_scale","emboss","equaliz0r","flippo","G","gamma","glitch0r","glow","grain_extract","grain_merge","hardlight",
+                                                                       "hqdn3d","hue","hueshift0r","IIRblur","invert0r","ising0r","keyspillm0pup","lenscorrection","letterb0xed","levels",
+                                                                       "lighten","lightgraffiti","lissajous0r","luminance","mask0mate","medians","multiply","ndvi","nervous","nois0r","normaliz0r","nosync0r","onecol0r",
+                                                                       "overlay","partik0l","perspective","pixeliz0r","plasma","posterize","pr0be","pr0file","premultiply","primaries","R","RGB","rgbnoise",
+                                                                       "rgbparade","rgbsplit0r","saturat0r","saturation","scale0tilt","scanline0r","screen","select0r","sharpness","sigmoidaltransfer","sobel","softglow",
+                                                                       "softlight","sopsat","spillsupress","squareblur","subtract","tehRoxx0r","test_pat_B","test_pat_C","test_pat_G","test_pat_I","test_pat_L","test_pat_R",
+                                                                       "threelay0r","three_point_balance","threshold0r","timeout","tint0r","transparency","twolay0r","uvmap","value","vectorscope","vertigo","vignette","xfade0r"]},
+   {"n": "filter_params", "d": "0.5|0.01", "type": "string"}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Postprocessing",
+  "name": "Fast simple pp",
+  "filter": "fspp",
+  "kind": "V->V",
+  "desc": "Apply Fast Simple Post-processing filter.",
+  "params": [
+   {"n": "quality",         "d": 4,         "type": "int","range": [4, 5],"inc": 1},
+   {"n": "qp",              "d": 0,         "type": "int","range": [0, 64],"inc": 1},
+   {"n": "strength",        "d": 0,         "type": "int","range": [-15, 32],"inc": 1},
+   {"n": "use_bframe_qp",   "d": "false",   "type": "cycle","cycle": [ "true", "false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Generic equation",
+  "filter": "geq",
+  "kind": "V->V",
+  "desc": "Apply generic equation to each pixel.",
+  "params": [
+   {"n": "lum",     "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "cb",      "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "cr",      "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "a",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "r",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "g",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "b",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "interpolation", "d": "bilinear", "type": "cycle","cycle": [ "nearest", "bilinear"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Blur and blending",
+  "name": "Gradient function deband",
+  "filter": "gradfun",
+  "kind": "V->V",
+  "desc": "Debands video quickly using gradients.",
+  "params": [
+   {"n": "strength", "d": 1.2,  "type": "float","range": [0.51, 64.0],  "inc": 1},
+   {"n": "radius",   "d": 16,   "type": "int",  "range": [4, 32],       "inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Graph monitor",
+  "filter": "graphmonitor",
+  "kind": "V->V",
+  "desc": "Show various filtergraph stats.",
+  "params": [
+   {"n": "size", "d": "hd720",  "type": "string"},
+   {"n": "opacity", "d": 0.9,   "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "mode", "d": "full",   "type": "cycle","cycle": [ "full", "compact"]},
+   {"n": "flags", "d": "queue", "type": "cycle","cycle": [ "queue", "frame_count_in", "frame_count_out", "pts", "time", "timebase", "format", "size", "rate", "eof"]},
+   {"n": "rate", "d": 25.0,     "type": "float","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Grey edge",
+  "filter": "greyedge",
+  "kind": "V->V",
+  "desc": "Estimates scene illumination by grey edge assumption.",
+  "params": [
+   {"n": "difford",     "d": 1,     "type": "int","range": [0, 2],"inc": 1},
+   {"n": "minknorm",    "d": 1,     "type": "int","range": [0, 20],"inc": 1},
+   {"n": "sigma",       "d": 1.0,   "type": "float","range": [0.0, 1024.0],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Transformation and rotation",
+  "name": "Flip horizontal",
+  "filter": "hflip",
+  "kind": "V->V",
+  "desc": "Horizontally flip the input video.",
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Colour manipulation",
+  "name": "Histogram equalization",
+  "filter": "histeq",
+  "kind": "V->V",
+  "desc": "Apply global color histogram equalization.",
+  "params": [
+   {"n": "strength",    "d": 0.2,       "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "intensity",   "d": 0.21,      "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "antibanding", "d": "none",    "type": "cycle","cycle": [ "none", "weak", "strong"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Histogram",
+  "filter": "histogram",
+  "kind": "V->V",
+  "desc": "Compute and draw a histogram.",
+  "params": [
+   {"n": "level_height", "d": 200, "type": "int","range": [50, 2048],"inc": 1},
+   {"n": "scale_height", "d": 12, "type": "int","range": [0, 40],"inc": 1},
+   {"n": "display_mode", "d": "stack", "type": "cycle","cycle": [ "overlay", "parade", "stack"]},
+   {"n": "levels_mode", "d": "linear", "type": "cycle","cycle": [ "linear", "logarithmic"]},
+   {"n": "components", "d": 7, "type": "int","range": [1, 15],"inc": 1},
+   {"n": "fgopacity", "d": 0.7, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "bgopacity", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 1}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Resizing, Padding and Cropping",
+  "name": "HQ*X magnification",
+  "filter": "hqx",
+  "kind": "V->V",
+  "desc": "Scale the input by 2, 3 or 4 using the hq*x magnification algorithm.",
+  "params": [
+   {"n": "n", "d": 3, "type": "int","range": [2, 4],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T.C",
+  "category": ["Basic","Colour manipulation"],
+  "name": "Hue saturation and brightness",
+  "filter": "hue@{fn}",
+  "kind": "V->V",
+  "desc": "Adjust the hue and saturation of the input video.",
+  "params": [
+   {"n": "h", "d": 0,   "type": "float","range": [0,360], "inc": 1  ,"commandVar":["Hue-h",[["hue@{fn}","h"]]] },
+   {"n": "s", "d": 1.0, "type": "float","range": [-10,10],"inc": 0.1,"commandVar":["Hue-s",[["hue@{fn}","s"]]] },
+   {"n": "b", "d": 0.0, "type": "float","range": [-10,10],"inc": 0.1,"commandVar":["Hue-b",[["hue@{fn}","b"]]] }
+  ],
+  "timelineSupport": true
+ },
+
+
+
+ {
+  "support": "T.C",
+  "category": "Deinterlacing",
+  "name": "Interleave fields",
+  "filter": "il@{fn}",
+  "kind": "V->V",
+  "desc": "Deinterleave or interleave fields.",
+  "params": [
+   {"n": "luma_mode", "d": "none", "type": "cycle","cycle": [ "none", "interleave", "i", "deinterleave", "d"]},
+   {"n": "chroma_mode", "d": "none", "type": "cycle","cycle": [ "none", "interleave", "i", "deinterleave", "d"]},
+   {"n": "alpha_mode", "d": "none", "type": "cycle","cycle": [ "none", "interleave", "i", "deinterleave", "d"]},
+   {"n": "luma_swap", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "chroma_swap", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "alpha_swap", "d": "false", "type": "cycle","cycle": ["true","false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Deinterlacing",
+  "name": "Interlace",
+  "filter": "interlace",
+  "kind": "V->V",
+  "desc": "Convert progressive video into interlaced.",
+  "params": [
+   {"n": "scan", "d": "tff", "type": "cycle","cycle": [ "tff", "bff"]},
+   {"n": "lowpass", "d": "linear", "type": "cycle","cycle": [ "off", "linear", "complex"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Deinterlacing",
+  "name": "Kernel deinterlacing",
+  "filter": "kerndeint",
+  "kind": "V->V",
+  "desc": "Apply kernel deinterlacing to the input.",
+  "params": [
+   {"n": "thresh", "d": 10, "type": "int","range": [0, 255],"inc": 1},
+   {"n": "map", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "order", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "sharp", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "twoway", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Deinterlacing",
+  "name": "Motion compensating deinterlacing",
+  "filter": "mcdeint",
+  "kind": "V->V",
+  "desc": "Apply motion compensating deinterlacing.",
+  "params": [
+   {"n": "mode", "d": "fast", "type": "cycle","cycle": [ "fast", "medium", "slow", "extra_slow"]},
+   {"n": "parity", "d": "bff", "type": "cycle","cycle": [ "tff", "bff"]},
+   {"n": "qp", "d": 1, "type": "int","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Metadata maniplulation",
+  "name": "Metadata",
+  "filter": "metadata",
+  "kind": "V->V",
+  "desc": "Manipulate video frame metadata.",
+  "params": [
+   {"n": "mode", "d": "select", "type": "cycle","cycle": [ "select", "add", "modify", "delete", "print"]},
+   {"n": "key", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "value", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "function", "d": "same_str", "type": "cycle","cycle": [ "same_str", "starts_with", "less", "equal", "greater", "expr", "ends_with"]},
+   {"n": "expr", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "file", "d": "", "type": "file"},
+   {"n": "direct", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization",
+  "name": "Motion iterpolate",
+  "filter": "minterpolate",
+  "kind": "V->V",
+  "desc": "Frame rate conversion using Motion Interpolation.",
+  "params": [
+   {"n": "fps", "d": 60.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "mi_mode", "d": "mci", "type": "cycle","cycle": [ "dup", "blend", "mci"]},
+   {"n": "mc_mode", "d": "obmc", "type": "cycle","cycle": [ "obmc", "aobmc"]},
+   {"n": "me_mode", "d": "bilat", "type": "cycle","cycle": [ "bidir", "bilat"]},
+   {"n": "me", "d": "epzs", "type": "cycle","cycle": [ "esa", "tss", "tdls", "ntss", "fss", "ds", "hexbs", "epzs", "umh"]},
+   {"n": "mb_size", "d": 16, "type": "int","range": [4, 16],"inc": 1},
+   {"n": "search_param", "d": 32, "type": "int","range": [4,null],"inc": 1},
+   {"n": "vsbmc", "d": 0, "type": "int","range": [0, 1],"inc": 1},
+   {"n": "scd", "d": "fdiff", "type": "cycle","cycle": [ "none", "fdiff"]},
+   {"n": "scd_threshold", "d": 10.0, "type": "float","range": [0.0, 100.0],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization",
+  "name": "MP decimate",
+  "filter": "mpdecimate",
+  "kind": "V->V",
+  "desc": "Remove near-duplicate frames.",
+  "params": [
+   {"n": "max", "d": 0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "hi", "d": 768, "type": "int","range": [null,null],"inc": 1},
+   {"n": "lo", "d": 320, "type": "int","range": [null,null],"inc": 1},
+   {"n": "frac", "d": 0.33, "type": "float","range": [0.0,1.0],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Denoising",
+  "name": "Non-local means",
+  "filter": "nlmeans",
+  "kind": "V->V",
+  "desc": "Non-local means denoiser.",
+  "params": [
+   {"n": "s", "d": 1.0, "type": "float","range": [1.0, 30.0],"inc": 1},
+   {"n": "p", "d": 7, "type": "int","range": [0, 99],"inc": 1},
+   {"n": "pc", "d": 0, "type": "int","range": [0, 99],"inc": 1},
+   {"n": "r", "d": 15, "type": "int","range": [0, 99],"inc": 1},
+   {"n": "rc", "d": 0, "type": "int","range": [0, 99],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Filter Effects",
+  "name": "Noise",
+  "filter": "noise",
+  "kind": "V->V",
+  "desc": "Add noise.",
+  "params": [
+   {"n": "all_seed", "d": -1, "type": "int","range": [-1,null],"inc": 1},
+   {"n": "all_strength", "d": 0, "type": "int","range": [0, 100],"inc": 1},
+   {"n": "all_flags", "d": "a", "type": "cycle","cycle": [ "a", "p", "t", "u"]},
+   {"n": "c0_seed", "d": -1, "type": "int","range": [-1,null],"inc": 1},
+   {"n": "c0_strength", "d": 10, "type": "int","range": [0, 100],"inc": 1},
+   {"n": "c0_flags", "d": "a", "type": "cycle","cycle": [ "a", "p", "t", "u"]},
+   {"n": "c1_seed", "d": -1, "type": "int","range": [-1,null],"inc": 1},
+   {"n": "c1_strength", "d": 10, "type": "int","range": [0, 100],"inc": 1},
+   {"n": "c1_flags", "d": "a", "type": "cycle","cycle": [ "a", "p", "t", "u"]},
+   {"n": "c2_seed", "d": -1, "type": "int","range": [-1,null],"inc": 1},
+   {"n": "c2_strength", "d": 10, "type": "int","range": [0, 100],"inc": 1},
+   {"n": "c2_flags", "d": "a", "type": "cycle","cycle": [ "a", "p", "t", "u"]},
+   {"n": "c3_seed", "d": -1, "type": "int","range": [-1,null],"inc": 1},
+   {"n": "c3_strength", "d": 10, "type": "int","range": [0, 100],"inc": 1},
+   {"n": "c3_flags", "d": "a", "type": "cycle","cycle": [ "a", "p", "t", "u"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Colour manipulation",
+  "name": "Normalize",
+  "filter": "normalize@{fn}",
+  "kind": "V->V",
+  "desc": "Normalize RGB video.",
+  "params": [
+   {"n": "blackpt", "d": "black", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "whitept", "d": "white", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "smoothing", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "independence", "d": 1.0, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "strength", "d": 1.0, "type": "float","range": [0.0,1.0],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Visualiszation",
+  "name": "Oscilloscope",
+  "filter": "oscilloscope@{fn}",
+  "kind": "V->V",
+  "desc": "2D Video Oscilloscope.",
+  "params": [
+   {"n": "x", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 1, "rectProp": "x"},
+   {"n": "y", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 1, "rectProp": "y"},
+   {"n": "s", "d": 0.8, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "t", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "o", "d": 0.8, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "tx", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "ty", "d": 0.9, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "tw", "d": 0.8, "type": "float","range": [0.1,1.0],"inc": 1},
+   {"n": "th", "d": 0.3, "type": "float","range": [0.1,1.0],"inc": 1},
+   {"n": "c", "d": 7, "type": "int","range": [0, 15],"inc": 1},
+   {"n": "g", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "st", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "sc", "d": "true", "type": "cycle","cycle": [ "true", "false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Denoising",
+  "name": "Wavelet denoise",
+  "filter": "owdenoise",
+  "kind": "V->V",
+  "desc": "Denoise using wavelets.",
+  "params": [
+   {"n": "depth", "d": 8, "type": "int","range": [8, 16],"inc": 1},
+   {"n": "luma_strength", "d": 1.0, "type": "float","range": [0.0, 1000.0],"inc": 1},
+   {"n": "chroma_strength", "d": 1.0, "type": "float","range": [0.0, 1000.0],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Palette gen",
+  "filter": "palettegen",
+  "kind": "V->V",
+  "desc": "Find the optimal palette for a given stream.",
+  "params": [
+   {"n": "max_colors", "d": 256, "type": "int","range": [4, 256],"inc": 1},
+   {"n": "reserve_transparent", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "transparency_color", "d": "Lime", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "stats_mode", "d": "full", "type": "cycle","cycle": [ "full", "diff", "single"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Palette use",
+  "filter": "paletteuse",
+  "kind": "VV->V",
+  "desc": "Use a palette to downsample an input video stream.",
+  "params": [
+   {"n": "dither", "d": "sierra2_4a", "type": "cycle","cycle": [ "bayer", "heckbert", "floyd_steinberg", "sierra2", "sierra2_4a"]},
+   {"n": "bayer_scale", "d": 2, "type": "int","range": [0, 5],"inc": 1},
+   {"n": "diff_mode", "d": 0, "type": "cycle","cycle": [ "rectangle"]},
+   {"n": "new", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "alpha_threshold", "d": 128, "type": "int","range": [0, 255],"inc": 1},
+   {"n": "color_search", "d": "nns_iterative", "type": "cycle","cycle": [ "nns_iterative", "nns_recursive", "bruteforce"]},
+   {"n": "mean_err", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "debug_accuracy", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Photosensitivity",
+  "filter": "photosensitivity",
+  "kind": "V->V",
+  "desc": "Filter out photosensitive epilepsy seizure-inducing flashes.",
+  "params": [
+   {"n": "frames", "d": 30, "type": "int","range": [2, 240],"inc": 1},
+   {"n": "threshold", "d": 1.0, "type": "float","range": [0.1,null],"inc": 1},
+   {"n": "skip", "d": 1, "type": "int","range": [1, 1024],"inc": 1},
+   {"n": "bypass", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ]
+ },
+
+ {
+  "support": "T.C",
+  "category": "Visualiszation",
+  "name": "Pixel scope",
+  "filter": "pixscope@{fn}",
+  "kind": "V->V",
+  "desc": "Pixel data analysis.",
+  "params": [
+   {"n": "x", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "y", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "w", "d": 7, "type": "int","range": [1, 80],"inc": 1},
+   {"n": "h", "d": 7, "type": "int","range": [1, 80],"inc": 1},
+   {"n": "o", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.01},
+   {"n": "wx", "d": -1.0, "type": "float","range": [-1.0,1.0],"inc": 0.01},
+   {"n": "wy", "d": -1.0, "type": "float","range": [-1.0,1.0],"inc": 0.01}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Postprocessing",
+  "name": "Pp",
+  "filter": "pp@{fn}",
+  "kind": "V->V",
+  "desc": "Filter video using libpostproc.",
+  "params": [
+   {"n": "subfilters", "d": "hb|a,vb|a,dr|a", "type": "cycle","cycle":["hb|a,vb|a,dr|a","h1|a,v1|a,dr|a","ha|a|128|7,va|a,dr|a"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Postprocessing",
+  "name": "Pp7",
+  "filter": "pp7",
+  "kind": "V->V",
+  "desc": "Apply Postprocessing 7 filter.",
+  "params": [
+   {"n": "qp", "d": 0, "type": "int","range": [0, 64],"inc": 1},
+   {"n": "mode", "d": "medium", "type": "cycle","cycle": [ "hard", "soft", "medium"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Filter Effects",
+  "name": "Random frames",
+  "filter": "random",
+  "kind": "V->V",
+  "desc": "Return random frames.",
+  "params": [
+   {"n": "frames", "d": 30, "type": "int","range": [2, 512],"inc": 1},
+   {"n": "seed", "d": -1.0, "type": "float","range": [-1.0,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Denoising",
+  "name": "Remove grain",
+  "filter": "removegrain",
+  "kind": "V->V",
+  "desc": "Remove grain.",
+  "params": [
+   {"n": "m0", "d": 0, "type": "int","range": [0, 24],"inc": 1},
+   {"n": "m1", "d": 0, "type": "int","range": [0, 24],"inc": 1},
+   {"n": "m2", "d": 0, "type": "int","range": [0, 24],"inc": 1},
+   {"n": "m3", "d": 0, "type": "int","range": [0, 24],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Overlay, text and masks",
+  "name": "Remove logo",
+  "filter": "removelogo=filename='{filename}'",
+  "kind": "V->V",
+  "desc": "Remove a TV logo based on a mask image.",
+  "params": [
+   {"n": "filename", "d": "", "type": "file"}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Blur and blending",
+  "name": "Shape adaptive blur",
+  "filter": "sab",
+  "kind": "V->V",
+  "desc": "Apply shape adaptive blur.",
+  "params": [
+   {"n": "luma_radius", "d": 1.0, "type": "float","range": [0.1, 4.0],"inc": 1},
+   {"n": "luma_pre_filter_radius", "d": 1.0, "type": "float","range": [0.1, 2.0],"inc": 1},
+   {"n": "luma_strength", "d": 1.0, "type": "float","range": [0.1, 100.0],"inc": 1},
+   {"n": "chroma_radius", "d": -0.9, "type": "float","range": [-0.9, 4.0],"inc": 1},
+   {"n": "chroma_pre_filter_radius", "d": -0.9, "type": "float","range": [-0.9, 2.0],"inc": 1},
+   {"n": "chroma_strength", "d": -0.9, "type": "float","range": [-0.9, 100.0],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "..C",
+  "category": "Resizing, Padding and Cropping",
+  "name": "Scale full",
+  "filter": "scale@{fn}",
+  "kind": "V->V",
+  "desc": "Scale the input video size and/or convert the image format.",
+  "params": [
+   {"n": "width", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "height", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "flags", "d": "bilinear", "type": "string","range": [null,null],"inc": 1},
+   {"n": "interl", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "in_color_matrix", "d": "auto", "type": "cycle","cycle": [ "auto", "bt601", "bt470", "smpte170m", "bt709", "fcc", "smpte240m", "bt2020"]},
+   {"n": "out_color_matrix", "d": "auto", "type": "cycle","cycle": [ "auto", "bt601", "bt470", "smpte170m", "bt709", "fcc", "smpte240m", "bt2020"]},
+   {"n": "in_range", "d": "auto", "type": "cycle","cycle": [ "auto", "unknown", "full", "limited", "jpeg", "mpeg", "tv", "pc"]},
+   {"n": "out_range", "d": "auto", "type": "cycle","cycle": [ "auto", "unknown", "full", "limited", "jpeg", "mpeg", "tv", "pc"]},
+   {"n": "in_v_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "in_h_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "out_v_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "out_h_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "force_original_aspect_ratio", "d": "disable", "type": "cycle","cycle": [ "disable", "decrease", "increase"]},
+   {"n": "force_divisible_by", "d": 1, "type": "int","range": [1, 256],"inc": 1},
+   {"n": "param0", "d": 123456.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "param1", "d": 123456.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "nb_slices", "d": 0, "type": "int","range": [0,null],"inc": 1},
+   {"n": "eval", "d": "init", "type": "cycle","cycle": [ "init", "frame"]},
+   {"n": "sws_flags", "d": "bicubic", "type": "cycle","cycle": [ "fast_bilinear", "bilinear", "bicubic", "experimental", "neighbor", "area", "bicublin", "gauss", "sinc", "lanczos", "spline", "print_info", "accurate_rnd", "full_chroma_int", "full_chroma_inp", "bitexact", "error_diffusion"]},
+   {"n": "srcw", "d": 16, "type": "int","range": [1,null],"inc": 1},
+   {"n": "srch", "d": 16, "type": "int","range": [1,null],"inc": 1},
+   {"n": "dstw", "d": 16, "type": "int","range": [1,null],"inc": 1},
+   {"n": "dsth", "d": 16, "type": "int","range": [1,null],"inc": 1},
+   {"n": "src_format", "d": "yuv420p", "type": "float","range": [null,null],"inc": 1},
+   {"n": "dst_format", "d": "yuv420p", "type": "float","range": [null,null],"inc": 1},
+   {"n": "src_range", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "dst_range", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "param0", "d": 123456.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "param1", "d": 123456.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "src_v_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "src_h_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "dst_v_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "dst_h_chr_pos", "d": -513, "type": "int","range": [-513, 512],"inc": 1},
+   {"n": "sws_dither", "d": "auto", "type": "cycle","cycle": [ "auto", "bayer", "ed", "a_dither", "x_dither"]},
+   {"n": "gamma", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "alphablend", "d": "none", "type": "cycle","cycle": [ "none", "uniform_color", "checkerboard"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Resizing, Padding and Cropping",
+  "name": "QuickSync scaling",
+  "filter": "scale_qsv",
+  "kind": "V->V",
+  "desc": "QuickSync video scaling and format conversion",
+  "params": [
+   {"n": "w", "d": "iw", "type": "int","range": [null,null],"inc": 1},
+   {"n": "h", "d": "ih", "type": "int","range": [null,null],"inc": 1},
+   {"n": "format", "d": "same", "type": "cycle","cycle": [ "same"],"inc": 1},
+   {"n": "mode", "d": 0, "type": "cycle","cycle": [ "low_power", "hq"]}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Selective color",
+  "filter": "selectivecolor",
+  "kind": "V->V",
+  "desc": "Apply CMYK adjustments to specific color ranges.",
+  "params": [
+   {"n": "correction_method", "d": "absolute", "type": "cycle","cycle": [ "absolute", "relative"]},
+   {"n": "reds", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "yellows", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "greens", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "cyans", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "blues", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "magentas", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "whites", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "neutrals", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "blacks", "d": 0, "type": "float","range": [null,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Metadata maniplulation",
+  "name": "Send command",
+  "filter": "sendcmd",
+  "kind": "V->V",
+  "desc": "Send commands to filters.",
+  "params": [
+   {"n": "commands", "d": "", "type": "string"}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Set params",
+  "filter": "setparams",
+  "kind": "V->V",
+  "desc": "Force field, or color property for the output video frame.",
+  "params": [
+   {"n": "field_mode", "d": "auto", "type": "cycle","cycle": [ "auto", "bff", "tff", "prog"]},
+   {"n": "range", "d": "auto", "type": "cycle","cycle": [ "auto", "unspecified", "unknown", "limited", "tv", "mpeg", "full", "pc", "jpeg"]},
+   {"n": "color_primaries", "d": "auto", "type": "cycle","cycle": [ "auto", "bt709", "unknown", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428", "smpte431", "smpte432", "jedec-p22", "ebu3213"]},
+   {"n": "color_trc", "d": "auto", "type": "cycle","cycle": [ "auto", "bt709", "unknown", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100", "log316", "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12", "smpte2084", "smpte428", "arib-std-b67"]},
+   {"n": "colorspace", "d": "auto", "type": "cycle","cycle": [ "auto", "gbr", "bt709", "unknown", "fcc", "bt470bg", "smpte170m", "smpte240m", "ycgco", "bt2020nc", "bt2020c", "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ictcp"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Set range",
+  "filter": "setrange",
+  "kind": "V->V",
+  "desc": "Force color range for the output video frame.",
+  "params": [
+   {"n": "range", "d": "auto", "type": "cycle","cycle": [ "auto", "unspecified", "unknown", "limited", "tv", "mpeg", "full", "pc", "jpeg"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Show palette",
+  "filter": "showpalette",
+  "kind": "V->V",
+  "desc": "Display frame palette.",
+  "params": [
+   {"n": "s", "d": 30, "type": "int","range": [1, 100],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Frame and pixel reordering",
+  "name": "Shuffle frames",
+  "filter": "shuffleframes",
+  "kind": "V->V",
+  "desc": "Shuffle video frames.",
+  "params": [
+   {"n": "mapping", "d": "9 1 2 3 4 5 6 7 8 0", "type": "string"}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Frame and pixel reordering",
+  "name": "Shuffle pixels",
+  "filter": "shufflepixels",
+  "kind": "V->V",
+  "desc": "Shuffle video pixels.",
+  "params": [
+   {"n": "direction", "d": "forward", "type": "cycle","cycle": [ "forward", "inverse"]},
+   {"n": "mode", "d": "horizontal", "type": "cycle","cycle": [ "horizontal", "vertical", "block"]},
+   {"n": "width", "d": 10, "type": "int","range": [1, 8000],"inc": 1},
+   {"n": "height", "d": 10, "type": "int","range": [1, 8000],"inc": 1},
+   {"n": "seed", "d": -1.0, "type": "float","range": [-1.0,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Frame and pixel reordering",
+  "name": "Shuffle planes",
+  "filter": "shuffleplanes",
+  "kind": "V->V",
+  "desc": "Shuffle video planes.",
+  "params": [
+   {"n": "map0", "d": 0, "type": "int","range": [0, 3],"inc": 1},
+   {"n": "map1", "d": 1, "type": "int","range": [0, 3],"inc": 1},
+   {"n": "map2", "d": 2, "type": "int","range": [0, 3],"inc": 1},
+   {"n": "map3", "d": 3, "type": "int","range": [0, 3],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Metadata maniplulation",
+  "name": "Side data",
+  "filter": "sidedata",
+  "kind": "V->V",
+  "desc": "Manipulate video frame side data.",
+  "params": [
+   {"n": "mode", "d": "delete", "type": "cycle","cycle": [ "select", "delete"]},
+   {"n": "type", "d": "PANSCAN", "type": "cycle","cycle": [ "PANSCAN", "A53_CC", "STEREO3D", "MATRIXENCODING", "DOWNMIX_INFO", "REPLAYGAIN", "DISPLAYMATRIX", "AFD", "MOTION_VECTORS", "SKIP_SAMPLES", "AUDIO_SERVICE_TYPE", "MASTERING_DISPLAY_METADATA", "GOP_TIMECODE", "SPHERICAL", "CONTENT_LIGHT_LEVEL", "ICC_PROFILE", "QP_TABLE_PROPERTIES", "QP_TABLE_DATA", "S12M_TIMECOD", "DYNAMIC_HDR_PLUS", "REGIONS_OF_INTEREST", "SEI_UNREGISTERED"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Blur and blending",
+  "name": "Smart blur",
+  "filter": "smartblur",
+  "kind": "V->V",
+  "desc": "Blur the input video without impacting the outlines.",
+  "params": [
+   {"n": "luma_radius", "d": 1.0, "type": "float","range": [0.1, 5.0],"inc": 1},
+   {"n": "luma_strength", "d": 1.0, "type": "float","range": [-1.0,1.0],"inc": 1},
+   {"n": "luma_threshold", "d": 0, "type": "int","range": [-30, 30],"inc": 1},
+   {"n": "chroma_radius", "d": -0.9, "type": "float","range": [-0.9, 5.0],"inc": 1},
+   {"n": "chroma_strength", "d": -2.0, "type": "float","range": [-2.0,1.0],"inc": 1},
+   {"n": "chroma_threshold", "d": -31, "type": "int","range": [-31, 30],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T.C",
+  "category": "Postprocessing",
+  "name": "Spp",
+  "filter": "spp@{fn}",
+  "kind": "V->V",
+  "desc": "Apply a simple post processing filter.",
+  "params": [
+   {"n": "quality", "d": 3, "type": "int","range": [0, 6],"inc": 1},
+   {"n": "qp", "d": 0, "type": "int","range": [0, 63],"inc": 1},
+   {"n": "mode", "d": "hard", "type": "cycle","cycle": [ "hard", "soft"]},
+   {"n": "use_bframe_qp", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "dct", "d": "auto", "type": "cycle","cycle": [ "auto", "fastint", "int", "mmx", "altivec", "faan"]},
+   {"n": "idct", "d": "auto", "type": "cycle","cycle": [ "auto", "int", "simple", "simplemmx", "arm", "altivec", "simplearm", "simplearmv5te", "simplearmv6", "simpleneon", "xvid", "xvidmmx", "faani", "simpleauto"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Resizing, Padding and Cropping",
+  "name": "DNN Super resolution",
+  "filter": "sr",
+  "kind": "V->V",
+  "desc": "Apply DNN-based image super resolution to the input.",
+  "params": [
+   {"n": "dnn_backend", "d": "native", "type": "cycle","cycle": [ "native"]},
+   {"n": "scale_factor", "d": 2, "type": "int","range": [2, 4],"inc": 1},
+   {"n": "model", "d": "", "type": "file"},
+   {"n": "input", "d": "0", "type": "string","range": [null,null],"inc": 1},
+   {"n": "output", "d": "0", "type": "string","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "VR and 3D",
+  "name": "Stereo 3d",
+  "filter": "stereo3d",
+  "kind": "V->V",
+  "desc": "Convert video stereoscopic 3D view.",
+  "params": [
+   {"n": "in", "d": "sbsl", "type": "cycle","cycle": [ "ab2l", "tb2l", "ab2r", "tb2r", "abl", "tbl", "abr", "tbr", "al", "ar", "sbs2l", "sbs2r", "sbsl", "sbsr", "irl", "irr", "icl", "icr"]},
+   {"n": "out", "d": "arcd", "type": "cycle","cycle": [ "ab2l", "tb2l", "ab2r", "tb2r", "abl", "tbl", "abr", "tbr", "agmc", "agmd", "agmg", "agmh", "al", "ar", "arbg", "arcc", "arcd", "arcg", "arch", "argg", "aybc", "aybd", "aybg", "aybh", "irl", "irr", "ml", "mr", "sbs2l", "sbs2r", "sbsl", "sbsr", "chl", "chr", "icl", "icr", "hdmi"]}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Resizing, Padding and Cropping",
+  "name": "Super2xSai",
+  "filter": "super2xsai",
+  "kind": "V->V",
+  "desc": "Scale the input by 2x using the Super2xSaI pixel art algorithm."
+ },
+
+ {
+  "support": "T.C",
+  "category": "Overlay, text and masks",
+  "name": "Swap rects",
+  "filter": "swaprect@{fn}",
+  "kind": "V->V",
+  "desc": "Swap 2 rectangular objects in video.",
+  "params": [
+   {"n": "w", "d": "w/2", "type": "int","range": [null,null],"inc": 1},
+   {"n": "h", "d": "h/2", "type": "int","range": [null,null],"inc": 1},
+   {"n": "x1", "d": "w/2", "type": "int","range": [null,null],"inc": 1},
+   {"n": "y1", "d": "h/2", "type": "int","range": [null,null],"inc": 1},
+   {"n": "x2", "d": 0.0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "y2", "d": 0.0, "type": "int","range": [null,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Colour manipulation",
+  "name": "Telecine",
+  "filter": "telecine",
+  "kind": "V->V",
+  "desc": "Apply a telecine pattern.",
+  "params": [
+   {"n": "first_field", "d": "top", "type": "cycle","cycle": [ "top", "t", "bottom", "b"]},
+   {"n": "pattern", "d": "23", "type": "string"}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Temporal histogram",
+  "filter": "thistogram",
+  "kind": "V->V",
+  "desc": "Compute and draw a temporal histogram.",
+  "params": [
+   {"n": "width", "d": 0, "type": "int","range": [0, 8192],"inc": 1},
+   {"n": "display_mode", "d": "stack", "type": "cycle","cycle": [ "overlay", "parade", "stack"]},
+   {"n": "levels_mode", "d": "linear", "type": "cycle","cycle": [ "linear", "logarithmic"]},
+   {"n": "components", "d": 7, "type": "int","range": [1, 15],"inc": 1},
+   {"n": "bgopacity", "d": 0.9, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "envelope", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "ecolor", "d": "Gold", "type": "cycle","cycle": "@COLOURS"},
+   {"n": "slide", "d": "replace", "type": "cycle","cycle": [ "frame", "replace", "scroll", "rscroll", "picture"]}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Timing and scynchronization",
+  "name": "Thumbnail",
+  "filter": "thumbnail",
+  "kind": "V->V",
+  "desc": "Select the most representative frame in a given sequence of consecutive frames.",
+  "params": [
+   {"n": "n", "d": 100, "type": "int","range": [2,null],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Deinterlacing",
+  "name": "Temporal interlace",
+  "filter": "tinterlace",
+  "kind": "V->V",
+  "desc": "Perform temporal field interlacing.",
+  "params": [
+   {"n": "mode", "d": "merge", "type": "cycle","cycle": [ "merge", "drop_even", "drop_odd", "pad", "interleave_top", "interleave_bottom", "interlacex2", "mergex2"]}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Colour manipulation",
+  "name": "Temoral midway equalizer",
+  "filter": "tmidequalizer",
+  "kind": "V->V",
+  "desc": "Apply Temporal Midway Equalization.",
+  "params": [
+   {"n": "radius", "d": 5, "type": "int","range": [1, 127],"inc": 1},
+   {"n": "sigma", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1},
+   {"n": "planes", "d": 15, "type": "int","range": [0, 15],"inc": 1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": ".S.",
+  "category": "Colour manipulation",
+  "name": "Tonemap",
+  "filter": "tonemap",
+  "kind": "V->V",
+  "desc": "Conversion to/from different dynamic ranges.",
+  "params": [
+   {"n": "tonemap", "d": "none", "type": "cycle","cycle": [ "none", "linear", "gamma", "clip", "reinhard", "hable", "mobius"]},
+   {"n": "param", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "desat", "d": 2.0, "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "peak", "d": 0.0, "type": "float","range": [0.0,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": ["Basic","Transformation and rotation"],
+  "name": "Transpose",
+  "filter": "transpose",
+  "kind": "V->V",
+  "desc": "Transpose input video.",
+  "params": [
+   {"n": "dir", "d": "cclock_flip", "type": "cycle","cycle": [ "cclock_flip", "clock", "cclock", "clock_flip"]},
+   {"n": "passthrough", "d": "none", "type": "cycle","cycle": [ "none", "portrait", "landscape"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization",
+  "name": "Trim",
+  "filter": "trim",
+  "kind": "V->V",
+  "desc": "Pick one continuous section from the input, drop the rest.",
+  "params": [
+   {"n": "start",       "d": "INT64_MAX", "type": "float","range": [null,null],"inc": 1},
+   {"n": "end",         "d": "INT64_MAX", "type": "float","range": [null,null],"inc": 1},
+   {"n": "start_pts",   "d": "I64_MIN", "type": "float","range": [null,null],"inc": 1},
+   {"n": "end_pts",     "d": "I64_MIN", "type": "float","range": [null,null],"inc": 1},
+   {"n": "duration",    "d": 0.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "start_frame", "d": -1.0, "type": "float","range": [-1.0,null],"inc": 1},
+   {"n": "end_frame",   "d": "I64_MAX", "type": "float","range": [0.0,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Filter Effects",
+  "name": "Unsharp",
+  "filter": "unsharp",
+  "kind": "V->V",
+  "desc": "Sharpen or blur the input video.",
+  "params": [
+   {"n": "luma_msize_x",    "d": 5, "type": "int","range": [3, 23],"inc": 1},
+   {"n": "luma_msize_y",    "d": 5, "type": "int","range": [3, 23],"inc": 1},
+   {"n": "luma_amount",     "d": 1.0, "type": "float","range": [-2.0, 5.0],"inc": 1},
+   {"n": "chroma_msize_x",  "d": 5, "type": "int","range": [3, 23],"inc": 1},
+   {"n": "chroma_msize_y",  "d": 5, "type": "int","range": [3, 23],"inc": 1},
+   {"n": "chroma_amount",   "d": 0.0, "type": "float","range": [-2.0, 5.0],"inc": 1},
+   {"n": "opencl",          "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Postprocessing",
+  "name": "Ultra simple/slow postprocessing",
+  "filter": "uspp",
+  "kind": "V->V",
+  "desc": "Apply Ultra Simple / Slow Post-processing filter.",
+  "params": [
+   {"n": "quality", "d": 3, "type": "int","range": [0, 8],"inc": 1},
+   {"n": "qp", "d": 0, "type": "int","range": [0, 63],"inc": 1},
+   {"n": "use_bframe_qp", "d": "false", "type": "cycle","cycle": [ "true", "false"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "T..",
+  "category": "Denoising",
+  "name": "Wavelet denoiser",
+  "filter": "vaguedenoiser",
+  "kind": "V->V",
+  "desc": "Apply a Wavelet based Denoiser.",
+  "params": [
+   {"n": "threshold", "d": 2.0, "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "method", "d": "garrote", "type": "cycle","cycle": [ "hard", "soft", "garrote"]},
+   {"n": "nsteps", "d": 6, "type": "int","range": [1, 32],"inc": 1},
+   {"n": "percent", "d": 85.0, "type": "float","range": [0.0, 100.0],"inc": 1},
+   {"n": "planes", "d": 15, "type": "int","range": [0, 15],"inc": 1},
+   {"n": "type", "d": "universal", "type": "cycle","cycle": [ "universal", "bayes"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Vectorscope",
+  "filter": "vectorscope",
+  "kind": "V->V",
+  "desc": "Video vectorscope.",
+  "params": [
+   {"n": "mode", "d": "gray", "type": "cycle","cycle": [ "gray", "tint", "color", "color2", "color3", "color4", "color5"]},
+   {"n": "x", "d": 1, "type": "int","range": [0, 2],"inc": 1},
+   {"n": "y", "d": 2, "type": "int","range": [0, 2],"inc": 1},
+   {"n": "intensity", "d": 0.004, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "envelope", "d": "none", "type": "cycle","cycle": [ "none", "instant", "peak", "peak+instant"]},
+   {"n": "graticule", "d": "none", "type": "cycle","cycle": [ "none", "green", "color", "invert"]},
+   {"n": "opacity", "d": 0.75, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "flags", "d": "name", "type": "cycle","cycle": [ "white", "black", "name"]},
+   {"n": "bgopacity", "d": 0.3, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "lthreshold", "d": 0.0, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "hthreshold", "d": 1.0, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "colorspace", "d": "auto", "type": "cycle","cycle": [ "auto", "601", "709"]},
+   {"n": "tint0", "d": 0.0, "type": "float","range": [-1.0,1.0],"inc": 1},
+   {"n": "tint1", "d": 0.0, "type": "float","range": [-1.0,1.0],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Transformation and rotation",
+  "name": "Flip vertical",
+  "filter": "vflip",
+  "kind": "V->V",
+  "desc": "Flip the input video vertically.",
+  "params": [],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Stabilization",
+  "name": "Video stabilization detect",
+  "filter": "vidstabdetect",
+  "kind": "V->V",
+  "desc": "Extract relative transformations, pass 1 of 2 for stabilization (see vidstabtransform for pass 2).",
+  "params": [
+   {"n": "result", "d": "transforms.trf", "type": "file"},
+   {"n": "shakiness", "d": 5, "type": "int","range": [1, 10],"inc": 1},
+   {"n": "accuracy", "d": 15, "type": "int","range": [1, 15],"inc": 1},
+   {"n": "stepsize", "d": 6, "type": "int","range": [1, 32],"inc": 1},
+   {"n": "mincontrast", "d": 0.25, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "show", "d": 0, "type": "int","range": [0, 2],"inc": 1},
+   {"n": "tripod", "d": 0, "type": "int","range": [0,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Stabilization",
+  "name": "Video stabilization transform",
+  "filter": "vidstabtransform",
+  "kind": "V->V",
+  "desc": "Transform the frames, pass 2 of 2 for stabilization (see vidstabdetect for pass 1).",
+  "params": [
+   {"n": "input", "d": "transforms.trf", "type": "file"},
+   {"n": "smoothing", "d": 15, "type": "int","range": [0,1000],"inc": 1},
+   {"n": "optalgo", "d": "opt", "type": "cycle","cycle": ["opt","gauss","avg"]},
+   {"n": "maxshift", "d": -1, "type": "int","range": [-1,500],"inc": 1},
+   {"n": "maxangle", "d": -1.0, "type": "float","range": [-1.0,3.14],"inc": 1},
+   {"n": "crop", "d": "keep", "type": "cycle","cycle": ["keep","black"]},
+   {"n": "invert", "d": 0, "type": "int","range": [0,1],"inc": 1},
+   {"n": "relative", "d": 1, "type": "int","range": [0,1],"inc": 1},
+   {"n": "zoom", "d": 0.0, "type": "float","range": [-100.0,100.0],"inc": 1},
+   {"n": "optzoom", "d": 1, "type": "int","range": [0,2],"inc": 1},
+   {"n": "zoomspeed", "d": 0.25, "type": "float","range": [0.0,5.0],"inc": 1},
+   {"n": "interpol", "d": "bilinear", "type": "cycle","cycle": ["no","linear","bilinear","bicubic"]},
+   {"n": "tripod", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "debug", "d": "false", "type": "cycle","cycle": ["true","false"]}
+  ]
+ },
+
+ {
+  "support": "T..",
+  "category": "Filter Effects",
+  "name": "Vignette",
+  "filter": "vignette",
+  "kind": "V->V",
+  "desc": "Make or reverse a vignette effect.",
+  "params": [
+   {"n": "angle", "d": "1", "type": "float","range": [null,null],"inc": 0.1},
+   {"n": "x0", "d": "w/2", "type": "float","range": [null,null],"inc": 1},
+   {"n": "y0", "d": "h/2", "type": "float","range": [null,null],"inc": 1},
+   {"n": "mode", "d": "forward", "type": "cycle","cycle": ["forward","backward"]},
+   {"n": "eval", "d": "init", "type": "cycle","cycle": ["init","frame"]},
+   {"n": "dither", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "aspect", "d": "2", "type": "float","range": [0.0,null],"inc": 0.1}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Postprocessing",
+  "name": "VPP quick sync video",
+  "filter": "vpp_qsv",
+  "kind": "V->V",
+  "desc": "Quick Sync Video VPP.",
+  "params": [
+   {"n": "deinterlace", "d": 0, "type": "cycle","cycle": ["bob","advanced"]},
+   {"n": "denoise", "d": 0, "type": "int","range": [0,100],"inc": 1},
+   {"n": "detail", "d": 0, "type": "int","range": [0,100],"inc": 1},
+   {"n": "framerate", "d": "0/1", "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "procamp", "d": 0, "type": "int","range": [0,1],"inc": 1},
+   {"n": "hue", "d": 0.0, "type": "float","range": [-180.0,180.0],"inc": 1},
+   {"n": "saturation", "d": 1.0, "type": "float","range": [0.0,10.0],"inc": 1},
+   {"n": "contrast", "d": 1.0, "type": "float","range": [0.0,10.0],"inc": 1},
+   {"n": "brightness", "d": 0.0, "type": "float","range": [-100.0,100.0],"inc": 1},
+   {"n": "transpose", "d": -1, "type": "cycle","cycle": ["cclock_hflip","clock","cclock","clock_hflip","reversal","hflip","vflip"]},
+   {"n": "cw", "d": "iw", "type": "string","range": [null,null],"inc": 1},
+   {"n": "ch", "d": "ih", "type": "string","range": [null,null],"inc": 1},
+   {"n": "cx", "d": "(in_w-out_w", "type": "string","range": [null,null],"inc": 1},
+   {"n": "cy", "d": "(in_h-out_h", "type": "string","range": [null,null],"inc": 1},
+   {"n": "width", "d": "cw", "type": "string","range": [null,null],"inc": 1},
+   {"n": "height", "d": "w*ch/cw", "type": "string","range": [null,null],"inc": 1},
+   {"n": "format", "d": "same", "type": "string","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Visualiszation",
+  "name": "Waveform",
+  "filter": "waveform",
+  "kind": "V->V",
+  "desc": "Video waveform monitor.",
+  "params": [
+   {"n": "mode", "d": "column", "type": "cycle","cycle": ["row","column"]},
+   {"n": "intensity", "d": 0.04, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "mirror", "d": "true", "type": "cycle","cycle": ["true","false"]},
+   {"n": "display", "d": "stack", "type": "cycle","cycle": ["overlay","stack","parade"]},
+   {"n": "components", "d": 1, "type": "int","range": [1, 15],"inc": 1},
+   {"n": "envelope", "d": "none", "type": "cycle","cycle": ["none","instant","peak","peak+instant"]},
+   {"n": "filter", "d": "lowpass", "type": "cycle","cycle": ["lowpass","flat","aflat","chroma","color","acolor","xflat","yflat"]},
+   {"n": "graticule", "d": "none", "type": "cycle","cycle": ["none","green","orange","invert"]},
+   {"n": "opacity", "d": 0.75, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "flags", "d": "numbers", "type": "cycle","cycle": ["numbers","dots"]},
+   {"n": "scale", "d": "digital", "type": "cycle","cycle": ["digital","millivolts","ire"]},
+   {"n": "bgopacity", "d": 0.75, "type": "float","range": [0.0,1.0],"inc": 1},
+   {"n": "tint0", "d": 0.0, "type": "float","range": [-1.0,1.0],"inc": 1},
+   {"n": "tint1", "d": 0.0, "type": "float","range": [-1.0,1.0],"inc": 1}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Frame and pixel reordering",
+  "name": "Weave",
+  "filter": "weave",
+  "kind": "V->V",
+  "desc": "Weave input video fields into frames.",
+  "params": [
+   {"n": "first_field", "d": "top", "type": "cycle","cycle": ["top","bottom"]}
+  ]
+ },
+
+ {
+  "support": ".S.",
+  "category": "Resizing, Padding and Cropping",
+  "name": "XBR",
+  "filter": "xbr",
+  "kind": "V->V",
+  "desc": "Scale the input using xBR algorithm.",
+  "params": [
+   {"n": "n", "d": 3, "type": "int","range": [2,4],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "TS.",
+  "category": "Deinterlacing",
+  "name": "Yadif",
+  "filter": "yadif",
+  "kind": "V->V",
+  "desc": "Deinterlace the input image.",
+  "params": [
+   {"n": "mode", "d": "send_frame", "type": "cycle","cycle": ["send_frame","send_field","send_frame_nospatial","send_field_nospatial"]},
+   {"n": "parity", "d": "auto", "type": "cycle","cycle": ["tff","bff","auto"]},
+   {"n": "deint", "d": "all", "type": "cycle","cycle": ["all","interlaced"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "...",
+  "category": "Resizing, Padding and Cropping",
+  "name": "Zoom pan",
+  "filter": "zoompan",
+  "kind": "V->V",
+  "desc": "Apply Zoom & Pan effect.",
+  "params": [
+   {"n": "zoom",    "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "x",       "d": 0.0, "type": "float","range": [null,null],"inc": 1, "rectProp": "x"},
+   {"n": "y",       "d": 0.0, "type": "float","range": [null,null],"inc": 1, "rectProp": "y"},
+   {"n": "d",       "d": 90.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "s",       "d": "hd720", "type": "float","range": [null,null],"inc": 1},
+   {"n": "fps",     "d": 25.0, "type": "float","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "..C",
+  "category": "Resizing, Padding and Cropping",
+  "name": "Z scale",
+  "filter": "zscale@{fn}",
+  "kind": "V->V",
+  "desc": "Apply resizing, colorspace and bit depth conversion.",
+  "params": [
+   {"n": "w",           "d": 0,             "type": "string","range": [null,null],"inc": 1},
+   {"n": "width",       "d": 0,             "type": "string","range": [null,null],"inc": 1},
+   {"n": "height",      "d": 0,             "type": "string","range": [null,null],"inc": 1},
+   {"n": "size",        "d": 0,             "type": "string","range": [null,null],"inc": 1},
+   {"n": "dither",      "d": "none",        "type": "cycle","cycle": ["none","ordered","random","error_diffusion"]},
+   {"n": "filter",      "d": "bilinear",    "type": "cycle","cycle": ["point","bilinear","bicubic","spline16","spline36","lanczos"]},
+   {"n": "out_range",   "d": "input",       "type": "cycle","cycle": ["input","limited","full","unknown","tv","pc"]},
+   {"n": "range",       "d": "input",       "type": "cycle","cycle": ["input","limited","full","unknown","tv","pc"]},
+   {"n": "primaries",   "d": "input",       "type": "cycle","cycle": ["input","709","unspecified","170m","240m","2020","unknown","bt709","bt470m","bt470bg","smpte170m","smpte240m","film","bt2020","smpte428","smpte431","smpte432","jedec-p22","ebu3213"]},
+   {"n": "transfer",    "d": "input",       "type": "cycle","cycle": ["input","709","unspecified","601","linear","2020_10","2020_12","unknown","bt470m","bt470bg","smpte170m","bt709","linear","log100","log316","bt2020-10","bt2020-12","smpte2084","iec61966-2-4","iec61966-2-1","arib-std-b67"]},
+   {"n": "matrix",      "d": "input",       "type": "cycle","cycle": ["input","709","unspecified","470bg","170m","2020_ncl","2020_cl","unknown","gbr","bt709","fcc","bt470bg","smpte170m","smpte2400m","ycgco","bt2020nc","bt2020c","chroma-derived-nc","chroma-derived-c","ictcp"]},
+   {"n": "in_range",    "d": "input",       "type": "cycle","cycle": ["input","limited","full","unknown","tv","pc"]},
+   {"n": "primariesin", "d": "input",       "type": "cycle","cycle": ["input","709","unspecified","170m","240m","2020","unknown","bt709","bt470m","bt470bg","smpte170m","smpte240m","film","bt2020","smpte428","smpte431","smpte432","jedec-p22","ebu3213"]},
+   {"n": "transferin",  "d": "input",       "type": "cycle","cycle": ["input","709","unspecified","601","linear","2020_10","2020_12","unknown","bt470m","bt470bg","smpte170m","bt709","linear","log100","log316","bt2020-10","bt2020-12","smpte2084","iec61966-2-4","iec61966-2-1","arib-std-b67"]},
+   {"n": "matrixin",    "d": "input",       "type": "cycle","cycle": ["input","709","unspecified","470bg","170m","2020_ncl","2020_cl","unknown","gbr","bt709","fcc","bt470bg","smpte170m","smpte2400m","ycgco","bt2020nc","bt2020c","chroma-derived-nc","chroma-derived-c","ictcp"]},
+   {"n": "chromal",     "d": "input",       "type": "cycle","cycle": ["input","left","center","topleft","top","bottomleft","bottom"]},
+   {"n": "chromalin",   "d": "input",       "type": "cycle","cycle": ["input","left","center","topleft","top","bottomleft","bottom"]},
+   {"n": "cin",         "d": "input",       "type": "cycle","cycle": ["input","left","center","topleft","top","bottomleft","bottom"]},
+   {"n": "npl",         "d": 0,             "type": "float","range": [0.0,null],"inc": 1},
+   {"n": "agamma",      "d": "true",        "type": "cycle","cycle": ["true","false"]},
+   {"n": "param_a",     "d": 0,             "type": "float","range": [null,null],"inc": 1},
+   {"n": "param_b",     "d": 0,             "type": "float","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Show waves",
+  "filter": "showwaves",
+  "kind": "A->V",
+  "desc": "Convert input audio to a video output.",
+  "params": [
+   {"n": "size", "d": "600x240", "type": "float","range": [null,null],"inc": 1},
+   {"n": "mode", "d": "point", "type": "cycle","cycle": ["point","line","p2p","cline"]},
+   {"n": "rate", "d": 25.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "split_channels", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "colors", "d": "red|green|blue|yellow|orange|lime|pink|magenta|brown", "type": "string","range": [null,null],"inc": 1},
+   {"n": "scale", "d": "lin", "type": "cycle","cycle": ["lin","log","sqrt","cbrt"]},
+   {"n": "draw", "d": "scale", "type": "cycle","cycle": ["scale","full"]}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Visualiszation",
+  "name": "Show waves pic",
+  "filter": "showwavespic",
+  "kind": "A->V",
+  "desc": "Convert input audio to a video output single picture.",
+  "params": [
+   {"n": "size", "d": "600x240", "type": "float","range": [null,null],"inc": 1},
+   {"n": "split_channels", "d": "false", "type": "cycle","cycle": ["true","false"]},
+   {"n": "colors", "d": "red|green|blue|yellow|orange|lime|pink|magenta|brown", "type": "string","range": [null,null],"inc": 1},
+   {"n": "scale", "d": "lin", "type": "cycle","cycle": ["lin","log","sqrt","cbrt"]},
+   {"n": "draw", "d": "scale", "type": "cycle","cycle": ["scale","full"]},
+   {"n": "filter", "d": "average", "type": "cycle","cycle": ["average","peak"]}
+  ]
+ }
+]

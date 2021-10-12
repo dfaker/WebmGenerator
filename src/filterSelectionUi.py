@@ -166,6 +166,12 @@ class FilterSpecification(ttk.Frame):
   def packself(self):
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
 
+  def cycleSelectedProperty(self,activeValuePair):
+    enableablefilters = [x for x in self.filterValuePairs if x.commandVarEnabled]
+    activeInd = enableablefilters.index(activeValuePair)
+    nextEnabledFilter = enableablefilters[(activeInd+1)%len(enableablefilters)]
+    if nextEnabledFilter != activeValuePair:
+      nextEnabledFilter.toggleTimelineSelection()
 
   def setActiveTimeLineValue(self,activeValuePair):
     self.controller.setActiveTimeLineValue(activeValuePair)
@@ -432,10 +438,9 @@ class FilterSelectionUi(ttk.Frame):
     self.buttonAddFilter.config(command=self.addSelectedfilter)
     self.buttonAddFilter.pack(side='right')
     self.selectedFilter=tk.StringVar()
-    self.selectableFilters = sorted([x['name'] for x in selectableFilters],key=lambda x:x.upper())
+    self.selectableFilters = []
 
-
-    self.selectedFilter.set('crop')
+    self.selectedFilter.set('Crop')
     self.comboboxFilterSelection = ttk.OptionMenu(self.framefilterAdditionFrame,self.selectedFilter,self.selectedFilter.get(),*self.selectableFilters)
     self.comboboxFilterSelection.pack(expand='true', fill='both', side='left')
     self.framefilterAdditionFrame.config(height='200', width='200')
@@ -450,13 +455,32 @@ class FilterSelectionUi(ttk.Frame):
     self.filterMenu = tk.Menu(self, tearoff=0)
     self.submenuMap = {}
 
+    basicFilters=[]
+
     for fltx in sorted(selectableFilters,key=lambda x:x.get('name','').upper()):
-      submenu = self.submenuMap.setdefault( fltx.get('category','General'), tk.Menu(self.filterMenu, tearoff=0) )
-      submenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))
+      categories = fltx.get('category',['General'])
 
-    for k,v in self.submenuMap.items():
-      self.filterMenu.add_cascade(label=k,  menu=v)
+      if 'Basic' in categories:
+        basicFilters.append(fltx)      
+      
+      if type(categories) != list:
+        categories=[categories]
+      for cat in categories:
+        submenu = self.submenuMap.setdefault( cat, tk.Menu(self.filterMenu, tearoff=0) )
+        submenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))
 
+    for fltx in basicFilters:
+      self.filterMenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))
+    self.filterMenu.add_separator()
+
+    print('--------- Filter categories-------------')
+    for k,v in sorted(self.submenuMap.items()):
+      if k != 'Basic':
+        print(k)
+        self.filterMenu.add_cascade(label=k,  menu=v)
+    print('--------- Filter categories-------------')
+
+    self.comboboxFilterSelection.bind("<Button-1>",          self.showFilterMenu)
     self.comboboxFilterSelection.bind("<Button-3>",          self.showFilterMenu)
 
 
@@ -590,6 +614,7 @@ class FilterSelectionUi(ttk.Frame):
     self.canvasValueTimeline.bind("d",        self.keyboardD)
     self.canvasValueTimeline.bind("i",        self.keyboardI)
     self.canvasValueTimeline.bind("n",        self.keyboardN)
+    self.canvasValueTimeline.bind("c",        self.keyboardC)
 
     self.canvasValueTimeline.focus_set()
 
@@ -684,6 +709,9 @@ class FilterSelectionUi(ttk.Frame):
             print('pitch',horizD)
 
 
+  def keyboardC(self,e):
+    if self.activeCommandFilterValuePair is not None:
+      self.activeCommandFilterValuePair.cycleSelectedProperty()
 
   def addRegistrationMark(self,markType):
     if markType=="tvec":
@@ -1000,7 +1028,7 @@ class FilterSelectionUi(ttk.Frame):
     self.filterSpecificationCount+=1
     newFilter = None
     for spec in selectableFilters:
-      if spec['name'] == 'crop':
+      if spec['name'] == 'Crop':
         newFilter = FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
         self.filterSpecifications.append( newFilter)
         break
@@ -1134,6 +1162,7 @@ class FilterSelectionUi(ttk.Frame):
           self.controller.setVideoVector(0,0,0,0)
           self.AngleDragStartSet=False
           self.playerContainerFrame.config(cursor="crosshair")
+
           if ctrl and shift:
             self.controller.stepRelative(1)
           elif ctrl:
@@ -1165,7 +1194,7 @@ class FilterSelectionUi(ttk.Frame):
           self.AngleDragStartSet=True
           self.sourceAngleDragStart   = [e.x,e.y]
 
-        elif e.type == tk.EventType.ButtonPress:
+        elif  e.type == tk.EventType.ButtonPress:
           x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
           self.applyVectorOffset(x2,y2,0,0,isAsoluteValue=True)        
       
@@ -1311,9 +1340,9 @@ class FilterSelectionUi(ttk.Frame):
             commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
 
           elif interpolationMode == 'neighbour-relative':
-            if firstCommand:
-              commandStr_preview += "{k:0.4f} {t} reinit {p}={cv:0.4f};{sep}".format(sep=sep, k=norm_k,t=cmdTarget,p=cmdProperty, cv=cmdValue)
-              commandStr_real    += "{k:0.4f} {t} reinit {p}={cv:0.4f};{sep}".format(sep=sep, k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
+            #if firstCommand:
+            #  commandStr_preview += "{k:0.4f} {t} reinit {p}={cv:0.4f};{sep}".format(sep=sep, k=norm_k,t=cmdTarget,p=cmdProperty, cv=cmdValue)
+            #  commandStr_real    += "{k:0.4f} {t} reinit {p}={cv:0.4f};{sep}".format(sep=sep, k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
 
             commandStr_preview += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty, cv=cmdValue-lastValue)
             commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty, cv=cmdValue-lastValue)
@@ -1324,8 +1353,9 @@ class FilterSelectionUi(ttk.Frame):
       norm_lastTime = self.controller.normaliseTimestamp(lastTime)
 
       if interpolationMode == 'neighbour-relative':
-        commandStr_preview += "{l:0.4f} [enter] {t} {p} 0.0;{sep}".format(sep=sep, l=norm_lastTime, t=cmdTarget, p=cmdProperty)
-        commandStr_real    += "{l:0.4f} [enter] {t} {p} 0.0;{sep}".format(sep=sep, l=lastTime,      t=cmdTarget, p=cmdProperty)
+        pass
+        #commandStr_preview += "{l:0.4f} [enter] {t} {p} 0.0;{sep}".format(sep=sep, l=norm_lastTime, t=cmdTarget, p=cmdProperty)
+        #commandStr_real    += "{l:0.4f} [enter] {t} {p} 0.0;{sep}".format(sep=sep, l=lastTime,      t=cmdTarget, p=cmdProperty)
       else:
         commandStr_preview += "{l:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime, t=cmdTarget, p=cmdProperty, cv=cmdValue)
         commandStr_real    += "{l:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,      t=cmdTarget, p=cmdProperty, cv=cmdValue)

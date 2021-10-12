@@ -63,7 +63,7 @@ class FFmpegService():
             pc = float(timestamp.replace('%',''))/100.0
             videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename))
             timestamp = videoInfo.duration*pc
-          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}:flags=bicubic'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
+          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',thumbnail,scale={w}:{h}:flags=area'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
           logging.debug("Ffmpeg command: {}".format(' '.join(cmd)))
           proc = sp.Popen(cmd,stdout=sp.PIPE)
           outs,errs = proc.communicate()

@@ -20,6 +20,8 @@ except AttributeError as e:
 except Exception as e:
   logging.error("scriptPath Exception",exc_info=e)
 
+os.environ["FREI0R_PATH"] = os.path.abspath('frei0r-1')
+
 from tkinter import Tk
 import json
 import mimetypes

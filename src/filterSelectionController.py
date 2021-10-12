@@ -31,7 +31,7 @@ class FilterSelectionController:
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=True,
                           log_handler=self.errorHandler,
-                          loglevel='error',
+                          loglevel='debug',
                           loop='inf',
                           mute=True,
                           cursor_autohide="always",
@@ -49,7 +49,7 @@ class FilterSelectionController:
     self.installedFonts = None
 
   def errorHandler(self,kind,module,err):
-    print('a',kind,module,err)
+    print(kind,module,err)
     if kind=='error' and 'Disabling filter filterStack' in err:
       self.clearFilter()
       self.ui.filterFailure()

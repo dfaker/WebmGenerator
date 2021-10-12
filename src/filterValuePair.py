@@ -7,6 +7,7 @@ import numpy as np
 from math import sqrt
 from tkinter.filedialog import askopenfilename
 import threading
+import os
 
 
 def cubic_interp1d(x0, x, y):
@@ -245,6 +246,9 @@ class FilterValuePair(ttk.Frame):
     else:
       self.interpVar.set(self.commandInterpolationMode)
 
+  def cycleSelectedProperty(self):
+    self.controller.cycleSelectedProperty(self)
+
   def clearKeyValues(self):
     self.keyValues={}
 
@@ -393,6 +397,7 @@ class FilterValuePair(ttk.Frame):
       initialdir=self.controller.getGlobalOptions().get('defaultImageFolder','.')
     elif self.fileCategory=='video':
       initialdir=self.controller.getGlobalOptions().get('defaultVideoFolder','.')
+    
     print(initialdir,filetypes)
     fn = askopenfilename(initialdir=initialdir,filetypes=filetypes)
     if fn is None or len(fn)==0:

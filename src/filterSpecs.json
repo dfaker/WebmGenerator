@@ -2,6 +2,14 @@
  {
   "support": "...",
   "category": "Resizing, Padding and Cropping",
+  "name": "Make pixel SAR 1/1",
+  "filter": "scale=w=iw*sar:h=ih,setsar=sar=1/1",
+  "kind": "V->V",
+  "desc": "Rescale the image to make pixel sample aspect ratio 1."
+ },
+ {
+  "support": "...",
+  "category": "Resizing, Padding and Cropping",
   "name": "Set SAR",
   "filter": "setsar",
   "kind": "V->V",

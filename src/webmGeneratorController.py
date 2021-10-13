@@ -20,7 +20,7 @@ except AttributeError as e:
 except Exception as e:
   logging.error("scriptPath Exception",exc_info=e)
 
-os.environ["FREI0R_PATH"] = os.path.abspath('frei0r-1')
+os.environ["FREI0R_PATH"] = os.path.abspath(os.path.join('src','frei0r-1'))
 
 from tkinter import Tk
 import json
@@ -218,6 +218,13 @@ class WebmGeneratorController:
 
   def runSceneChangeDetectionCuts(self):
     self.cutselectionController.runSceneChangeDetection(addCuts=True)    
+
+
+  def runSceneCentreDetectionCuts(self):
+    self.cutselectionController.runSceneCentreDetectionCuts(addCuts=True)    
+
+
+
 
   def scanAndAddLoudSections(self):
     self.cutselectionController.scanAndAddLoudSections()

@@ -11,7 +11,7 @@ import json
 import threading
 import os
 
-RELEASE_NUMVER = 'v3.10.1'
+RELEASE_NUMVER = 'v3.8.0'
 
 class WebmGeneratorUi:
 
@@ -165,6 +165,9 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Run scene change detection and add SubClips", command=self.controller.runSceneChangeDetectionCuts)
     self.commandmenu.add_separator()
 
+    self.commandmenu.add_command(label="Run representative scene centeres detection and add SubClips", command=self.controller.runSceneCentreDetectionCuts)
+
+    self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Run audio loudness threshold detection", command=self.scanAndAddLoudSections)
     self.commandmenu.add_separator()
 

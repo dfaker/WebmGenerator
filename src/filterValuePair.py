@@ -9,7 +9,6 @@ from tkinter.filedialog import askopenfilename
 import threading
 import os
 
-
 def cubic_interp1d(x0, x, y):
 
     x = np.asfarray(x)

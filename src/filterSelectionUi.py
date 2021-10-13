@@ -7,6 +7,9 @@ import copy
 import logging
 
 
+import colorsys
+
+
 
 from tkinter import messagebox
 
@@ -26,9 +29,6 @@ def getSpecificationNumber():
   global specCounter
   specCounter+=1
   return specCounter
-
-
-
 
 class FilterSpecification(ttk.Frame):
   def __init__(self, master,controller,spec, filterId, *args, **kwargs):
@@ -53,12 +53,9 @@ class FilterSpecification(ttk.Frame):
       self.labelFilterDesc.config(text=spec.get('desc',''),wraplength=290,justify=tk.CENTER)
       self.labelFilterDesc.pack(side='top',fill="x",expand="true")
 
-
-
-
-
-
     self.frameFilterConfigFrame = ttk.Frame(self.frameFilterDetailsWidget)
+
+
     self.frameFilterActions = ttk.Frame(self.frameFilterConfigFrame)
     self.buttonfilterActionRemove = ttk.Button(self.frameFilterActions)
     self.buttonfilterActionRemove.config(text='Remove')
@@ -161,6 +158,14 @@ class FilterSpecification(ttk.Frame):
     self.frameFilterConfigFrame.pack(expand='true', fill='x', side='top')
     self.frameFilterDetailsWidget.config(height='200', padding='2', relief='groove', width='200')
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
+
+    self.guideColour = colorsys.hsv_to_rgb( (self.autoNumber%20)/20.0,1.0,1.0)
+    self.guideColour = int(self.guideColour[0]*255),int(self.guideColour[1]*255),int(self.guideColour[2]*255)
+    self.guideColour = "#%02x%02x%02x" % (self.guideColour[0], self.guideColour[1], self.guideColour[2])
+    self.guideColourFrame       = tk.Label(self.frameFilterDetailsWidget,text=' ',bg=self.guideColour,font=("Monospace",1),height=1)
+    self.guideColourFrame.pack(expand='true', fill='x', side='bottom')
+
+
     self.packself()
 
   def packself(self):
@@ -1033,10 +1038,14 @@ class FilterSelectionUi(ttk.Frame):
         self.filterSpecifications.append( newFilter)
         break
     if newFilter is not None:
-      newFilter.rectProps.get('x').set(int(x))
-      newFilter.rectProps.get('y').set(int(y))
-      newFilter.rectProps.get('w').set(int(w))
-      newFilter.rectProps.get('h').set(int(h))
+      newFilter.rectProps.get('x')[0].set(int(x))
+      newFilter.rectProps.get('y')[0].set(int(y))
+      newFilter.rectProps.get('w')[0].set(int(w))
+      newFilter.rectProps.get('h')[0].set(int(h))
+
+    for spec in self.filterSpecifications:
+      spec.packself()
+
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters('autoCropCallback')
 
@@ -1239,8 +1248,6 @@ class FilterSelectionUi(ttk.Frame):
           self.screenMouseRect=[None,None,None,None]
           self.mouseRectDragging=False
           self.controller.clearVideoRect()
-      
-      
 
   def addSelectedfilter(self):
     self.filterSpecificationCount+=1
@@ -1252,6 +1259,8 @@ class FilterSelectionUi(ttk.Frame):
         break
     if newFilter is not None and self.videoMouseRect[2] is not None:
       newFilter.populateRectPropValues()
+    for spec in self.filterSpecifications:
+      spec.packself()
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters('addSelectedfilter')
 
@@ -1260,6 +1269,8 @@ class FilterSelectionUi(ttk.Frame):
       if filter.filterId == filterId:
         filter.destroy()
     self.filterSpecifications = [x for x in self.filterSpecifications if x.filterId != filterId]
+    for spec in self.filterSpecifications:
+      spec.packself()
     self.scrolledframeFilterContainer.reposition()
     self.recaculateFilters('removeFilter')
 

@@ -795,7 +795,40 @@
  {
   "support": "TS.",
   "category": "Colour manipulation",
-  "name": "Generic equation",
+  "name": "Generic equation RGBA",
+  "filter": "geq",
+  "kind": "V->V",
+  "desc": "Apply generic equation to each pixel.",
+  "params": [
+   {"n": "a",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "r",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "g",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "b",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "interpolation", "d": "bilinear", "type": "cycle","cycle": [ "nearest", "bilinear"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Generic equation RGB",
+  "filter": "geq",
+  "kind": "V->V",
+  "desc": "Apply generic equation to each pixel.",
+  "params": [
+   {"n": "r",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "g",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "b",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "interpolation", "d": "bilinear", "type": "cycle","cycle": [ "nearest", "bilinear"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Generic equation YCbCrA",
   "filter": "geq",
   "kind": "V->V",
   "desc": "Apply generic equation to each pixel.",
@@ -804,9 +837,22 @@
    {"n": "cb",      "d": 0, "type": "string","range": [null,null],"inc": 1},
    {"n": "cr",      "d": 0, "type": "string","range": [null,null],"inc": 1},
    {"n": "a",       "d": 0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "r",       "d": 0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "g",       "d": 0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "b",       "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "interpolation", "d": "bilinear", "type": "cycle","cycle": [ "nearest", "bilinear"]}
+  ],
+  "timelineSupport": true
+ },
+
+ {
+  "support": "TS.",
+  "category": "Colour manipulation",
+  "name": "Generic equation YCbCr",
+  "filter": "geq",
+  "kind": "V->V",
+  "desc": "Apply generic equation to each pixel.",
+  "params": [
+   {"n": "lum",     "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "cb",      "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "cr",      "d": 0, "type": "string","range": [null,null],"inc": 1},
    {"n": "interpolation", "d": "bilinear", "type": "cycle","cycle": [ "nearest", "bilinear"]}
   ],
   "timelineSupport": true

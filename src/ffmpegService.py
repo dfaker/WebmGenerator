@@ -980,7 +980,45 @@ class FFmpegService():
         try:
           filename,requestType,options,callback = self.statsRequestQueue.get()
 
-          if requestType == 'AddLoudSections':
+
+          if requestType == 'RepresentativeSections':
+            addCuts        = bool(options.get('addCuts',True))
+            clipLength     = float(options.get('clipLength'))
+            halfclipLength = clipLength/2
+            totalDuration  = float(options.get('duration'))
+            videoInfo = getVideoInfo(filename)
+
+            sectionLength = int(videoInfo.fps*clipLength*3)
+
+            proc = sp.Popen(["ffmpeg","-i",cleanFilenameForFfmpeg(filename) ,"-vf","thumbnail=n={sectionLength}".format(sectionLength=sectionLength),"-f","null","-"],stderr=sp.PIPE,stdout=sp.DEVNULL)
+
+            l=b''
+            pair=[]
+            self.globalStatusCallback('Detecting scene centres',0)
+
+            while 1:
+              c = proc.stderr.read(1)
+              if len(c)==0:
+                break
+
+              if c in b'\n\r':
+                if b' (pts_time=' in l:
+                  ts = float(l.split(b' (pts_time=')[1].split(b')')[0])
+
+                  if options.get('addCuts',False):
+                    callback(filename,ts-halfclipLength,ts+halfclipLength,kind='Cut')
+                  else:
+                    callback(filename,ts,kind='Mark')
+                  self.globalStatusCallback('Detecting scene centres',ts/totalDuration)
+
+                l=b''
+              else:
+                l += c 
+
+            self.globalStatusCallback('Detecting scene centres complete',1)
+
+
+          elif requestType == 'AddLoudSections':
             threshold = options.get('threshold',90)
             totalDuration=float(options.get('duration',1))
             mergeDistance = options.get('mergeDistance',3)
@@ -1418,6 +1456,12 @@ class FFmpegService():
                                                                    threshold=threshold,
                                                                    duration=duration),callback) )
 
+
+  def runRepresentativeCentresDetection(self,filename,duration,callback,clipLength=30,addCuts=False):
+    self.statsRequestQueue.put( (filename,'RepresentativeSections',dict(filename=filename,
+                                                                        addCuts=addCuts,
+                                                                        clipLength=clipLength,
+                                                                        duration=duration),callback) )
 
 
 

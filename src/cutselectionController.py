@@ -522,6 +522,12 @@ class CutselectionController:
     self.ui.setUiDirtyFlag()
 
 
+  def runSceneCentreDetectionCuts(self,addCuts=False):
+    sceneLength = self.ui.askFloat('What should the length of the representative scenes be?','Scene Length (seconds)', initialvalue=30)
+    if sceneLength is not None:
+      sceneLength = abs(sceneLength)
+      self.ffmpegService.runRepresentativeCentresDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,clipLength=sceneLength,addCuts=addCuts)
+
   def runSceneChangeDetection(self,addCuts=False):
     threshold = self.ui.askFloat('What should the threshold of scene detection be?','Scene change proportion', initialvalue=0.3)
     if threshold is not None:

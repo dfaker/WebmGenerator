@@ -10,7 +10,7 @@ from ..encodingUtils import isRquestCancelled
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
 
   audoBitrate = 8
   for abr in ['48','64','96','128','192']:
@@ -65,6 +65,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if bufsize is None:
       bufsize = 3000000
 
+    threadCount = globalOptions.get('encoderStageThreads',4)
     ffmpegcommand+=["-shortest"
                    ,"-copyts"
                    ,"-start_at_zero"
@@ -73,7 +74,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-max_muxing_queue_size", "9999"
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", str(bufsize)
-                   ,"-threads", str(4)
+                   ,"-threads", str(threadCount)
                    ,"-crf"  ,'17'
                    ,"-preset", "slower"
                    ,"-tune", "film"

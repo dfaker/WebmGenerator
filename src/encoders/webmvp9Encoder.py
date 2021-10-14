@@ -10,7 +10,7 @@ from ..encodingUtils import isRquestCancelled
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
   
   audoBitrate = 8
   for abr in ['48','64','96','128','192']:
@@ -69,10 +69,11 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       if sizeLimitMax != 0.0:
         bufsize = str(min(2000000000.0,br*2))
 
+    threadCount = globalOptions.get('encoderStageThreads',4)
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
-                   ,"-threads", str(4),"-crf"  ,'25'
+                   ,"-threads", str(threadCount),"-crf"  ,'25'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
                    ,"-deadline","good",'-slices','8','-psnr','-speed','0'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]

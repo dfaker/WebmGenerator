@@ -393,7 +393,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
-    print(ctrl,shift)
+
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(self.seekSpeedFast if shift else self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
@@ -419,7 +419,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
-    print(ctrl,shift)
+
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(-self.seekSpeedFast if shift else -self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
@@ -675,13 +675,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.uiDirty=True
 
     if self.timeline_mousedownstate.get(1,False):
-      print('self.clickTarget',self.clickTarget)
       if self.clickTarget is None:
         if self.rangeHeaderClickStart is not None:
           self.currentZoomRangeMidpoint = ((e.x)/self.winfo_width())+self.rangeHeaderClickStart
           self.uiDirty=True
         else:          
-          print(self.timelineMousePressOffset)
           seconds = self.xCoordToSeconds(e.x)
           self.controller.pause()
           self.seekto(seconds)
@@ -810,7 +808,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.timeline_canvas.delete('ticks')
 
       for ts,interesttype in self.controller.getInterestMarks():
-        print(ts,interesttype)
         tx = int(self.secondsToXcoord(ts))
         if interesttype=='manual':
           tm = self.timeline_canvas.create_polygon(tx-5, 45+40,tx+5, 45+40, tx, 45+45,fill="#ead9a7",tags='ticks')
@@ -858,7 +855,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         
         if (rid,'main') in self.canvasRegionCache:
-          print('update',rid)
           canvasUpdated = True
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'main')],sx, timelineHeight-self.midrangeHeight, ex, timelineHeight)
 
@@ -911,8 +907,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.clipped=None
 
         else:
-          print('add',rid)
-              
+
           self.canvasRegionCache[(rid,'main')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#69dbbe",width=0, tags='fileSpecific')
           self.canvasRegionCache[(rid,'preTrim')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
           self.canvasRegionCache[(rid,'postTrim')] = self.timeline_canvas.create_rectangle(trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
@@ -947,7 +942,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     for (rid,name),i in list(self.canvasRegionCache.items()):
       if rid not in activeRanges and rid != 'previewFrame':
-        print('remove',rid)
         self.timeline_canvas.delete(i)
         del self.canvasRegionCache[(rid,name)]
     self.uiDirty=False
@@ -1033,13 +1027,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_last_right_click_x=None
 
   def canvasPopupAddNewInterestMarkCallback(self):
-    print(self.timeline_canvas_last_right_click_x,)
     if self.timeline_canvas_last_right_click_x is not None:
       self.controller.addNewInterestMark( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x))
       self.uiDirty=True
 
   def canvasPopupAddNewSubClipCallback(self,setDirtyAfter=True):
-    print(self.timeline_canvas_last_right_click_x,)
     if self.timeline_canvas_last_right_click_x is not None:
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5

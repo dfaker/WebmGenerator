@@ -10,7 +10,7 @@ from ..encodingUtils import isRquestCancelled
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,encodeStageFilter='null',requestId=None,packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,encodeStageFilter='null',requestId=None,globalOptions={},packageglobalStatusCallback=print):
 
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')

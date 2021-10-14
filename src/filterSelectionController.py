@@ -48,6 +48,7 @@ class FilterSelectionController:
     self.player.speed=2
     self.currentlyPlayingFileName=None
     self.installedFonts = None
+    self.filterApplicationMode = 'lavfi_complex'
 
   def takeScreenshotToFile(self,screenshotPath,includes='video'):
     screenshotPath =  os.path.abspath(os.path.join(screenshotPath,'{}.png'.format(time.time())))
@@ -140,13 +141,16 @@ class FilterSelectionController:
     return self.videoManager.getAllClips()
 
   def clearFilter(self):
-    self.player.lavfi_complex='[vid1]null[vo]'
-    #self.player.command('async','vf', 'del',    "@filterStack")
+    if self.filterApplicationMode == 'lavfi_complex':
+      self.player.lavfi_complex='[vid1]null[vo]'
+    else:
+      self.player.command('async','vf', 'del',    "@filterStack")
 
   def setFilter(self,filterExpStr):
-    self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
-
-    #self.player.command('async','vf', 'add',    '@filterStack:lavfi="{}"'.format(filterExpStr))
+    if self.filterApplicationMode == 'lavfi_complex':
+      self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
+    else:
+      self.player.command('async','vf', 'add',    '@filterStack:lavfi="{}"'.format(filterExpStr))
 
   def play(self):
     self.player.pause=False

@@ -418,13 +418,24 @@ class FilterValuePair(ttk.Frame):
       print(self.valueVar.get())
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
 
-  def getValuePair(self):
+  def getValuePair(self,forFilter=True):
     if self.param['type'] == 'string':
       val = self.valueVar.get()
-      if not val.endswith("'"):
-        val=val+"'"
-      if not val.startswith("'"):
-        val="'"+val
+
+      if forFilter:
+        outval  = []
+        for c in val:         
+          if c=='\\':
+            outval.append('\\\\')
+          elif c=='"':
+            outval.append('\'"\'')
+          elif c==':':
+            outval.append('\\:')
+          elif c=="'":
+            outval.append("'\\\\\\''")
+          else:
+            outval.append(c)
+        val = ''.join(["'"]+outval+["'"])
       return (self.param['n'],"{}".format(val))
     else:
       return (self.param['n'],self.valueVar.get())

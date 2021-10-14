@@ -5,6 +5,7 @@ import os
 import random
 import os
 import logging
+import time
 
 
 class CutselectionController:
@@ -45,6 +46,12 @@ class CutselectionController:
 
     self.loadFiles(initialFiles)
     
+
+  def takeScreenshotToFile(self,screenshotPath,includes='video'):
+    screenshotPath =  os.path.abspath(os.path.join(screenshotPath,'{}.png'.format(time.time())))
+    print(screenshotPath)
+    self.player.screenshot_to_file( screenshotPath ,includes='video')
+
   def getGlobalOptions(self):
     return self.globalOptions
 

@@ -1590,6 +1590,12 @@ selectableFilters = [
                 "type": "cycle",
                 "cycle": '@COLOURS',
             },
+            {
+                "n":"expansion",
+                "type":"cycle",
+                "d":"none",
+                "cycle":["none","strftime","normal"]
+            },
             {"n": "fontsize", "d": 16, "type": "int", "rectProp": "h", "range": None, "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] }
         ],

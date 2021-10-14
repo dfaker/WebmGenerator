@@ -9,7 +9,7 @@ import logging
 
 import colorsys
 
-
+import threading
 
 from tkinter import messagebox
 
@@ -307,12 +307,12 @@ class FilterSpecification(ttk.Frame):
               try:
                 filerExprams.append(':{}={:01.6f}'.format(param['n'],float(values[param['n']]) ) )
               except:
-                filerExprams.append(':{}={:01.6f}'.format(param['n'],0) )
+                filerExprams.append(':{}={:01.6f}'.format(param['n'],values[param['n']]) )
             elif param['type'] == 'int':
               try:
                 filerExprams.append(':{}={}'.format(param['n'],int(values[param['n']])))
               except:
-                filerExprams.append(':{}={:01.2f}'.format(param['n'],0) )
+                filerExprams.append(':{}={:01.2f}'.format(param['n'],values[param['n']]) )
             else:
               filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
           except:
@@ -478,12 +478,9 @@ class FilterSelectionUi(ttk.Frame):
       self.filterMenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))
     self.filterMenu.add_separator()
 
-    print('--------- Filter categories-------------')
     for k,v in sorted(self.submenuMap.items()):
       if k != 'Basic':
-        print(k)
         self.filterMenu.add_cascade(label=k,  menu=v)
-    print('--------- Filter categories-------------')
 
     self.comboboxFilterSelection.bind("<Button-1>",          self.showFilterMenu)
     self.comboboxFilterSelection.bind("<Button-3>",          self.showFilterMenu)
@@ -665,12 +662,27 @@ class FilterSelectionUi(ttk.Frame):
     self.sourceAngleDragStart   = [0,0]
 
     self.timelineModificationLock = Lock()
-    self.filterFailed=0
+    self.filterFailed=False
+    self.filterFailedResetTimer=None
     self.timelineFileIndex=0    
+
+  def clearFilterFailure(self):
+    self.filterFailed=False
+    self.refreshtimeLineForNewClip()
+    self.filterFailedResetTimer=None
 
   def filterFailure(self):
     print('SET FILTER FAILED')
-    self.filterFailed=30
+    self.filterFailed=True
+    if self.filterFailedResetTimer is None:
+      self.filterFailedResetTimer = threading.Timer(2, self.clearFilterFailure)
+      self.filterFailedResetTimer.start()
+    else:
+      self.filterFailedResetTimer.cancel()
+      self.filterFailedResetTimer = threading.Timer(2, self.clearFilterFailure)
+      self.filterFailedResetTimer.start()
+      
+
     self.refreshtimeLineForNewClip()
 
   def applyVectorOffset(self,x1,y1,x2,y2,isAsoluteValue=False,isAngle=False):
@@ -904,9 +916,7 @@ class FilterSelectionUi(ttk.Frame):
     tx = seconds/self.controller.getClipDuration()
     tx = tx*self.canvasValueTimeline.winfo_width()
     self.canvasValueTimeline.coords(self.timelineSeekHandle, tx, 20, tx, 175)  
-    if self.filterFailed > 0:
-      self.filterFailed -= 1      
-      print('filterFailed',self.filterFailed)
+    if self.filterFailed:      
       self.canvasValueTimeline.create_rectangle(0,(self.canvasValueTimeline.winfo_height()/2)-10,self.canvasValueTimeline.winfo_width(),(self.canvasValueTimeline.winfo_height()/2)+10,fill="#ff0000",tags='filterFailed')
       self.canvasValueTimeline.create_text(self.canvasValueTimeline.winfo_width()/2, self.canvasValueTimeline.winfo_height()/2,text="Filter Failed!",fill="white",tags='filterFailed') 
     else:
@@ -1014,6 +1024,12 @@ class FilterSelectionUi(ttk.Frame):
         modeText='[XY Warp Mode - Ctrl click a point on the video to warp it to the target position.]'
 
       self.canvasValueTimeline.create_text(2, 128, text="{} {} subdiv:{}".format(self.activeCommandFilterValuePair.commandvarName,modeText,self.activeCommandFilterValuePair.interpolationFactor),fill="white",tags='ActiveFilterName',anchor=tk.SW)
+
+    if self.filterFailed:      
+      self.canvasValueTimeline.create_rectangle(0,(self.canvasValueTimeline.winfo_height()/2)-10,self.canvasValueTimeline.winfo_width(),(self.canvasValueTimeline.winfo_height()/2)+10,fill="#ff0000",tags='filterFailed')
+      self.canvasValueTimeline.create_text(self.canvasValueTimeline.winfo_width()/2, self.canvasValueTimeline.winfo_height()/2,text="Filter Failed!",fill="white",tags='filterFailed') 
+    else:
+      self.canvasValueTimeline.delete('filterFailed')
 
 
   def showTemplateMenuPopup(self):
@@ -1419,6 +1435,7 @@ class FilterSelectionUi(ttk.Frame):
         self.controller.clearFilter()
       else:
         self.controller.setFilter(filterExpStrPreview)
+      self.filterFailed=False
 
     if self.currentSubclipIndex is not None and preLockClip == postLockClip:
       currentClip = self.getCurrentClip()
@@ -1435,7 +1452,7 @@ class FilterSelectionUi(ttk.Frame):
         if spec['name'] == ifilter.spec['name']:
           baseSpec=copy.deepcopy(spec)
           break
-      for n,v in [x.getValuePair() for x in ifilter.filterValuePairs]:
+      for n,v in [x.getValuePair(forFilter=False) for x in ifilter.filterValuePairs]:
         for param in baseSpec['params']:
           if param['n']==n:
             param['d']=v

@@ -176,8 +176,15 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
 
+  def takeScreenshotToFile(self,selectedTab):
+    if selectedTab == '.!cutselectionui':
+      print('Cut Selection screenshot')
+      self.cutselectionController.takeScreenshotToFile(self.tempFolder,includes='video')
+    elif selectedTab == '.!filterselectionui':
+      print('Filter screenshot')
+      self.filterSelectionController.takeScreenshotToFile(self.tempFolder,includes='video')
+
   def globalKeyCallback(self,evt):
-    print(evt)
     ctrl  = (evt.state & 0x4) != 0
     if ctrl:
       if evt.keysym=='q':

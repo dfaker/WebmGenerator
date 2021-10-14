@@ -44,7 +44,7 @@ class FFmpegService():
 
   def __init__(self,globalStatusCallback=print,imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1,globalOptions={}):
 
-    self.globalOptions={}
+    self.globalOptions=globalOptions
     self.cache={}
     self.imageRequestQueue = Queue()
     self.responseRouting = {}
@@ -63,7 +63,9 @@ class FFmpegService():
             pc = float(timestamp.replace('%',''))/100.0
             videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename))
             timestamp = videoInfo.duration*pc
-          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',thumbnail,scale={w}:{h}:flags=area'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
+          
+          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}:flags=area,thumbnail'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
+          
           logging.debug("Ffmpeg command: {}".format(' '.join(cmd)))
           proc = sp.Popen(cmd,stdout=sp.PIPE)
           outs,errs = proc.communicate()
@@ -582,7 +584,7 @@ class FFmpegService():
                    options, 
                    totalEncodedSeconds,   
                    totalExpectedEncodedSeconds, 
-                   statusCallback, requestId=requestId)
+                   statusCallback, requestId=requestId, globalOptions=self.globalOptions)
 
     def encodeConcat(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
 
@@ -934,7 +936,7 @@ class FFmpegService():
                    options, 
                    totalEncodedSeconds, 
                    totalExpectedEncodedSeconds, 
-                   statusCallback, requestId=requestId, encodeStageFilter=encodeStageFilter)
+                   statusCallback, requestId=requestId, encodeStageFilter=encodeStageFilter, globalOptions=self.globalOptions)
 
 
     def encodeWorker():
@@ -989,9 +991,7 @@ class FFmpegService():
             videoInfo = getVideoInfo(filename)
 
             sectionLength = int(videoInfo.fps*clipLength*3)
-
-            proc = sp.Popen(["ffmpeg","-i",cleanFilenameForFfmpeg(filename) ,"-vf","thumbnail=n={sectionLength}".format(sectionLength=sectionLength),"-f","null","-"],stderr=sp.PIPE,stdout=sp.DEVNULL)
-
+            proc = sp.Popen(["ffmpeg","-i",cleanFilenameForFfmpeg(filename) ,"-vf","scale=400:400,thumbnail=n={sectionLength}".format(sectionLength=sectionLength),"-f","null","-"],stderr=sp.PIPE,stdout=sp.DEVNULL)
             l=b''
             pair=[]
             self.globalStatusCallback('Detecting scene centres',0)

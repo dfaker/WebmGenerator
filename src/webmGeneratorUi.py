@@ -11,7 +11,7 @@ import json
 import threading
 import os
 
-RELEASE_NUMVER = 'v3.8.0'
+RELEASE_NUMVER = 'v3.10.2'
 
 class WebmGeneratorUi:
 
@@ -180,6 +180,10 @@ class WebmGeneratorUi:
     
     self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
 
+    self.commandmenu.add_separator()
+    self.commandmenu.add_command(label="Screenshot to {}".format(self.controller.tempFolder), command=self.takeScreenshot)
+
+
 
     self.menubar.add_cascade(label="Commands", menu=self.commandmenu)
 
@@ -232,6 +236,11 @@ class WebmGeneratorUi:
     else:
       self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files ({} files {})".format(count,self.sizeof_fmt(sz)))
       self.filemenu.entryconfigure(self.clearTempMenuIndex, state='normal')
+
+
+  def takeScreenshot(self):
+    selectedTab = self.notebook.select()
+    self.controller.takeScreenshotToFile(selectedTab)
 
   def splitClipIntoNEqualSections(self):
     self.controller.splitClipIntoNEqualSections()

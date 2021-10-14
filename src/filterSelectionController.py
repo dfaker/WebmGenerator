@@ -2,6 +2,7 @@ import mpv
 import math
 import os
 import json
+import time
 
 class FilterSelectionController:
 
@@ -31,7 +32,7 @@ class FilterSelectionController:
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=True,
                           log_handler=self.errorHandler,
-                          loglevel='debug',
+                          loglevel='error',
                           loop='inf',
                           mute=True,
                           cursor_autohide="always",
@@ -48,9 +49,18 @@ class FilterSelectionController:
     self.currentlyPlayingFileName=None
     self.installedFonts = None
 
+  def takeScreenshotToFile(self,screenshotPath,includes='video'):
+    screenshotPath =  os.path.abspath(os.path.join(screenshotPath,'{}.png'.format(time.time())))
+    print(screenshotPath)
+    self.player.screenshot_to_file( screenshotPath ,includes='video')
+
+
   def errorHandler(self,kind,module,err):
-    print(kind,module,err)
+    print(kind,'|',module,'|',err)
     if kind=='error' and 'Disabling filter filterStack' in err:
+      self.clearFilter()
+      self.ui.filterFailure()
+    if kind=='fatal' and 'failed to configure the filter' in err:
       self.clearFilter()
       self.ui.filterFailure()
 
@@ -130,10 +140,13 @@ class FilterSelectionController:
     return self.videoManager.getAllClips()
 
   def clearFilter(self):
-    self.player.command('async','vf', 'del',    "@filterStack")
+    self.player.lavfi_complex='[vid1]null[vo]'
+    #self.player.command('async','vf', 'del',    "@filterStack")
 
   def setFilter(self,filterExpStr):
-    self.player.command('async','vf', 'add',    "@filterStack:lavfi=\"{}\"".format(filterExpStr))
+    self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
+
+    #self.player.command('async','vf', 'add',    '@filterStack:lavfi="{}"'.format(filterExpStr))
 
   def play(self):
     self.player.pause=False
@@ -146,7 +159,6 @@ class FilterSelectionController:
 
   def setVideoVector(self,x1,y1,x2,y2):
     self.player.command('script-message','screenspacetools_drawVector',x1,y1,x2,y2)
-
 
   def addVideoRegMark(self,x,y,style='cross'):
     self.player.command('script-message','screenspacetools_regMark',x,y,style)
@@ -165,8 +177,12 @@ class FilterSelectionController:
   def screenSpaceToVideoSpace(self,x,y):
     try:
       #soruce video    
+
+      par = self.player.video_out_params.get('par',1)
+      
       vid_w = self.player.video_out_params['dw']
       vid_h = self.player.video_out_params['dh']
+
 
       #displayframe
       osd_w = self.player.osd_width
@@ -179,11 +195,13 @@ class FilterSelectionController:
       osd_left = osd_dim['ml']
       osd_right = osd_dim['mr']
 
-      boxw = osd_w-osd_right-osd_left
+      boxw = (osd_w-osd_right-osd_left)*par
       boxh = osd_h-osd_top-osd_bottom
 
+      ox = ((x-osd_right)*(vid_w/boxw))
+      oy = ((y-osd_top)*(vid_h/boxh))
     
-      return (x-osd_right)*(vid_w/boxw),(y-osd_top)*(vid_h/boxh)
+      return ox,oy
     except Exception as e:
       print(e)
       return 0,0

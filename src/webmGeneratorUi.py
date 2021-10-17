@@ -37,6 +37,9 @@ class WebmGeneratorUi:
 
   
 
+    self.style.configure("frameButtons.TFrame", 
+                           border=0,relief='flat')
+
     self.style.configure("selectedCommandFrame.TFrame", 
                           background='#a8e4a0',lightcolor='#a8e4a0',darkcolor='#a8e4a0')
     self.style.configure("selectedCommandFrame.TLabel",background='#a8e4a0')
@@ -51,13 +54,22 @@ class WebmGeneratorUi:
     self.style.configure("Green.Horizontal.TProgressbar", 
                            background='green',lightcolor='green',darkcolor='green',border=0,relief='flat')
 
-    self.style.configure("PlayerLabel.TLabel",background='#282828')
+    self.style.configure("PlayerLabel.TLabel",background='#282828',padding=(0,-600))
 
     self.style.configure("filterDisabled.TButton",background='#e4a8a0',lightcolor='#e4a8a0',darkcolor='#e4a8a0')
     self.style.configure("filterDisabled.TFrame",background='#e4a8a0',lightcolor='#e4a8a0',darkcolor='#e4a8a0')
     self.style.configure("filterDisabled.TLabel",background='#e4a8a0',lightcolor='#e4a8a0',darkcolor='#e4a8a0')
+    
+    self.style.configure('small.TMenubutton',padding=0)
 
-    self.style.configure('subtle.TEntry', border=0, padding=(0,0),background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
+    self.style.configure('subtle.TEntry', border=0,borderwidth =0, padding=(0,0),background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
+    
+    
+    self.style.configure('smallVideoSub.TButton', padding=0,background='#282828',activebackground='#282828',activeforeground='#282828',foreground='#69bfdb',highlightcolor='#282828',
+                                                  lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',highlightbackground='#69bfdb',relief='flat')
+
+    self.style.map('smallVideoSub.TButton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
+
     self.style.configure('small.TButton', padding=0)
     self.style.configure('smallOnechar.TButton', padding=(-28,0))
     self.style.configure('smallOnecharenabled.TButton', padding=(-28,0),background='green',foreground='white',lightcolor='green',darkcolor='green')
@@ -70,7 +82,9 @@ class WebmGeneratorUi:
     self.master=master
 
     self.master.title('WebmGenerator')
+    #self.master.minsize(10,10)
     self.master.minsize(1024,900)
+    self.master.minsize(1024,720)
 
     self.iconLookup = {}
 
@@ -122,6 +136,12 @@ class WebmGeneratorUi:
       self.filemenu.add_command(label="Start screen capture", command=self.startScreencap, state='disabled')
 
     self.filemenu.add_separator()
+    
+    self.filemenu.add_command(label="Toggle fullscreen", command=self.toggleFullscreen)
+
+
+    self.filemenu.add_separator()
+
     self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Cancel current youtube-dlp download", command=self.cancelCurrentYoutubeDl)
@@ -216,6 +236,12 @@ class WebmGeneratorUi:
     self.statusProgress.pack(expand=1,side='right', fill='x')
     self.statusProgress.config(style="Green.Horizontal.TProgressbar")
 
+    self.fullscreen = self.controller.globalOptions.get('startFullscreen',False)
+    try:
+      self.master.attributes("-fullscreen", self.fullscreen)
+    except Exception as e:
+      print('root -fullscreen attribute set Exception',e)
+
     self.statusFrame.pack(expand=0, fill='x',side='bottom')
 
     self.notebook.pack(expand=1, fill='both')
@@ -237,6 +263,9 @@ class WebmGeneratorUi:
       self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files ({} files {})".format(count,self.sizeof_fmt(sz)))
       self.filemenu.entryconfigure(self.clearTempMenuIndex, state='normal')
 
+  def toggleFullscreen(self):
+    self.fullscreen = not self.fullscreen
+    self.master.attributes("-fullscreen", self.fullscreen)
 
   def takeScreenshot(self):
     selectedTab = self.notebook.select()

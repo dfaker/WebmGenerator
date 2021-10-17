@@ -54,7 +54,9 @@ class WebmGeneratorController:
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
       "defaultAutosaveFilename":'autosave.webgproj',
-
+      "titleMetadataSuffix":' WmG',
+      "startFullscreen":False,
+    
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       
@@ -107,6 +109,8 @@ class WebmGeneratorController:
           logging.error("WebmGeneratorController __init__ Exception",exc_info=e)
 
     open(self.configFileName,'w').write(json.dumps(self.globalOptions,indent=1))
+
+    self.globalOptions['titleMetadataSuffix'] = ' WmG';
 
     self.parallelVideoJobs    = self.globalOptions.get("parallelVideoJobs",3)
     self.statsWorkers         = self.globalOptions.get("statsWorkers",1)

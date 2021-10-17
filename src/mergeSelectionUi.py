@@ -621,7 +621,7 @@ class MergeSelectionUi(ttk.Frame):
     self.outputPlanningContainer = ttk.Frame(self.labelframeSequenceFrame)
     self.outputPlanningContainer.pack(expand='false', fill='both', padx='0', pady='0', side='top')
 
-    self.labelframeSequenceFrame.config(height='200', text='Output Plan', width='200')
+    self.labelframeSequenceFrame.config(height='20', text='Output Plan', width='200')
     self.labelframeSequenceFrame.pack(expand='true',fill='both', padx='5', pady='5', side='top')
 
     self.gridSequenceContainer = ttk.Frame(self.outputPlanningContainer)

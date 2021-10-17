@@ -57,14 +57,28 @@ class CutselectionController:
 
   def splitClipIntoNEqualSections(self):
     n = self.ui.askInteger('How Many sections would you like to split into?','How Many sections would you like to split into?',initialvalue=10)
+
     if n is not None and n >= 1:
+      useRange,a,b = self.askToUseRangeIfSet()
+      
+      print(useRange,a,b)
+
       self.clearAllSubclipsOnCurrentClip()
+      endPoint = self.getTotalDuration()
       sectionLength = self.getTotalDuration()/n
       start = 0
-      while start < self.getTotalDuration():
-        self.addNewSubclip(start, min(start+sectionLength,self.getTotalDuration()) )
+      if useRange:
+        start = a
+        endPoint = b
+        sectionLength = (b-a)/n 
+      for _ in range(n):
+        if start != min(start+sectionLength,endPoint):
+          print(start,min(start+sectionLength,endPoint))
+          self.addNewSubclip(start, min(start+sectionLength,endPoint),seekAfter=False)
         start = start+sectionLength
       self.updateProgressStatistics()
+      self.ui.setUiDirtyFlag()
+      self.seekTo(endPoint)
 
   def addSubclipByTextRange(self):
     rawRange = self.ui.askString('Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format','Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format')
@@ -104,12 +118,21 @@ class CutselectionController:
   def splitClipIntoSectionsOfLengthN(self):
     sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be? (Seconds)', initialvalue=30)
     if sectionLength is not None and sectionLength >= 0:
+      useRange,a,b = self.askToUseRangeIfSet()
+
       self.clearAllSubclipsOnCurrentClip()
       start = 0
-      while start < self.getTotalDuration():
-        self.addNewSubclip(start, min(start+sectionLength,self.getTotalDuration()) )
+      endPoint = self.getTotalDuration()
+      if useRange:
+        start = a
+        endPoint = b 
+
+      while start < endPoint:
+        self.addNewSubclip(start, min(start+sectionLength,endPoint),seekAfter=False)
         start = start+sectionLength
       self.updateProgressStatistics()
+      self.ui.setUiDirtyFlag()
+      self.seekTo(endPoint)
 
   def generateSoundWaveBackgrounds(self):
     self.ui.generateSoundWaveBackgrounds()
@@ -519,7 +542,6 @@ class CutselectionController:
         cropCoords = (x1,y1,x2-x1,y2-y1)
       self.ffmpegService.findRangeforLoop( self.currentlyPlayingFileName,secondsCenter,minSeconds,maxSeconds,cropCoords,self.foundLoopCallback )
 
-
   def sceneChangeCallback(self,filename,timestamp,timestampEnd=None,kind='Mark'):
     if kind == 'Mark':
       self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')
@@ -528,29 +550,45 @@ class CutselectionController:
 
     self.ui.setUiDirtyFlag()
 
+  def askToUseRangeIfSet(self):
+    useRange=False
+    a,b = self.ui.getCurrentlySelectedRegion()
+    if a is not None and b is not None:
+      useRange = self.ui.confirmWithMessage("Use selected temporary range?","Do you want to limit the search in the selected range {:0.3f} to {:0.3f} ?".format(a,b),icon='question')
+      if not useRange:
+        useRange,a,b = False,None,None
+      else:
+        self.ui.clearCurrentlySelectedRegion()
+    return useRange,a,b
 
   def runSceneCentreDetectionCuts(self,addCuts=False):
     sceneLength = self.ui.askFloat('What should the length of the representative scenes be?','Scene Length (seconds)', initialvalue=30)
     if sceneLength is not None:
       sceneLength = abs(sceneLength)
-      self.ffmpegService.runRepresentativeCentresDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,clipLength=sceneLength,addCuts=addCuts)
+      useRange,a,b = self.askToUseRangeIfSet()
+
+
+      self.ffmpegService.runRepresentativeCentresDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,clipLength=sceneLength,addCuts=addCuts,useRange=useRange,rangeStart=a,rangeEnd=b)
 
   def runSceneChangeDetection(self,addCuts=False):
     threshold = self.ui.askFloat('What should the threshold of scene detection be?','Scene change proportion', initialvalue=0.3)
     if threshold is not None:
       threshold = abs(threshold)
-      self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,threshold=threshold,addCuts=True)
+      useRange,a,b = self.askToUseRangeIfSet()
+
+      self.ffmpegService.runSceneChangeDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,threshold=threshold,addCuts=addCuts,useRange=useRange,rangeStart=a,rangeEnd=b)
 
   def scanAndAddLoudSectionsCallback(self,filename,start,end):
     self.videoManager.registerNewSubclip(filename,start,end)
     self.ui.setUiDirtyFlag()
 
-
   def scanAndAddLoudSections(self):
     threshold = self.ui.askFloat('How loud does the section have to be to add it?','Loudness Threshold (-dB)', initialvalue=20)
     if threshold is not None:
       threshold=abs(threshold)
-      self.ffmpegService.scanAndAddLoudSections(self.currentlyPlayingFileName,self.currentTotalDuration,threshold,self.scanAndAddLoudSectionsCallback)
+      useRange,a,b = self.askToUseRangeIfSet()
+
+      self.ffmpegService.scanAndAddLoudSections(self.currentlyPlayingFileName,self.currentTotalDuration,threshold,self.scanAndAddLoudSectionsCallback,useRange=useRange,rangeStart=a,rangeEnd=b)
 
   def setLoopPos(self,start,end):
     if self.loopMode == 'Loop current':

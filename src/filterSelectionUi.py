@@ -1031,9 +1031,8 @@ class FilterSelectionUi(ttk.Frame):
     else:
       self.canvasValueTimeline.delete('filterFailed')
 
-
   def showTemplateMenuPopup(self):
-    self.templatePopupMenu.tk_popup(self.winfo_pointerx(),self.winfo_poinstery())
+    self.templatePopupMenu.tk_popup(self.winfo_pointerx(),self.winfo_pointery())
 
   def getGlobalOptions(self):
     return self.controller.getGlobalOptions()
@@ -1334,6 +1333,7 @@ class FilterSelectionUi(ttk.Frame):
     if useFile:
       sep = "\n"
 
+
     for k,v in sorted(commandSet.items()):
       if len(v)>0:
         for cmdTarget,cmdProperty,cmdValue,interpolationMode in v:
@@ -1367,10 +1367,6 @@ class FilterSelectionUi(ttk.Frame):
             commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
 
           elif interpolationMode == 'neighbour-relative':
-            #if firstCommand:
-            #  commandStr_preview += "{k:0.4f} {t} reinit {p}={cv:0.4f};{sep}".format(sep=sep, k=norm_k,t=cmdTarget,p=cmdProperty, cv=cmdValue)
-            #  commandStr_real    += "{k:0.4f} {t} reinit {p}={cv:0.4f};{sep}".format(sep=sep, k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
-
             commandStr_preview += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty, cv=cmdValue-lastValue)
             commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty, cv=cmdValue-lastValue)
 

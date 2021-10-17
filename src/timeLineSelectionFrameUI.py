@@ -109,7 +109,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Clone subclip",command=self.canvasPopupCloneSubClipCallback)
 
     self.timeline_canvas_popup_menu.add_separator()
-    self.timeline_canvas_popup_menu.add_command(label="Copy  subclip timestamps",command=self.canvasPopupCopySubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Copy subclip timestamps",command=self.canvasPopupCopySubClipCallback)
     self.timeline_canvas_popup_menu.add_command(label="Paste subclip timestamps",command=self.canvasPopupPasteSubClipCallback)
 
 
@@ -231,6 +231,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.clipped=None
 
 
+  def getCurrentlySelectedRegion(self):
+    start = self.tempRangeStart
+    pos = self.controller.getCurrentPlaybackPosition()
+    if start != None and pos != None and pos != start:
+      a,b = sorted([start,pos])
+      return a,b 
+    return None,None
+
   def processFileAudioToBytes(self,filename,totalDuration):
     import subprocess as sp
     sampleRate = 4000
@@ -327,6 +335,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if completeOnLastPass:
         self.wavePicSectionsThread = None
         return
+
+  def clearCurrentlySelectedRegion(self):
+    self.tempRangeStart=None
+    self.updateCanvas()
 
   def keyboardCutatTime(self,e):
     mid = self.controller.getCurrentPlaybackPosition()

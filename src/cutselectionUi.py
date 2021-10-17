@@ -256,7 +256,7 @@ class CutselectionUi(ttk.Frame):
             self.loopModeVar.get(),
             *self.loopOptions
         )
-
+        self.entryLoopMode.config(style="small.TMenubutton")
         self.entryLoopMode.pack(side="right")
         self.frameLoopMode.config(height="200", width="200")
         self.frameLoopMode.pack(fill="x", pady="2", side="top")
@@ -292,25 +292,32 @@ class CutselectionUi(ttk.Frame):
         self.labelFrameSlice.config(height="200", text="Slice Settings", width="200")
         self.labelFrameSlice.pack(fill="x", side="top")
 
-        self.labelframeSourceVideos = ttk.Labelframe(self.frameSliceSettings)
+        self.labelframeSourceVideos = ttk.Frame(self.frameSliceSettings)
 
-        self.buttonLoadVideos = ttk.Button(self.labelframeSourceVideos)
-        self.buttonLoadVideos.config(text="Load Videos")
+        self.labelframeButtons = ttk.Frame(self.labelframeSourceVideos,style="frameButtons.TFrame")
+
+
+
+        self.buttonLoadVideos = ttk.Button(self.labelframeButtons)
+        self.buttonLoadVideos.config(text="Load File")
         self.buttonLoadVideos.config(style="small.TButton")
         self.buttonLoadVideos.config(command=self.loadVideoFiles)
-        self.buttonLoadVideos.pack(fill="x", side="top")
+        self.buttonLoadVideos.pack(expand='true', fill="x", side="left")
 
-        self.buttonLoadYTdl = ttk.Button(self.labelframeSourceVideos)
-        self.buttonLoadYTdl.config(text="Load youtube-dlp supported url")
+        self.buttonLoadYTdl = ttk.Button(self.labelframeButtons)
+        self.buttonLoadYTdl.config(text="Load URL")
         self.buttonLoadYTdl.config(style="small.TButton")
         self.buttonLoadYTdl.config(command=self.loadVideoYTdl)
-        self.buttonLoadYTdl.pack(fill="x", side="top")
+        self.buttonLoadYTdl.pack(expand='true', fill="x", side="left")
 
-        self.buttonClearSubclips = ttk.Button(self.labelframeSourceVideos)
-        self.buttonClearSubclips.config(text="Clear all subclips")
+        self.buttonClearSubclips = ttk.Button(self.labelframeButtons)
+        self.buttonClearSubclips.config(text="Clear SubClips")
         self.buttonClearSubclips.config(style="small.TButton")
         self.buttonClearSubclips.config(command=self.clearSubclips)
-        self.buttonClearSubclips.pack(fill="x", side="top")
+        self.buttonClearSubclips.pack(expand='true', fill="x", side="left")
+
+        self.labelframeButtons.pack(expand='false', fill="x", side="top")
+
 
         self.scrolledframeVideoPreviewContainer = ScrolledFrame(
             self.labelframeSourceVideos, scrolltype="vertical"
@@ -323,7 +330,7 @@ class CutselectionUi(ttk.Frame):
         )
 
         self.labelframeSourceVideos.config(
-            height="200", text="Source Videos", width="200"
+            height="200", width="200"
         )
         self.labelframeSourceVideos.pack(expand="true", fill="both", side="top")
 
@@ -367,35 +374,35 @@ class CutselectionUi(ttk.Frame):
 
         self.frameVideoControls = ttk.Frame(self.frameVideoPlayerAndControls)
 
-        self.buttonvideoPrevClip= ttk.Button(self.frameVideoControls,text='Prev Clip', style="small.TButton")
+        self.buttonvideoPrevClip= ttk.Button(self.frameVideoControls,text='Prev Clip', style="smallVideoSub.TButton")
         self.buttonvideoPrevClip.config(command=self.prevClip)
         self.buttonvideoPrevClip.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoJumpBack = ttk.Button(self.frameVideoControls,text='<< Jump', style="small.TButton")
+        self.buttonvideoJumpBack = ttk.Button(self.frameVideoControls,text='<< Jump', style="smallVideoSub.TButton")
         self.buttonvideoJumpBack.config(command=self.jumpBack)
         self.buttonvideoJumpBack.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoPause = ttk.Button(self.frameVideoControls,text='Play', style="small.TButton")
+        self.buttonvideoPause = ttk.Button(self.frameVideoControls,text='Play', style="smallVideoSub.TButton")
         self.buttonvideoPause.config(command=self.playPauseToggle)
         self.buttonvideoPause.pack(expand="true", fill='x', side="left")        
 
-        self.buttonvideoInterestMark = ttk.Button(self.frameVideoControls,text='Add Mark', style="small.TButton")
+        self.buttonvideoInterestMark = ttk.Button(self.frameVideoControls,text='Add Mark', style="smallVideoSub.TButton")
         self.buttonvideoInterestMark.config(command=self.addNewInterestMarkNow)
         self.buttonvideoInterestMark.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoRandomClip= ttk.Button(self.frameVideoControls,text='Random Clip', style="small.TButton")
+        self.buttonvideoRandomClip= ttk.Button(self.frameVideoControls,text='Random Clip', style="smallVideoSub.TButton")
         self.buttonvideoRandomClip.config(command=self.randomClip)
         self.buttonvideoRandomClip.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoJumpFwd = ttk.Button(self.frameVideoControls,text='Jump >>', style="small.TButton")
+        self.buttonvideoJumpFwd = ttk.Button(self.frameVideoControls,text='Jump >>', style="smallVideoSub.TButton")
         self.buttonvideoJumpFwd.config(command=self.jumpFwd)
         self.buttonvideoJumpFwd.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoAddFullClip = ttk.Button(self.frameVideoControls,text='Add Full Clip', style="small.TButton")
+        self.buttonvideoAddFullClip = ttk.Button(self.frameVideoControls,text='Add Full Clip', style="smallVideoSub.TButton")
         self.buttonvideoAddFullClip.config(command=self.addFullClip)
         self.buttonvideoAddFullClip.pack(expand="true", fill='x', side="left")
 
-        self.buttonvideoNextClip= ttk.Button(self.frameVideoControls,text='Next Clip', style="small.TButton")
+        self.buttonvideoNextClip= ttk.Button(self.frameVideoControls,text='Next Clip', style="smallVideoSub.TButton")
         self.buttonvideoNextClip.config(command=self.nextClip)
         self.buttonvideoNextClip.pack(expand="true", fill='x', side="left")
 
@@ -409,11 +416,14 @@ class CutselectionUi(ttk.Frame):
 
         self.frameTimeLineFrame = TimeLineSelectionFrameUI(self.frameCutSelection, self, globalOptions=self.globalOptions)
 
-        self.frameTimeLineFrame.config(borderwidth="0", height="200", width="200",takefocus=True)
-        self.frameTimeLineFrame.pack(fill="x", side="bottom")
 
         self.frameCutSelection.config(height="800", width="1500")
         self.frameCutSelection.pack(expand="true", fill="both", side="top")
+
+
+        self.frameTimeLineFrame.config(borderwidth="0", height="200", width="200",takefocus=True)
+        self.frameTimeLineFrame.pack(fill="x", side="bottom")
+
 
         self.mainwindow = self.frameCutSelection
 
@@ -539,6 +549,13 @@ class CutselectionUi(ttk.Frame):
         self.screenMouseRect=[None,None,None,None]
         self.mouseRectDragging=False
         self.controller.clearVideoRect()
+
+    def getCurrentlySelectedRegion(self):
+      return self.frameTimeLineFrame.getCurrentlySelectedRegion()
+
+
+    def clearCurrentlySelectedRegion(self):
+      return self.frameTimeLineFrame.clearCurrentlySelectedRegion()
 
     def confirmWithMessage(self,messageTitle,message,icon='warning'):
       return messagebox.askquestion(messageTitle,message,icon=icon)
@@ -790,7 +807,8 @@ class CutselectionUi(ttk.Frame):
         self.frameTimeLineFrame.updateCanvas()
 
     def setUiDirtyFlag(self):
-      self.frameTimeLineFrame.setUiDirtyFlag() 
+      self.frameTimeLineFrame.setUiDirtyFlag()
+      self.frameTimeLineFrame.updateCanvas() 
 
     def play(self):
         self.controller.play()

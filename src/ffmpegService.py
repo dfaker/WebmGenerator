@@ -1022,8 +1022,18 @@ class FFmpegService():
             threshold = options.get('threshold',90)
             totalDuration=float(options.get('duration',1))
             mergeDistance = options.get('mergeDistance',3)
+            timetampOffset=0
+            rangeClause = []
 
-            proc = sp.Popen(["ffmpeg","-i",cleanFilenameForFfmpeg(filename) ,"-af","silencedetect=n=-{threshold}dB:d=10".format(threshold=threshold),"-f","null","-"],stderr=sp.PIPE,stdout=sp.DEVNULL)
+            if options.get('useRange',False):
+              a = float(options.get('rangeStart',0))
+              b = float(options.get('rangeEnd',totalDuration))
+              totalDuration=(b-a)
+              rangeClause=['-ss',str(a),'-to',str(b)]             
+              timetampOffset=a
+
+
+            proc = sp.Popen(["ffmpeg"]+rangeClause+["-i",cleanFilenameForFfmpeg(filename) ,"-af","silencedetect=n=-{threshold}dB:d=10".format(threshold=threshold),"-f","null","-"],stderr=sp.PIPE,stdout=sp.DEVNULL)
 
             l=b''
             pair=[]
@@ -1051,7 +1061,7 @@ class FFmpegService():
                 if t is not None and t>0:
                   pair.append(t)
                   if len(pair)==2:
-                    callback(filename,pair[0],pair[1])
+                    callback(filename,pair[0]+timetampOffset,pair[1]+timetampOffset)
                     pair=[]
                 l=b''
               else:
@@ -1267,11 +1277,29 @@ class FFmpegService():
             expectedLength = options.get('duration',0)
             threshold = float(options.get('threshold',0.3))
             self.globalStatusCallback('Starting scene change detection ',0/expectedLength)
-            proc = sp.Popen(
-              ['ffmpeg','-i',cleanFilenameForFfmpeg(filename),'-filter_complex', 'select=gt(scene\\,{threshold}),showinfo'.format(threshold=threshold), '-f', 'null', 'NUL']
-              ,stderr=sp.PIPE)
-            ln=b''
+            
+            rangeClause=[]
+            rangeStart=0
             lastTimestamp=0
+            timetampOffset=0
+            ts=0
+            if options.get('useRange',False):
+              a = float(options.get('rangeStart',0))
+              b = float(options.get('rangeEnd',expectedLength))
+              expectedLength=(b-a)
+              rangeStart=a
+              rangeClause=['-ss',str(a),'-to',str(b)]          
+              lastTimestamp=a    
+              timetampOffset=a
+
+            cmd = ['ffmpeg']+rangeClause+['-i',cleanFilenameForFfmpeg(filename),'-filter_complex','select=gt(scene\\,{threshold}),showinfo'.format(threshold=threshold), '-f', 'null', 'NUL']
+            print(' '.join(cmd))
+            proc = sp.Popen(
+              cmd  
+              ,stderr=sp.PIPE)
+
+            ln=b''
+            
             while 1:
               c=proc.stderr.read(1)
               if len(c)==0:
@@ -1284,19 +1312,19 @@ class FFmpegService():
                         ts = float(e.split(b':')[-1])
                         self.globalStatusCallback('Scene change detection ',ts/expectedLength)
                         if options.get('addCuts',False):
-                          callback(filename,lastTimestamp,ts,kind='Cut')
-                          lastTimestamp=ts
+                          callback(filename,lastTimestamp,ts+timetampOffset,kind='Cut')
+                          lastTimestamp=ts+timetampOffset
                         else:
-                          callback(filename,ts,kind='Mark')
+                          callback(filename,ts+timetampOffset,kind='Mark')
                   ln=b''
                 else:
                   ln+=c
               except Exception as e:
                 print(e)
-            if lastTimestamp != 0:
+            if lastTimestamp != rangeStart:
               if options.get('addCuts',False):
-                callback(filename,lastTimestamp,ts,kind='Cut')
-                lastTimestamp=ts
+                callback(filename,lastTimestamp,ts+timetampOffset,kind='Cut')
+                lastTimestamp=ts+timetampOffset
             proc.communicate()
         except Exception as e:
           logging.error("Scene Change Search progress Exception",exc_info=e)
@@ -1450,25 +1478,34 @@ class FFmpegService():
                                                                   rid=rid,
                                                                   start=mid),callback) )
 
-  def runSceneChangeDetection(self,filename,duration,callback,threshold=0.3,addCuts=False):
+  def runSceneChangeDetection(self,filename,duration,callback,threshold=0.3,addCuts=False,useRange=False,rangeStart=None,rangeEnd=None):
     self.statsRequestQueue.put( (filename,'SceneChangeSearch',dict(filename=filename,
                                                                    addCuts=addCuts,
+                                                                   useRange=useRange,
+                                                                   rangeStart=rangeStart,
+                                                                   rangeEnd=rangeEnd,
                                                                    threshold=threshold,
                                                                    duration=duration),callback) )
 
 
-  def runRepresentativeCentresDetection(self,filename,duration,callback,clipLength=30,addCuts=False):
+  def runRepresentativeCentresDetection(self,filename,duration,callback,clipLength=30,addCuts=False,useRange=False,rangeStart=None,rangeEnd=None):
     self.statsRequestQueue.put( (filename,'RepresentativeSections',dict(filename=filename,
                                                                         addCuts=addCuts,
+                                                                        useRange=useRange,
+                                                                        rangeStart=rangeStart,
+                                                                        rangeEnd=rangeEnd,
                                                                         clipLength=clipLength,
                                                                         duration=duration),callback) )
 
 
 
-  def scanAndAddLoudSections(self,filename,totalDuration,threshold,callback):
+  def scanAndAddLoudSections(self,filename,totalDuration,threshold,callback,useRange=False,rangeStart=None,rangeEnd=None):
     self.statsRequestQueue.put( (filename,'AddLoudSections',dict(filename=filename, 
-                                                                  duration=totalDuration,                                                                 
-                                                                  threshold=threshold),callback) )    
+                                                                 duration=totalDuration,
+                                                                 useRange=useRange,
+                                                                 rangeStart=rangeStart,
+                                                                 rangeEnd=rangeEnd,                                                                 
+                                                                 threshold=threshold),callback) )    
 
 
   def findLowerErrorRangeforLoop(self,filename,start,end,rid,secondsChange,cropRect,callback):

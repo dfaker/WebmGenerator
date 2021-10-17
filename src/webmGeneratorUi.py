@@ -62,9 +62,12 @@ class WebmGeneratorUi:
     
     self.style.configure('small.TMenubutton',padding=0)
 
-    self.style.configure('subtle.TEntry', border=0,borderwidth =0, padding=(0,0),background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
+    self.style.configure('subtle.TEntry', highlightbackground="#282828", highlightcolor="#282828",border=0,borderwidth =0,highlightthickness=0, padding=(0,0),bordercolor='#282828',
+                                          background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     
-    
+    self.style.map('subtle.TEntry',bordercolor=[('active', '#282828')])
+
+
     self.style.configure('smallVideoSub.TButton', padding=0,background='#282828',activebackground='#282828',activeforeground='#282828',foreground='#69bfdb',highlightcolor='#282828',
                                                   lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',highlightbackground='#69bfdb',relief='flat')
 

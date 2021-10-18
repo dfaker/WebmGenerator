@@ -927,9 +927,11 @@ class FilterSelectionUi(ttk.Frame):
 
   def refreshtimeLineForNewClip(self):
 
-
     self.canvasValueTimeline.delete('ticks')
     duration      = self.controller.getClipDuration()
+    if duration==0:
+      return
+
     tickStart     = 0
     tickIncrement =  duration/31
 

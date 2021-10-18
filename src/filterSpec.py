@@ -919,7 +919,6 @@ selectableFilters = [
             {"n": "fontname", "d": "", "type": "cycle",
                 "cycle": [""]+fonts,
             },
-
             {"n": "fontsize", "d": 12, "type": "float", "range": [0, None], "inc": 0.1},
             {"n": "primaryColour", "d": "&H0000CCFF", "type": "bareString"},
             {"n": "outlineColour", "d": "&H00000000", "type": "bareString"},
@@ -1021,8 +1020,8 @@ selectableFilters = [
         "desc":"Overlay a source on top of the input.",
         "category":['Basic','Overlay, text and masks'],
         "timelineSupport":True,
-        "filter": "null[vin{fn}],movie='{source}':loop=1,scale=w={w}:h={h},format=argb,colorchannelmixer@{fn}=aa={alpha},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
-        "filterPreview": "null[vin{fn}],movie='{source}',scale=w={w}:h={h},format=argb,colorchannelmixer@{fn}=aa={alpha},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}:y={y}",
+        "filter": "null[vin{fn}],movie='{source}':loop=1,scale=w={w}:h={h},format=argb,colorchannelmixer@{fn}=aa={alpha},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}+{x_offset}:y={y}+{y_offset}",
+        "filterPreview": "null[vin{fn}],movie='{source}',scale=w={w}:h={h},format=argb,colorchannelmixer@{fn}=aa={alpha},rotate@{fn}=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none[pwm{fn}],[vin{fn}][pwm{fn}]overlay@{fn}=x={x}+{x_offset}:y={y}+{y_offset}",
         "params": [
             {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
             {
@@ -1037,6 +1036,13 @@ selectableFilters = [
                 "commandVar":['Overlay-X',[['overlay@{fn}','x']]]
             },
             {
+                "n": "x_offset",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "inc": 1
+            },
+            {
                 "n": "y",
                 "d": 5,
                 "type": "float",
@@ -1046,6 +1052,13 @@ selectableFilters = [
                 "videoSpaceSign":1,
                 "inc": 1,
                 "commandVar":['Overlay-Y',[['overlay@{fn}','y']]]
+            },
+            {
+                "n": "y_offset",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "inc": 1
             },
             {
                 "n": "w",

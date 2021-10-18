@@ -1168,7 +1168,9 @@ class MergeSelectionUi(ttk.Frame):
           if k in self.editableProfileVars:
             attrName = k+'Var'
             if hasattr(self, attrName) and hasattr(getattr(self, attrName),'set'):
+               print(attrName,getattr(self, attrName).get())
                getattr(self, attrName).set(v)
+               print(attrName,getattr(self, attrName).get())
 
   def valueChange(self,*args):
     try:

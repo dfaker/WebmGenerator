@@ -3,6 +3,7 @@
 from tkinter import Tk,Menu,END,LEFT,PhotoImage
 import tkinter.ttk as ttk
 import webbrowser
+from .modalWindows import SubtitleExtractionModal, OptionsDialog
 from tkinter.filedialog import askopenfilename,asksaveasfilename
 import sys
 import logging
@@ -139,6 +140,10 @@ class WebmGeneratorUi:
       self.filemenu.add_command(label="Start screen capture", command=self.startScreencap, state='disabled')
 
     self.filemenu.add_separator()
+
+    self.filemenu.add_command(label="Extract .srt subtitles from video file", command=self.extractSubs)
+
+    self.filemenu.add_separator()
     
     self.filemenu.add_command(label="Toggle fullscreen", command=self.toggleFullscreen)
 
@@ -157,6 +162,8 @@ class WebmGeneratorUi:
     self.clearTempMenuIndex = self.filemenu.index(END) 
     self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files")
 
+    self.filemenu.add_separator()
+    self.filemenu.add_command(label="Preferences", command=self.updatePreferences)
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Exit", command=self.exitProject)
     self.menubar.add_cascade(label="File",  menu=self.filemenu)
@@ -249,6 +256,15 @@ class WebmGeneratorUi:
 
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
+
+  def updatePreferences(self):
+    changedOptions = {}
+    optionsScreen = OptionsDialog(optionsDict=self.controller.globalOptions.copy(), changedProperties=changedOptions ,changeCallback=self.controller.updateGlobalOptions)
+    optionsScreen.mainloop()
+
+  def extractSubs(self):
+    subsScreen = SubtitleExtractionModal()
+    subsScreen.mainloop()
 
   def sizeof_fmt(self,num, suffix="B"):
     for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:

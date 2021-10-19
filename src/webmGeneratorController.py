@@ -180,6 +180,13 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
 
+  def updateGlobalOptions(self,changedOptions):
+    print(changedOptions)
+    for k,v in changedOptions.items():
+      self.globalOptions[k]=v
+    open(self.configFileName,'w').write(json.dumps(self.globalOptions,indent=1))
+
+
   def takeScreenshotToFile(self,selectedTab):
     if selectedTab == '.!cutselectionui':
       print('Cut Selection screenshot')

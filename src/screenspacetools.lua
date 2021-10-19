@@ -5,6 +5,7 @@ local script_name = "screenspacetools"
 local regmarks = {};
 
 local registrationAss = "";
+local mouseAss = "";
 local cropAss = "";
 local vectorAss = "";
 
@@ -268,7 +269,7 @@ end
 
 function draw_merged_ssa()
     local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
-    mp.set_osd_ass(osd_w, osd_h, cropAss .. registrationAss .. vectorAss )
+    mp.set_osd_ass(osd_w, osd_h, cropAss .. registrationAss .. vectorAss .. mouseAss )
 end
 
 
@@ -277,3 +278,46 @@ mp.register_script_message("screenspacetools_clear", screenspacetools_clear)
 mp.register_script_message("screenspacetools_regMark", screenspacetools_regMark)
 mp.register_script_message("screenspacetools_drawVector", screenspacetools_drawVector)
 
+
+local cursor = {
+    x = 0,
+    y = 0;
+}
+
+function mouse_move()
+    msg.info("mouse_move")
+    cursor.x, cursor.y = mp.get_mouse_pos()
+    local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
+    
+
+    ass = assdraw.ass_new()
+
+    ass:pos(0,0)
+    ass:new_event()
+    ass:draw_start()
+    ass:pos(0,0)
+
+    ass:append(ass_set_color(1, "00000000"))
+    ass:append(ass_set_color(3, "0000ffff"))
+    ass:append("{\\bord0.2}")
+    
+    ass:move_to(tonumber(0),          tonumber(cursor.y))
+    ass:line_to(tonumber(osd_w),      tonumber(cursor.y))
+    ass:move_to(tonumber(cursor.x),   tonumber(0))
+    ass:line_to(tonumber(cursor.x),   tonumber(osd_h))
+
+    ass:pos(0,0)
+    ass:draw_stop()
+    
+    mouseAss = ass.text
+    draw_merged_ssa()
+
+end
+
+function mouse_leave()
+    mouseAss="";
+    draw_merged_ssa()
+end
+
+mp.add_forced_key_binding("MOUSE_MOVE", "sst_mouse_move", mouse_move)
+mp.add_forced_key_binding("MOUSE_LEAVE", "sst_mouse_leave",mouse_leave)

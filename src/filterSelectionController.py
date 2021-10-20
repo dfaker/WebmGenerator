@@ -32,7 +32,7 @@ class FilterSelectionController:
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=False,
                           log_handler=self.errorHandler,
-                          loglevel='error',
+                          loglevel='debug',
                           loop='inf',
                           mute=True,
                           background=globalOptions.get('filtersTabPlayerBackgroundColour','#282828'),

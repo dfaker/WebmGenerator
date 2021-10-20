@@ -1368,16 +1368,19 @@ class FilterSelectionUi(ttk.Frame):
             commandStr_preview += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, cv=cmdValue)
             commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
 
-          elif interpolationMode == 'neighbour-relative':
-            commandStr_preview += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty, cv=cmdValue-lastValue)
-            commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty, cv=cmdValue-lastValue)
+          elif interpolationMode == 'v360-relative':
+            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] v360 reset_rot '1';{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty, cv=cmdValue)
+            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] v360 reset_rot '1';{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty, cv=cmdValue)
+
+            commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},TI)';{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
+            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},TI)';{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
 
           lastCommandValues[(cmdTarget,cmdProperty)] = (k,cmdValue,interpolationMode)
 
     for (cmdTarget,cmdProperty),(lastTime,cmdValue,interpolationMode) in lastCommandValues.items():
       norm_lastTime = self.controller.normaliseTimestamp(lastTime)
 
-      if interpolationMode == 'neighbour-relative':
+      if interpolationMode == 'v360-relative':
         pass
         #commandStr_preview += "{l:0.4f} [enter] {t} {p} 0.0;{sep}".format(sep=sep, l=norm_lastTime, t=cmdTarget, p=cmdProperty)
         #commandStr_real    += "{l:0.4f} [enter] {t} {p} 0.0;{sep}".format(sep=sep, l=lastTime,      t=cmdTarget, p=cmdProperty)

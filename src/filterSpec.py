@@ -983,22 +983,22 @@ selectableFilters = [
             {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90],     "inc": 1,
              "videoSpaceAxis":"yaw",
              "videoSpaceSign":1,
-             "interpMode":"neighbour-relative",
-             "restrictedInterpModes":["neighbour-relative"],
+             "interpMode":"v360-relative",
+             "restrictedInterpModes":["v360-relative"],
              "commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
             
             {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90],   "inc": 1,
              "videoSpaceAxis":"pitch",
              "videoSpaceSign":-1,
-            "interpMode":"neighbour-relative",
-            "restrictedInterpModes":["neighbour-relative"],
+            "interpMode":"v360-relative",
+            "restrictedInterpModes":["v360-relative"],
             "commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
             
             {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180],  "inc": 1,
-            "interpMode":"neighbour-relative",
+            "interpMode":"v360-relative",
              "videoSpaceAxis":"deg",
              "videoSpaceSign":1,
-            "restrictedInterpModes":["neighbour-relative"],
+            "restrictedInterpModes":["v360-relative"],
             "commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
             
 

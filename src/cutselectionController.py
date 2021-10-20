@@ -223,6 +223,7 @@ class CutselectionController:
                           loop='inf',
                           mute=True,
                           volume=0,
+                          background=self.globalOptions.get('cutsTabPlayerBackgroundColour','#282828'),
                           autofit_larger='1280',
                           audio_file_auto='no',
                           sub_auto='no')

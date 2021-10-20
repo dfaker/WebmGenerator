@@ -35,6 +35,7 @@ class FilterSelectionController:
                           loglevel='error',
                           loop='inf',
                           mute=True,
+                          background=globalOptions.get('filtersTabPlayerBackgroundColour','#282828'),
                           cursor_autohide="always",
                           autofit_larger='1280',
                           audio_file_auto='no',

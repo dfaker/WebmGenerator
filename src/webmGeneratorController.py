@@ -57,6 +57,8 @@ class WebmGeneratorController:
       "titleMetadataSuffix":' WmG',
       "startFullscreen":False,
     
+      "cutsTabPlayerBackgroundColour":"#282828",
+      "filtersTabPlayerBackgroundColour":"#282828",
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       

@@ -43,7 +43,7 @@ buildOptions = dict(packages = ["os"],
                     ,('postFilters\\PostFilter-rainbow.txt','postFilters\\PostFilter-rainbow.txt')
                     ,('postFilters\\PostFilter-vhsishclean.txt','postFilters\\PostFilter-vhsishclean.txt')
                     
-                    ,('customEncodeprofiles\\4Chan 4Meg Webm with no Sound.json','customEncodeprofiles\\4Chan 4Meg Webm with no Sound.json')
+                    ,('customEncodeprofiles\\4Chan 3Meg Webm with no Sound.json','customEncodeprofiles\\4Chan 3Meg Webm with no Sound.json')
                     ,('customEncodeprofiles\\4Chan 4Meg Webm with sound.json','customEncodeprofiles\\4Chan 4Meg Webm with sound.json')
                     ,('customEncodeprofiles\\Discord 8M limit mp4.json','customEncodeprofiles\\Discord 8M limit mp4.json')
                     

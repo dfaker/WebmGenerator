@@ -55,6 +55,7 @@ class FFmpegService():
     self.responseRouting = {}
     self.globalStatusCallback=globalStatusCallback
     self.abortflag=False
+    self.scanabortflag=False
 
     def imageWorker():
       while 1:
@@ -698,8 +699,9 @@ class FFmpegService():
                       ,'-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp
+                      ,'-filter_complex', filterexp                      
                       ,'-c:v', 'libx264'
+                      ,'-preset', 'veryfast'
                       ,'-crf', '0'
                       ,'-ac', '1',outname]
           else:
@@ -710,6 +712,7 @@ class FFmpegService():
                       ,'-t', str(end-start)
                       ,'-filter_complex', filterexp
                       ,'-c:v', 'libx264'
+                      ,'-preset', 'veryfast'
                       ,'-crf', '0'
                       ,'-map', '0:a', '-map', '1:v' 
                       ,'-shortest'
@@ -1006,6 +1009,7 @@ class FFmpegService():
             minLength       = float(options.get('minLength',1))
             maxLength       = float(options.get('maxLength',3))
             timeSkip        = float(options.get('timeSkip',1))
+            ifdmode         = bool(options.get('ifdmode',False))
                                                     
             startTs = 0
             endTs   = totalDuration
@@ -1067,13 +1071,18 @@ class FFmpegService():
             frame_dict = {}
             matching_frames = []
             framen=0
-            distances = deque([0],int(fps*max_duration))
+            distances = deque([0],int(fps*2*max_duration))
             totalRawMatches=0
             goodMatches=[]
 
             self.globalStatusCallback('Starting loop scan',0)
 
+            self.scanabortflag=False
+
             while 1:
+
+              if scanabortflag:
+                break
 
               frame = proc.stdout.read(N_pixels)
               if len(frame)==N_pixels:
@@ -1083,7 +1092,11 @@ class FFmpegService():
 
                 framen+=1
                 if framen%10==0:
-                  self.globalStatusCallback('Running loop scan, rawMatches:{trm} meanFrameDist:{ifd:0.3f}'.format(trm=totalRawMatches,ifd=float(np.mean(distances))),(t-startTs)/length)
+                  meanDist = float(np.mean(distances))
+                  self.globalStatusCallback('Running loop scan, rawMatches:{trm} meanFrameDist:{ifd:0.3f}'.format(trm=totalRawMatches,ifd=meanDist),(t-startTs)/length)
+                  if ifdmode:
+                    distance_threshold=meanDist+threshold
+
 
                 flat_frame = 1.0 * frame.flatten()
                 F_norm_sq = dot_product(flat_frame, flat_frame)
@@ -1756,7 +1769,7 @@ class FFmpegService():
                                                            maxSeconds=maxSeconds,
                                                            cropRect=cropRect),callback) )
     
-  def fullLoopSearch(self,filename,duration,callback,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None):
+  def fullLoopSearch(self,filename,duration,callback,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False):
     self.statsRequestQueue.put( (filename,'FullLoopSearch',dict(filename=filename,
                                                                 duration=duration,
                                                                 midThreshold=midThreshold,
@@ -1767,7 +1780,8 @@ class FFmpegService():
                                                                 addCuts=addCuts,
                                                                 useRange=useRange,
                                                                 rangeStart=rangeStart,
-                                                                rangeEnd=rangeEnd,                                                                
+                                                                rangeEnd=rangeEnd,
+                                                                ifdmode=ifdmode,                                                                
                                                                 cropRect=None),callback) )
 
   def cancelEncodeRequest(self,requestId):
@@ -1776,6 +1790,9 @@ class FFmpegService():
   def cancelAllEncodeRequests(self):
     self.abortflag=True
     cancelCurrentEncodeRequest(-1)
+
+  def cancelCurrentScans(self):
+    self.scanabortflag=True
 
 
 

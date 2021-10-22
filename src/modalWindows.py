@@ -14,6 +14,106 @@ except:
 from datetime import datetime
 
 
+
+class TimestampModal(tk.Toplevel):
+  
+  def __init__(self, master=None,controller=None,initialValue='',videoDuration=0, *args):
+    tk.Toplevel.__init__(self, master)
+    self.grab_set()
+    self.title('Cut the video at these timestamps')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,40)
+    self.controller=controller
+    self.videoDuration=videoDuration
+
+
+    self.columnconfigure(0, weight=1)
+    
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=0)
+    self.rowconfigure(2, weight=2)
+
+
+    self.labelInstruction = ttk.Label(self)
+    self.labelInstruction.config(text='Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format')
+    self.labelInstruction.grid(row=0,column=0,sticky='new',padx=5,pady=5)
+
+    self.varTimestamps   = tk.StringVar(self,initialValue)
+    self.entryTimestamps = ttk.Entry(self,textvariable=self.varTimestamps)
+    self.entryTimestamps.grid(row=1,column=0,sticky='new',padx=5,pady=5)
+    self.varTimestamps.trace('w',self.valueUpdated)
+
+    self.varnegativeTS = tk.IntVar(0)
+    self.checknegativeTS =  ttk.Checkbutton(self,text='Interpret as negative timestamps from end of clip.',var=self.varnegativeTS)
+    self.checknegativeTS.grid(row=2,column=0,sticky='new',padx=5,pady=5)
+    self.varnegativeTS.trace('w',self.valueUpdated)
+
+    self.downloadCmd = ttk.Button(self)
+    self.downloadCmd.config(text='Add SubClip',command=self.addSublcip,state='disabled')
+    self.downloadCmd.grid(row=3,column=0,sticky='nesw')
+    self.rowconfigure(5, weight=1)
+
+    self.resizable(False, False) 
+
+    self.entryTimestamps.focus()
+    self.entryTimestamps.select_range(0, 'end')
+    self.entryTimestamps.icursor('end')
+
+    self.start = None
+    self.end   = None
+
+    self.valueUpdated()
+
+  def valueUpdated(self,*args):
+    self.start = None
+    self.end   = None
+    isIsNegative = bool(self.varnegativeTS.get())
+    self.downloadCmd.config(state='disabled')
+    rawRange = self.varTimestamps.get()
+
+    multipliers = [1,60,60*60,60*60*60]
+
+    startTS=0
+    endTS=0
+
+    if rawRange is not None:
+      startText = ""
+      endText   = ""
+
+      isStart = True
+      for char in rawRange.strip():
+        if char in '1234567890.:':
+          if isStart:
+            startText += char
+          else:
+            endText += char
+        else:
+          isStart=False
+
+      if len(startText)>0 and len(endText)>0:
+        for mult,val in zip(multipliers,startText.split(':')[::-1]):
+          startTS += mult*float(val)
+        for mult,val in zip(multipliers,endText.split(':')[::-1]):
+          endTS += mult*float(val)
+
+
+    if (startTS != 0 or endTS != 0) and endTS != startTS:
+      self.start = startTS
+      self.end   = endTS     
+      if isIsNegative:
+        self.start = self.videoDuration-startTS
+        self.end   = self.videoDuration-endTS
+      self.start,self.end = sorted([self.start,self.end])
+      self.downloadCmd.config(state='normal',text='Add SubClip from {}s to {}s ({}s)'.format(self.start,self.end,self.end-self.start))
+    else:
+      self.downloadCmd.config(state='disabled',text='Add SubClip')
+
+  def addSublcip(self):
+    if self.start != None and self.end != None:
+      self.controller.addNewSubclip(max(self.start,0), min(self.end,self.videoDuration))
+
+
 class YoutubeDLModal(tk.Toplevel):
   
   def __init__(self, master=None,controller=None,initialUrl='', *args):
@@ -22,6 +122,7 @@ class YoutubeDLModal(tk.Toplevel):
     self.title('Download a video with youtube-dlp')
     self.style = ttk.Style()
     self.style.theme_use('clam')
+
     self.minsize(600,140)
     self.controller=controller
 
@@ -72,7 +173,6 @@ class YoutubeDLModal(tk.Toplevel):
 
     self.entryCookies.grid(row=4,column=1,sticky='new',padx=5,pady=5)
 
-
     self.downloadCmd = ttk.Button(self)
     self.downloadCmd.config(text='Download',command=self.download)
     self.downloadCmd.grid(row=5,column=0,columnspan=2,sticky='nesw')
@@ -81,6 +181,8 @@ class YoutubeDLModal(tk.Toplevel):
     self.entryUrl.focus()
     self.entryUrl.select_range(0, 'end')
     self.entryUrl.icursor('end')
+
+    self.resizable(False, False) 
 
   def download(self):
     url=self.varUrl.get()
@@ -101,9 +203,16 @@ class YoutubeDLModal(tk.Toplevel):
 class PerfectLoopScanModal(tk.Toplevel):
   
   def __init__(self, master=None,useRange=False,controller=None,starttime=0,endtime=0, *args):
+
     tk.Toplevel.__init__(self, master)
+
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.style.configure ("warning.TLabel", font = ('Sans','10','bold'),textcolor='red')
+
     self.grab_set()
     self.title('Scan for perfect loops')
+
 
     self.controller=controller
 
@@ -119,7 +228,6 @@ class PerfectLoopScanModal(tk.Toplevel):
     self.rowconfigure(6, weight=0)
     self.rowconfigure(7, weight=0)
     
-
     self.useRange = useRange
 
     initThreshold    = 20
@@ -129,6 +237,14 @@ class PerfectLoopScanModal(tk.Toplevel):
     initTimeSkip     = 0.5
 
     r=0
+
+    self.labelWarning = ttk.Label(self)
+    self.labelWarning.config(text='Experimental - can take a very long time and still return no loops.',style='warning.TLabel')
+    self.labelWarning.grid(row=r,column=0,sticky='new',padx=5,pady=5,columnspan=2)
+
+
+    r+=1
+
     if self.useRange:
 
       self.labelStartTime = ttk.Label(self)
@@ -170,6 +286,16 @@ class PerfectLoopScanModal(tk.Toplevel):
     self.varMidThreshold   = tk.StringVar(self,initMidThreshold)
     self.entryMidThreshold = ttk.Entry(self,textvariable=self.varMidThreshold)
     self.entryMidThreshold.grid(row=r,column=1,sticky='new',padx=5,pady=5)
+
+    r += 1
+
+    self.labelIfdMode = ttk.Label(self)
+    self.labelIfdMode.config(text='IFD offset mode')
+    self.labelIfdMode.grid(row=r,column=0,sticky='new',padx=5,pady=5)
+
+    self.varIfdMode   = tk.IntVar(0)
+    self.entryIfdMode = ttk.Checkbutton(self,text='Treat thresholds as offset from mean inter-frame-distance',var=self.varIfdMode)
+    self.entryIfdMode.grid(row=r,column=1,sticky='new',padx=5,pady=5)
 
     r += 1
 
@@ -218,6 +344,7 @@ class PerfectLoopScanModal(tk.Toplevel):
     minLength = float(self.varMinLength.get())
     maxLength = float(self.varMaxLength.get())
     timeSkip  = float(self.varTimeSkip.get())
+    ifdmode   = bool(self.varIfdMode.get())
 
     
 
@@ -237,6 +364,7 @@ class PerfectLoopScanModal(tk.Toplevel):
                                          addCuts=True,
                                          useRange=useRange,
                                          rangeStart=rangeStart,
+                                         ifdmode=ifdmode,
                                          rangeEnd=rangeEnd)
     self.destroy()
 
@@ -490,5 +618,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = YoutubeDLModal()
+  app = PerfectLoopScanModal()
   app.mainloop()

@@ -81,38 +81,8 @@ class CutselectionController:
       self.seekTo(endPoint)
 
   def addSubclipByTextRange(self):
-    rawRange = self.ui.askString('Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format','Add timestamp in "HH:MM:SS.ss - HH:MM:SS.ss" format')
-    multipliers = [1,60,60*60,60*60*60]
 
-    startTS=0
-    endTS=0
-
-    if rawRange is not None:
-      startText = ""
-      endText   = ""
-
-      isStart = True
-      for char in rawRange.strip():
-        if char in '1234567890.:':
-          if isStart:
-            startText += char
-          else:
-            endText += char
-        else:
-          isStart=False
-
-      if len(startText)>0 and len(endText)>0:
-        for mult,val in zip(multipliers,startText.split(':')[::-1]):
-          startTS += mult*float(val)
-        for mult,val in zip(multipliers,endText.split(':')[::-1]):
-          endTS += mult*float(val)
-      elif len(startText)>0 and len(endText)==0:
-        for mult,val in zip(multipliers,startText.split(':')[::-1]):
-          startTS += mult*float(val)
-          endTS = startTS+25
-
-    if (startTS != 0 or endTS != 0) and endTS != startTS:
-      self.addNewSubclip(max(startTS,0), min(endTS,self.getTotalDuration()) )
+    self.ui.addSubclipByTextRange(self,self.getTotalDuration())
 
 
   def splitClipIntoSectionsOfLengthN(self):
@@ -581,7 +551,7 @@ class CutselectionController:
     self.ui.displayLoopSearchModal(useRange=useRange,rangeStart=a,rangeEnd=b)
 
 
-  def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None):
+  def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False):
     self.ffmpegService.fullLoopSearch(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,midThreshold=midThreshold,
                                                                                                                        minLength=minLength,
                                                                                                                        maxLength=maxLength,
@@ -590,6 +560,7 @@ class CutselectionController:
                                                                                                                        addCuts=addCuts,
                                                                                                                        useRange=useRange,
                                                                                                                        rangeStart=rangeStart,
+                                                                                                                       ifdmode=ifdmode,
                                                                                                                        rangeEnd=rangeEnd)
 
 

@@ -12,7 +12,7 @@ from math import floor
 import logging
 import time
 import subprocess as sp
-from .modalWindows import PerfectLoopScanModal,YoutubeDLModal
+from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -449,6 +449,16 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
 
+    def addSubclipByTextRange(self,controller,totalDuration):
+      initial=''
+      try:
+        initial = self.clipboard_get().split('\n')[0]
+      except Exception as e:
+        print(e)
+
+      tsModal = TimestampModal(master=self,controller=controller,initialValue=initial,videoDuration=totalDuration)
+      tsModal.mainloop()
+
     def updateProgressPreview(self,data):
       try:
         if data is None:
@@ -698,6 +708,7 @@ class CutselectionUi(ttk.Frame):
       except Exception as e:
         print(e)
       modal = YoutubeDLModal(master=self,controller=self,initialUrl=defaultUrl)
+      modal.mainloop()
       
     def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies):
       if url is not None and len(url)>0:

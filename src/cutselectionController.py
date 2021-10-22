@@ -330,6 +330,9 @@ class CutselectionController:
     logging.debug('YTDL file returned {}'.format(filename))
     self.loadFiles([filename])
 
+  def loadVideoYTdlFromClipboard(self,url):
+    self.ytdlService.loadUrl(url,0,'','',False,self.returnYTDLDownlaodedVideo)
+
   def loadVideoYTdl(self,url,fileLimit,username,password,useCookies):
     self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,self.returnYTDLDownlaodedVideo)
 

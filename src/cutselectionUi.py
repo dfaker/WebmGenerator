@@ -771,7 +771,7 @@ class CutselectionUi(ttk.Frame):
               for substr in s.split(' '):
                 substr = substr.strip()
                 if substr not in foundUrls and len(substr)>2 and ':' in substr and '.' in substr:
-                  windowRef.controller.loadVideoYTdl(substr)
+                  windowRef.controller.loadVideoYTdlFromClipboard(substr)
                   foundUrls.append(substr)
                   print(substr)
           except Exception as e:

@@ -40,7 +40,7 @@ class YoutubeDLModal(tk.Toplevel):
     self.entryUrl.grid(row=0,column=1,sticky='new',padx=5,pady=5)
 
     self.labelPlaylistLimit = ttk.Label(self)
-    self.labelPlaylistLimit.config(text='Max downloads')
+    self.labelPlaylistLimit.config(text='Max download count')
     self.labelPlaylistLimit.grid(row=1,column=0,sticky='new',padx=5,pady=5)
     self.varPlayListLimit   = tk.StringVar(self,'')
     self.entryPlayListLimit = ttk.Entry(self,textvariable=self.varPlayListLimit)

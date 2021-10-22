@@ -51,7 +51,7 @@ class YTDLService():
     def downloadFunc():
       while 1:
         try:
-          url,callback = self.downloadRequestQueue.get()
+          url,fileLimit,username,password,useCookies,callback = self.downloadRequestQueue.get()
           self.cancelEvent.clear()
           self.splitEvent.clear()
 
@@ -82,10 +82,25 @@ class YTDLService():
             os.path.exists(tempPathname) or os.mkdir(tempPathname)
             outfolder = os.path.join(tempPathname,self.globalOptions.get('downloadNameFormat','%(title)s-%(id)s_%(uploader,creator,channel)s_{passNumber}.%(ext)s').format(passNumber=cutPassName))
 
+            extraFlags=[]
+
+            if len(username)>0 and len(password)>0:
+              extraFlags.extend(['--username', username, '--password', password])
+            elif len(password)>0:
+              extraFlags.extend(['--video-password', password])
+
+            if fileLimit>0:
+              extraFlags.extend(['--max-downloads',str(fileLimit)])
+
+            if useCookies and os.path.exists('cookies.txt'):
+              extraFlags.extend('--cookies','cookies.txt')
+
+
+
             if hasattr(os.sys, 'winver'):
-              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+['-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
             else:
-              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames','-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+['-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
 
             l = b''
             self.globalStatusCallback('Download start {}'.format(url),0)
@@ -240,11 +255,11 @@ class YTDLService():
   def togglePreview(self,toggleValue):
     self.pushPreview = toggleValue
 
-  def loadUrl(self,url,callback):
-    self.downloadRequestQueue.put((url,callback))
+  def loadUrl(self,url,fileLimit,username,password,useCookies,callback):
+    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,callback))
 
   def update(self):
-    self.downloadRequestQueue.put(('UPDATE',None))
+    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None))
 
   def cancelCurrentYoutubeDl(self):
     self.cancelEvent.set()

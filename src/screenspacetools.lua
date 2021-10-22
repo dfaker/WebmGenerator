@@ -25,8 +25,8 @@ end
 
 
 function screenspacetools_clear(p1x,p1y,p2x,p2y,fill,border,width,visible)
-    local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
     cropAss="";
+    mouseAss = "";
     draw_merged_ssa()
 end
 
@@ -274,11 +274,10 @@ end
 
 
 function screenspacetools_mouse_cross(x,y)
-    msg.info("mouse_move")
     local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
-    if x==0 and y==0 then:
+    if x==0 and y==0 then
         mouseAss="";
-    else:
+    else
         ass = assdraw.ass_new()
 
         ass:pos(0,0)

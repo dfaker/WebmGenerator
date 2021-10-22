@@ -233,6 +233,9 @@ class WebmGeneratorController:
         except Exception as e:
           print(e)
 
+  def runFullLoopSearch(self):
+    self.cutselectionController.runFullLoopSearch()
+
   def runSceneChangeDetection(self):
     self.cutselectionController.runSceneChangeDetection()
 
@@ -242,8 +245,6 @@ class WebmGeneratorController:
 
   def runSceneCentreDetectionCuts(self):
     self.cutselectionController.runSceneCentreDetectionCuts(addCuts=True)    
-
-
 
 
   def scanAndAddLoudSections(self):

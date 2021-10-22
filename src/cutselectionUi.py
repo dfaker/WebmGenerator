@@ -12,7 +12,7 @@ from math import floor
 import logging
 import time
 import subprocess as sp
-
+from .modalWindows import PerfectLoopScanModal,YoutubeDLModal
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -697,10 +697,13 @@ class CutselectionUi(ttk.Frame):
           defaultUrl=s
       except Exception as e:
         print(e)
-
-      url = simpledialog.askstring(title="Download video from URL",initialvalue=defaultUrl,prompt="Download a video from a youtube-dl supported url")
+      modal = YoutubeDLModal(master=self,controller=self,initialUrl=defaultUrl)
+      
+    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies):
       if url is not None and len(url)>0:
-        self.controller.loadVideoYTdl(url)
+        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies)
+
+
 
     def startScreencap(self):
       windowRef=self
@@ -793,6 +796,10 @@ class CutselectionUi(ttk.Frame):
           if duration is not None:
             self.controller.loadImageFile(filename,duration)
 
+    def displayLoopSearchModal(self,useRange=False,rangeStart=None,rangeEnd=None):
+      loopSearchModal = PerfectLoopScanModal(master=self,controller=self.controller,useRange=useRange,starttime=rangeStart,endtime=rangeEnd)
+      loopSearchModal.mainloop()
+
     def restartForNewFile(self, filename=None):
         self.frameTimeLineFrame.resetForNewFile()
         try:
@@ -808,7 +815,10 @@ class CutselectionUi(ttk.Frame):
 
     def setUiDirtyFlag(self):
       self.frameTimeLineFrame.setUiDirtyFlag()
-      self.frameTimeLineFrame.updateCanvas() 
+      try:
+        self.frameTimeLineFrame.updateCanvas() 
+      except Exception as e:
+        print(e)
 
     def play(self):
         self.controller.play()

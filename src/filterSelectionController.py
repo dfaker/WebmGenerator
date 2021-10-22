@@ -162,6 +162,9 @@ class FilterSelectionController:
   def stop(self):
     self.player.command('stop')
 
+  def drawVideoCrosshair(self,x1,y1):
+    self.player.command('script-message','screenspacetools_mouse_cross',x1,y1)
+
   def setVideoVector(self,x1,y1,x2,y2):
     self.player.command('script-message','screenspacetools_drawVector',x1,y1,x2,y2)
 

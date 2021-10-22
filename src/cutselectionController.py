@@ -360,8 +360,8 @@ class CutselectionController:
     logging.debug('YTDL file returned {}'.format(filename))
     self.loadFiles([filename])
 
-  def loadVideoYTdl(self,url):
-    self.ytdlService.loadUrl(url,self.returnYTDLDownlaodedVideo)
+  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies):
+    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,self.returnYTDLDownlaodedVideo)
 
   def returnImageLoadAsVideo(self,filename):
     self.loadFiles([filename])
@@ -570,6 +570,28 @@ class CutselectionController:
 
 
       self.ffmpegService.runRepresentativeCentresDetection(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,clipLength=sceneLength,addCuts=addCuts,useRange=useRange,rangeStart=a,rangeEnd=b)
+
+  def runFullLoopSearch(self):
+    threshold=0
+    addCuts=True
+    useRange,a,b = self.askToUseRangeIfSet()
+    if not useRange:
+      a=0
+      b=self.currentTotalDuration
+    self.ui.displayLoopSearchModal(useRange=useRange,rangeStart=a,rangeEnd=b)
+
+
+  def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None):
+    self.ffmpegService.fullLoopSearch(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,midThreshold=midThreshold,
+                                                                                                                       minLength=minLength,
+                                                                                                                       maxLength=maxLength,
+                                                                                                                       timeSkip=timeSkip,
+                                                                                                                       threshold=threshold,
+                                                                                                                       addCuts=addCuts,
+                                                                                                                       useRange=useRange,
+                                                                                                                       rangeStart=rangeStart,
+                                                                                                                       rangeEnd=rangeEnd)
+
 
   def runSceneChangeDetection(self,addCuts=False):
     threshold = self.ui.askFloat('What should the threshold of scene detection be?','Scene change proportion', initialvalue=0.3)

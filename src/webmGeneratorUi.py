@@ -195,6 +195,10 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Run scene change detection and add SubClips", command=self.controller.runSceneChangeDetectionCuts)
     self.commandmenu.add_separator()
 
+    self.commandmenu.add_command(label="Run search for any perfect loops.", command=self.controller.runFullLoopSearch)
+
+    self.commandmenu.add_separator()
+
     self.commandmenu.add_command(label="Run representative scene centeres detection and add SubClips", state='disabled', command=self.controller.runSceneCentreDetectionCuts)
 
     self.commandmenu.add_separator()

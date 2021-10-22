@@ -32,6 +32,11 @@ from .ffmpegInfoParser import getVideoInfo
 from .masonry import Brick,Stack
 
 
+import subprocess as sp
+import numpy as np
+from collections import defaultdict, deque
+
+
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder
@@ -981,9 +986,236 @@ class FFmpegService():
       while 1:
         try:
           filename,requestType,options,callback = self.statsRequestQueue.get()
+          print(requestType,options)
+          
+          if requestType == 'FullLoopSearch':
+            addCuts        = bool(options.get('addCuts',True))
+            videoInfo      = getVideoInfo(filename)
+            totalDuration  = float(options.get('duration'))
+            minSeconds     = float(options.get('minSeconds',1))
+            maxSeconds     = float(options.get('maxSeconds',5))
+
+            addCuts     = bool(options.get('addCuts',False))
+            useRange    = bool(options.get('useRange',False))
+            rangeStart  = options.get('rangeStart',0)
+            rangeEnd    = options.get('rangeEnd',0)
+            threshold   = options.get('threshold',30)                                                                
+            cropRect    = options.get('cropRect',(0,0,0,0))
+
+            midThreshold    = float(options.get('midThreshold',30))
+            minLength       = float(options.get('minLength',1))
+            maxLength       = float(options.get('maxLength',3))
+            timeSkip        = float(options.get('timeSkip',1))
+                                                    
+            startTs = 0
+            endTs   = totalDuration
+
+            if useRange:
+              startTs = rangeStart
+              endTs   = rangeEnd
 
 
-          if requestType == 'RepresentativeSections':
+            length = endTs-startTs
+
+            od=250
+
+            min_duration=minLength
+            max_duration=maxLength
+
+            distance_threshold=threshold
+            match_threshold   =threshold
+
+            nomatch_threshold =midThreshold
+
+            time_distance=timeSkip
+
+            if nomatch_threshold is None:
+                nomatch_threshold = match_threshold
+
+            N_pixels = od*od*3
+
+            def dot_product(F1, F2):
+              return (F1 * F2).sum() / N_pixels
+
+
+
+            def distance(t1, t2):
+                uv = dot_product(frame_dict[t1]["frame"], frame_dict[t2]["frame"])
+                u, v = frame_dict[t1]["|F|sq"], frame_dict[t2]["|F|sq"]
+                return np.sqrt(u + v - 2 * uv)
+
+
+            cmd = ["ffmpeg"
+                      ,'-ss',str(startTs)
+                      ,"-i", cleanFilenameForFfmpeg(filename)  
+                      ,'-s', '{}x{}'.format(od,od)
+                      ,'-ss',str(startTs)
+                      ,'-t', str(length)
+                      ,"-copyts"
+                      ,"-f","image2pipe"
+                      ,"-an"
+                      ,"-pix_fmt","bgr24"
+                      ,"-vcodec","rawvideo"
+                      ,"-vsync", "vfr"
+                      ,"-"]
+
+            proc = sp.Popen(cmd,stdout=sp.PIPE,stderr=sp.DEVNULL,bufsize=10 ** 5)
+
+            fps=23.98
+            t=startTs-(1/fps)
+
+            frame_dict = {}
+            matching_frames = []
+            framen=0
+            distances = deque([0],int(fps*max_duration))
+            totalRawMatches=0
+            goodMatches=[]
+
+            self.globalStatusCallback('Starting loop scan',0)
+
+            while 1:
+
+              frame = proc.stdout.read(N_pixels)
+              if len(frame)==N_pixels:
+
+                frame = np.frombuffer(frame,dtype="uint8")
+                t = t+(1/fps)
+
+                framen+=1
+                if framen%10==0:
+                  self.globalStatusCallback('Running loop scan, rawMatches:{trm} meanFrameDist:{ifd:0.3f}'.format(trm=totalRawMatches,ifd=float(np.mean(distances))),(t-startTs)/length)
+
+                flat_frame = 1.0 * frame.flatten()
+                F_norm_sq = dot_product(flat_frame, flat_frame)
+                F_norm = np.sqrt(F_norm_sq)
+
+                for t2 in list(frame_dict.keys()):
+                  # forget old frames, add 't' to the others frames
+                  # check for early rejections based on differing norms
+                  if (t - t2) > max_duration:
+                    frame_dict.pop(t2)
+                  else:
+                    frame_dict[t2][t] = {
+                        "min": abs(frame_dict[t2]["|F|"] - F_norm),
+                        "max": frame_dict[t2]["|F|"] + F_norm,
+                    }
+                    frame_dict[t2][t]["rejected"] = (
+                        frame_dict[t2][t]["min"] > distance_threshold
+                    )
+
+                t_F = sorted(frame_dict.keys())
+                frame_dict[t] = {"frame": flat_frame, "|F|sq": F_norm_sq, "|F|": F_norm}
+
+                for i, t2 in enumerate(t_F):
+                  # Compare F(t) to all the previous frames
+
+                  if frame_dict[t2][t]["rejected"]:
+                      continue
+
+                  
+
+                  dist = distance(t, t2)
+
+                  if i==len(t_F)-1:
+                    distances.append(dist)
+                  
+                  frame_dict[t2][t]["min"] = frame_dict[t2][t]["max"] = dist
+                  frame_dict[t2][t]["rejected"] = dist >= distance_threshold
+
+                  for t3 in t_F[i + 1 :]:
+                    t3t, t2t3 = frame_dict[t3][t], frame_dict[t2][t3]
+                    t3t["max"] = min(t3t["max"], dist + t2t3["max"])
+                    t3t["min"] = max(t3t["min"], dist - t2t3["max"], t2t3["min"] - dist)
+                    if t3t["min"] > distance_threshold:
+                        t3t["rejected"] = True
+
+                # Store all the good matches (end_time,t)
+                new_matching_frames =  [
+                  (t1, t, frame_dict[t1][t]["min"], frame_dict[t1][t]["max"])
+                  for t1 in frame_dict
+                  if (t1 != t) and t-t1 > min_duration and not frame_dict[t1][t]["rejected"]
+                ]
+                totalRawMatches += len(new_matching_frames)
+                matching_frames += new_matching_frames
+
+              if len(matching_frames)>0:
+                olderFrames=[]
+                while 1:
+                  frameAdded=False
+                  if len(matching_frames)>0 and (matching_frames[-1][0]<(t-(max_duration*2)) or len(frame)<N_pixels):
+                    olderFrames.append(matching_frames.pop(0))
+                    frameAdded=True
+                  if not frameAdded:
+                    break      
+                if len(olderFrames)>0:
+                  print('------ Frame Scan------')
+                  dict_starts = defaultdict(lambda: [])
+                  for (start, end, min_distance, max_distance) in olderFrames:
+                      dict_starts[start].append([end, min_distance, max_distance])
+                  starts_ends = sorted(dict_starts.items(), key=lambda k: k[0])
+
+                  min_start = 0
+                  for start, ends_distances in starts_ends:
+
+                    if start < min_start:
+                        print('start < min_start')
+                        continue
+                    ends = [end for (end, min_distance, max_distance) in ends_distances]
+                    great_matches = [
+                        (end, min_distance, max_distance)
+                        for (end, min_distance, max_distance) in ends_distances
+                        if max_distance < match_threshold
+                    ]
+                    print('great_matches',start,great_matches)
+                    great_long_matches = [
+                        (end, min_distance, max_distance)
+                        for (end, min_distance, max_distance) in great_matches
+                        if (end - start) > min_duration
+                    ]
+
+                    print('great_long_matches',start,great_long_matches)
+                    if not great_long_matches:
+                        print('not great_long_matches')
+                        continue  # No GIF can be made starting at this time
+
+                    
+                    poor_matches = {
+                        end
+                        for (end, min_distance, max_distance) in ends_distances
+                        if min_distance > nomatch_threshold
+                    }
+                    short_matches = {end for end in ends if (end - start) <= 0.6}
+
+                    print('poor_matches',start,poor_matches)
+                    print('short_matches',start,short_matches)
+
+                    """
+                    if not poor_matches.intersection(short_matches):
+                        print(start,'not poor_matches.intersection(short_matches)')
+                        continue
+                    """
+
+                    end = max(end for (end, min_distance, max_distance) in great_long_matches)
+                    end, min_distance, max_distance = next(
+                        e for e in great_long_matches if e[0] == end
+                    )
+
+                    print('\n\nMATCH!')
+
+                    callback(filename,start,end-(1/fps),kind='Cut')
+                    print('\n')
+                    goodMatches.append( (start, end, min_distance, max_distance) )
+                    min_start = end + time_distance
+                  print('------------')
+
+              if len(frame)<N_pixels:
+                break
+
+            self.globalStatusCallback('Loop scan complete',1)
+
+            
+
+          elif requestType == 'RepresentativeSections':
             addCuts        = bool(options.get('addCuts',True))
             clipLength     = float(options.get('clipLength'))
             halfclipLength = clipLength/2
@@ -1524,6 +1756,19 @@ class FFmpegService():
                                                            maxSeconds=maxSeconds,
                                                            cropRect=cropRect),callback) )
     
+  def fullLoopSearch(self,filename,duration,callback,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None):
+    self.statsRequestQueue.put( (filename,'FullLoopSearch',dict(filename=filename,
+                                                                duration=duration,
+                                                                midThreshold=midThreshold,
+                                                                minLength=minLength,
+                                                                maxLength=maxLength,
+                                                                timeSkip=timeSkip,
+                                                                threshold=threshold,
+                                                                addCuts=addCuts,
+                                                                useRange=useRange,
+                                                                rangeStart=rangeStart,
+                                                                rangeEnd=rangeEnd,                                                                
+                                                                cropRect=None),callback) )
 
   def cancelEncodeRequest(self,requestId):
     cancelCurrentEncodeRequest(requestId)

@@ -914,7 +914,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.timeline_canvas.coords(self.canvasRegionCache[(rid,'headerR')],hstx,10, henx, 20)
 
           if self.clipped != rid:
-            self.dirtySelectionRanges.remove(rid)
+            try:
+              self.dirtySelectionRanges.remove(rid)
+            except Exception as e:
+              self.uiDirty=True
+              print(e)
           else:
             self.clipped=None
 

@@ -340,6 +340,19 @@ class PerfectLoopScanModal(tk.Toplevel):
 
     r += 1
 
+    self.labelfilterMode = ttk.Label(self)
+    self.labelfilterMode.config(text='Final match selection mode')
+    self.labelfilterMode.grid(row=r,column=0,sticky='new',padx=5,pady=5)
+
+    self.varfilterMode   = tk.StringVar(self,'bestFirst')
+    self.entryfilterMode = ttk.Combobox(self)
+    self.entryfilterMode.config(textvariable=self.varfilterMode)
+    self.entryfilterMode.config(values=['bestFirst','earliestFirst'])
+    self.entryfilterMode.grid(row=r,column=1,sticky='new',padx=5,pady=5)
+
+
+    r += 1
+
     self.scanCmd = ttk.Button(self)
     self.scanCmd.config(text='Scan for loops',command=self.scanForLoops)
     self.scanCmd.grid(row=r,column=0,columnspan=2,sticky='nesw')
@@ -355,6 +368,7 @@ class PerfectLoopScanModal(tk.Toplevel):
     maxLength = float(self.varMaxLength.get())
     timeSkip  = float(self.varTimeSkip.get())
     ifdmode   = bool(self.varIfdMode.get())
+    selectionMode = self.varfilterMode.get()
 
     
 
@@ -375,7 +389,8 @@ class PerfectLoopScanModal(tk.Toplevel):
                                          useRange=useRange,
                                          rangeStart=rangeStart,
                                          ifdmode=ifdmode,
-                                         rangeEnd=rangeEnd)
+                                         rangeEnd=rangeEnd,
+                                         selectionMode=selectionMode)
     self.destroy()
 
 

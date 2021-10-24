@@ -554,7 +554,7 @@ class CutselectionController:
     self.ui.displayLoopSearchModal(useRange=useRange,rangeStart=a,rangeEnd=b)
 
 
-  def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False):
+  def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False,selectionMode='bestFirst'):
     self.ffmpegService.fullLoopSearch(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,midThreshold=midThreshold,
                                                                                                                        minLength=minLength,
                                                                                                                        maxLength=maxLength,
@@ -564,7 +564,8 @@ class CutselectionController:
                                                                                                                        useRange=useRange,
                                                                                                                        rangeStart=rangeStart,
                                                                                                                        ifdmode=ifdmode,
-                                                                                                                       rangeEnd=rangeEnd)
+                                                                                                                       rangeEnd=rangeEnd,
+                                                                                                                       selectionMode=selectionMode)
 
 
   def runSceneChangeDetection(self,addCuts=False):

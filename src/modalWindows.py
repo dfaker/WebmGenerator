@@ -173,9 +173,18 @@ class YoutubeDLModal(tk.Toplevel):
 
     self.entryCookies.grid(row=4,column=1,sticky='new',padx=5,pady=5)
 
+    self.labelBrowserCookies = ttk.Label(self)
+    self.labelBrowserCookies.config(text='Get Cookies from Browser')
+    self.labelBrowserCookies.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+    self.varBrowserCookies   = tk.StringVar(self,'')
+    self.entryBrowserCookies =  ttk.Combobox(self,textvariable=self.varBrowserCookies)
+    self.entryBrowserCookies.config(values=['brave', 'chrome', 'chromium', 'edge', 'firefox', 'opera', 'safari', 'vivaldi'])
+    self.entryBrowserCookies.grid(row=5,column=1,sticky='new',padx=5,pady=5)
+
+
     self.downloadCmd = ttk.Button(self)
     self.downloadCmd.config(text='Download',command=self.download)
-    self.downloadCmd.grid(row=5,column=0,columnspan=2,sticky='nesw')
+    self.downloadCmd.grid(row=6,column=0,columnspan=2,sticky='nesw')
     self.rowconfigure(5, weight=1)
 
     self.entryUrl.focus()
@@ -190,12 +199,13 @@ class YoutubeDLModal(tk.Toplevel):
     username=self.varUsername.get()
     password=self.varPassword.get()
     useCookies = bool(self.useCookies.get())
+    browserCookies=self.varBrowserCookies.get()
 
     try:
       fileLimit = int(float(self.varPlayListLimit.get()))
     except Exception as e:
       print(e)
-    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies)
+    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies)
     self.destroy()
 
 
@@ -230,8 +240,8 @@ class PerfectLoopScanModal(tk.Toplevel):
     
     self.useRange = useRange
 
-    initThreshold    = 20
-    initMidThreshold = 20
+    initThreshold    = 10
+    initMidThreshold = 10
     initMinLength    = 1.5
     initMaxLength    = 5.5
     initTimeSkip     = 0.5
@@ -293,7 +303,7 @@ class PerfectLoopScanModal(tk.Toplevel):
     self.labelIfdMode.config(text='IFD offset mode')
     self.labelIfdMode.grid(row=r,column=0,sticky='new',padx=5,pady=5)
 
-    self.varIfdMode   = tk.IntVar(0)
+    self.varIfdMode   = tk.IntVar(self,1)
     self.entryIfdMode = ttk.Checkbutton(self,text='Treat thresholds as offset from mean inter-frame-distance',var=self.varIfdMode)
     self.entryIfdMode.grid(row=r,column=1,sticky='new',padx=5,pady=5)
 
@@ -557,11 +567,22 @@ class OptionsDialog(tk.Toplevel):
     self.columnconfigure(0, weight=0)    
     self.columnconfigure(1, weight=1)
 
+    i=0
+
+    columnHeight=25
+    maxcol=1
+
     for i,(k,v) in enumerate(optionsDict.items()):
       print(i,k,v)
       labelValue = ttk.Label(self)
       labelValue.config(text=k)
-      labelValue.grid(row=i,column=0,sticky='new',padx=5,pady=5)
+
+      column = i//columnHeight
+      column = column*2
+      maxcol= max(maxcol,maxcol+1)
+      row = i%columnHeight
+
+      labelValue.grid(row=row,column=column,sticky='new',padx=5,pady=1)
       valueVar   = tk.StringVar(self)
       self.varMap[k]=valueVar
       entryValue = ttk.Entry(self,textvariable=self.varMap[k])
@@ -571,14 +592,14 @@ class OptionsDialog(tk.Toplevel):
       entryValue.config(validate='key',validatecommand=(okayCommand ,'%P'))
 
       valueVar.set(str(v))
-      entryValue.grid(row=i,column=1,sticky='new',padx=5,pady=5)
+      entryValue.grid(row=row,column=column+1,sticky='new',padx=5,pady=0)
       self.entryMap[k]=entryValue
       valueVar.set(str(v))
       valueVar.trace('w',lambda *args,k=k:self.valueChanged(k))
 
     self.saveChanges = ttk.Button(self,text='Save Changes',command=self.saveChanges)
     self.rowconfigure(i+1, weight=1)
-    self.saveChanges.grid(row=i+1,column=0,columnspan=2,sticky='nesw')
+    self.saveChanges.grid(row=i+1,column=0,columnspan=maxcol+2,sticky='nesw')
 
 
     self.resizable(False, False) 
@@ -618,5 +639,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = PerfectLoopScanModal()
+  app = YoutubeDLModal()
   app.mainloop()

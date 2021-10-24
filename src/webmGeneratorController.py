@@ -56,6 +56,12 @@ class WebmGeneratorController:
       "defaultAutosaveFilename":'autosave.webgproj',
       "titleMetadataSuffix":' WmG',
       "startFullscreen":False,
+
+      "allowableTargetSizeUnderrun":0.15,
+      "initialBr":16777216,
+      "maxEncodeAttemptsGif":10,
+      "maxEncodeAttempts":6,
+      'vp8lagInFrames':25,
     
       "cutsTabPlayerBackgroundColour":"#282828",
       "filtersTabPlayerBackgroundColour":"#282828",
@@ -76,8 +82,8 @@ class WebmGeneratorController:
       "defaultFontFolder":".",
       "defaultSubtitleFolder":".",
 
-      "loopNudgeLimit1":1,
-      "loopNudgeLimit2":2,
+      "loopNudgeLimit1":10,
+      "loopNudgeLimit2":25,
       
       "loopSearchLower1":2,
       "loopSearchUpper1":3,
@@ -330,6 +336,7 @@ class WebmGeneratorController:
 
   def cancelCurrentYoutubeDl(self):
     self.ytdlService.cancelCurrentYoutubeDl()
+    self.ffmpegService.cancelCurrentScans()
 
   def close_ui(self):
     if self.lastSaveFile is not None and self.lastSaveFile != self.autosaveFilename:

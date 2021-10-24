@@ -118,9 +118,8 @@ class WebmGeneratorUi:
     self.menubar = Menu(self.master)
     
     self.filemenu = Menu(self.menubar, tearoff=0, postcommand=self.updateDownloadCounts)
-
     self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
-    
+   
     self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
     self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
     self.filemenu.add_separator()
@@ -131,7 +130,6 @@ class WebmGeneratorUi:
       self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave, state='disabled')
 
     self.filemenu.add_separator()
-
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
     self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
@@ -143,28 +141,18 @@ class WebmGeneratorUi:
       self.filemenu.add_command(label="Start screen capture", command=self.startScreencap, state='disabled')
 
     self.filemenu.add_separator()
-
     self.filemenu.add_command(label="Extract .srt subtitles from video file", command=self.extractSubs)
-
     self.filemenu.add_separator()
-    
     self.filemenu.add_command(label="Toggle fullscreen", command=self.toggleFullscreen)
-
-
     self.filemenu.add_separator()
-
     self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Cancel current youtube-dlp download", command=self.cancelCurrentYoutubeDl)
-
-    self.filemenu.add_separator()
     self.filemenu.add_command(label="Update youtube-dlp", command=self.updateYoutubeDl)
     self.filemenu.add_separator()
-
     self.filemenu.add_command(label="Delete all downloaded files", command=self.clearDownloadedfiles)
     self.clearTempMenuIndex = self.filemenu.index(END) 
     self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files")
-
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Preferences", command=self.updatePreferences)
     self.filemenu.add_separator()
@@ -173,59 +161,37 @@ class WebmGeneratorUi:
 
     self.showStreamPreviews = False
 
-    def versioncheck():
-      try:
-        req = urllib.request.Request('https://api.github.com/repos/dfaker/WebmGenerator/releases')
-        req.add_header('Referer', 'http://localhost/dfaker/WebmGenerator/updateCheck')
-        with urllib.request.urlopen(req) as f:
-          data = json.loads(f.read())
-          leadTag = data[0]['tag_name']
-          if leadTag != RELEASE_NUMVER:
-            self.menubar.add_command(label="New Version {} avaliable!".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
-          else:
-            self.menubar.add_command(label="You're on the most recent version {}".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
-
-      except Exception as e:
-        logging.error(versioncheck,exc_info=e)
-        self.menubar.add_command(label="Version check failed!", command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
-
     self.commandmenu = Menu(self.menubar, tearoff=0)
-    self.commandmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
-    self.commandmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
-    self.commandmenu.add_separator()
+    
+    self.commandSplitmenu = Menu(self.menubar, tearoff=0)
+    self.commandSplitmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
+    self.commandSplitmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
+    self.commandmenu.add_cascade(label="Split clip", menu=self.commandSplitmenu)
+    
 
-    self.commandmenu.add_command(label="Run scene change detection and add Marks", command=self.controller.runSceneChangeDetection)
-    self.commandmenu.add_command(label="Run scene change detection and add SubClips", command=self.controller.runSceneChangeDetectionCuts)
-    self.commandmenu.add_separator()
-
-    self.commandmenu.add_command(label="Run search for any perfect loops.", command=self.controller.runFullLoopSearch)
-
-    self.commandmenu.add_separator()
-
-    self.commandmenu.add_command(label="Run representative scene centeres detection and add SubClips", state='disabled', command=self.controller.runSceneCentreDetectionCuts)
-
-    self.commandmenu.add_separator()
-    self.commandmenu.add_command(label="Run audio loudness threshold detection", command=self.scanAndAddLoudSections)
-    self.commandmenu.add_separator()
+    self.commandDetectormenu = Menu(self.menubar, tearoff=0)
+    self.commandDetectormenu.add_command(label="Run scene change detection and add Marks", command=self.controller.runSceneChangeDetection)
+    self.commandDetectormenu.add_command(label="Run scene change detection and add SubClips", command=self.controller.runSceneChangeDetectionCuts)
+    self.commandDetectormenu.add_separator()
+    self.commandDetectormenu.add_command(label="Run search for any perfect loops.", command=self.controller.runFullLoopSearch)
+    self.commandDetectormenu.add_separator()
+    self.commandDetectormenu.add_command(label="Run representative scene centeres detection and add SubClips", state='disabled', command=self.controller.runSceneCentreDetectionCuts)
+    self.commandDetectormenu.add_separator()
+    self.commandDetectormenu.add_command(label="Run audio loudness threshold detection", command=self.scanAndAddLoudSections)
+    self.commandmenu.add_cascade(label="Content detectors", menu=self.commandDetectormenu)
 
     self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
     self.commandmenu.add_separator()
-
     self.commandmenu.add_command(label="Clear all SubClips on current clip", command=self.clearAllSubclipsOnCurrentClip)
     self.commandmenu.add_command(label="Clear all Interest Marks on current clip", command=self.clearAllInterestMarksOnCurrentClip)
     self.commandmenu.add_separator()
-    
-    self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
-
-    self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Screenshot to {}".format(self.controller.tempFolder), command=self.takeScreenshot)
-
-
-
+    self.commandmenu.add_separator()
+    self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
     self.menubar.add_cascade(label="Commands", menu=self.commandmenu)
 
     self.helpmenu = Menu(self.menubar, tearoff=0)
-    self.helpmenu.add_command(label="Open Check for new version", command=versioncheck)
+    self.helpmenu.add_command(label="Open Check for new version", command=self.versioncheck)
     self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
     self.menubar.add_cascade(label="Help", menu=self.helpmenu)
 
@@ -264,6 +230,8 @@ class WebmGeneratorUi:
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
 
+    self.versioncheckResultIndex=None
+
   def updatePreferences(self):
     changedOptions = {}
     optionsScreen = OptionsDialog(optionsDict=self.controller.globalOptions.copy(), changedProperties=changedOptions ,changeCallback=self.controller.updateGlobalOptions)
@@ -279,6 +247,27 @@ class WebmGeneratorUi:
             return f"{num:3.1f}{unit}{suffix}"
         num /= 1024.0
     return f"{num:.1f}Yi{suffix}"
+
+  def versioncheck(self):
+    try:
+      if self.versioncheckResultIndex is not None:
+        self.menubar.delete(self.versioncheckResultIndex)
+        self.versioncheckResultIndex=None
+      req = urllib.request.Request('https://api.github.com/repos/dfaker/WebmGenerator/releases')
+      req.add_header('Referer', 'http://localhost/dfaker/WebmGenerator/updateCheck')
+      with urllib.request.urlopen(req) as f:
+        data = json.loads(f.read())
+        leadTag = data[0]['tag_name']
+        if leadTag != RELEASE_NUMVER:
+          self.menubar.add_command(label="New Version {} avaliable!".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
+          self.versioncheckResultIndex = self.menubar.index(END) 
+        else:
+          self.menubar.add_command(label="You're on the most recent version {}".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
+          self.versioncheckResultIndex = self.menubar.index(END)
+    except Exception as e:
+      logging.error('versioncheck',exc_info=e)
+      self.menubar.add_command(label="Version check failed!", command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
+      self.versioncheckResultIndex = self.menubar.index(END)
 
   def updateDownloadCounts(self):
     count,sz = self.controller.getDownloadFilesCountAndsize()
@@ -404,11 +393,12 @@ class WebmGeneratorUi:
         self.statusPreview['state']='disabled'
         self.statusSplit['state']='disabled'
         
-      if 'Download progress' in message or 'streaming' in message:
+      if 'Download progress' in message or 'streaming' in message or 'Running loop scan' in message:
         self.statusCancel['state']='enabled'
       else:
         self.statusCancel['state']='disabled'
       self.statusLabel['text']=message
+
     if percentage is not None:
       if percentage < 0:
         self.statusProgress['mode']='indeterminate'

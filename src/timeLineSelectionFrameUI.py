@@ -121,8 +121,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.perfectLoopMenu = tk.Menu(self, tearoff=0)
 
-    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}s".format(self.globalOptions.get('loopNudgeLimit1',1)),command=self.canvasPopupFindLowestError1s)
-    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}s".format(self.globalOptions.get('loopNudgeLimit2',2)),command=self.canvasPopupFindLowestError2s)
+    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}%".format(self.globalOptions.get('loopNudgeLimit1',1)),command=self.canvasPopupFindLowestError1s)
+    self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}%".format(self.globalOptions.get('loopNudgeLimit2',2)),command=self.canvasPopupFindLowestError2s)
     
     self.perfectLoopMenu.add_separator()
     self.perfectLoopMenu.add_command(label="Find best loop between {} and {}s centered here".format(  self.globalOptions.get('loopSearchLower1',2), self.globalOptions.get('loopSearchUpper1',3)),command=self.canvasPopupFindContainingLoop3s)

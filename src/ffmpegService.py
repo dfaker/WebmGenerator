@@ -1026,15 +1026,15 @@ class FFmpegService():
             min_duration=minLength
             max_duration=maxLength
 
-            distance_threshold=threshold
-            match_threshold   =threshold
-
-            nomatch_threshold =midThreshold
+            match_threshold   = threshold
+            nomatch_threshold = midThreshold
 
             time_distance=timeSkip
 
             if nomatch_threshold is None:
                 nomatch_threshold = match_threshold
+
+            nomatchAndMatchAreEqual = nomatch_threshold == match_threshold
 
             N_pixels = od*od*3
 
@@ -1081,7 +1081,7 @@ class FFmpegService():
 
             while 1:
 
-              if scanabortflag:
+              if self.scanabortflag:
                 break
 
               frame = proc.stdout.read(N_pixels)
@@ -1095,7 +1095,9 @@ class FFmpegService():
                   meanDist = float(np.mean(distances))
                   self.globalStatusCallback('Running loop scan, rawMatches:{trm} meanFrameDist:{ifd:0.3f}'.format(trm=totalRawMatches,ifd=meanDist),(t-startTs)/length)
                   if ifdmode:
-                    distance_threshold=meanDist+threshold
+                    match_threshold=meanDist+threshold
+                    nomatch_threshold=meanDist+midThreshold
+
 
 
                 flat_frame = 1.0 * frame.flatten()
@@ -1113,7 +1115,7 @@ class FFmpegService():
                         "max": frame_dict[t2]["|F|"] + F_norm,
                     }
                     frame_dict[t2][t]["rejected"] = (
-                        frame_dict[t2][t]["min"] > distance_threshold
+                        frame_dict[t2][t]["min"] > match_threshold
                     )
 
                 t_F = sorted(frame_dict.keys())
@@ -1133,20 +1135,20 @@ class FFmpegService():
                     distances.append(dist)
                   
                   frame_dict[t2][t]["min"] = frame_dict[t2][t]["max"] = dist
-                  frame_dict[t2][t]["rejected"] = dist >= distance_threshold
+                  frame_dict[t2][t]["rejected"] = dist >= match_threshold
 
                   for t3 in t_F[i + 1 :]:
                     t3t, t2t3 = frame_dict[t3][t], frame_dict[t2][t3]
                     t3t["max"] = min(t3t["max"], dist + t2t3["max"])
                     t3t["min"] = max(t3t["min"], dist - t2t3["max"], t2t3["min"] - dist)
-                    if t3t["min"] > distance_threshold:
+                    if t3t["min"] > match_threshold:
                         t3t["rejected"] = True
 
                 # Store all the good matches (end_time,t)
                 new_matching_frames =  [
                   (t1, t, frame_dict[t1][t]["min"], frame_dict[t1][t]["max"])
                   for t1 in frame_dict
-                  if (t1 != t) and t-t1 > min_duration and not frame_dict[t1][t]["rejected"]
+                  if (t1 != t) and not frame_dict[t1][t]["rejected"]
                 ]
                 totalRawMatches += len(new_matching_frames)
                 matching_frames += new_matching_frames
@@ -1155,7 +1157,7 @@ class FFmpegService():
                 olderFrames=[]
                 while 1:
                   frameAdded=False
-                  if len(matching_frames)>0 and (matching_frames[-1][0]<(t-(max_duration*2)) or len(frame)<N_pixels):
+                  if len(matching_frames)>0 and ( ( matching_frames[0][0]<(t-(max_duration*4)) or   ( len(olderFrames)>0 and  matching_frames[0][0]<(t-(max_duration*2))))  or len(frame)<N_pixels):
                     olderFrames.append(matching_frames.pop(0))
                     frameAdded=True
                   if not frameAdded:
@@ -1202,12 +1204,11 @@ class FFmpegService():
                     print('poor_matches',start,poor_matches)
                     print('short_matches',start,short_matches)
 
-                    """
+                    
                     if not poor_matches.intersection(short_matches):
                         print(start,'not poor_matches.intersection(short_matches)')
                         continue
-                    """
-
+                    
                     end = max(end for (end, min_distance, max_distance) in great_long_matches)
                     end, min_distance, max_distance = next(
                         e for e in great_long_matches if e[0] == end
@@ -1392,6 +1393,8 @@ class FFmpegService():
                       ,"-vcodec","rawvideo"
                       ,"-vsync", "vfr"
                       ,"-"]
+            
+            self.globalStatusCallback('Finding closest frame match',0)
 
             searchFrames = np.frombuffer(sp.Popen(framesCmd,**popen_params).stdout.read(), dtype="uint8")
             searchFrames.shape = (-1,od,od,3)
@@ -1435,6 +1438,7 @@ class FFmpegService():
             start = options.get('start')
             end   = options.get('end')
             searchDistance=options.get('secondsChange')
+            searchDistance = (end-start)*(searchDistance/100)            
 
             halfclipDur = (end-start)/2
 
@@ -1444,8 +1448,6 @@ class FFmpegService():
             cropRect = options.get('cropRect')
             rid = options.get('rid')
             
-
-
             od=224
             nbytes = 3 * od * od
             frameDistance=0.01
@@ -1462,6 +1464,8 @@ class FFmpegService():
               #"stderr": sp.DEVNULL,
             }
 
+            self.globalStatusCallback('Finding closest frame match',0)
+            
             startCmd = ["ffmpeg"
                       ,'-ss',str(start-searchDistance)
                       ,"-i", cleanFilenameForFfmpeg(filename)  

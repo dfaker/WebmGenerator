@@ -51,7 +51,7 @@ class YTDLService():
     def downloadFunc():
       while 1:
         try:
-          url,fileLimit,username,password,useCookies,callback = self.downloadRequestQueue.get()
+          url,fileLimit,username,password,useCookies,browserCookies,callback = self.downloadRequestQueue.get()
           self.cancelEvent.clear()
           self.splitEvent.clear()
 
@@ -93,7 +93,10 @@ class YTDLService():
               extraFlags.extend(['--max-downloads',str(fileLimit)])
 
             if useCookies and os.path.exists('cookies.txt'):
-              extraFlags.extend('--cookies','cookies.txt')
+              extraFlags.extend(['--cookies','cookies.txt'])
+
+            if len(browserCookies)>0:
+              extraFlags.extend(['--cookies-from-browser',browserCookies])
 
 
 
@@ -255,8 +258,8 @@ class YTDLService():
   def togglePreview(self,toggleValue):
     self.pushPreview = toggleValue
 
-  def loadUrl(self,url,fileLimit,username,password,useCookies,callback):
-    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,callback))
+  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,callback):
+    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,callback))
 
   def update(self):
     self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None))

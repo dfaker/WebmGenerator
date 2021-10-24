@@ -710,10 +710,9 @@ class CutselectionUi(ttk.Frame):
       modal = YoutubeDLModal(master=self,controller=self,initialUrl=defaultUrl)
       modal.mainloop()
       
-    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies):
+    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies,browserCookies):
       if url is not None and len(url)>0:
-        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies)
-
+        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies,browserCookies)
 
 
     def startScreencap(self):

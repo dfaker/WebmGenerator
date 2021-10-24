@@ -7,6 +7,7 @@ import threading
 from math import floor
 import time
 import logging
+from threading import Lock
 
 import subprocess as sp
 import numpy as np
@@ -228,6 +229,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
     self.uiDirty=True
+    self.uiUpdateLock = Lock()
     self.clipped=None
 
 
@@ -745,222 +747,223 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.framesRequested=self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,self.frameResponseCallback)
 
   def updateCanvas(self):
-    canvasUpdated = False
+    with self.uiUpdateLock:
+      canvasUpdated = False
 
-    if self.controller.getcurrentFilename() is None or self.controller.getTotalDuration() is None:
-      return
+      if self.controller.getcurrentFilename() is None or self.controller.getTotalDuration() is None:
+        return
 
-    ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
-    timelineWidth = self.winfo_width()
-    timelineHeight = self.winfo_height()
-    
-    startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
-    endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
-
-
-    if self.tempRangeStart is not None:
-      a = self.tempRangeStart
-      b = self.controller.getCurrentPlaybackPosition()
-      d = abs(b-a)
-      #a,b = sorted([a,b])
-      a = self.secondsToXcoord(a)
-      b = self.secondsToXcoord(b)
-      self.timeline_canvas.coords(self.tempRangePreview,a,110,b,150)
-
-      self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,(a+b)//2,102)
-      self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text=format_timedelta(datetime.timedelta(seconds=d),'{hours_total}:{minutes2}:{seconds:02.2F}') )
-    else:
-      self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
-      self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
-      self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text="")
-
-    if self.uiDirty and self.generateWaveImages:
-
-      if self.audioToBytesThread is None: 
-        self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
-        self.audioToBytesThread.daemon=True
-        self.audioToBytesThread.start()
-
-      newWaveAsPicRequest = (self.controller.controller.getcurrentFilename(),startpc,endpc,self.controller.getTotalDuration(),timelineWidth)
-
-      if self.lastWavePicSectionsRequested != newWaveAsPicRequest:
-        if self.wavePicSectionsThread is not None:
-          self.wavePicSectionsThread.cancel()
-          self.wavePicSectionsThread = None
-        self.wavePicSectionsThread = threading.Timer(0.2, self.generateImageSections,args=newWaveAsPicRequest)
-        self.wavePicSectionsThread.daemon=True
-        self.wavePicSectionsThread.start()
-        self.lastWavePicSectionsRequested = newWaveAsPicRequest
-
-      self.timeline_canvas.coords(self.rangeHeaderBG,0,0,timelineWidth,20,)
-      self.timeline_canvas.coords(self.previewBG,0,20,timelineWidth,20+45,)
-
-    for ts,(frameWidth,frameData) in list(self.previewFrames.items()):
-      previewName = ('previewFrame',ts)
-      ts_x = self.secondsToXcoord(ts)
-      if previewName not in self.canvasRegionCache:
-        self.canvasRegionCache[previewName] = self.timeline_canvas.create_image(ts_x, 20, image=frameData, anchor='n',tags='previewFrame')
-        self.timeline_canvas.lower(self.canvasRegionCache[previewName])
-        self.timeline_canvas.lower(self.previewBG)
-      elif self.uiDirty:
-        self.timeline_canvas.coords(self.canvasRegionCache[previewName],ts_x, 20)
-
-    if not self.framesRequested and self.controller.getcurrentFilename() is not None and self.controller.getTotalDuration() is not None:
-      self.requestFrames(self.controller.getcurrentFilename(),0,self.controller.getTotalDuration(),timelineWidth,90)
-
-    self.timeline_canvas.coords(self.rangeHeaderActiveRange,int(startpc*timelineWidth),0,(endpc*timelineWidth),20)
-
-    seekpc = self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
-    self.timeline_canvas.coords(self.canvasHeaderSeekPointer,seekpc*timelineWidth,0,seekpc*timelineWidth,20)
-    
-    seekMidpc  = (startpc+endpc)/2
-    self.timeline_canvas.coords(self.rangeHeaderActiveMid,seekMidpc*timelineWidth,0,seekMidpc*timelineWidth,20)
-
-    if self.uiDirty:
-      self.timeline_canvas.delete('ticks')
-
-      for ts,interesttype in self.controller.getInterestMarks():
-        tx = int(self.secondsToXcoord(ts))
-        if interesttype=='manual':
-          tm = self.timeline_canvas.create_polygon(tx-5, 45+40,tx+5, 45+40, tx, 45+45,fill="#ead9a7",tags='ticks')
-        if interesttype=='sceneChange':
-          tm = self.timeline_canvas.create_polygon(tx-5, 45+40,tx+5, 45+40, tx, 45+45,fill="green",tags='ticks')
-
-      self.tickmarks=[]
-      tickStart = self.xCoordToSeconds(0)
-      tickIncrement=  (self.xCoordToSeconds(timelineWidth)-self.xCoordToSeconds(0))/20
-
-      tickStart = int((tickIncrement * round(tickStart/tickIncrement))-tickIncrement)
-
-      while 1:
-        tickStart+=tickIncrement
-        tx = int(self.secondsToXcoord(tickStart))
-        if tx<0:
-          pass
-        elif tx>=self.winfo_width():
-          break
-        else:          
-          tm = self.timeline_canvas.create_line(tx, 45+20, tx, 45+22,fill="white",tags='ticks') 
-          tm = self.timeline_canvas.create_text(tx, 45+30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}'),fill="white",tags='ticks') 
-
-    currentPlaybackX =  self.secondsToXcoord(self.controller.getCurrentPlaybackPosition())
-    self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,45+55,currentPlaybackX,timelineHeight )
-    self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45+45)
-    self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX),2)), '{hours_total}:{minutes2}:{seconds:02.2F}'))
-    activeRanges=set()
-
-    for rid,(s,e) in list(ranges):
-
-      if s<self.controller.getCurrentPlaybackPosition()<e:
-        self.controller.setLoopPos(s,e)
-
-      activeRanges.add(rid)
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      timelineWidth = self.winfo_width()
+      timelineHeight = self.winfo_height()
       
-      if rid in self.dirtySelectionRanges or self.uiDirty or (rid,'main') not in self.canvasRegionCache:
-        
-        self.dirtySelectionRanges.add(rid)
-
-        sx= self.secondsToXcoord(s)
-        ex= self.secondsToXcoord(e)
-        trimpreend    = self.secondsToXcoord(s+self.targetTrim)
-        trimpostStart = self.secondsToXcoord(e-self.targetTrim)
-
-        
-        if (rid,'main') in self.canvasRegionCache:
-          canvasUpdated = True
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'main')],sx, timelineHeight-self.midrangeHeight, ex, timelineHeight)
-
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
-          
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
-            
-          if self.clipped != rid:
-            self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}') ) )
-          
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, min(trimpreend,ex), timelineHeight)
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],max(trimpostStart,sx), timelineHeight-self.midrangeHeight, ex, timelineHeight)
-
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'miniDrag')],sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight)
-
-          if self.clipped == rid:
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#ffffff")
-            self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="At Video Edge")
-          else:
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#69dbbe")
-
-          if self.lastClickedEndpoint is None:
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
-          elif self.lastClickedEndpoint[0] == rid and self.lastClickedEndpoint[1] == 's':
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=1,outline='white')
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
-          elif self.lastClickedEndpoint[0] == rid and self.lastClickedEndpoint[1] == 'e':
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=1,outline='white')
-            self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
+      startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
+      endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
 
 
-          for dtx in (-1,1):
-            for dty in (-1,0,1,2):
-              dst_tn = 'startHandleDot'+str(dtx)+str(dty)
-              self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 ) 
-              dst_tn = 'endHandleDot'+str(dtx)+str(dty)
-              self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 )
+      if self.tempRangeStart is not None:
+        a = self.tempRangeStart
+        b = self.controller.getCurrentPlaybackPosition()
+        d = abs(b-a)
+        #a,b = sorted([a,b])
+        a = self.secondsToXcoord(a)
+        b = self.secondsToXcoord(b)
+        self.timeline_canvas.coords(self.tempRangePreview,a,110,b,150)
 
+        self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,(a+b)//2,102)
+        self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text=format_timedelta(datetime.timedelta(seconds=d),'{hours_total}:{minutes2}:{seconds:02.2F}') )
+      else:
+        self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
+        self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
+        self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text="")
 
-          hstx = (s/self.controller.getTotalDuration())*timelineWidth
-          henx = (e/self.controller.getTotalDuration())*timelineWidth
+      if self.uiDirty and self.generateWaveImages:
 
-          self.timeline_canvas.coords(self.canvasRegionCache[(rid,'headerR')],hstx,10, henx, 20)
+        if self.audioToBytesThread is None: 
+          self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
+          self.audioToBytesThread.daemon=True
+          self.audioToBytesThread.start()
 
-          if self.clipped != rid:
-            try:
-              self.dirtySelectionRanges.remove(rid)
-            except Exception as e:
-              self.uiDirty=True
-              print(e)
-          else:
-            self.clipped=None
+        newWaveAsPicRequest = (self.controller.controller.getcurrentFilename(),startpc,endpc,self.controller.getTotalDuration(),timelineWidth)
 
-        else:
+        if self.lastWavePicSectionsRequested != newWaveAsPicRequest:
+          if self.wavePicSectionsThread is not None:
+            self.wavePicSectionsThread.cancel()
+            self.wavePicSectionsThread = None
+          self.wavePicSectionsThread = threading.Timer(0.2, self.generateImageSections,args=newWaveAsPicRequest)
+          self.wavePicSectionsThread.daemon=True
+          self.wavePicSectionsThread.start()
+          self.lastWavePicSectionsRequested = newWaveAsPicRequest
 
-          self.canvasRegionCache[(rid,'main')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#69dbbe",width=0, tags='fileSpecific')
-          self.canvasRegionCache[(rid,'preTrim')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
-          self.canvasRegionCache[(rid,'postTrim')] = self.timeline_canvas.create_rectangle(trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
-       
-          self.canvasRegionCache[(rid,'startHandle')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight, fill="#69bfdb",width=1, tags='fileSpecific')
-          self.canvasRegionCache[(rid,'endHandle')] = self.timeline_canvas.create_rectangle(ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight, fill="#db6986",width=1, tags='fileSpecific')
+        self.timeline_canvas.coords(self.rangeHeaderBG,0,0,timelineWidth,20,)
+        self.timeline_canvas.coords(self.previewBG,0,20,timelineWidth,20+45,)
 
-          for dtx in (-1,1):
-            for dty in (-1,0,1,2):
-              dst_tn = 'startHandleDot'+str(dtx)+str(dty)
-              self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
-              dst_tn = 'endHandleDot'+str(dtx)+str(dty)
-              self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
+      for ts,(frameWidth,frameData) in list(self.previewFrames.items()):
+        previewName = ('previewFrame',ts)
+        ts_x = self.secondsToXcoord(ts)
+        if previewName not in self.canvasRegionCache:
+          self.canvasRegionCache[previewName] = self.timeline_canvas.create_image(ts_x, 20, image=frameData, anchor='n',tags='previewFrame')
+          self.timeline_canvas.lower(self.canvasRegionCache[previewName])
+          self.timeline_canvas.lower(self.previewBG)
+        elif self.uiDirty:
+          self.timeline_canvas.coords(self.canvasRegionCache[previewName],ts_x, 20)
 
+      if not self.framesRequested and self.controller.getcurrentFilename() is not None and self.controller.getTotalDuration() is not None:
+        self.requestFrames(self.controller.getcurrentFilename(),0,self.controller.getTotalDuration(),timelineWidth,90)
 
-          self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}')),fill="white", tags='fileSpecific') 
+      self.timeline_canvas.coords(self.rangeHeaderActiveRange,int(startpc*timelineWidth),0,(endpc*timelineWidth),20)
+
+      seekpc = self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
+      self.timeline_canvas.coords(self.canvasHeaderSeekPointer,seekpc*timelineWidth,0,seekpc*timelineWidth,20)
       
+      seekMidpc  = (startpc+endpc)/2
+      self.timeline_canvas.coords(self.rangeHeaderActiveMid,seekMidpc*timelineWidth,0,seekMidpc*timelineWidth,20)
 
-          self.canvasRegionCache[(rid,'miniDrag')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight, fill="#2bb390",width=0, tags='fileSpecific')
+      if self.uiDirty:
+        self.timeline_canvas.delete('ticks')
 
+        for ts,interesttype in self.controller.getInterestMarks():
+          tx = int(self.secondsToXcoord(ts))
+          if interesttype=='manual':
+            tm = self.timeline_canvas.create_polygon(tx-5, 45+40,tx+5, 45+40, tx, 45+45,fill="#ead9a7",tags='ticks')
+          if interesttype=='sceneChange':
+            tm = self.timeline_canvas.create_polygon(tx-5, 45+40,tx+5, 45+40, tx, 45+45,fill="green",tags='ticks')
 
-          hstx = (s/self.controller.getTotalDuration())*timelineWidth
-          henx = (e/self.controller.getTotalDuration())*timelineWidth
-          self.canvasRegionCache[(rid,'headerR')] = self.timeline_canvas.create_rectangle(hstx,10, henx, 20, fill="#299b9b",width=0, tags='fileSpecific')
+        self.tickmarks=[]
+        tickStart = self.xCoordToSeconds(0)
+        tickIncrement=  (self.xCoordToSeconds(timelineWidth)-self.xCoordToSeconds(0))/20
+
+        tickStart = int((tickIncrement * round(tickStart/tickIncrement))-tickIncrement)
+
+        while 1:
+          tickStart+=tickIncrement
+          tx = int(self.secondsToXcoord(tickStart))
+          if tx<0:
+            pass
+          elif tx>=self.winfo_width():
+            break
+          else:          
+            tm = self.timeline_canvas.create_line(tx, 45+20, tx, 45+22,fill="white",tags='ticks') 
+            tm = self.timeline_canvas.create_text(tx, 45+30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}'),fill="white",tags='ticks') 
+
+      currentPlaybackX =  self.secondsToXcoord(self.controller.getCurrentPlaybackPosition())
+      self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,45+55,currentPlaybackX,timelineHeight )
+      self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45+45)
+      self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX),2)), '{hours_total}:{minutes2}:{seconds:02.2F}'))
+      activeRanges=set()
+
+      for rid,(s,e) in list(ranges):
+
+        if s<self.controller.getCurrentPlaybackPosition()<e:
+          self.controller.setLoopPos(s,e)
+
+        activeRanges.add(rid)
+        
+        if rid in self.dirtySelectionRanges or self.uiDirty or (rid,'main') not in self.canvasRegionCache:
           
           self.dirtySelectionRanges.add(rid)
-          canvasUpdated = True
 
-    if canvasUpdated:
-      self.timeline_canvas.update_idletasks()
-      self.timeline_canvas.update()
+          sx= self.secondsToXcoord(s)
+          ex= self.secondsToXcoord(e)
+          trimpreend    = self.secondsToXcoord(s+self.targetTrim)
+          trimpostStart = self.secondsToXcoord(e-self.targetTrim)
 
-    for (rid,name),i in list(self.canvasRegionCache.items()):
-      if rid not in activeRanges and rid != 'previewFrame':
-        self.timeline_canvas.delete(i)
-        del self.canvasRegionCache[(rid,name)]
-    self.uiDirty=False
+          
+          if (rid,'main') in self.canvasRegionCache:
+            canvasUpdated = True
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'main')],sx, timelineHeight-self.midrangeHeight, ex, timelineHeight)
+
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'startHandle')],sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight)
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'endHandle')],ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight)
+            
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'label')],int((sx+ex)/2),timelineHeight-self.midrangeHeight-20)
+              
+            if self.clipped != rid:
+              self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}') ) )
+            
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'preTrim')],sx, timelineHeight-self.midrangeHeight, min(trimpreend,ex), timelineHeight)
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'postTrim')],max(trimpostStart,sx), timelineHeight-self.midrangeHeight, ex, timelineHeight)
+
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'miniDrag')],sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight)
+
+            if self.clipped == rid:
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#ffffff")
+              self.timeline_canvas.itemconfig(self.canvasRegionCache[(rid,'label')],text="At Video Edge")
+            else:
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#69dbbe")
+
+            if self.lastClickedEndpoint is None:
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
+            elif self.lastClickedEndpoint[0] == rid and self.lastClickedEndpoint[1] == 's':
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=1,outline='white')
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
+            elif self.lastClickedEndpoint[0] == rid and self.lastClickedEndpoint[1] == 'e':
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=1,outline='white')
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
+
+
+            for dtx in (-1,1):
+              for dty in (-1,0,1,2):
+                dst_tn = 'startHandleDot'+str(dtx)+str(dty)
+                self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 ) 
+                dst_tn = 'endHandleDot'+str(dtx)+str(dty)
+                self.timeline_canvas.coords(self.canvasRegionCache[(rid,dst_tn)], ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1 )
+
+
+            hstx = (s/self.controller.getTotalDuration())*timelineWidth
+            henx = (e/self.controller.getTotalDuration())*timelineWidth
+
+            self.timeline_canvas.coords(self.canvasRegionCache[(rid,'headerR')],hstx,10, henx, 20)
+
+            if self.clipped != rid:
+              try:
+                self.dirtySelectionRanges.remove(rid)
+              except Exception as e:
+                self.uiDirty=True
+                print(e)
+            else:
+              self.clipped=None
+
+          else:
+
+            self.canvasRegionCache[(rid,'main')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#69dbbe",width=0, tags='fileSpecific')
+            self.canvasRegionCache[(rid,'preTrim')] = self.timeline_canvas.create_rectangle(sx, timelineHeight-self.midrangeHeight, trimpreend, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
+            self.canvasRegionCache[(rid,'postTrim')] = self.timeline_canvas.create_rectangle(trimpostStart, timelineHeight-self.midrangeHeight, ex, timelineHeight, fill="#218a6f",width=0, tags='fileSpecific')
+         
+            self.canvasRegionCache[(rid,'startHandle')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.handleHeight, sx+0, timelineHeight, fill="#69bfdb",width=1, tags='fileSpecific')
+            self.canvasRegionCache[(rid,'endHandle')] = self.timeline_canvas.create_rectangle(ex-0, timelineHeight-self.handleHeight, ex+self.handleWidth, timelineHeight, fill="#db6986",width=1, tags='fileSpecific')
+
+            for dtx in (-1,1):
+              for dty in (-1,0,1,2):
+                dst_tn = 'startHandleDot'+str(dtx)+str(dty)
+                self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( sx-(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , sx-(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
+                dst_tn = 'endHandleDot'+str(dtx)+str(dty)
+                self.canvasRegionCache[(rid,dst_tn)] = self.timeline_canvas.create_line( ex+(self.handleWidth/2)+(2*dtx) , timelineHeight-self.handleHeight+8+(5*dty) , ex+(self.handleWidth/2)+(2*dtx), timelineHeight-self.handleHeight+8+(5*dty)+1  , fill="#333",width=1, tags='fileSpecific')
+
+
+            self.canvasRegionCache[(rid,'label')] = self.timeline_canvas.create_text( int((sx+ex)/2) , timelineHeight-self.midrangeHeight-20,text="{}s".format(format_timedelta(datetime.timedelta(seconds=round(e-s,2)), '{hours_total}:{minutes2}:{seconds:02.2F}')),fill="white", tags='fileSpecific') 
+        
+
+            self.canvasRegionCache[(rid,'miniDrag')] = self.timeline_canvas.create_rectangle(sx-self.handleWidth, timelineHeight-self.miniMidrangeHeight, ex+self.handleWidth, timelineHeight, fill="#2bb390",width=0, tags='fileSpecific')
+
+
+            hstx = (s/self.controller.getTotalDuration())*timelineWidth
+            henx = (e/self.controller.getTotalDuration())*timelineWidth
+            self.canvasRegionCache[(rid,'headerR')] = self.timeline_canvas.create_rectangle(hstx,10, henx, 20, fill="#299b9b",width=0, tags='fileSpecific')
+            
+            self.dirtySelectionRanges.add(rid)
+            canvasUpdated = True
+
+      if canvasUpdated:
+        self.timeline_canvas.update_idletasks()
+        self.timeline_canvas.update()
+
+      for (rid,name),i in list(self.canvasRegionCache.items()):
+        if rid not in activeRanges and rid != 'previewFrame':
+          self.timeline_canvas.delete(i)
+          del self.canvasRegionCache[(rid,name)]
+      self.uiDirty=False
 
   def setUiDirtyFlag(self):
     self.uiDirty=True    

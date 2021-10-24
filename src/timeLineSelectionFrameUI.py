@@ -13,6 +13,15 @@ import subprocess as sp
 import numpy as np
 import math
 
+from contextlib import contextmanager
+
+@contextmanager
+def acquire_timeout(lock, timeout):
+  result = lock.acquire(timeout=timeout)
+  yield result
+  if result:
+    lock.release()
+
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds:02.2F}"):
 
     if hasattr(value, 'seconds'):
@@ -748,7 +757,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def updateCanvas(self):
     
-    with self.uiUpdateLock:
+    with acquire_timeout(self.uiUpdateLock,0.5):
 
       canvasUpdated = False
 

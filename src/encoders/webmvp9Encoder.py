@@ -19,16 +19,16 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
   audio_mp  = 8
   video_mp  = 1024*1024
-  initialBr = 16777216
+  initialBr = globalOptions.get('initialBr',16777216)
   dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
 
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')
     sizeLimitMin = float('-inf')
-    initialBr    = 16777216
+    initialBr    = globalOptions.get('initialBr',16777216)
   else:
     sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
+    sizeLimitMin = sizeLimitMax*(1.0-globalOptions.get('allowableTargetSizeUnderrun',0.25))
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
@@ -70,13 +70,15 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
         bufsize = str(min(2000000000.0,br*2))
 
     threadCount = globalOptions.get('encoderStageThreads',4)
+    metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
+    
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","good",'-slices','8','-psnr','-speed','0'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
+                   ,"-deadline","best",'-slices','8','-psnr','-cpu-used','0'
+                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
     
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
@@ -129,7 +131,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       twoPassMode=True,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6,
+                      maxAttempts=globalOptions.get('maxEncodeAttempts',6),
                       requestId=requestId,
                       optimiserName=options.get('optimizer'))
 

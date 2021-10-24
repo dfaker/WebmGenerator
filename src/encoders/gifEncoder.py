@@ -17,7 +17,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     sizeLimitMin = float('-inf')
   else:
     sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
+    sizeLimitMin = sizeLimitMax*(1.0-globalOptions.get('allowableTargetSizeUnderrun',0.25))
 
   videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif', requestId)
 
@@ -65,7 +65,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       initialDependentValue=initialWidth,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
-                      maxAttempts=10,
+                      maxAttempts=globalOptions.get('maxEncodeAttemptsGif',10),
                       dependentValueName='Width',
                       requestId=requestId,
                       optimiserName=options.get('optimizer'))

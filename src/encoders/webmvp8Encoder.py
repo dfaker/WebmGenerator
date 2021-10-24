@@ -19,16 +19,16 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
   audio_mp  = 8
   video_mp  = 1024*1024
-  initialBr = 16777216
+  initialBr = globalOptions.get('initialBr',16777216)
   dur       = totalExpectedEncodedSeconds-totalEncodedSeconds
 
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')
     sizeLimitMin = float('-inf')
-    initialBr    = 16777216
+    initialBr    = globalOptions.get('initialBr',16777216)
   else:
     sizeLimitMax = options.get('maximumSize')*1024*1024
-    sizeLimitMin = sizeLimitMax*0.85
+    sizeLimitMin = sizeLimitMax*(1.0-globalOptions.get('allowableTargetSizeUnderrun',0.25))
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
@@ -69,13 +69,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       if sizeLimitMax != 0.0:
         bufsize = str(min(2000000000.0,br*2))
     threadCount = globalOptions.get('encoderStageThreads',4)
+    metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
                    ,"-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
-                   ,"-threads", str(threadCount),"-crf"  ,'4',"-speed", "0"
-                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","best",'-slices','8','-cpu-used','0','-psnr'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + ' WmG') ]
+                   ,"-threads", str(threadCount),"-crf"  ,'4'
+                   ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
+                   ,"-deadline","best",'-slices','8','-cpu-used','-16','-psnr'
+                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
     
     print(ffmpegcommand)
     if sizeLimitMax == 0.0:
@@ -138,7 +139,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       twoPassMode=True,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
-                      maxAttempts=6,
+                      maxAttempts=globalOptions.get('maxEncodeAttempts',6),
                       requestId=requestId,
                       minimumPSNR=minimumPSNR,
                       optimiserName=options.get('optimizer') )

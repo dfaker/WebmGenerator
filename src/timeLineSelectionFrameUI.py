@@ -229,7 +229,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
     self.uiDirty=True
-    self.uiUpdateLock = Lock()
+    self.uiUpdateLock = threading.RLock()
     self.clipped=None
 
 
@@ -747,7 +747,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.framesRequested=self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,self.frameResponseCallback)
 
   def updateCanvas(self):
+    
     with self.uiUpdateLock:
+
       canvasUpdated = False
 
       if self.controller.getcurrentFilename() is None or self.controller.getTotalDuration() is None:

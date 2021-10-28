@@ -783,8 +783,8 @@ class MergeSelectionUi(ttk.Frame):
 
 
     self.audioChannelsOptions = [
-      'Stereo - Low    48 kbps'
-      ,'Stereo - Medium 64 kbps'
+       'Stereo - Low    48 kbps'
+      , 'Stereo - Medium 64 kbps'
       ,'Stereo - High   96 kbps'
       ,'Stereo - HD     128 kbps'
       ,'Stereo - Ultra  192 kbps'
@@ -793,6 +793,7 @@ class MergeSelectionUi(ttk.Frame):
       ,'Mono - High   96 kbps'
       ,'Mono - HD     128 kbps'
       ,'Mono - Ultra  192 kbps'
+      ,'Directly Copy Source'
       ,'No audio'
     ]
 

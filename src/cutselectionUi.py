@@ -171,7 +171,7 @@ class CutselectionUi(ttk.Frame):
         self.targetLengthVar = tk.StringVar()
         self.targetLengthVar.trace("w", self.targetLengthChangeCallback)
 
-        self.targetTrim = globalOptions.get('defaultTrimLength',0.5)
+        self.targetTrim = globalOptions.get('defaultTrimLength',0.0)
         self.targetTrimVar = tk.StringVar()
         self.targetTrimVar.trace("w", self.targetTrimChangeCallback)
 
@@ -615,6 +615,7 @@ class CutselectionUi(ttk.Frame):
             self.frameTimeLineFrame.setTargetTrim(value)
         except Exception as e:
             logging.error('Exception targetTrimChangeCallback',exc_info=e)
+        self.controller.updateProgressStatistics()
 
     def dragPreviewPosCallback(self, *args):
       try:

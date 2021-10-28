@@ -993,7 +993,7 @@ class FFmpegService():
           
           if requestType == 'FullLoopSearch':
             addCuts        = bool(options.get('addCuts',True))
-            videoInfo      = getVideoInfo(filename)
+            
             totalDuration  = float(options.get('duration'))
             minSeconds     = float(options.get('minSeconds',1))
             maxSeconds     = float(options.get('maxSeconds',5))
@@ -1010,8 +1010,13 @@ class FFmpegService():
             maxLength       = float(options.get('maxLength',3))
             timeSkip        = float(options.get('timeSkip',1))
             ifdmode         = bool(options.get('ifdmode',False))
+            scaleWidth      = int(float(options.get('scaleWidth',450)))
                        
             finalScanMode = options.get('selectionMode','bestFirst')
+
+            scaleFilter = "scale={}:-1:force_original_aspect_ratio=decrease:flags=neighbor".format(scaleWidth)
+
+            videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename),filters=scaleFilter)
 
             startTs = 0
             endTs   = totalDuration
@@ -1023,7 +1028,8 @@ class FFmpegService():
 
             length = endTs-startTs
 
-            od=250
+            odw=videoInfo.width
+            odh=videoInfo.height
 
             min_duration=minLength
             max_duration=maxLength
@@ -1038,7 +1044,7 @@ class FFmpegService():
 
             nomatchAndMatchAreEqual = nomatch_threshold == match_threshold
 
-            N_pixels = od*od*3
+            N_pixels = odw*odh*3
 
             def dot_product(F1, F2):
               return (F1 * F2).sum() / N_pixels
@@ -1050,13 +1056,12 @@ class FFmpegService():
                 u, v = frame_dict[t1]["|F|sq"], frame_dict[t2]["|F|sq"]
                 return np.sqrt(u + v - 2 * uv)
 
-
             cmd = ["ffmpeg"
                       ,'-ss',str(startTs)
-                      ,"-i", cleanFilenameForFfmpeg(filename)  
-                      ,'-s', '{}x{}'.format(od,od)
+                      ,"-i", cleanFilenameForFfmpeg(filename) 
                       ,'-ss',str(startTs)
                       ,'-t', str(length)
+                      ,'-vf','scale={}:{},setsar=1/1'.format(odw,odh)
                       ,"-copyts"
                       ,"-f","image2pipe"
                       ,"-an"
@@ -1088,7 +1093,6 @@ class FFmpegService():
 
               frame = proc.stdout.read(N_pixels)
               if len(frame)==N_pixels:
-
                 frame = np.frombuffer(frame,dtype="uint8")
                 t = t+(1/fps)
 
@@ -1184,7 +1188,7 @@ class FFmpegService():
                             hasOverlap=True
                             break
                         if not hasOverlap:
-                          callback(filename,start,end-(1/fps),kind='Cut')
+                          callback(filename,start,end,kind='Cut')
                           pushedFrames.add((start,end))
 
                   else:
@@ -1241,7 +1245,7 @@ class FFmpegService():
 
                       print('\n\nMATCH!')
 
-                      callback(filename,start,end-(1/fps),kind='Cut')
+                      callback(filename,start,end,kind='Cut')
                       print('\n')
                       goodMatches.append( (start, end, min_distance, max_distance) )
                       min_start = end + time_distance

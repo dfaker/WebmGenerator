@@ -241,10 +241,10 @@ class PerfectLoopScanModal(tk.Toplevel):
     self.useRange = useRange
 
     initThreshold    = 10
-    initMidThreshold = 10
+    initMidThreshold = 18
     initMinLength    = 1.5
-    initMaxLength    = 5.5
-    initTimeSkip     = 0.5
+    initMaxLength    = 4.0
+    initTimeSkip     = 1.0
 
     r=0
 

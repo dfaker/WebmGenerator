@@ -73,7 +73,7 @@ class WebmGeneratorController:
       
       "defaultSliceLength":30.0,
       "defaultTargetLength":60.0,
-      "defaultTrimLength":0.5,
+      "defaultTrimLength":0.0,
       "defaultDragOffset":0.1,
 
       "defaultVideoFolder":".",

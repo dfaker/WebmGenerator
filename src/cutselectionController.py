@@ -45,6 +45,7 @@ class CutselectionController:
     self.ui.setinitialFocus()
 
     self.loadFiles(initialFiles)
+    self.randomlyPlayedFiles = set()
     
 
   def takeScreenshotToFile(self,screenshotPath,includes='video'):
@@ -240,13 +241,23 @@ class CutselectionController:
 
   def jumpClips(self,offset):
     if offset is None:
-      offset = random.randint(0,len(self.files))
-
-    try:
-      nextClipInd = self.files.index(self.currentlyPlayingFileName)+offset      
-      self.playVideoFile(self.files[nextClipInd%len(self.files)],0)      
-    except ValueError as e:
-      logging.error('Exception jumpClips',exc_info=e)
+      unplayed =  set(self.files).difference(self.randomlyPlayedFiles)
+      if len(unplayed)==0:
+        self.randomlyPlayedFiles=set()
+        unplayed = set(files)
+      nextRandomFile = random.choice(list(unplayed))
+      self.playVideoFile(nextRandomFile,0)
+      self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
+      self.randomlyPlayedFiles.add(nextRandomFile)
+    else:
+      try:
+        nextClipInd = self.files.index(self.currentlyPlayingFileName)+offset      
+        nextFile = self.files[nextClipInd%len(self.files)]
+        self.playVideoFile(nextFile,0)
+        self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
+        self.randomlyPlayedFiles.add(nextFile)
+      except ValueError as e:
+        logging.error('Exception jumpClips',exc_info=e)
 
   def playVideoFile(self,filename,startTimestamp):
     self.currentTotalDuration=None
@@ -475,9 +486,17 @@ class CutselectionController:
   def updateProgressStatistics(self):
     totalExTrim=0.0
     totalTrim=0.0
+
+    targetTrim=0
+    try:
+      targetTrim=float(self.ui.targetTrimVar.get())
+    except Exception as e:
+      print(e)
+
     for filename,rid,s,e in self.videoManager.getAllClips():
-      totalExTrim += (e-s)-(self.ui.targetTrim*2)
-      totalTrim   += (self.ui.targetTrim*2)
+      totalExTrim += (e-s)-(targetTrim*2)
+      totalTrim   += (targetTrim*2)
+
     self.ui.updateProgressStatitics(totalExTrim,totalTrim)
 
 

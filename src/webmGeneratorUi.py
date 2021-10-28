@@ -12,7 +12,7 @@ import json
 import threading
 import os
 
-RELEASE_NUMVER = 'v3.11.1'
+RELEASE_NUMVER = 'v3.11.3'
 
 class WebmGeneratorUi:
 
@@ -40,7 +40,6 @@ class WebmGeneratorUi:
     self.style.configure ("warning.TLabel", font = ('Sans','10','bold'),color='red')
 
     
-
     self.style.configure("frameButtons.TFrame", 
                            border=0,relief='flat')
 

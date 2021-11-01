@@ -38,6 +38,8 @@ from .mergeSelectionController import MergeSelectionController
 from .videoManager   import VideoManager
 from .ffmpegService import FFmpegService  
 from .youtubeDLService import YTDLService
+from .faceDetectionService import FaceDetectionService
+from .voiceActivityService import VoiceActivityService
 
 class WebmGeneratorController:
   
@@ -142,8 +144,11 @@ class WebmGeneratorController:
 
     self.webmMegeneratorUi = WebmGeneratorUi(self,self.root)
 
+    self.faceDetectionService = FaceDetectionService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,
+                                                     globalOptions=self.globalOptions)
+
     self.cutselectionUi     = CutselectionUi(self.root,globalOptions=self.globalOptions)
-    self.filterSselectionUi = FilterSelectionUi(self.root,globalOptions=self.globalOptions)
+    self.filterSselectionUi = FilterSelectionUi(self.root,globalOptions=self.globalOptions,enableFaceDetection=self.faceDetectionService.faceDetectEnabled())
     self.mergeSelectionUi   = MergeSelectionUi(self.root,defaultProfile=self.defaultProfile,globalOptions=self.globalOptions)
 
     self.webmMegeneratorUi.addPane(self.cutselectionUi,'Cuts')
@@ -160,17 +165,22 @@ class WebmGeneratorController:
 
     self.ytdlService   = YTDLService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,
                                      globalOptions=self.globalOptions)
+    self.voiceActivityService = VoiceActivityService(globalStatusCallback=self.webmMegeneratorUi.updateGlobalStatus,
+                                     globalOptions=self.globalOptions)
+
 
     self.cutselectionController = CutselectionController(self.cutselectionUi,
                                                          self.initialFiles,
                                                          self.videoManager,
                                                          self.ffmpegService,
                                                          self.ytdlService,
+                                                         self.voiceActivityService,
                                                          self.globalOptions)
 
     self.filterSelectionController = FilterSelectionController(self.filterSselectionUi,
                                                                self.videoManager,
                                                                self.ffmpegService,
+                                                               self.faceDetectionService,
                                                                self.globalOptions)
 
     self.mergeSelectionController = MergeSelectionController(self.mergeSelectionUi,
@@ -244,6 +254,9 @@ class WebmGeneratorController:
 
   def runSceneChangeDetection(self):
     self.cutselectionController.runSceneChangeDetection()
+
+  def runVoiceActivityDetection(self):
+    self.cutselectionController.showVoiceActivityDetectionModal()
 
   def runSceneChangeDetectionCuts(self):
     self.cutselectionController.runSceneChangeDetection(addCuts=True)    

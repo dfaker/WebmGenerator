@@ -388,7 +388,7 @@ class FilterSpecification(ttk.Frame):
 
 
 class FilterSelectionUi(ttk.Frame):
-  def __init__(self, master=None, *args, **kwargs):
+  def __init__(self, master=None, enableFaceDetection=False, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     # build ui
     self.frameFilterFrame = self
@@ -581,6 +581,17 @@ class FilterSelectionUi(ttk.Frame):
     self.video_canvas_popup_menu.add_command(label="Clear Registration Marks"               ,command=lambda :self.addRegistrationMark("clear"))
                                 
 
+    self.video_canvas_popup_menu.add_separator()
+
+    if enableFaceDetection:
+      self.video_canvas_popup_menu.add_command(label="Add rect from face detector"                    ,command=self.addDetectedFaceRect)
+      self.video_canvas_popup_menu.add_command(label="Centre selected rect from face detector"        ,command=self.centreDetectedFaceRect)
+      self.video_canvas_popup_menu.add_command(label="Align eyes horizontal from face detector"       ,command=self.alignDetectedEyes)
+    else:
+      self.video_canvas_popup_menu.add_command(label="Add rect from face detector"                    ,command=lambda:1 , state='disabled')
+      self.video_canvas_popup_menu.add_command(label="Align eyes horizontal from face detector"       ,command=lambda:1 , state='disabled')
+
+
     self.framePlayerFrame.bind("<Button-1>",          self.videomousePress)
     self.framePlayerFrame.bind("<ButtonRelease-1>",   self.videomousePress)
     self.framePlayerFrame.bind("<Motion>",            self.videomousePress)
@@ -705,7 +716,7 @@ class FilterSelectionUi(ttk.Frame):
               snapOffset=snapAngle
           angle=angle-snapOffset
 
-          self.incrementAtCurrentPlaybackPosition(angle*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+          self.incrementAtCurrentPlaybackPosition(angle*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=isAsoluteValue,applyImmediate=True)
       else:
         if isAsoluteValue:
           if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
@@ -725,6 +736,81 @@ class FilterSelectionUi(ttk.Frame):
             self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
             print('pitch',horizD)
 
+
+  def addDetectedFaceRectCallback(self,sourceFile,timestamp,faces):
+    print(sourceFile,timestamp)
+    
+    self.controller.addVideoRegMark(0,0,"clear")
+
+    for face in faces:
+      print(face)
+      fx,fy,fs = face['face']['x'], face['face']['y'], face['face']['size']
+      fvx,fvy = self.controller.videoSpaceToScreenSpace(fx,fy)
+      fvx2,fvy2   = self.controller.videoSpaceToScreenSpace(fx+fs,fy+fs)
+
+      print(fx,fy,fvx,fvy)
+
+      self.videoMouseRect=[fx,fy,fx+fs,fy+fs]
+      self.screenMouseRect=[fvx,fvy,fvx2,fvy2]
+
+      self.controller.setVideoRect(fvx,fvy,fvx2,fvy2)
+      """
+      for eye in face['eyes']:
+        x,y = eye['x'],eye['y']
+        x,y = self.controller.videoSpaceToScreenSpace(x,y)
+        self.controller.addVideoRegMark(x,y)
+      """
+      break
+
+
+  def setCenteredFaceRectCallback(self,sourceFile,timestamp,faces):
+    print(sourceFile,timestamp)
+    
+    self.controller.addVideoRegMark(0,0,"clear")
+
+    for face in faces:
+      print(face)
+      fx,fy,fs = face['face']['x'], face['face']['y'], face['face']['size']
+      fvx,fvy = self.controller.videoSpaceToScreenSpace(fx,fy)
+      fvx2,fvy2   = self.controller.videoSpaceToScreenSpace(fx+fs,fy+fs)
+
+      print(fx,fy,fvx,fvy)
+
+      self.videoMouseRect=[fx,fy,fx+fs,fy+fs]
+      self.screenMouseRect=[fvx,fvy,fvx2,fvy2]
+
+      self.controller.setVideoRect(fvx,fvy,fvx2,fvy2)
+
+      for eye in face['eyes']:
+        x,y = eye['x'],eye['y']
+        x,y = self.controller.videoSpaceToScreenSpace(x,y)
+        self.controller.addVideoRegMark(x,y)
+
+      break
+
+  def alignDetectedEyesFaceRectCallback(self,sourceFile,timestamp,faces):
+
+    eyepoints = []
+    for face in faces:
+      for eye in face['eyes']:
+        x,y = eye['x'],eye['y']
+        x,y = self.controller.videoSpaceToScreenSpace(x,y)
+        eyepoints.append(x)
+        eyepoints.append(y) 
+      break
+
+    if len(eyepoints)==4:
+      self.applyVectorOffset(eyepoints[0],eyepoints[1],
+                             eyepoints[2],eyepoints[3],isAsoluteValue=True,isAngle=True)
+
+  def addDetectedFaceRect(self):
+    self.controller.getFaceBoundingRect(self.addDetectedFaceRectCallback)
+
+  def centreDetectedFaceRect(self):
+    self.controller.getFaceBoundingRect(self.setCenteredFaceRectCallback)
+  
+  def alignDetectedEyes(self):
+    self.controller.getFaceBoundingRect(self.alignDetectedEyesFaceRectCallback)
 
   def keyboardC(self,e):
     if self.activeCommandFilterValuePair is not None:

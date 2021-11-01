@@ -408,6 +408,7 @@ class FFmpegService():
           outs,errs = proc.communicate()
           minvol=float('inf')
           maxvol=float('-inf')
+          
           for line in outs.decode('utf8').split('\n'):
             if line.strip() != '':
               parts = line.strip().split(',')
@@ -415,6 +416,7 @@ class FFmpegService():
               vol= -((float(vol1)+float(vol2))/2)
               minvol = min(minvol,vol)
               maxvol = max(maxvol,vol)
+
           for line in outs.decode('utf8').split('\n'):
             if line.strip() != '':
               parts = line.strip().split(',')

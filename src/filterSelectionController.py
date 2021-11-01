@@ -6,10 +6,11 @@ import time
 
 class FilterSelectionController:
 
-  def __init__(self,ui,videoManager,ffmpegService,globalOptions={}):
+  def __init__(self,ui,videoManager,ffmpegService,faceDetectService,globalOptions={}):
     self.globalOptions=globalOptions
     self.ui = ui
     self.templates = {}
+    self.faceDetectService = faceDetectService
 
     os.path.exists('filterTemplates') or os.mkdir('filterTemplates')
     for fn in os.listdir('filterTemplates'):
@@ -50,6 +51,12 @@ class FilterSelectionController:
     self.currentlyPlayingFileName=None
     self.installedFonts = None
     self.filterApplicationMode = 'lavfi_complex'
+
+  def faceDetectEnabled(self):
+    return self.faceDetectService.faceDetectEnabled()
+
+  def getFaceBoundingRect(self,callback):
+    self.faceDetectService.getFaceBoundingRect(self.currentlyPlayingFileName,'',self.player.time_pos,callback)
 
   def takeScreenshotToFile(self,screenshotPath,includes='video'):
     screenshotPath =  os.path.abspath(os.path.join(screenshotPath,'{}.png'.format(time.time())))
@@ -214,7 +221,39 @@ class FilterSelectionController:
       print(e)
       return 0,0
 
+
+  def videoSpaceToScreenSpace(self,x,y):
+    try:
+      #soruce video    
+
+      par = self.player.video_out_params.get('par',1)
+      
+      vid_w = self.player.video_out_params['dw']
+      vid_h = self.player.video_out_params['dh']
+
+
+      #displayframe
+      osd_w = self.player.osd_width
+      osd_h = self.player.osd_height
+
+      #paddingAroundFrame
+      osd_dim = self.player.osd_dimensions
+      osd_top = osd_dim['mt']
+      osd_bottom = osd_dim['mb']
+      osd_left = osd_dim['ml']
+      osd_right = osd_dim['mr']
+
+      boxw = (osd_w-osd_right-osd_left)*par
+      boxh = osd_h-osd_top-osd_bottom
+
+      ox = ((x)*(boxw/vid_w))+osd_right   
+      oy = ((y)*(boxh/vid_h))+osd_top
     
+      return ox,oy
+    except Exception as e:
+      print(e)
+      return 0,0
+
 
   def getClipsWithFilters(self):
     response=[]

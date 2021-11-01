@@ -15,6 +15,90 @@ from datetime import datetime
 
 
 
+class VoiceActivityDetectorModal(tk.Toplevel):
+
+
+  def __init__(self, master=None,controller=None, *args):
+    tk.Toplevel.__init__(self, master)
+    self.grab_set()
+    self.title('Detect voice activity')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,40)
+    self.controller=controller
+    self.columnconfigure(0, weight=0)
+    self.columnconfigure(1, weight=1)
+
+    self.labelSampleLength = ttk.Label(self)
+    self.labelSampleLength.config(text='Sample length (ms) [10,20,30]')
+    self.labelSampleLength.grid(row=0,column=0,sticky='new',padx=5,pady=5)
+    self.varSampleLength   = tk.StringVar(self,'30')
+    self.entrySampleLength = ttk.Entry(self,textvariable=self.varSampleLength)
+    self.entrySampleLength.grid(row=0,column=1,sticky='new',padx=5,pady=5)
+
+
+    self.labelAggresiveness = ttk.Label(self)
+    self.labelAggresiveness.config(text='Recognition Aggressiveness [0.0-3.0]')
+    self.labelAggresiveness.grid(row=2,column=0,sticky='new',padx=5,pady=5)
+
+    self.varAggresiveness   = tk.StringVar(self,'0')
+    self.entryAggresiveness  = ttk.Entry(self,textvariable=self.varAggresiveness)
+    self.entryAggresiveness.grid(row=2,column=1,sticky='new',padx=5,pady=5)
+
+
+    self.labelWindowLength = ttk.Label(self)
+    self.labelWindowLength.config(text='Rolling confidence window length')
+    self.labelWindowLength.grid(row=3,column=0,sticky='new',padx=5,pady=5)
+
+    self.varWindowLength   = tk.StringVar(self,'2.0')
+    self.entryWindowLength  = ttk.Entry(self,textvariable=self.varWindowLength)
+    self.entryWindowLength.grid(row=3,column=1,sticky='new',padx=5,pady=5)
+
+
+    self.labelMinimimDuration = ttk.Label(self)
+    self.labelMinimimDuration.config(text='Minumum speech duration')
+    self.labelMinimimDuration.grid(row=4,column=0,sticky='new',padx=5,pady=5)
+
+    self.varMinimimDuration   = tk.StringVar(self,'2.0')
+    self.entryMinimimDuration  = ttk.Entry(self,textvariable=self.varMinimimDuration)
+    self.entryMinimimDuration.grid(row=4,column=1,sticky='new',padx=5,pady=5)
+
+
+    self.labelCondidenceStart = ttk.Label(self)
+    self.labelCondidenceStart.config(text='Confidence to trigger start speech')
+    self.labelCondidenceStart.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+
+    self.varCondidenceStart    = tk.StringVar(self,'97.0')
+    self.entryCondidenceStart   = ttk.Entry(self,textvariable=self.varCondidenceStart )
+    self.entryCondidenceStart .grid(row=5,column=1,sticky='new',padx=5,pady=5)
+
+
+    self.labelCondidenceEnd = ttk.Label(self)
+    self.labelCondidenceEnd.config(text='Confidence to trigger end speech')
+    self.labelCondidenceEnd.grid(row=6,column=0,sticky='new',padx=5,pady=5)
+
+    self.varCondidenceEnd    = tk.StringVar(self,'80.0')
+    self.entryCondidenceEnd   = ttk.Entry(self,textvariable=self.varCondidenceEnd )
+    self.entryCondidenceEnd .grid(row=6,column=1,sticky='new',padx=5,pady=5)
+
+    self.downloadCmd = ttk.Button(self)
+    self.downloadCmd.config(text='Scan and Add SubClips',command=self.addSublcips)
+    self.downloadCmd.grid(row=7,column=0,columnspan=2,sticky='nesw')
+
+    self.resizable(False, False) 
+
+  def addSublcips(self):
+    sampleLength    = float(self.varSampleLength.get())
+    aggresiveness   = float(self.varAggresiveness.get())
+    windowLength    = float(self.varWindowLength.get())
+    minimimDuration = float(self.varMinimimDuration.get())
+    condidenceStart = float(self.varCondidenceStart.get())
+    condidenceEnd   = float(self.varCondidenceEnd.get())
+
+    self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd)
+    self.destroy()
+
+    
 class TimestampModal(tk.Toplevel):
   
   def __init__(self, master=None,controller=None,initialValue='',videoDuration=0, *args):
@@ -114,6 +198,15 @@ class TimestampModal(tk.Toplevel):
       self.controller.addNewSubclip(max(self.start,0), min(self.end,self.videoDuration))
 
 
+youtubeDLModalState = {
+  'varPlayListLimit':'',
+  'varUsername':'',
+  'varPassword':'',
+  'useCookies':0,
+  'varBrowserCookies':''
+
+}
+
 class YoutubeDLModal(tk.Toplevel):
   
   def __init__(self, master=None,controller=None,initialUrl='', *args):
@@ -165,7 +258,7 @@ class YoutubeDLModal(tk.Toplevel):
     self.labelCookies.config(text='Use cookies.txt')
     self.labelCookies.grid(row=4,column=0,sticky='new',padx=5,pady=5)
     
-    self.useCookies = tk.IntVar(0)
+    self.useCookies = tk.IntVar(self,0)
     self.entryCookies =  ttk.Checkbutton(self,text='Send credentials from cookies.txt',var=self.useCookies)
     if not os.path.exists('cookies.txt'):
       self.entryCookies['state']='disabled'
@@ -654,5 +747,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = YoutubeDLModal()
+  app = VoiceActivityDetectorModal()
   app.mainloop()

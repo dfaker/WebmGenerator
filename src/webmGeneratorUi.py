@@ -177,6 +177,8 @@ class WebmGeneratorUi:
     self.commandDetectormenu.add_command(label="Run representative scene centeres detection and add SubClips", state='disabled', command=self.controller.runSceneCentreDetectionCuts)
     self.commandDetectormenu.add_separator()
     self.commandDetectormenu.add_command(label="Run audio loudness threshold detection", command=self.scanAndAddLoudSections)
+    self.commandDetectormenu.add_command(label="Run voice activity detection", command=self.controller.runVoiceActivityDetection)
+    
     self.commandmenu.add_cascade(label="Content detectors", menu=self.commandDetectormenu)
 
     self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)

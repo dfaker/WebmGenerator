@@ -172,6 +172,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind('D',       self.keyboardRemoveBlockAtTime)
 
 
+    self.timeline_canvas.bind("q",        lambda x: self.controller.jumpClips(-1))
+    self.timeline_canvas.bind("e",        lambda x: self.controller.jumpClips(1))
+    self.timeline_canvas.bind("Q",        lambda x: self.controller.jumpClips(-1))
+    self.timeline_canvas.bind("E",        lambda x: self.controller.jumpClips(1))
+
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
@@ -240,7 +245,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.uiDirty=True
     self.uiUpdateLock = threading.RLock()
     self.clipped=None
-
 
   def getCurrentlySelectedRegion(self):
     start = self.tempRangeStart

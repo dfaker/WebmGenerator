@@ -10,14 +10,15 @@ import time
 
 class CutselectionController:
 
-  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,globalOptions={}):
+  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,globalOptions={}):
     self.globalOptions=globalOptions
+    self.randomlyPlayedFiles = set()
     self.ui = ui
     self.ui.setController(self)
     self.videoManager = videoManager
     self.ffmpegService = ffmpegService
     self.ytdlService   = ytdlService
-
+    self.voiceActivityService = voiceActivityService
     self.loopMode='Loop current'
 
     self.initialisePlayer()
@@ -45,7 +46,7 @@ class CutselectionController:
     self.ui.setinitialFocus()
 
     self.loadFiles(initialFiles)
-    self.randomlyPlayedFiles = set()
+
     
 
   def takeScreenshotToFile(self,screenshotPath,includes='video'):
@@ -258,6 +259,8 @@ class CutselectionController:
         self.randomlyPlayedFiles.add(nextFile)
       except ValueError as e:
         logging.error('Exception jumpClips',exc_info=e)
+    clipsleft = len(set(self.files).difference(self.randomlyPlayedFiles))
+    self.updateProgressStatistics()
 
   def playVideoFile(self,filename,startTimestamp):
     self.currentTotalDuration=None
@@ -497,8 +500,10 @@ class CutselectionController:
       totalExTrim += (e-s)-(targetTrim*2)
       totalTrim   += (targetTrim*2)
 
-    self.ui.updateProgressStatitics(totalExTrim,totalTrim)
 
+    clipsleft = len(set(self.files).difference(self.randomlyPlayedFiles))
+
+    self.ui.updateProgressStatitics(totalExTrim,totalTrim,len(self.files),clipsleft)
 
   def lowestErrorLoopCallback(self,filename,rid,mse,finals,finale):
     self.videoManager.updateDetailsForRangeId(filename,rid,finals,finale)
@@ -572,6 +577,12 @@ class CutselectionController:
       b=self.currentTotalDuration
     self.ui.displayLoopSearchModal(useRange=useRange,rangeStart=a,rangeEnd=b)
 
+
+  def showVoiceActivityDetectionModal(self):
+    self.ui.displayrunVoiceActivityDetectionmodal()
+
+  def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd):
+    self.voiceActivityService.scanForVoiceActivity(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd)
 
   def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False,selectionMode='bestFirst'):
     self.ffmpegService.fullLoopSearch(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,midThreshold=midThreshold,

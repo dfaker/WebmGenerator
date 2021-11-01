@@ -12,7 +12,7 @@ from math import floor
 import logging
 import time
 import subprocess as sp
-from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal
+from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -443,11 +443,20 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<Motion>",            self.videomousePress)
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
 
-       
+
+        self.frameVideoPlayerFrame.bind("q",        lambda s=self: s.controller.jumpClips(-1))
+        self.frameVideoPlayerFrame.bind("e",        lambda s=self: s.controller.jumpClips(1))
+        self.frameVideoPlayerFrame.bind("Q",        lambda s=self: s.controller.jumpClips(-1))
+        self.frameVideoPlayerFrame.bind("E",        lambda s=self: s.controller.jumpClips(1))
+
         self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
         self._previewtimer.daemon = True
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
+
+
+    def jumpClips(self,dir):
+      self.controller.jumpClips(dir)
 
     def addSubclipByTextRange(self,controller,totalDuration):
       initial=''
@@ -615,7 +624,8 @@ class CutselectionUi(ttk.Frame):
             self.frameTimeLineFrame.setTargetTrim(value)
         except Exception as e:
             logging.error('Exception targetTrimChangeCallback',exc_info=e)
-        self.controller.updateProgressStatistics()
+        if self.controller is not None:
+          self.controller.updateProgressStatistics()
 
     def dragPreviewPosCallback(self, *args):
       try:
@@ -625,7 +635,7 @@ class CutselectionUi(ttk.Frame):
         logging.error('Exception dragPreviewPosCallback',exc_info=e)
 
 
-    def updateProgressStatitics(self, totalExTrim, totalTrim):
+    def updateProgressStatitics(self, totalExTrim, totalTrim, totalFiles, unplayedFiles):
         percent = totalExTrim / self.targetLength
         progressPercent = max(0, min(100, percent * 100))
         self.progressToSize.config(value=progressPercent)
@@ -637,6 +647,8 @@ class CutselectionUi(ttk.Frame):
         self.labelCurrentSize.config(
             text="{}s {:0.2%}% (-{}s)".format( format_timedelta(totalExTrim,'{hours_total}:{minutes2}:{seconds2}') , percent, format_timedelta(totalTrim,'{hours_total}:{minutes2}:{seconds2}'))
         )
+
+        self.buttonvideoRandomClip.config(text='Random ({}/{})'.format(unplayedFiles,totalFiles))
 
     def setController(self, controller):
         self.controller = controller
@@ -715,6 +727,13 @@ class CutselectionUi(ttk.Frame):
       if url is not None and len(url)>0:
         self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies,browserCookies)
 
+
+    def displayrunVoiceActivityDetectionmodal(self,useRange=False,rangeStart=None,rangeEnd=None):
+      voiceModal = VoiceActivityDetectorModal(master=self,controller=self)
+      voiceModal.mainloop()
+
+    def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd):
+      self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd)
 
     def startScreencap(self):
       windowRef=self

@@ -55,3 +55,5 @@ def trimSRTfile(infilename,outfilename,sliceStart,sliceEnd):
             outfile.write(timeString)
       except Exception as e:
         print(e)
+    if n == 0:
+      outfile.write("1\n00:00:00,000 --> 00:00:00,000\n\n")

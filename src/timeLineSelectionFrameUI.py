@@ -377,11 +377,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if a<=s<=b and a<=e<=b:
           self.controller.removeSubclip((s+e)/2)
       self.tempRangeStart=None
-      self.updateCanvas()
+      #self.updateCanvas()
     else:
       mid = self.controller.getCurrentPlaybackPosition()
       self.controller.removeSubclip(mid)
-      self.updateCanvas()
+      #self.updateCanvas()
 
   def keyboardBlockAtTime(self,e):
     pos = self.controller.getCurrentPlaybackPosition()

@@ -1593,8 +1593,8 @@ class MergeSelectionUi(ttk.Frame):
       self.sequencedClips.append(
         SequencedVideoEntry(self.sequenceContainer,self,clip),
       )
-      self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
-      self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+      #self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
+      #self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
       self.scrolledframeInputCustContainer._scrollBothNow()
       self.scrolledframeSequenceContainer._scrollBothNow()
     self.updatedPredictedDuration()
@@ -1629,7 +1629,7 @@ class MergeSelectionUi(ttk.Frame):
       removedClip = self.sequencedClips.pop(currentIndex)
       removedClip.pack_forget()
       removedClip.destroy()
-      self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+      #self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
       self.scrolledframeInputCustContainer._scrollBothNow()
       self.scrolledframeSequenceContainer._scrollBothNow()
       self.updatedPredictedDuration()

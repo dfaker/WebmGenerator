@@ -8,7 +8,7 @@ def trimSRTfile(infilename,outfilename,sliceStart,sliceEnd):
   tszero = datetime.strptime('00:00:00,000', '%H:%M:%S,%f')
 
   with open(outfilename,'w') as outfile:
-    outfile.write('\n')
+    outfile.write('')
     for key,grp in groupby(open(infilename,'rb').readlines(),key=lambda x:x.strip()!=b''):
       try:
         if key:
@@ -39,11 +39,11 @@ def trimSRTfile(infilename,outfilename,sliceStart,sliceEnd):
 
             tsstart_str = datetime.strftime(datetime.utcfromtimestamp(tsstart),'%H:%M:%S,%f')          
             startP1,startP2 = tsstart_str.split(',')
-            tsstart_str = startP1 + ',' + str(int(int(startP2)/1000))
+            tsstart_str = startP1 + ',' + str(int(int(startP2)/1000)).zfill(3)
 
             tsend_str   = datetime.strftime(datetime.utcfromtimestamp(tsend),'%H:%M:%S,%f')
-            startP2,endP2 = tsstart_str.split(',')
-            tsend_str = startP2 + ',' + str(int(int(endP2)/1000))
+            startP2,endP2 = tsend_str.split(',')
+            tsend_str = startP2 + ',' + str(int(int(endP2)/1000)).zfill(3)
 
 
             timeString = "{}\n{} --> {}\n{}\n".format(n,

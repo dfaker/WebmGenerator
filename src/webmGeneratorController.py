@@ -67,6 +67,7 @@ class WebmGeneratorController:
     
       "cutsTabPlayerBackgroundColour":"#282828",
       "filtersTabPlayerBackgroundColour":"#282828",
+      "autoLoadLastAutosave":False,
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       
@@ -195,8 +196,12 @@ class WebmGeneratorController:
       try:
         lastSaveData = json.loads(open(self.autosaveFilename,'r').read())
         newSaveData  = self.getSaveData()
+        if self.globalOptions['autoLoadLastAutosave']:
+          self.loadAutoSave()
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
+
+
 
   def updateGlobalOptions(self,changedOptions):
     print(changedOptions)

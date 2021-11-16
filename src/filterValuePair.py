@@ -391,7 +391,7 @@ class FilterValuePair(ttk.Frame):
       initialdir=self.controller.getGlobalOptions().get('defaultFontFolder','.')
     elif self.fileCategory=='subtitle':
       initialdir=self.controller.getGlobalOptions().get('defaultSubtitleFolder','.')
-      filetypes=(('Subtitle', '*.srt'),)
+      filetypes=(('Subtitle', '*.srt *.ass'),)
     elif self.fileCategory=='image':
       initialdir=self.controller.getGlobalOptions().get('defaultImageFolder','.')
     elif self.fileCategory=='video':

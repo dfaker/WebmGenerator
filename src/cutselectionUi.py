@@ -732,8 +732,8 @@ class CutselectionUi(ttk.Frame):
       voiceModal = VoiceActivityDetectorModal(master=self,controller=self)
       voiceModal.mainloop()
 
-    def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd):
-      self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd)
+    def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr):
+      self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr)
 
     def startScreencap(self):
       windowRef=self

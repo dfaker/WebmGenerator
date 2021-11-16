@@ -197,6 +197,8 @@ class CutselectionController:
                           volume=0,
                           background=self.globalOptions.get('cutsTabPlayerBackgroundColour','#282828'),
                           autofit_larger='1280',
+                          autoload_files='no',
+                          cover_art_auto='no',
                           audio_file_auto='no',
                           sub_auto='no')
 
@@ -545,7 +547,7 @@ class CutselectionController:
       self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')
     elif kind == 'Cut':
       self.videoManager.registerNewSubclip(filename,timestamp,max(timestamp+0.01,timestampEnd-0.01))
-
+    self.updateProgressStatistics()
     self.ui.setUiDirtyFlag()
 
   def askToUseRangeIfSet(self):
@@ -581,8 +583,8 @@ class CutselectionController:
   def showVoiceActivityDetectionModal(self):
     self.ui.displayrunVoiceActivityDetectionmodal()
 
-  def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd):
-    self.voiceActivityService.scanForVoiceActivity(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd)
+  def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr):
+    self.voiceActivityService.scanForVoiceActivity(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr)
 
   def submitFullLoopSearch(self,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False,selectionMode='bestFirst'):
     self.ffmpegService.fullLoopSearch(self.currentlyPlayingFileName,self.currentTotalDuration,self.sceneChangeCallback,midThreshold=midThreshold,

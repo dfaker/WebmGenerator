@@ -65,6 +65,9 @@ class WebmGeneratorUi:
     
     self.style.configure('small.TMenubutton',padding=0)
 
+
+
+
     self.style.configure('subtle.TEntry', highlightbackground="#282828", highlightcolor="#282828",border=0,borderwidth =0,highlightthickness=0, padding=(0,0),bordercolor='#282828',
                                           background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     
@@ -77,9 +80,15 @@ class WebmGeneratorUi:
     self.style.map('smallVideoSub.TButton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
 
     self.style.configure('small.TButton', padding=0)
+    self.style.configure('smallSlim.TButton',padding=(-10,0))
+    self.style.configure('smallMid.TButton',padding=(-5,0))
     self.style.configure('smallOnechar.TButton', padding=(-28,0))
     self.style.configure('smallOnecharenabled.TButton', padding=(-28,0),background='green',foreground='white',lightcolor='green',darkcolor='green')
 
+    
+    self.style.configure('smallTallSlim.TButton', padding=(-8,10))
+    self.style.configure('smallTallSlimMid.TButton', padding=(-10,10))
+    
     self.style.configure('smallTall.TButton', padding=(0,10))
     self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)
     self.style.configure('smallextra.TButton', padding=-20)

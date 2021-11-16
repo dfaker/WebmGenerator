@@ -42,21 +42,7 @@
   "params": []
  },
 
- {
-  "support": "...",
-  "category": "Overlay, text and masks",
-  "name": "Ass subtitles",
-  "filter": "ass",
-  "kind": "V->V",
-  "desc": "Render ASS subtitles onto input video using the libass library.",
-  "params": [
-   {"n": "filename", "d": 0, "type": "file"},
-   {"n": "original_size", "d": 0, "type": "float","range": [null,null],"inc": 1},
-   {"n": "fontsdir", "d": 0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "alpha", "d": "false", "type": "cycle","cycle": ["true","false"]},
-   {"n": "shaping", "d": "auto", "type": "cycle","cycle": [ "auto", "simple", "complex"]}
-  ]
- },
+
 
  {
   "support": "T.C",

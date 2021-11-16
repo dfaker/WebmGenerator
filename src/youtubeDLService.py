@@ -262,7 +262,7 @@ class YTDLService():
     self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,callback))
 
   def update(self):
-    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None))
+    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None))
 
   def cancelCurrentYoutubeDl(self):
     self.cancelEvent.set()

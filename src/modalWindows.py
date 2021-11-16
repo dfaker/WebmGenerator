@@ -32,7 +32,7 @@ class VoiceActivityDetectorModal(tk.Toplevel):
     self.labelSampleLength = ttk.Label(self)
     self.labelSampleLength.config(text='Sample length (ms) [10,20,30]')
     self.labelSampleLength.grid(row=0,column=0,sticky='new',padx=5,pady=5)
-    self.varSampleLength   = tk.StringVar(self,'30')
+    self.varSampleLength   = tk.StringVar(self,'20')
     self.entrySampleLength = ttk.Entry(self,textvariable=self.varSampleLength)
     self.entrySampleLength.grid(row=0,column=1,sticky='new',padx=5,pady=5)
 
@@ -41,7 +41,7 @@ class VoiceActivityDetectorModal(tk.Toplevel):
     self.labelAggresiveness.config(text='Recognition Aggressiveness [0.0-3.0]')
     self.labelAggresiveness.grid(row=2,column=0,sticky='new',padx=5,pady=5)
 
-    self.varAggresiveness   = tk.StringVar(self,'0')
+    self.varAggresiveness   = tk.StringVar(self,'3')
     self.entryAggresiveness  = ttk.Entry(self,textvariable=self.varAggresiveness)
     self.entryAggresiveness.grid(row=2,column=1,sticky='new',padx=5,pady=5)
 
@@ -50,7 +50,7 @@ class VoiceActivityDetectorModal(tk.Toplevel):
     self.labelWindowLength.config(text='Rolling confidence window length')
     self.labelWindowLength.grid(row=3,column=0,sticky='new',padx=5,pady=5)
 
-    self.varWindowLength   = tk.StringVar(self,'2.0')
+    self.varWindowLength   = tk.StringVar(self,'1.5')
     self.entryWindowLength  = ttk.Entry(self,textvariable=self.varWindowLength)
     self.entryWindowLength.grid(row=3,column=1,sticky='new',padx=5,pady=5)
 
@@ -64,38 +64,67 @@ class VoiceActivityDetectorModal(tk.Toplevel):
     self.entryMinimimDuration.grid(row=4,column=1,sticky='new',padx=5,pady=5)
 
 
+    self.labelBridgeDistance = ttk.Label(self)
+    self.labelBridgeDistance.config(text='Bridge gaps of at most (s)')
+    self.labelBridgeDistance.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+
+    self.varBridgeDistance  = tk.StringVar(self,'2.0')
+    self.entryBridgeDistance = ttk.Entry(self,textvariable=self.varBridgeDistance)
+    self.entryBridgeDistance.grid(row=5,column=1,sticky='new',padx=5,pady=5)
+
+
     self.labelCondidenceStart = ttk.Label(self)
     self.labelCondidenceStart.config(text='Confidence to trigger start speech')
-    self.labelCondidenceStart.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+    self.labelCondidenceStart.grid(row=6,column=0,sticky='new',padx=5,pady=5)
 
-    self.varCondidenceStart    = tk.StringVar(self,'97.0')
+    self.varCondidenceStart    = tk.StringVar(self,'98.0')
     self.entryCondidenceStart   = ttk.Entry(self,textvariable=self.varCondidenceStart )
-    self.entryCondidenceStart .grid(row=5,column=1,sticky='new',padx=5,pady=5)
+    self.entryCondidenceStart .grid(row=6,column=1,sticky='new',padx=5,pady=5)
 
 
     self.labelCondidenceEnd = ttk.Label(self)
     self.labelCondidenceEnd.config(text='Confidence to trigger end speech')
-    self.labelCondidenceEnd.grid(row=6,column=0,sticky='new',padx=5,pady=5)
+    self.labelCondidenceEnd.grid(row=7,column=0,sticky='new',padx=5,pady=5)
 
     self.varCondidenceEnd    = tk.StringVar(self,'80.0')
     self.entryCondidenceEnd   = ttk.Entry(self,textvariable=self.varCondidenceEnd )
-    self.entryCondidenceEnd .grid(row=6,column=1,sticky='new',padx=5,pady=5)
+    self.entryCondidenceEnd .grid(row=7,column=1,sticky='new',padx=5,pady=5)
+
+    self.labelMinZcr= ttk.Label(self)
+    self.labelMinZcr.config(text='Minimum zero crossing rate (-1 to skip)')
+    self.labelMinZcr.grid(row=8,column=0,sticky='new',padx=5,pady=5)
+
+    self.varMinZcr    = tk.StringVar(self,'-1')
+    self.entryMinZcr   = ttk.Entry(self,textvariable=self.varMinZcr )
+    self.entryMinZcr .grid(row=8,column=1,sticky='new',padx=5,pady=5)
+
+    self.labelMaxZcr= ttk.Label(self)
+    self.labelMaxZcr.config(text='Maximum zero crossing rate (-1 to skip)')
+    self.labelMaxZcr.grid(row=9,column=0,sticky='new',padx=5,pady=5)
+
+    self.varMaxZcr    = tk.StringVar(self,'-1')
+    self.entryMaxZcr   = ttk.Entry(self,textvariable=self.varMaxZcr )
+    self.entryMaxZcr .grid(row=9,column=1,sticky='new',padx=5,pady=5)
 
     self.downloadCmd = ttk.Button(self)
     self.downloadCmd.config(text='Scan and Add SubClips',command=self.addSublcips)
-    self.downloadCmd.grid(row=7,column=0,columnspan=2,sticky='nesw')
+    self.downloadCmd.grid(row=10,column=0,columnspan=2,sticky='nesw')
 
     self.resizable(False, False) 
 
   def addSublcips(self):
     sampleLength    = float(self.varSampleLength.get())
+   
     aggresiveness   = float(self.varAggresiveness.get())
     windowLength    = float(self.varWindowLength.get())
     minimimDuration = float(self.varMinimimDuration.get())
+    bridgeDistance  = float(self.varBridgeDistance.get())
     condidenceStart = float(self.varCondidenceStart.get())
     condidenceEnd   = float(self.varCondidenceEnd.get())
+    minZcr          = float(self.varMinZcr.get())
+    maxZcr          = float(self.varMaxZcr.get())
 
-    self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,condidenceStart,condidenceEnd)
+    self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr)
     self.destroy()
 
     

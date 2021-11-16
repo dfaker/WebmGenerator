@@ -414,8 +414,8 @@ class FilterSelectionUi(ttk.Frame):
     self.frameFilterActionsGlobal = ttk.Frame(self.labelframeFilterBrowserFrame)
     
     self.buttonFilterActionClear = ttk.Button(self.frameFilterActionsGlobal)
-    self.buttonFilterActionClear.config(text='Clear filters')
-    self.buttonFilterActionClear.config(command=self.clearFilters,style="smallTall.TButton")
+    self.buttonFilterActionClear.config(text='Clear')
+    self.buttonFilterActionClear.config(command=self.clearFilters,style="smallTallSlim.TButton")
     self.buttonFilterActionClear.pack(expand='true', fill='x', side='left')
 
     self.buttonOverrideFilters = ttk.Button(self.frameFilterActionsGlobal)
@@ -424,13 +424,18 @@ class FilterSelectionUi(ttk.Frame):
     self.buttonOverrideFilters.pack(expand='true', fill='x', side='right')
 
     self.buttonPasteFilters = ttk.Button(self.frameFilterActionsGlobal)
-    self.buttonPasteFilters.config(text='Paste filters')
-    self.buttonPasteFilters.config(command=self.pasteFilters,style="smallTall.TButton")
+    self.buttonPasteFilters.config(text='Paste')
+    self.buttonPasteFilters.config(command=self.pasteFilters,style="smallTallSlim.TButton")
     self.buttonPasteFilters.pack(expand='true', fill='x', side='right')
-    
+
+    self.buttonAppendFilters = ttk.Button(self.frameFilterActionsGlobal)
+    self.buttonAppendFilters.config(text='Append')
+    self.buttonAppendFilters.config(command=self.appendFilters,style="smallTallSlimMid.TButton")
+    self.buttonAppendFilters.pack(expand='true', fill='x', side='right')
+
     self.buttonCopyFilters = ttk.Button(self.frameFilterActionsGlobal)
-    self.buttonCopyFilters.config(text='Copy filters')
-    self.buttonCopyFilters.config(command=self.copyfilters,style="smallTall.TButton")
+    self.buttonCopyFilters.config(text='Copy')
+    self.buttonCopyFilters.config(command=self.copyfilters,style="smallTallSlim.TButton")
     self.buttonCopyFilters.pack(expand='true', fill='x', side='right')
 
     self.frameFilterActionsGlobal.config(height='200', width='200')
@@ -495,7 +500,7 @@ class FilterSelectionUi(ttk.Frame):
 
     self.selectionOptionsFrame = ttk.Frame(self.playerContainerFrame)
 
-    self.autocropButton = ttk.Button(self.selectionOptionsFrame)
+    self.autocropButton = ttk.Button(self.selectionOptionsFrame,style="smallMid.TButton")
     self.autocropButton.config(text='Autocrop')
     self.autocropButton.config(command=self.autoCrop)
     self.autocropButton.pack(side='left')
@@ -510,21 +515,21 @@ class FilterSelectionUi(ttk.Frame):
 
     self.fixSeectionArEnabledVar = tk.BooleanVar()
     self.fixSeectionArEnabledVar.set(False)
-    self.arFixCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Restrict selection aspect ratio", variable=self.fixSeectionArEnabledVar)
+    self.arFixCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Force Aspect", variable=self.fixSeectionArEnabledVar)
     self.arFixCheckbox.pack(expand='false', side='left')
     
     self.fixSeectionArVar = tk.StringVar()
     self.fixSeectionArVar.set('1.7')
-    self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'), increment=0.01)
+    self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'),width=6, increment=0.01)
     self.spinBoxArRatio.pack(expand='false', side='left')
 
-    self.flipARButton = ttk.Button(self.selectionOptionsFrame,text="Flip AR", command=self.flipAR)
+    self.flipARButton = ttk.Button(self.selectionOptionsFrame,text="Flip AR",style="smallSlim.TButton", command=self.flipAR)
     self.flipARButton.pack(expand='false', side='left')
 
     self.fitToScreenVar = tk.BooleanVar()
     self.fitToScreenVar.trace('w',self.changeFitToScreen)
     self.fitToScreenVar.set(True)
-    self.fitToScreenCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Fit to screen", variable=self.fitToScreenVar)
+    self.fitToScreenCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Scale", variable=self.fitToScreenVar)
     self.fitToScreenCheckbox.pack(expand='false', side='left')
 
     self.volumeLabel = ttk.Label(self.selectionOptionsFrame)
@@ -535,29 +540,29 @@ class FilterSelectionUi(ttk.Frame):
     self.templatePopupMenu.add_command(label="No filter templates found")
 
     self.templateButton = ttk.Button(self.selectionOptionsFrame)
-    self.templateButton.config(text='Apply Template')
+    self.templateButton.config(text='Templates',style="smallMid.TButton")
     self.templateButton.config(command=self.showTemplateMenuPopup)
 
     self.templateButton.pack(side='right')
 
     self.importButton = ttk.Button(self.selectionOptionsFrame)
-    self.importButton.config(text='Import Json')
+    self.importButton.config(text='Import JSON',style="small.TButton")
     self.importButton.config(command=self.importJson)
     self.importButton.pack(side='right')
 
     self.exportButton = ttk.Button(self.selectionOptionsFrame)
-    self.exportButton.config(text='Export Json')
+    self.exportButton.config(text='Export JSON',style="small.TButton")
     self.exportButton.config(command=self.exportJson)
     self.exportButton.pack(side='right')
 
     self.speedVar = tk.StringVar()
     self.speedVar.trace('w',self.speedChange)
     self.speedVar.set('2.0')
-    self.spinboxSpeed = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.speedVar,from_=float('0'), to=float('inf'), increment=0.1)
+    self.spinboxSpeed = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.speedVar,from_=float('0'), to=float('inf'), width=4,increment=0.1)
     self.spinboxSpeed.pack(expand='false', side='right')
 
     self.speedLabel = ttk.Label(self.selectionOptionsFrame)
-    self.speedLabel.config(text='Preview speed')
+    self.speedLabel.config(text='speed')
     self.speedLabel.pack(expand='false', side='right')
 
     self.selectionOptionsFrame.pack(expand='false', fill='x', side='top')
@@ -1577,6 +1582,7 @@ class FilterSelectionUi(ttk.Frame):
       self.buttonFilterActionClear['state'] = buttonState
       self.buttonOverrideFilters['state'] = buttonState
       self.buttonPasteFilters['state'] = buttonState
+      self.buttonAppendFilters['state'] = buttonState
       self.buttonCopyFilters['state'] = buttonState
       self.buttonAddFilter['state'] = buttonState
       self.comboboxFilterSelection['state'] = buttonState
@@ -1694,6 +1700,21 @@ class FilterSelectionUi(ttk.Frame):
 
       self.recaculateFilters("shiftFilterOnStack")
 
+  def appendFilters(self):
+    if self.currentSubclipIndex is not None:
+      rid = self.subClipOrder[self.currentSubclipIndex]
+      self.subclips[rid]['filters'] += copy.deepcopy(self.filterClipboard)
+      for f in self.filterSpecifications:
+        f.destroy()
+      self.filterSpecifications=[]
+      rid = self.subClipOrder[self.currentSubclipIndex]
+      
+      for spec in self.subclips[rid].setdefault('filters',[]):
+        self.filterSpecificationCount+=1
+        self.filterSpecifications.append( 
+          FilterSpecification(self.filterContainer,self,spec,self.filterSpecificationCount) 
+        )
+      self.recaculateFilters('appendFilters')
 
   def pasteFilters(self):
     if self.currentSubclipIndex is not None:

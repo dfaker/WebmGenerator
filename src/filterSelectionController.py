@@ -39,6 +39,8 @@ class FilterSelectionController:
                           background=globalOptions.get('filtersTabPlayerBackgroundColour','#282828'),
                           cursor_autohide="always",
                           autofit_larger='1280',
+                          autoload_files='no',
+                          cover_art_auto='no',
                           audio_file_auto='no',
                           sub_auto='no')
 

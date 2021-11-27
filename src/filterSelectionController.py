@@ -67,7 +67,7 @@ class FilterSelectionController:
 
 
   def errorHandler(self,kind,module,err):
-    print(kind,'|',module,'|',err)
+
     if kind=='error' and 'Disabling filter filterStack' in err:
       self.clearFilter()
       self.ui.filterFailure()

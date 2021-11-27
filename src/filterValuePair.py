@@ -112,7 +112,7 @@ class FilterValuePair(ttk.Frame):
     self.commandvarName      = None
     self.interpolationFactor = param.get('interpolationFactor',0)
     self.commandInterpolationMode = param.get('interpMode','lerp')
-    self.interpolationModes = param.get('restrictedInterpModes',['lerp','lerp-smooth','lerp-smooth-2nd','lerp-sigmoid','lerp-smooth-inv','neighbour','v360-relative'])
+    self.interpolationModes = param.get('restrictedInterpModes',['lerp','lerp-smooth','lerp-smooth-2nd','lerp-sigmoid','lerp-smooth-inv','neighbour'])
     self.interpVar = tk.StringVar()
     self.interpVar.set(self.commandInterpolationMode)
 
@@ -291,8 +291,6 @@ class FilterValuePair(ttk.Frame):
       self.keyValues[seconds]= self.convertKeyValueToType(self.param['d'])
       print('addKeyValue Exception',e)
 
-    if self.commandInterpolationMode == 'v360-relative' and self.isInitialTS(seconds):
-      self.valueVar.set(self.keyValues[seconds])
     self.valueUpdated()
 
 
@@ -319,8 +317,6 @@ class FilterValuePair(ttk.Frame):
 
       self.keyValues[seconds] = self.convertKeyValueToType(newval)
 
-      if self.commandInterpolationMode == 'v360-relative' and self.isInitialTS(seconds):
-        self.valueVar.set(self.keyValues[seconds])
       self.valueUpdated()
 
   def convertKeyValueToType(self,value):

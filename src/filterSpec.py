@@ -932,10 +932,11 @@ selectableFilters = [
         
     {
         "name": "VR 360",
-        "category":['Transformation and rotation','VR and 3D'],
+        "category":['Transformation and rotation','VR and 3D','Basic'],
         "desc":"Convert 360 projection of video.",
+        "extensions":["v360ViewHeadLogger"],
         "timelineSupport":True,
-        "filter": "v360@{fn}={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:w={w}:h={h}:interp={interp}:in_trans={in_trans}:out_trans={out_trans}:h_flip={h_flip}:ih_flip={ih_flip}:iv_flip={iv_flip}:alpha_mask=1",
+        "filter": "v360@{fn}={in_proj}:{out_proj}:in_stereo={in_stereo}:out_stereo={out_stereo}:reset_rot=1:id_fov={id_fov}:yaw={yaw}:pitch={pitch}:roll={roll}:d_fov={d_fov}:w={w}:h={h}:interp={interp}:in_trans={in_trans}:out_trans={out_trans}:h_flip={h_flip}:ih_flip={ih_flip}:iv_flip={iv_flip}:alpha_mask=1",
         "params": [
             {
                 "n": "in_proj",
@@ -976,34 +977,27 @@ selectableFilters = [
                 "type": "cycle",
                 "cycle": ["sbs", "2d", "tb"],
             },
-            {"n": "w", "d": 100, "type": "float", "range": None, "inc": 10},
-            {"n": "h", "d": 100, "type": "float", "range": None, "inc": 10},
+            {"n": "w", "d": 960, "type": "float", "range": None, "inc": 10},
+            {"n": "h", "d": 540, "type": "float", "range": None, "inc": 10},
 
 
             {"n": "yaw", "d": 0.0, "type": "float", "range": [-90, 90],     "inc": 1,
              "videoSpaceAxis":"yaw",
-             "videoSpaceSign":1,
-             "interpMode":"v360-relative",
-             "restrictedInterpModes":["v360-relative"],
+             "videoSpaceSign":10,
              "commandVar":['VR-Yaw',[['v360@{fn}','yaw']]]},
             
             {"n": "pitch", "d": 0.0, "type": "float", "range": [-90, 90],   "inc": 1,
              "videoSpaceAxis":"pitch",
-             "videoSpaceSign":-1,
-            "interpMode":"v360-relative",
-            "restrictedInterpModes":["v360-relative"],
+             "videoSpaceSign":-10,
             "commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
             
             {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180],  "inc": 1,
-            "interpMode":"v360-relative",
              "videoSpaceAxis":"deg",
              "videoSpaceSign":1,
-            "restrictedInterpModes":["v360-relative"],
             "commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
             
 
-
-            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180],   "inc": 1   ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
+            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180],   "inc": 1 , "videoSpaceAxis":"d_fov"  ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
             {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
                 "n": "interp",

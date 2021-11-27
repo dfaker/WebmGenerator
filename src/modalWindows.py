@@ -15,6 +15,32 @@ from datetime import datetime
 
 
 
+class V360HeadTrackingModal(tk.Toplevel):
+  def __init__(self, master=None, controller=None, filterReference=None, *args):
+    tk.Toplevel.__init__(self, master)
+    self.title('Record VR head motions')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,600)    
+
+    self.labelInstructions = ttk.Label(self)
+    self.labelInstructions.config(text='Click in video to capture mouse, press Space to start recording motions.',anchor="center")
+    self.labelInstructions.grid(row=0,column=0,sticky='new',padx=0,pady=0)
+
+    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
+    self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0)
+
+    self.applyButton = ttk.Button(self, text='Apply')
+    self.applyButton.grid(row=2,column=0,sticky='nesw',padx=5,pady=5)
+
+    self.columnconfigure(0, weight=1)
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=1)
+    self.rowconfigure(2, weight=0)
+
+    self.playerwid = self.playerFrame.winfo_id()
+
+
 class VoiceActivityDetectorModal(tk.Toplevel):
 
 
@@ -776,5 +802,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = VoiceActivityDetectorModal()
+  app = V360HeadTrackingModal()
   app.mainloop()

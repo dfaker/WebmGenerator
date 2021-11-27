@@ -149,6 +149,12 @@ class FilterSpecification(ttk.Frame):
       else:
         self.filterValuePairs.append(FilterValuePair(self.frameFilterConfigFrame,self,param))
     
+    if 'v360ViewHeadLogger' in spec.get('extensions',[]):
+      self.buttonRunHeadMotionLogger = ttk.Button(self.frameFilterConfigFrame)
+      self.buttonRunHeadMotionLogger.config(text='Run head motion logger')
+      self.buttonRunHeadMotionLogger.config(command=self.headMotionLogger)
+      self.buttonRunHeadMotionLogger.pack(expand='true', fill='x', side='top')
+
     if len(self.rectProps)>0:
       self.buttonFilterValuesFromSelection = ttk.Button(self.frameFilterConfigFrame)
       self.buttonFilterValuesFromSelection.config(text='Populate from selection')
@@ -167,6 +173,85 @@ class FilterSpecification(ttk.Frame):
 
 
     self.packself()
+
+  def headMotionLogger(self):
+    clip = self.controller.getCurrentClip()
+    filename = clip['filename']
+    abA = clip['start']
+    abB = clip['end'] 
+    
+    self.controller.pause()
+
+    import mpv
+
+    
+
+    player = mpv.MPV(loglevel='error',
+                     loop='1',
+                     mute=True,
+                     background='#282828',
+                     log_handler=print,
+                     autofit_larger='1280',
+                     autoload_files='no',
+                     cover_art_auto='no',
+                     audio_file_auto='no',
+                     sub_auto='no')
+
+    self.player.command('load-script',os.path.join('src','minivrscript.lua'))
+    self.headmotions=[]
+
+
+    @player.message_handler('minivrscript')
+    def my_handler(cmdType,direction,timepos,value):
+      if cmdType == 'resetRecording':
+        self.headmotions=[]
+      elif cmdType=='setValue':
+        self.headmotions.append( (float(timepos),direction,float(value)) )
+      elif cmdType == 'exit':
+        mpv.unregister_message_handler('minivrscript')
+
+      print(self.headmotions)
+      print('MESSAGE',cmdType,direction,timepos,value)
+
+
+    player.start=abA
+    player.loop='inf'
+    player.ab_loop_a=abA
+    player.ab_loop_b=abB
+    player.play(filename)
+
+    player.wait_for_shutdown()
+
+    player.terminate()
+
+    print(self.headmotions)
+
+    if len(self.headmotions)>0:
+      motionMaps = {}
+      print(motionMaps)
+      for ts,direction,val in sorted(self.headmotions):
+        if abA <= ts <= abB:
+          motionMaps.setdefault(direction,[]).append((ts-abA,val))
+      print(motionMaps)
+
+      for k,v in motionMaps.items():
+        print(k)
+        for fvp in self.filterValuePairs:
+          try:
+            print(fvp,fvp.videoSpaceAxis,k,fvp.commandVarAvaliable)
+            if fvp.videoSpaceAxis == k and fvp.commandVarAvaliable:
+              if not fvp.commandVarEnabled:
+                fvp.toggleTimelineCmdMode()
+              fvp.deactivateTimeLineSection()
+              fvp.toggleTimelineSelection()
+              fvp.keyValues= dict(v)
+              fvp.valueUpdated()
+              fvp.deactivateTimeLineSection()
+          except Exception as e:
+            print(e)     
+
+    self.headmotions=[]
+    self.controller.play()
 
   def packself(self):
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
@@ -904,6 +989,11 @@ class FilterSelectionUi(ttk.Frame):
   def keyboardRight(self,e):
     self.handleSeek(e,0.5)
 
+  def pause(self):
+    self.controller.pause()
+
+  def play(self):
+    self.controller.play()
 
   def keyboardN(self,e):
     self.controller.pause()
@@ -1275,7 +1365,7 @@ class FilterSelectionUi(ttk.Frame):
           x1,y1 = self.controller.screenSpaceToVideoSpace(self.sourceAngleDragStart[0],self.sourceAngleDragStart[1])
           x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
           self.applyVectorOffset(x1,y1,
-                                 x2,y2,isAsoluteValue=True,isAngle=True)
+                                 x2,y2,isAsoluteValue=False,isAngle=True)
           self.controller.setVideoVector(0,0,0,0)
           self.AngleDragStartSet=False
           self.playerContainerFrame.config(cursor="crosshair")
@@ -1426,9 +1516,6 @@ class FilterSelectionUi(ttk.Frame):
     if useFile:
       sep = "\n"
 
-    filterRotResets = set()
-    hasRelativeRotations=False
-
     for k,v in sorted(commandSet.items()):
       if len(v)>0:
         for cmdTarget,cmdProperty,cmdValue,interpolationMode in v:
@@ -1460,16 +1547,6 @@ class FilterSelectionUi(ttk.Frame):
           elif interpolationMode == 'neighbour':
             commandStr_preview += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=norm_lastTime,k=norm_k,t=cmdTarget,p=cmdProperty, cv=cmdValue)
             commandStr_real    += "{k:0.4f} [enter] {t} {p} {cv:0.4f};{sep}".format(sep=sep, l=lastTime,     k=k,     t=cmdTarget,p=cmdProperty, cv=cmdValue)
-
-          elif interpolationMode == 'v360-relative':
-            filterResetKey = cmdTarget,norm_lastTime,norm_k
-            if filterResetKey not in filterRotResets:
-              commandStr_preview += "{l:0.4f}-{k:0.4f} [expr] {t} reset_rot '1';{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty, cv=cmdValue)
-              commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} reset_rot '1';{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty, cv=cmdValue)
-              filterRotResets.add(filterResetKey)
-
-            commandStr_preview += "{l:0.4f}-{k:0.4f}   [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},TI)';{sep}".format(sep=sep, l=norm_lastTime, k=norm_k, t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
-            commandStr_real    += "{l:0.4f}-{k:0.4f} [expr] {t} {p} 'lerp({lv:0.4f},{cv:0.4f},TI)';{sep}".format(sep=sep, l=lastTime,      k=k,      t=cmdTarget,p=cmdProperty,  lv=lastValue, cv=cmdValue)
 
           lastCommandValues[(cmdTarget,cmdProperty)] = (k,cmdValue,interpolationMode)
 

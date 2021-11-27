@@ -197,18 +197,18 @@ class FilterSpecification(ttk.Frame):
                      audio_file_auto='no',
                      sub_auto='no')
 
-    self.player.command('load-script',os.path.join('src','minivrscript.lua'))
+    self.player.command('load-script',os.path.join('src','vrscript.lua'))
     self.headmotions=[]
 
 
-    @player.message_handler('minivrscript')
+    @player.message_handler('vrscript')
     def my_handler(cmdType,direction,timepos,value):
       if cmdType == 'resetRecording':
         self.headmotions=[]
       elif cmdType=='setValue':
         self.headmotions.append( (float(timepos),direction,float(value)) )
       elif cmdType == 'exit':
-        mpv.unregister_message_handler('minivrscript')
+        mpv.unregister_message_handler('vrscript')
 
       print(self.headmotions)
       print('MESSAGE',cmdType,direction,timepos,value)

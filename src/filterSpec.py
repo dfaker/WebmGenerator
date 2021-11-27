@@ -992,7 +992,7 @@ selectableFilters = [
             "commandVar":['VR-Pitch',[['v360@{fn}','pitch']]]},
             
             {"n": "roll", "d": 0.0, "type": "float", "range": [-180, 180],  "inc": 1,
-             "videoSpaceAxis":"deg",
+             "videoSpaceAxis":"roll",
              "videoSpaceSign":1,
             "commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
             
@@ -1001,7 +1001,7 @@ selectableFilters = [
             {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
                 "n": "interp",
-                "d": "nearest",
+                "d": "linear",
                 "type": "cycle",
                 "cycle": ["nearest", "linear", "lagrange9", "cubic", "lanczos", "spline16", "gaussian", "mitchell"],
             },

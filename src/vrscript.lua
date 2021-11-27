@@ -53,23 +53,24 @@ local writeHeadPositionChange = function()
 	local newTimePos = mp.get_property("time-pos")
 
 	if pitch ~= last_pitch then
-		mp.command(string.format("script-message minivrscript setValue pitch %.3f %.3f",newTimePos,pitch))
+		mp.command(string.format("script-message vrscript setValue pitch %.3f %.3f",newTimePos,pitch))
 	end 
 	last_pitch=pitch
 
 	if yaw ~= last_yaw then
-		mp.command(string.format("script-message minivrscript setValue yaw %.3f %.3f",newTimePos,yaw))
+		mp.command(string.format("script-message vrscript setValue yaw %.3f %.3f",newTimePos,yaw))
 	end 
 	last_yaw=yaw
 
 	if dfov ~= last_dfov then
-		mp.command(string.format("script-message minivrscript setValue d_fov %.3f %.3f",newTimePos,dfov))
+		mp.command(string.format("script-message vrscript setValue d_fov %.3f %.3f",newTimePos,dfov))
 	end 
 	last_dfov=dfov
 
-
-	
-
+	if roll ~= last_roll then
+		mp.command(string.format("script-message vrscript setValue roll %.3f %.3f",newTimePos,roll))
+	end 
+	last_roll=roll
 end
 
 local updateFilters = function ()
@@ -153,13 +154,13 @@ local reset_and_record = function()
 	mp.set_property("pause", "no")
 	startRecordOnNextLoop = true
 	recording = false
-	mp.command(string.format("script-message minivrscript resetRecording None None None"))
+	mp.command(string.format("script-message vrscript resetRecording None None None"))
 end
 
 
 
 function playback_resetart_cb(event)
-    mp.command(string.format("script-message minivrscript loopRestart None None None"))
+    mp.command(string.format("script-message vrscript loopRestart None None None"))
     recordingComplete = false
     if 	startRecordOnNextLoop then
     	recording = true
@@ -182,7 +183,7 @@ function display_status()
 
 	local playbackpc = 0.0
 
-	if tp then
+	if tp ~= nil then
 		local playbackpc = ((tp-la)/(lb-la))*100
 	end
 
@@ -221,8 +222,15 @@ local increment_zoom = function (inc)
 end
 
 
+local increment_roll = function (inc)
+	roll = roll+inc
+	roll = math.max(math.min(180, roll), -180)
+	updateFilters()
+end
+
+
 local atexit = function()
-	mp.command("script-message minivrscript exit None None None")
+	mp.command("script-message vrscript exit None None None")
 	mp.command("stop")
 	mp.command("quit")
 end
@@ -241,6 +249,8 @@ mp.add_forced_key_binding('mouse_move', "move_mouse", mouse_move_cb )
 mp.add_forced_key_binding('WHEEL_DOWN', "move_mouse_md", function() increment_zoom(1) end )
 mp.add_forced_key_binding('WHEEL_UP', "move_mouse_mu", function() increment_zoom(-1) end )
 
+mp.add_forced_key_binding('a', "roll_decrease", function() increment_roll(-1) end )
+mp.add_forced_key_binding('d', "roll_increase", function() increment_roll(1) end )
 
 mp.set_property("fullscreen", "yes") 
 

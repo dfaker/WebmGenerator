@@ -197,7 +197,7 @@ class FilterSpecification(ttk.Frame):
                      audio_file_auto='no',
                      sub_auto='no')
 
-    self.player.command('load-script',os.path.join('src','vrscript.lua'))
+    player.command('load-script',os.path.join('src','vrscript.lua'))
     self.headmotions=[]
 
 

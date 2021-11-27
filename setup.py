@@ -48,6 +48,9 @@ buildOptions = dict(packages = ["os"],
                     ,('customEncodeprofiles\\Discord 8M limit mp4.json','customEncodeprofiles\\Discord 8M limit mp4.json')
                     
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
+                    ,('src\\vrscript.lua','src\\vrscript.lua')
+                      
+                      
                     ,('src\\filterSpecs.json','src\\filterSpecs.json')
                     
                     ,'yt-dlp.exe'

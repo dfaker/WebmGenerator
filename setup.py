@@ -38,7 +38,7 @@ buildOptions = dict(packages = ["os"],
                     ,('resources\\cutPreview.png','resources\\cutPreview.png')
                     ,('resources\\loadingPreview.png','resources\\loadingPreview.png')
                      
-                    ,('resources\\cascade\\*','resources\\cascade\\*')
+                    ,('resources\\cascade\\','resources\\cascade\\')
                       
                     ,('postFilters\\PostFilter-addQRCode.txt','postFilters\\PostFilter-addQRCode.txt')
                     ,('postFilters\\PostFilter-chromaShift.txt','postFilters\\PostFilter-chromaShift.txt')

@@ -29,6 +29,9 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 #### Overlay With Blending Mode Output
 ![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOverlayOuput_StainsHD.gif)
 
+#### Record head motions in VR video and encode as 2D
+![Head Tracking Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/example_VR_head_tracking.gif)
+
 
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/

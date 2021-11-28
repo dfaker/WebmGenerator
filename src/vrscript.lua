@@ -183,8 +183,8 @@ function display_status()
 
 	local playbackpc = 0.0
 
-	if tp ~= nil then
-		local playbackpc = ((tp-la)/(lb-la))*100
+	if tp ~= nil and tp ~= '' then
+		playbackpc = ((tp-la)/(lb-la))*100
 	end
 
 	ass:new_event()

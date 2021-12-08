@@ -22,6 +22,7 @@ local last_roll  = 0.0
 local init_roll = 0.0
 
 local smoothMouse=true
+local smoothFactor = 5
 
 local inputProjection    = "hequirect"
 local outputProjection    = "flat"
@@ -32,7 +33,8 @@ local dfov=110.0
 local last_dfov  = 110.0
 local init_dfov = 0.0
 
-local res  = 5.0
+local fw=100
+local fh=100
 
 local scaling   = 'linear'
 
@@ -75,11 +77,11 @@ end
 
 local updateFilters = function ()
 	if not filterIsOn then
-		mp.command_native_async({"no-osd", "vf", "add", string.format("@vrrev:%sv360=%s:%s:reset_rot=1:in_stereo=%s:out_stereo=2d:id_fov=%s:d_fov=%.3f:yaw=%.3f:pitch=%s:roll=%.3f:w=%s*192.0:h=%.3f*108.0:h_flip=%s:interp=%s",in_flip,inputProjection,outputProjection,in_stereo,idfov,dfov,yaw,pitch,roll,res,res,h_flip,scaling)}, updateComplete)
+		mp.command_native_async({"no-osd", "vf", "add", string.format("@vrrev:%sv360=%s:%s:reset_rot=1:in_stereo=%s:out_stereo=2d:id_fov=%s:d_fov=%.3f:yaw=%.3f:pitch=%s:roll=%.3f:w=%.3f:h=%.3f:h_flip=%s:interp=%s",in_flip,inputProjection,outputProjection,in_stereo,idfov,dfov,yaw,pitch,roll,fw,fh,h_flip,scaling)}, updateComplete)
 		filterIsOn=true
 	elseif not updateAwaiting then
 		updateAwaiting=true
-		mp.command_native_async({"no-osd", "vf", "set", string.format("@vrrev:%sv360=%s:%s:reset_rot=1:in_stereo=%s:out_stereo=2d:id_fov=%s:d_fov=%.3f:yaw=%.3f:pitch=%s:roll=%.3f:w=%s*192.0:h=%.3f*108.0:h_flip=%s:interp=%s",in_flip,inputProjection,outputProjection,in_stereo,idfov,dfov,yaw,pitch,roll,res,res,h_flip,scaling)}, updateComplete)
+		mp.command_native_async({"no-osd", "vf", "set", string.format("@vrrev:%sv360=%s:%s:reset_rot=1:in_stereo=%s:out_stereo=2d:id_fov=%s:d_fov=%.3f:yaw=%.3f:pitch=%s:roll=%.3f:w=%.3f:h=%.3f:h_flip=%s:interp=%s",in_flip,inputProjection,outputProjection,in_stereo,idfov,dfov,yaw,pitch,roll,fw,fh,h_flip,scaling)}, updateComplete)
 	end
 	if recording then
 		writeHeadPositionChange()
@@ -105,7 +107,7 @@ local mouse_move_cb = function ()
 				updateCrop=true
 				yaw = math.max(-180,math.min(180,yaw))
 			elseif yaw ~= yawpc then
-				yaw   = (yawpc+(yaw*5))/6
+				yaw   = (yawpc+(yaw*smoothFactor))/(smoothFactor+1)
 				yaw = math.max(-180,math.min(180,yaw))
 				updateCrop=true
 			end
@@ -115,7 +117,7 @@ local mouse_move_cb = function ()
 				pitch = math.max(-180,math.min(180,pitch))
 				updateCrop=true
 			elseif pitch ~= pitchpc then
-				pitch = (pitchpc+(pitch*5))/6
+				pitch = (pitchpc+(pitch*smoothFactor))/(smoothFactor+1)
 				pitch = math.max(-180,math.min(180,pitch))
 				updateCrop=true
 			end
@@ -175,6 +177,22 @@ function playback_resetart_cb(event)
 
 end
 
+-- Wrapper that converts RRGGBB / RRGGBBAA to ASS format
+local ass_set_color = function (idx, color)
+    assert(color:len() == 8 or color:len() == 6)
+    local ass = ""
+
+    -- Set alpha value (if present)
+    if color:len() == 8 then
+        local alpha = 0xff - tonumber(color:sub(7, 8), 16)
+        ass = ass .. string.format("\\%da&H%X&", idx, alpha)
+    end
+
+    -- Swizzle RGB to BGR and build ASS string
+    color = color:sub(5, 6) .. color:sub(3, 4) .. color:sub(1, 2)
+    return "{" .. ass .. string.format("\\%dc&H%s&", idx, color) .. "}"
+end
+
 function display_status()
 	local ass = assdraw.ass_new()
 	local la  = mp.get_property("ab-loop-a") 
@@ -189,7 +207,7 @@ function display_status()
 
 	ass:new_event()
 	ass:pos(5, 5)
-	ass:append("{\\fnUbuntu\\fs4\\b0.3\\bord1}")
+	ass:append("{\\fnUbuntu\\fs30\\b1\\bord1}")
 	if recording then
 		ass:append("{\\c&H00FF00&}- Recording Head Motion -{\\c&HFFFFFF&}\\N")
 	else
@@ -199,9 +217,9 @@ function display_status()
 	ass:append(string.format("P=%.3f Y=%.3f Z=%.3f LoopPercent=%.3f%%\\N",pitch,yaw,dfov,playbackpc))
 	
 	if smoothMouse then
-		ass:append("Mouse smoothing on press S toggle.\\N")
+		ass:append(string.format("Mouse smoothing on at factor %.1f press S cycle.\\N",smoothFactor))
 	else
-		ass:append("Mouse smoothing off press S toggle.\\N")
+		ass:append("Mouse smoothing off press S cycle.\\N")
 	end
 	ass:append("Press R to restart loop and record motions.\\N")
 
@@ -212,7 +230,35 @@ function display_status()
 	end
 
 	ass:append("Press Q to quit.{\\c&HFFFFFF&}")
-	mp.set_osd_ass(0, 0, ass.text)
+
+
+    ass:new_event()
+    ass:draw_start()
+    ass:pos(0, 0)
+
+    ass:append(ass_set_color(1, "000000AA"))
+    ass:append(ass_set_color(3, "000000ff"))
+    ass:append("{\\bord0}")
+
+    local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
+
+    ass:rect_cw(0, osd_h-10, osd_w, osd_h)
+
+
+    ass:draw_stop()
+
+    ass:new_event()
+    ass:draw_start()
+    ass:pos(0, 0)
+
+    ass:append(ass_set_color(1, "0000ffAA"))
+    ass:append(ass_set_color(3, "000000ff"))
+    ass:append("{\\bord0}")
+
+    ass:rect_cw(0, osd_h-10, osd_w*(playbackpc/100), osd_h)
+
+    ass:draw_stop()
+	mp.set_osd_ass(osd_w, osd_h, ass.text)
 end
 
 local increment_zoom = function (inc)
@@ -228,20 +274,51 @@ local increment_roll = function (inc)
 	updateFilters()
 end
 
-
 local atexit = function()
 	mp.command("script-message vrscript exit None None None")
 	mp.command("stop")
 	mp.command("quit")
 end
 
+local initialiseValues = function(init_in_proj,init_out_proj,init_in_trans,init_out_trans,init_h_flip,init_ih_flip,init_iv_flip,init_in_stereo,init_out_stereo,init_w,init_h,init_yaw,init_pitch,init_roll,init_d_fov,init_id_fov,init_interp)
+	
+	inputProjection=init_in_proj
+	outputProjection=init_out_proj
+	in_stereo=init_in_stereo
+	h_flip=init_ih_flip
+	fw=init_w
+	fh=init_h
+	scaling=init_interp
+	idfov=init_id_fov
+	dfov=init_d_fov
+
+	updateFilters()
+end
+
+local incrementSmoothing  = function()
+
+	if smoothFactor == 1 then
+		smoothMouse=true
+		smoothFactor=5
+	elseif smoothFactor < 25 then
+		smoothMouse=true
+		smoothFactor = smoothFactor+5
+	elseif smoothFactor == 25 then
+		smoothMouse=false
+		smoothFactor=1
+	end
+
+
+end
+
+mp.register_script_message("vrscript_initialiseValues", initialiseValues)
 
 mp.register_event("playback-restart", playback_resetart_cb)
 
 mp.add_forced_key_binding('space', "toggle_vr360_pause", function() mp.set_property("pause", "no") end )
 mp.add_forced_key_binding('q', "toggle_vr360_quit", atexit )
 mp.add_forced_key_binding('r', "toggle_vr360_resetandRecord", reset_and_record )
-mp.add_forced_key_binding('s', "toggle_vr360_smoothing", function() smoothMouse = not smoothMouse end )
+mp.add_forced_key_binding('s', "toggle_vr360_smoothing", incrementSmoothing )
 mp.add_forced_key_binding('mouse_btn0', "grab_mouse", mouse_btn0_cb )
 mp.add_forced_key_binding('mouse_move', "move_mouse", mouse_move_cb )
 

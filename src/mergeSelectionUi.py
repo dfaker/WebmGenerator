@@ -746,6 +746,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.outputFormats = [
       'mp4:x264',
+      'mp4:x264_Nvenc',
       'webm:VP8',
       'webm:VP9',
       'gif',      

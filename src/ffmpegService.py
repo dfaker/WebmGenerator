@@ -20,6 +20,7 @@ from .encoders.gifEncoder     import encoder as gifEncoder
 from .encoders.mp4x264Encoder import encoder as mp4x264Encoder
 from .encoders.webmvp8Encoder import encoder as webmvp8Encoder
 from .encoders.webmvp9Encoder import encoder as webmvp9Encoder
+from .encoders.mp4x264NvencEncoder import encoder as mp4x264NvencEncoder
 
 from .encodingUtils import cleanFilenameForFfmpeg
 from .encodingUtils import getFreeNameForFileAndLog
@@ -42,6 +43,7 @@ encoderMap = {
    'webm:VP8':webmvp8Encoder
   ,'webm:VP9':webmvp9Encoder
   ,'mp4:x264':mp4x264Encoder
+  ,'mp4:x264_Nvenc':mp4x264NvencEncoder
   ,'gif':gifEncoder
 }
 
@@ -279,8 +281,7 @@ class FFmpegService():
                       ,'-ss', str(s)
 
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
-                      ,'-t', str(e-s)
-                      
+                      ,'-t', str(e-s)                      
                       ,'-filter_complex', filterexp
                       ,'-c:v', 'libx264'
                       ,'-crf', '0'
@@ -602,6 +603,8 @@ class FFmpegService():
       clipDimensions = []
       infoOut={}
 
+      usNVHWenc = options.get('outputFormat','mp4:x264') == 'mp4:x264_Nvenc'
+
       fadeStartToEnd = options.get('fadeStartToEnd',True)
 
       encodeStageFilterList = []
@@ -696,15 +699,18 @@ class FFmpegService():
           statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
           self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
           
+          if usNVHWenc:
+            slice_encoder_preset = ['-c:v', 'h264_nvenc']
+          else:
+            slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast']
+
           if infoOut[rid].hasaudio:
             comvcmd = ['ffmpeg','-y'                                
                       ,'-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp                      
-                      ,'-c:v', 'libx264'
-                      ,'-preset', 'veryfast'
-                      ,'-crf', '0'
+                      ,'-filter_complex', filterexp ] + slice_encoder_preset + [
+                       '-crf', '0'
                       ,'-ac', '1',outname]
           else:
             comvcmd = ['ffmpeg','-y'
@@ -712,10 +718,8 @@ class FFmpegService():
                       ,'-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp
-                      ,'-c:v', 'libx264'
-                      ,'-preset', 'veryfast'
-                      ,'-crf', '0'
+                      ,'-filter_complex', filterexp ] + slice_encoder_preset + [
+                       '-crf', '0'
                       ,'-map', '0:a', '-map', '1:v' 
                       ,'-shortest'
                       ,'-ac', '1',outname]

@@ -213,12 +213,39 @@ class FilterSpecification(ttk.Frame):
       print(self.headmotions)
       print('MESSAGE',cmdType,direction,timepos,value)
 
-
     player.start=abA
     player.loop='inf'
     player.ab_loop_a=abA
     player.ab_loop_b=abB
     player.play(filename)
+
+    player.wait_until_playing()
+
+    iData = {}
+    for fvp in self.filterValuePairs:
+      fiparam,fivalue = fvp.getValuePair()
+      iData[fiparam]=fivalue
+    print(iData)
+
+    player.command('script-message','vrscript_initialiseValues',
+                    iData['in_proj'],
+                    iData['out_proj'],
+                    iData['in_trans'],
+                    iData['out_trans'],
+                    iData['h_flip'],
+                    iData['ih_flip'],
+                    iData['iv_flip'],
+                    iData['in_stereo'],
+                    iData['out_stereo'],
+                    iData['w'],
+                    iData['h'],
+                    iData['yaw'], 
+                    iData['pitch'], 
+                    iData['roll'],
+                    iData['d_fov'], 
+                    iData['id_fov'], 
+                    iData['interp']
+                   )
 
     player.wait_for_shutdown()
 

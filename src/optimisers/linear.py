@@ -5,7 +5,7 @@ import logging
 
 from ..encodingUtils import isRquestCancelled
 
-def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0,optimiserName=''):
+def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,allowEarlyExitWhenUndersize=True,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0,optimiserName=''):
 
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
@@ -43,7 +43,7 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       adjustval=False
       psnrAdjusted=True
       lastFailReason = 'PSNR under {} ({}), resetting at smaller dimensions'.format(minimumPSNR,lastpsnr)
-    elif sizeLimitMin<finalSize<sizeLimitMax or ( (not psnrAdjusted) and passCount==1 and finalSize<sizeLimitMax) or passCount>maxAttempts:
+    elif sizeLimitMin<finalSize<sizeLimitMax or ( (not psnrAdjusted) and allowEarlyExitWhenUndersize and passCount==1 and finalSize<sizeLimitMax) or passCount>maxAttempts:
       shutil.move(tempFilename,outputFilename)
       return outputFilename
     elif finalSize<sizeLimitMin:

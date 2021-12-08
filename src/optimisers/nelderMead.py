@@ -142,7 +142,7 @@ def nelder_mead(f, x_start,x_upper=None,x_lower=None,extra_args={},
     res = nres
 
 
-def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0,optimiserName='Nelder-Mead - Early Exit'):
+def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,allowEarlyExitWhenUndersize=True,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0,optimiserName='Nelder-Mead - Early Exit'):
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
   smallestFailedOverMaximum=None

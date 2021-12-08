@@ -6,7 +6,7 @@ try:
   import os
   import traceback
 
-  os.chdir(os.path.realpath(os.path.dirname(__file__)))
+  #os.chdir(os.path.realpath(os.path.dirname(__file__)))
   
   logging.basicConfig(
         level=logging.INFO,

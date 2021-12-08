@@ -3,6 +3,7 @@
 try:
   import logging
   import sys
+  import os
   import traceback
 
   os.chdir(os.path.realpath(os.path.dirname(__file__)))

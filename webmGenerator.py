@@ -5,6 +5,8 @@ try:
   import sys
   import traceback
 
+  os.chdir(os.path.realpath(os.path.dirname(__file__)))
+  
   logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",

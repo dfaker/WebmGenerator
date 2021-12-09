@@ -72,6 +72,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-c:v","h264_nvenc" 
                    ,"-stats"
                    ,"-max_muxing_queue_size", "9999"
+                   ,"-preset", "slow"
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", str(bufsize)
                    ,"-threads", str(threadCount)
@@ -132,7 +133,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                           tempFilename=tempVideoFilePath,
                           outputFilename=videoFilePath,
                           initialDependentValue=initialBr,
-                          allowEarlyExitWhenUndersize=False,
+                          allowEarlyExitWhenUndersize=True,
                           twoPassMode=True,
                           sizeLimitMin=sizeLimitMin,
                           sizeLimitMax=sizeLimitMax,

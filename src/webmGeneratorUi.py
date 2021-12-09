@@ -12,7 +12,7 @@ import json
 import threading
 import os
 
-RELEASE_NUMVER = 'v3.13.0'
+RELEASE_NUMVER = 'v3.13.1'
 
 class WebmGeneratorUi:
 

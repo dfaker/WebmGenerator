@@ -668,7 +668,9 @@ class MergeSelectionUi(ttk.Frame):
     self.frameEncodeSettings = ttk.Frame(self.labelframeSequenceFrame)
     self.frameSequenceValues = ttk.Frame(self.frameEncodeSettings)
 
-    self.automaticFileNamingVar   = tk.BooleanVar() 
+    self.automaticFileNamingVar    = tk.BooleanVar()
+    self.interpolateSpeedChangeVar = tk.BooleanVar()
+
     self.filenamePrefixVar        = tk.StringVar()
     self.outputFormatVar          = tk.StringVar()
     self.frameSizeStrategyVar     = tk.StringVar()
@@ -692,6 +694,7 @@ class MergeSelectionUi(ttk.Frame):
     self.audiOverrideBiasVar      = tk.StringVar()
 
     self.automaticFileNamingVar.trace('w',self.valueChange)
+    self.interpolateSpeedChangeVar.trace('w',self.valueChange)
     self.filenamePrefixVar.trace('w',self.valueChange)
     self.outputFormatVar.trace('w',self.valueChange)
     self.frameSizeStrategyVar.trace('w',self.valueChange)
@@ -739,6 +742,7 @@ class MergeSelectionUi(ttk.Frame):
     self.audiOverrideDelayVar.trace('w',self.valueChange)
 
     self.automaticFileNamingVar.set(True)
+    self.interpolateSpeedChangeVar.set(True)
     self.filenamePrefixVar.set('')
 
     self.audioOverrideVar.set('None')
@@ -1006,15 +1010,38 @@ class MergeSelectionUi(ttk.Frame):
     self.entryAudioChannels.grid(row=3,column=1,sticky='ew')
 
 
+
+
+
+
     self.labelSpeedChange = ttk.Label(self.frameSequenceValues)
     self.labelSpeedChange.config(anchor='e', text='Speed adjustment')
     self.labelSpeedChange.grid(row=3,column=2,sticky='e')
-    self.entrySpeedChange = ttk.Spinbox(self.frameSequenceValues, 
+
+
+
+
+    self.speedChangeContainer = ttk.Frame(self.frameSequenceValues)
+
+    self.entrySpeedChange = ttk.Spinbox(self.speedChangeContainer, 
                                          from_=0.5, 
                                          to=2.0, 
                                          increment=0.01,
                                          textvariable=self.speedAdjustmentVar)
-    self.entrySpeedChange.grid(row=3,column=3,sticky='ew')
+    self.entrySpeedChange.grid(row=0,column=0,sticky='ew')
+
+
+
+    self.speedChangeInterpolate = ttk.Checkbutton(self.speedChangeContainer,text='Interpolate',onvalue=True, offvalue=False)
+    self.speedChangeInterpolate.config(variable=self.interpolateSpeedChangeVar)
+    self.speedChangeInterpolate.grid(row=0,column=1,sticky='e')
+
+    self.speedChangeContainer.columnconfigure(0, weight=100)
+    self.speedChangeContainer.columnconfigure(1, weight=1)
+    self.speedChangeContainer.rowconfigure(0, weight=1)
+
+
+    self.speedChangeContainer.grid(row=3,column=3,sticky='ew')    
 
 
     self.labelminimumPSNR = ttk.Label(self.frameSequenceValues)
@@ -1196,6 +1223,11 @@ class MergeSelectionUi(ttk.Frame):
       pass
 
     try:
+      self.interpolateSpeedChangeValue = self.interpolateSpeedChangeVar.get()
+    except:
+      pass
+
+    try:
       self.audiOverrideDelayValue = self.audiOverrideDelayVar.get()
     except:
       pass
@@ -1343,6 +1375,7 @@ class MergeSelectionUi(ttk.Frame):
         'transDuration':self.transDurationValue,
         'transStyle':self.transStyleValue,
         'speedAdjustment':self.speedAdjustmentValue,
+        'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
         'outputFormat':self.outputFormatValue,
         'audioChannels':self.audioChannels,
         'audioMerge':self.audioMerge,
@@ -1390,6 +1423,7 @@ class MergeSelectionUi(ttk.Frame):
           'transDuration':self.transDurationValue,
           'transStyle':self.transStyleValue,
           'speedAdjustment':self.speedAdjustmentValue,
+          'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
           'outputFormat':self.outputFormatValue,
           'audioChannels':self.audioChannels,
           'audioMerge':self.audioMerge,
@@ -1434,6 +1468,7 @@ class MergeSelectionUi(ttk.Frame):
             'transDuration':0.0,
             'transStyle':self.transStyleValue,
             'speedAdjustment':self.speedAdjustmentValue,
+            'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
             'outputFormat':self.outputFormatValue,
             'audioChannels':self.audioChannels,
             'audioMerge':self.audioMerge,

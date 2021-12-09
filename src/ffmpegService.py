@@ -629,6 +629,12 @@ class FFmpegService():
       except Exception as e:
         logging.error("invalid speed Adjustment",exc_info =e)
 
+      interpolateSpeedAdjustment = True
+      try:
+        interpolateSpeedAdjustment = bool(options.get('speedAdjustmentInterploate',True))
+      except Exception as e:
+        logging.error("invalid speed Adjustment",exc_info =e)
+
       totalExpectedFinalLength=sum(expectedTimes)
 
       expectedTimes.append(sum(expectedTimes)*(1/speedAdjustment))
@@ -685,7 +691,7 @@ class FFmpegService():
         basename = os.path.basename(clipfilename)
         basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
-        outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber)
+        outname = '{}_{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber,int(usNVHWenc))
         outname = os.path.join( tempPathname,outname )
 
         if os.path.exists(outname):
@@ -700,7 +706,7 @@ class FFmpegService():
           self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
           
           if usNVHWenc:
-            slice_encoder_preset = ['-c:v', 'h264_nvenc']
+            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'lossless']
           else:
             slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast']
 
@@ -861,7 +867,10 @@ class FFmpegService():
           try:
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
-            crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            if interpolateSpeedAdjustment:
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            else:
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
             logging.error("Crossfade exception",exc_info =e)
             crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
@@ -889,7 +898,10 @@ class FFmpegService():
           try:
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
-            filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            if interpolateSpeedAdjustment:
+              filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            else:
+              filtercommand += ',[outvconcat]setpts={vfactor}*PTS[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
             logging.error("Concat progress Exception",exc_info=e)
             filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'

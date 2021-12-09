@@ -10,7 +10,9 @@ import logging
 import urllib.request
 import json
 import threading
+import time
 import os
+import psutil
 
 RELEASE_NUMVER = 'v3.13.1'
 
@@ -204,6 +206,22 @@ class WebmGeneratorUi:
     self.helpmenu.add_command(label="Open Check for new version", command=self.versioncheck)
     self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
     self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+
+    self.menubar.add_command(label="",state='disabled')
+    self.freeSpaceIndex = self.commandmenu.index(END) 
+
+    def checkFreeSpaceWorker():
+      try:
+        while 1:
+          drive,_ = os.path.splitdrive( os.path.abspath('/') )
+          usage = psutil.disk_usage('/')
+          self.menubar.entryconfigure(self.freeSpaceIndex, label="{drive} {percent:.1f}% free ({freespace}) ".format(drive=drive,freespace=self.sizeof_fmt(usage.free),percent=100-usage.percent))
+          time.sleep(60)
+      except Exception as e:
+        print(e)
+
+    self.freeSpaceThread = threading.Thread(target=checkFreeSpaceWorker,daemon=True)
+    self.freeSpaceThread.start()
 
 
     self.master.config(menu=self.menubar)

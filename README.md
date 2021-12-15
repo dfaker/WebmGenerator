@@ -16,23 +16,6 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 - ✂️ Save single extracted clips or join multiple clips into custom edits with transition effects.
 - 🍱 Pack multiple videos into dynamically sized grids.
 
-#### Grid Output
-![Grid Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/GridOutput.gif)
-
-#### Fade Effect Output
-![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOutput.gif)
-
-#### Keyframed Interpolated Filter Value Examples
-![Crop Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Example_KeyframedCropValues.gif)
-![Overlay Keyframe Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/Tracking-Example.gif)
-
-#### Overlay With Blending Mode Output
-![Fade Example Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/exampleOverlayOuput_StainsHD.gif)
-
-#### Record head motions in VR video and encode as 2D
-![Head Tracking Output](https://github.com/dfaker/WebmGenerator/blob/master/DocumentationImages/example_VR_head_tracking.gif)
-
-
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/
 - ffmpeg - https://www.ffmpeg.org/download.html

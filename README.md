@@ -4,9 +4,6 @@
 
 ### Windows Downloads here: https://github.com/dfaker/WebmGenerator/releases
 
-### Some examples of the possible outputs are [in the wiki](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
-
-
 A tool for cutting, filtering and joining video clips, supports webm, mp4 and high quality gif outputs, includes realtime effect filtering and transition effects between scenes.
 
 - 🎥 Webm, Mp4 and Gif outputs
@@ -18,6 +15,8 @@ A tool for cutting, filtering and joining video clips, supports webm, mp4 and hi
 - 💾 Automatic bitrate adjustment for file size targeting.
 - ✂️ Save single extracted clips or join multiple clips into custom edits with transition effects.
 - 🍱 Pack multiple videos into dynamically sized grids.
+
+### Some examples of the possible outputs are [in the wiki](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
 
 ## External dependencies:
 - mpv-1.dll - https://mpv.io/installation/

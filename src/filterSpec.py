@@ -93,6 +93,7 @@ selectableFilters = [
   {
         "name": "Crop",
         "category":['Basic','Resizing, Padding and Cropping'],
+        "extensions":["growShrinkBox"],
         "desc":"Crop the input video.",
         "filter": "crop@{fn}",
         "params": [
@@ -1278,19 +1279,18 @@ selectableFilters = [
         "filter": "scale",
         "params": [
             {
-                "n": "h",
-                "d": 3000,
-                "type": "float",
-                "range": None,
-                "rectProp": "x",
-                "inc": 10,
-            },
-            {
                 "n": "w",
                 "d": 1280,
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
+                "inc": 10,
+            },            {
+                "n": "h",
+                "d": 3000,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
                 "inc": 10,
             },
             {
@@ -1300,6 +1300,11 @@ selectableFilters = [
                 "cycle": ["disable", "decrease", "increase",],
             },
         ],
+        "presets":[
+          {"preset_name":"480p - 640x480",    "w":"640","h":"480"},
+          {"preset_name":"720p - 1280x720",   "w":"1280","h":"720"},
+          {"preset_name":"1080p - 1920x1080", "w":"1920","h":"1080"}
+        ]
     },
     
     

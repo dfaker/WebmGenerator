@@ -97,6 +97,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-ac","1"]
       ffmpegcommand+=["-ar",str(44100)]
       ffmpegcommand+=["-b:a",str(audoBitrate)]
+    elif 'Copy' in options.get('audioChannels',''):
+      ffmpegcommand+=["-c:a copy"]
     else:
       ffmpegcommand+=["-an"]  
 

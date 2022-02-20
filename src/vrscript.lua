@@ -8,6 +8,7 @@ local updateAwaiting = false
 local startRecordOnNextLoop = false
 local recording = false
 local recordingComplete = false
+local firstPass = true
 
 local yaw   = 0.0
 local last_yaw = 0.0
@@ -56,23 +57,37 @@ local writeHeadPositionChange = function()
 
 	if pitch ~= last_pitch then
 		mp.command(string.format("script-message vrscript setValue pitch %.3f %.3f",newTimePos,pitch))
+		if firstPass then
+			mp.command(string.format("script-message vrscript setInitValue pitch %.3f %.3f",newTimePos,pitch))
+		end
 	end 
 	last_pitch=pitch
 
 	if yaw ~= last_yaw then
 		mp.command(string.format("script-message vrscript setValue yaw %.3f %.3f",newTimePos,yaw))
+		if firstPass then
+			mp.command(string.format("script-message vrscript setInitValue yaw %.3f %.3f",newTimePos,yaw))
+		end
 	end 
 	last_yaw=yaw
 
 	if dfov ~= last_dfov then
 		mp.command(string.format("script-message vrscript setValue d_fov %.3f %.3f",newTimePos,dfov))
+		if firstPass then
+			mp.command(string.format("script-message vrscript setInitValue d_fov %.3f %.3f",newTimePos,dfov))
+		end
 	end 
 	last_dfov=dfov
 
 	if roll ~= last_roll then
 		mp.command(string.format("script-message vrscript setValue roll %.3f %.3f",newTimePos,roll))
+		if firstPass then
+			mp.command(string.format("script-message vrscript setInitValue roll %.3f %.3f",newTimePos,roll))
+		end
 	end 
 	last_roll=roll
+
+	firstPass=false
 end
 
 local updateFilters = function ()
@@ -166,6 +181,7 @@ function playback_resetart_cb(event)
     recordingComplete = false
     if 	startRecordOnNextLoop then
     	recording = true
+    	firstPass = true
     	recordingComplete = false
    	else
    		if recording then

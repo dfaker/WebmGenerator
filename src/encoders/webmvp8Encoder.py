@@ -70,12 +70,19 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
         bufsize = str(min(2000000000.0,br*2))
     threadCount = globalOptions.get('encoderStageThreads',4)
     metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
+
+    audioCodec = ["-c:a","libvorbis"]
+    if 'Copy' in options.get('audioChannels',''):
+      audioCodec = []
+
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   ,"-start_at_zero", "-c:v","libvpx","-c:a","libvorbis"
-                   ,"-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
+                   
+                   ,"-start_at_zero", "-c:v","libvpx"] + audioCodec + [
+
+                    "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'4'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
-                   ,"-deadline","best",'-slices','8','-cpu-used','-16','-psnr'
+                   ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
     
     print(ffmpegcommand)
@@ -95,6 +102,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-ac","1"]
       ffmpegcommand+=["-ar",str(44100)]
       ffmpegcommand+=["-b:a",str(audoBitrate)]
+    elif 'Copy' in options.get('audioChannels',''):
+      ffmpegcommand+=["-c:a copy"]
     else:
       ffmpegcommand+=["-an"]    
 

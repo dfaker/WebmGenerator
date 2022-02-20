@@ -41,6 +41,9 @@ class MergeSelectionController:
 
     self.ui.setController(self)
 
+  def getDefaultPostFilter(self):
+    return self.globalOptions.get('defaultPostProcessingFilter','')
+
   def getFilteredClips(self):
     return self.filterController.getClipsWithFilters()
 

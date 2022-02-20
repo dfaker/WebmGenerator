@@ -43,6 +43,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
 
+    if globalOptions.get('passCudaFlags',False):
+      ffmpegcommand+=['-hwaccel', 'cuda']
+
     ffmpegcommand+=inputsList
 
     if widthReduction>0.0:
@@ -76,6 +79,10 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", str(bufsize)
                    ,"-threads", str(threadCount)
+                   ,"-tune", "hq"
+                   ,"-b_ref_mode", "middle"
+                   ,"-temporal-aq", "1" 
+                   ,"-rc-lookahead", "20"
                    ,"-crf"  ,'17'
                    ,'-psnr'
                    ,"-vsync","2"

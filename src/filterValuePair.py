@@ -96,6 +96,7 @@ class FilterValuePair(ttk.Frame):
     self.labelfilterValueLabel = ttk.Label(self.frameFilterValuePair)
     self.fileCategory = param.get('fileCategory',None)
     self.keyValues= self.param.get('keyValues',{})
+    self.applyStartTimeOffset = self.param.get('offsetClipStartSeconds',False)
     self.valueVar = tk.StringVar()
 
     self.videoSpaceAxis = self.param.get('videoSpaceAxis',None)
@@ -103,6 +104,7 @@ class FilterValuePair(ttk.Frame):
 
     self.n = self.param['n']
     self.vmin,self.vmax = float('-inf'),float('inf')
+    self.rectProp = param.get('rectProp')
     if param.get('rectProp') is not None:
       self.controller.registerRectProp(param.get('rectProp'),self.valueVar,param.get('type','int'))
 
@@ -433,7 +435,7 @@ class FilterValuePair(ttk.Frame):
             outval.append(c)
         val = ''.join(["'"]+outval+["'"])
       return (self.param['n'],"{}".format(val))
-    else:
+    else:      
       return (self.param['n'],self.valueVar.get())
 
   @debounce(0.1)

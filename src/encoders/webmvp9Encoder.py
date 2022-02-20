@@ -72,9 +72,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     threadCount = globalOptions.get('encoderStageThreads',4)
     metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
     
+
+    audioCodec = ["-c:a","libvorbis"]
+    if 'Copy' in options.get('audioChannels',''):
+      audioCodec = []
+
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   ,"-start_at_zero", "-c:v","libvpx-vp9","-c:a","libvorbis"
-                   ,"-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
+                   ,"-start_at_zero", "-c:v","libvpx-vp9"] + audioCodec + [
+                    "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
                    ,"-deadline","best",'-slices','8','-psnr','-cpu-used','0'
@@ -95,6 +100,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-ac","1"]
       ffmpegcommand+=["-ar",str(44100)]
       ffmpegcommand+=["-b:a",str(audoBitrate)]
+    elif 'Copy' in options.get('audioChannels',''):
+      ffmpegcommand+=["-c:a copy"]
     else:
       ffmpegcommand+=["-an"]  
 

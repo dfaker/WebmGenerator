@@ -80,6 +80,9 @@ class FilterSpecification(ttk.Frame):
     self.timelineStart = tk.StringVar()
     self.timelineEnd   = tk.StringVar()
 
+    self.presets = spec.get('presets',[])
+
+
 
 
     if self.timelineSupport:
@@ -141,6 +144,21 @@ class FilterSpecification(ttk.Frame):
 
       self.frameTimeline.pack(expand='true', fill='x', side='top')
 
+
+    if len(self.presets)>0:
+      self.presetNames = ['--No preset--']
+      for p in self.presets:
+        self.presetNames.append(p['preset_name'])
+
+      self.presetVar = tk.StringVar()
+      self.entryPresetOptions = ttk.Combobox(self.frameFilterConfigFrame)
+      self.entryPresetOptions.config(values=self.presetNames)
+      self.entryPresetOptions.config(textvariable=self.presetVar)
+      self.presetVar.set('--No preset--')
+      self.entryPresetOptions.pack(expand='true', fill='x', side='top')
+
+      self.presetVar.trace("w", self.presetUpdated)
+
     for param in spec.get('params',[]):    
       if param.get('type') == 'timelineStart':
         self.timelineStart.set(param.get('value',''))
@@ -148,12 +166,32 @@ class FilterSpecification(ttk.Frame):
         self.timelineEnd.set(param.get('value',''))
       else:
         self.filterValuePairs.append(FilterValuePair(self.frameFilterConfigFrame,self,param))
-    
+
+
     if 'v360ViewHeadLogger' in spec.get('extensions',[]):
       self.buttonRunHeadMotionLogger = ttk.Button(self.frameFilterConfigFrame)
       self.buttonRunHeadMotionLogger.config(text='Run head motion logger')
       self.buttonRunHeadMotionLogger.config(command=self.headMotionLogger)
       self.buttonRunHeadMotionLogger.pack(expand='true', fill='x', side='top')
+
+    if 'growShrinkBox' in spec.get('extensions',[]):
+      self.growShrinkBoxFrame = ttk.Frame(self.frameFilterConfigFrame)
+
+      self.shinkBoxLargeInc = ttk.Button(self.growShrinkBoxFrame,style="small.TButton",text='-10',command=lambda :self.incrementBox(-10))
+      self.shinkBoxLargeInc.grid(row=0,column=0)
+
+      self.shinkBoxSmallInc = ttk.Button(self.growShrinkBoxFrame,style="small.TButton",text='-1', command=lambda :self.incrementBox(-1))
+      self.shinkBoxSmallInc.grid(row=0,column=1)
+
+      self.growBoxSmallInc = ttk.Button(self.growShrinkBoxFrame,style="small.TButton", text='+1',   command=lambda :self.incrementBox(1))
+      self.growBoxSmallInc.grid(row=0,column=2)
+
+      self.growBoxLargeInc = ttk.Button(self.growShrinkBoxFrame,style="small.TButton", text='+10',  command=lambda :self.incrementBox(10))
+      self.growBoxLargeInc.grid(row=0,column=3)
+
+      self.growShrinkBoxFrame.pack(expand='true', fill='x', side='top')
+
+
 
     if len(self.rectProps)>0:
       self.buttonFilterValuesFromSelection = ttk.Button(self.frameFilterConfigFrame)
@@ -173,6 +211,41 @@ class FilterSpecification(ttk.Frame):
 
 
     self.packself()
+
+  def presetUpdated(self,*args):
+    newPreset = self.presetVar.get()
+    print('newPreset',newPreset)
+    for p in self.presets:
+      print('preset',p)
+      if p.get('preset_name','') == newPreset:
+        for k,v in p.items():
+          for fvp in self.filterValuePairs:
+            print('k',k,'fvp',fvp.n,fvp.n == k)
+            if fvp.n == k:
+              fvp.valueVar.set(v)
+
+
+  def incrementBox(self,inc):
+    for fvp in self.filterValuePairs:
+      if fvp.rectProp is None:
+        continue              
+
+      _,value = fvp.getValuePair()
+      value = int(value)
+
+      if fvp.rectProp == 'x':
+        fvp.valueVar.set(str(value-inc))
+        fvp.valueUpdated()
+      elif fvp.rectProp == 'y':
+        fvp.valueVar.set(str(value-inc))
+        fvp.valueUpdated()
+      elif fvp.rectProp == 'w':
+        fvp.valueVar.set(str(value+(inc*2)))
+        fvp.valueUpdated()
+      elif fvp.rectProp == 'h':
+        fvp.valueVar.set(str(value+(inc*2)))
+        fvp.valueUpdated()
+
 
   def headMotionLogger(self):
     clip = self.controller.getCurrentClip()
@@ -199,6 +272,7 @@ class FilterSpecification(ttk.Frame):
 
     player.command('load-script',os.path.join('src','vrscript.lua'))
     self.headmotions=[]
+    self.initivalues={}
 
 
     @player.message_handler('vrscript')
@@ -207,6 +281,9 @@ class FilterSpecification(ttk.Frame):
         self.headmotions=[]
       elif cmdType=='setValue':
         self.headmotions.append( (float(timepos),direction,float(value)) )
+      elif cmdType=='setInitValue':
+        self.headmotions.append( (float(abA),direction,float(value)) )
+        self.initivalues[direction]=float(value)
       elif cmdType == 'exit':
         mpv.unregister_message_handler('vrscript')
 
@@ -253,6 +330,7 @@ class FilterSpecification(ttk.Frame):
 
     print(self.headmotions)
 
+
     if len(self.headmotions)>0:
       motionMaps = {}
       print(motionMaps)
@@ -260,6 +338,8 @@ class FilterSpecification(ttk.Frame):
         if abA <= ts <= abB:
           motionMaps.setdefault(direction,[]).append((ts-abA,val))
       print(motionMaps)
+
+      firstfvp=None
 
       for k,v in motionMaps.items():
         print(k)
@@ -269,13 +349,27 @@ class FilterSpecification(ttk.Frame):
             if fvp.videoSpaceAxis == k and fvp.commandVarAvaliable:
               if not fvp.commandVarEnabled:
                 fvp.toggleTimelineCmdMode()
+              
+              firstfvp=fvp
+              
               fvp.deactivateTimeLineSection()
               fvp.toggleTimelineSelection()
-              fvp.keyValues= dict(v)
+              fvp.keyValues=dict(v)
               fvp.valueUpdated()
               fvp.deactivateTimeLineSection()
           except Exception as e:
             print(e)     
+      
+      if firstfvp is not None:
+        firstfvp.toggleTimelineSelection()
+
+      self.controller.recaculateFilters('v360 update final')
+
+      for direction,value in self.initivalues.items():
+        for fvp in self.filterValuePairs:
+          if fvp.videoSpaceAxis == direction and fvp.commandVarAvaliable:
+            fvp.valueVar.set(str(value))
+            fvp.valueUpdated()
 
     self.headmotions=[]
     self.controller.play()
@@ -417,9 +511,14 @@ class FilterSpecification(ttk.Frame):
           try:
             if param['type'] == 'float':
               try:
-                filerExprams.append(':{}={:01.6f}'.format(param['n'],float(values[param['n']]) ) )
+                floatVal=float(values[param['n']])
+                if param.get('offsetClipStartSeconds',False) and preview:
+                  floatVal= self.controller.normaliseTimestamp(floatVal)
+                  print('offsetClipStartSeconds',param['n'],floatVal)
+                filerExprams.append(':{}={:01.6f}'.format(param['n'],floatVal))
               except:
                 filerExprams.append(':{}={:01.6f}'.format(param['n'],values[param['n']]) )
+
             elif param['type'] == 'int':
               try:
                 filerExprams.append(':{}={}'.format(param['n'],int(values[param['n']])))
@@ -635,6 +734,8 @@ class FilterSelectionUi(ttk.Frame):
     self.spinBoxArRatio = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.fixSeectionArVar,from_=float('-inf'), to=float('inf'),width=6, increment=0.01)
     self.spinBoxArRatio.pack(expand='false', side='left')
 
+    self.spinBoxArRatio.bind("<Button-3>",self.showAspectPopup)
+
     self.flipARButton = ttk.Button(self.selectionOptionsFrame,text="Flip AR",style="smallSlim.TButton", command=self.flipAR)
     self.flipARButton.pack(expand='false', side='left')
 
@@ -708,6 +809,14 @@ class FilterSelectionUi(ttk.Frame):
       self.video_canvas_popup_menu.add_command(label="Add rect from face detector"                    ,command=lambda:1 , state='disabled')
       self.video_canvas_popup_menu.add_command(label="Align eyes horizontal from face detector"       ,command=lambda:1 , state='disabled')
 
+    self.rect_aspect_popup_menu = tk.Menu(self, tearoff=0)
+    self.rect_aspect_popup_menu.add_command(label="9:16 - Vertical video",command=lambda :self.setCropAspect(9/16))
+    self.rect_aspect_popup_menu.add_command(label="1:1 - Square",command=lambda :self.setCropAspect(1/1))
+    self.rect_aspect_popup_menu.add_command(label="4:3 - Standard tv",command=lambda :self.setCropAspect(4/3))
+    self.rect_aspect_popup_menu.add_command(label="16:10 - Display or tablet",command=lambda :self.setCropAspect(16/10))
+    self.rect_aspect_popup_menu.add_command(label="16:9 - Standard HDTV",command=lambda :self.setCropAspect(16/9))
+    self.rect_aspect_popup_menu.add_command(label="2:1 - Superscope",command=lambda :self.setCropAspect(2/1))
+
 
     self.framePlayerFrame.bind("<Button-1>",          self.videomousePress)
     self.framePlayerFrame.bind("<ButtonRelease-1>",   self.videomousePress)
@@ -777,6 +886,7 @@ class FilterSelectionUi(ttk.Frame):
     self.filterClipboard=[]
     self.mouseRectMoving=False
     self.mouseRectMoveStart=(0,0)
+    self.mouseRectDragStart=(0,0)
     self.activeCommandFilterValuePair = None
     self.timeline_canvas_last_right_click_x=0
 
@@ -950,6 +1060,8 @@ class FilterSelectionUi(ttk.Frame):
     self.filterMenu.tk_popup(e.x_root,e.y_root)
     
 
+  def showAspectPopup(self,e):
+    self.rect_aspect_popup_menu.tk_popup(e.x_root,e.y_root)
 
   def showRegMarkMenu(self,e):
     self.lastVideoRCX=e.x
@@ -1338,7 +1450,11 @@ class FilterSelectionUi(ttk.Frame):
   def getRectProperties(self):
     return self.videoMouseRect
 
-  def applyScreenSpaceAR(self):
+  def setCropAspect(self,ar):
+    self.fixSeectionArEnabledVar.set(True)
+    self.fixSeectionArVar.set( ar  )
+
+  def applyScreenSpaceAR(self,shift=False):
     forceAR = None
 
     if self.fixSeectionArEnabledVar.get():
@@ -1348,10 +1464,27 @@ class FilterSelectionUi(ttk.Frame):
         logging.error("applyScreenSpaceAR Exception",exc_info=e)
 
     if forceAR is not None:
-      if self.screenMouseRect[3] > self.screenMouseRect[1]:
-        self.screenMouseRect[3] = self.screenMouseRect[1] + abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
+      
+      if shift:
+        neww = abs(self.screenMouseRect[0]-self.screenMouseRect[2])
+        newh = neww/forceAR
+
+        midx,midy = (self.screenMouseRect[0]+self.screenMouseRect[2])/2,(self.screenMouseRect[1]+self.screenMouseRect[3])/2
+
+
+        self.screenMouseRect[0] = midx-(neww/2)
+        self.screenMouseRect[1] = midy-(newh/2)
+        self.screenMouseRect[2] = midx+(neww/2)
+        self.screenMouseRect[3] = midy+(newh/2)
+
+
+
       else:
-        self.screenMouseRect[3] = self.screenMouseRect[1] - abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
+        if self.screenMouseRect[3] > self.screenMouseRect[1]:
+          self.screenMouseRect[3] = self.screenMouseRect[1] + abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
+        else:
+          self.screenMouseRect[3] = self.screenMouseRect[1] - abs(self.screenMouseRect[0]-self.screenMouseRect[2])/forceAR
+
     else:
       try:
         self.fixSeectionArVar.set( str( round( abs(self.screenMouseRect[0]-self.screenMouseRect[2])/abs(self.screenMouseRect[1]-self.screenMouseRect[3]),4  ))  )
@@ -1441,6 +1574,10 @@ class FilterSelectionUi(ttk.Frame):
           else:
             logging.debug("videomousePress start")
             self.mouseRectDragging=True
+            
+            if self.mouseRectDragStart == (0,0): 
+              self.mouseRectDragStart=(e.x,e.y)
+
             self.screenMouseRect[0]=e.x
             self.screenMouseRect[1]=e.y
         elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and (self.mouseRectDragging or self.mouseRectMoving):
@@ -1448,19 +1585,37 @@ class FilterSelectionUi(ttk.Frame):
           if self.mouseRectMoving:
             haw = abs(self.screenMouseRect[0]-self.screenMouseRect[2])//2
             hah = abs(self.screenMouseRect[1]-self.screenMouseRect[3])//2
-            self.screenMouseRect[0]=e.x-haw
-            self.screenMouseRect[1]=e.y-hah
-            self.screenMouseRect[2]=e.x+haw
-            self.screenMouseRect[3]=e.y+hah
+            if shift:
+              self.screenMouseRect[0]=e.x-haw
+              self.screenMouseRect[1]=e.y-hah
+              self.screenMouseRect[2]=e.x+haw
+              self.screenMouseRect[3]=e.y+hah
+            else:
+              self.screenMouseRect[0]=e.x-haw
+              self.screenMouseRect[1]=e.y-hah
+              self.screenMouseRect[2]=e.x+haw
+              self.screenMouseRect[3]=e.y+hah
           else:
-            self.screenMouseRect[2]=e.x
-            self.screenMouseRect[3]=e.y
-          self.applyScreenSpaceAR()
+            if shift:
+              dx=abs(self.mouseRectDragStart[0]-e.x)
+              dy=abs(self.mouseRectDragStart[1]-e.y)
+              self.screenMouseRect[0]=self.mouseRectDragStart[0]+dx
+              self.screenMouseRect[1]=self.mouseRectDragStart[1]+dy
+              self.screenMouseRect[2]=self.mouseRectDragStart[0]-dx
+              self.screenMouseRect[3]=self.mouseRectDragStart[1]-dy
+            else:
+              if self.mouseRectDragStart[0]>0 and self.mouseRectDragStart[1]>0:
+                self.screenMouseRect[0]=self.mouseRectDragStart[0]
+                self.screenMouseRect[1]=self.mouseRectDragStart[1]
+              self.screenMouseRect[2]=e.x
+              self.screenMouseRect[3]=e.y
+          self.applyScreenSpaceAR(shift)
           self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
         if e.type == tk.EventType.ButtonRelease:
           logging.debug("videomousePress release")
           self.mouseRectDragging=False
           self.mouseRectMoving=False
+          self.mouseRectDragStart = (0,0)
 
           vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
           vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 

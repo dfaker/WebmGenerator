@@ -204,6 +204,8 @@ class CutselectionController:
 
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)
     self.player.observe_property('duration', self.handleMpvDurationChange)
+    self.player.observe_property('pause',    self.playbackStatusChanged)
+
 
   def close_ui(self):
     try:
@@ -216,6 +218,12 @@ class CutselectionController:
     except Exception as e:
       print(e)
     
+    try:
+      self.player.unobserve_property('pause', self.playbackStatusChanged)
+    except Exception as e:
+      print(e)
+    
+
     for file in self.files:
       self.removeVideoFile(file)
     try:
@@ -224,6 +232,9 @@ class CutselectionController:
       logging.info('CutselectionController destroyed')
     except:
       pass
+
+  def playbackStatusChanged(self,name,value):
+    self.ui.setPausedStatus(value)
 
   def handleMpvTimePosChange(self,name,value):
     if value is not None:

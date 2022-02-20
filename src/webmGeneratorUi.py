@@ -207,13 +207,13 @@ class WebmGeneratorUi:
     self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
     self.menubar.add_cascade(label="Help", menu=self.helpmenu)
 
-    self.menubar.add_command(label="",state='disabled')
+    self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
 
     def checkFreeSpaceWorker():
       try:
         while 1:
-          drive,_ = os.path.splitdrive( os.path.abspath('/') )
+          drive,_ = os.path.splitdrive( os.path.abspath( self.controller.globalOptions.get('tempFolder') ) )
           usage = psutil.disk_usage('/')
           self.menubar.entryconfigure(self.freeSpaceIndex, label="{drive} {percent:.1f}% free ({freespace}) ".format(drive=drive,freespace=self.sizeof_fmt(usage.free),percent=100-usage.percent))
           time.sleep(60)

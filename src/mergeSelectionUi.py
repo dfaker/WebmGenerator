@@ -385,14 +385,30 @@ class GridColumn(ttk.Labelframe):
     self.config(relief='groove',padding='4')
 
     self.buttonFrame = ttk.Frame(self)
+
+    self.buttonFrame.columnconfigure(0, weight=10)
+    self.buttonFrame.columnconfigure(1, weight=10)
+    self.buttonFrame.rowconfigure(0,    weight=10)
+    self.buttonFrame.rowconfigure(1,    weight=10)
+
+
+    """
+    self.nestRowBtn = ttk.Button(self.buttonFrame,text='Nest Row ⇄',command=self.nestRow)
+    self.nestRowBtn.config(style="small.TButton",state='disabled')
+    self.nestRowBtn.grid(column=0,row=0, sticky='nsew')
+
+    self.nestColumnBtn = ttk.Button(self.buttonFrame,text='Nest Col ⇅',command=self.nestColumn)
+    self.nestColumnBtn.config(style="small.TButton",state='disabled')
+    self.nestColumnBtn.grid(column=1,row=0, sticky='nsew')
+    """
+
     self.selectColumnBtn = ttk.Button(self.buttonFrame,text='Select ✔',command=self.selectColumn)
     self.selectColumnBtn.config(style="small.TButton")
-    self.selectColumnBtn.pack(expand='true', fill='x', side='left')
-
+    self.selectColumnBtn.grid(column=0,row=1, sticky='nsew')
 
     self.removeColumnBtn = ttk.Button(self.buttonFrame,text='Remove ✖',command=self.removeColumn)
     self.removeColumnBtn.config(style="small.TButton")
-    self.removeColumnBtn.pack(expand='true', fill='x', side='left')
+    self.removeColumnBtn.grid(column=1,row=1, sticky='nsew')
 
     self.buttonFrame.pack(expand='false', fill='x', side='bottom')
 
@@ -403,11 +419,16 @@ class GridColumn(ttk.Labelframe):
       self.config(relief='sunken',text='Selected')
       self.selectColumnBtn.config(text='Selected ✔',style="smallBlue.TButton")
 
-      
     else:
       self.config(relief='groove',text='')
       self.selectColumnBtn.config(text='Select ✔',style="small.TButton")
 
+
+  def nestColumn(self):
+    pass
+
+  def nestRow(self):
+    pass
 
   def selectColumn(self):
     self.controller.selectColumn(self)
@@ -614,6 +635,11 @@ class MergeSelectionUi(ttk.Frame):
     self.addAllClipsRandombutton.config(style="small.TButton")
     self.addAllClipsRandombutton.pack(expand='false', fill='x', padx='0', pady='3', side='right')
 
+    self.addAllClipsSmartRandombutton = ttk.Button(self.addAddClipsFrame,text=' Add all clips in non-sequential order ')
+    self.addAllClipsSmartRandombutton.config(command=self.addAllClipsInSmartRandomOrder)
+    self.addAllClipsSmartRandombutton.config(style="small.TButton")
+    self.addAllClipsSmartRandombutton.pack(expand='false', fill='x', padx='0', pady='3', side='right')
+
     self.addAddClipsFrame.pack(expand='false', fill='x', padx='0', pady='0', side='top')
 
     self.labelframeSequenceFrame = ttk.Labelframe(self.frameMergeSelection)
@@ -636,7 +662,6 @@ class MergeSelectionUi(ttk.Frame):
     #self.gridSequenceContainerAddRow = ttk.Button(self.gridSequenceContainer,text='Add Row ⇄', command=self.addRow)
     #self.gridSequenceContainerAddRow.config(style="small.TButton")
     #self.gridSequenceContainerAddRow.pack(expand='true', fill='x', padx='0', pady='0', side='left')
-
 
     self.gridSequenceContainerAddColumn = ttk.Button(self.gridSequenceContainer,text='Add Column ⇅', command=self.addColumn)
     self.gridSequenceContainerAddColumn.config(style="small.TButton")
@@ -675,6 +700,7 @@ class MergeSelectionUi(ttk.Frame):
     self.outputFormatVar          = tk.StringVar()
     self.frameSizeStrategyVar     = tk.StringVar()
     self.maximumSizeVar           = tk.StringVar()
+    self.initialbitrateVar        = tk.StringVar()
     self.maximumWidthVar          = tk.StringVar()
     self.minimumPSNRVar           = tk.StringVar()
     self.optimizerVar             = tk.StringVar()
@@ -699,6 +725,7 @@ class MergeSelectionUi(ttk.Frame):
     self.outputFormatVar.trace('w',self.valueChange)
     self.frameSizeStrategyVar.trace('w',self.valueChange)
     self.maximumSizeVar.trace('w',self.valueChange)
+    self.initialbitrateVar.trace('w',self.valueChange)
     self.maximumWidthVar.trace('w',self.valueChange)
     self.transDurationVar.trace('w',self.valueChange)
     self.transStyleVar.trace('w',self.valueChange)
@@ -742,7 +769,7 @@ class MergeSelectionUi(ttk.Frame):
     self.audiOverrideDelayVar.trace('w',self.valueChange)
 
     self.automaticFileNamingVar.set(True)
-    self.interpolateSpeedChangeVar.set(True)
+    self.interpolateSpeedChangeVar.set(False)
     self.filenamePrefixVar.set('')
 
     self.audioOverrideVar.set('None')
@@ -754,6 +781,7 @@ class MergeSelectionUi(ttk.Frame):
       'webm:VP8',
       'webm:VP9',
       'gif',      
+      'apng',
     ]
     self.outputFormatVar.set(self.outputFormats[0])
 
@@ -772,6 +800,8 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSizeStrategyVar.set(self.frameSizeStrategies[0])
 
     self.maximumSizeVar.set('0.0')
+    self.initialbitrateVar.set('2000.0')
+
     self.minimumPSNRVar.set('0.0')
     self.maximumWidthVar.set('1280')
     self.transDurationVar.set('0.0')       
@@ -823,9 +853,16 @@ class MergeSelectionUi(ttk.Frame):
       for f in os.listdir('postFilters'):
         if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
           self.postProcessingFilterOptions.append(f)
+
+    
+
     for filterElem in self.postProcessingFilterOptions:
       if 'DEFAULT' in filterElem.upper():
         self.postProcessingFilterVar.set(filterElem)
+        break
+    else:
+      self.postProcessingFilterVar.set('None')
+
 
     self.frameSequenceActions = ttk.Frame(self.frameEncodeSettings)
     self.buttonSequenceClear = ttk.Button(self.frameSequenceActions)
@@ -950,28 +987,43 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceValues.rowconfigure(4, weight=1)
     self.frameSequenceValues.rowconfigure(5, weight=1)
 
-    self.labelAutomaticFileNaming = ttk.Label(self.frameSequenceValues)
-    self.labelAutomaticFileNaming.config(anchor='e', text='Automatically name output files', width='25')
-    self.labelAutomaticFileNaming.grid(row=0,column=0,sticky='e')
 
-    self.entryAutomaticFileNaming = ttk.Checkbutton(self.frameSequenceValues,text='',onvalue=True, offvalue=False)
-    self.entryAutomaticFileNaming.config(variable=self.automaticFileNamingVar)
-    self.entryAutomaticFileNaming.grid(row=0,column=1,sticky='ew')
+    self.labelOutputFormat = ttk.Label(self.frameSequenceValues)
+    self.labelOutputFormat.config(anchor='e', text='Output format')
+    self.labelOutputFormat.grid(row=0,column=0,sticky='e')
+
+    self.comboboxOutputFormat= ttk.OptionMenu(self.frameSequenceValues,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
+    self.comboboxOutputFormat.grid(row=0,column=1,sticky='ew')
+
+
+    self.labelInitialBitrate = ttk.Label(self.frameSequenceValues)
+    self.labelInitialBitrate.config(anchor='e', text='Initial Bitrate (KB/s)', width='25')
+    self.labelInitialBitrate.grid(row=1,column=0,sticky='e')
+
+    self.entryInitialBitrate = ttk.Spinbox(self.frameSequenceValues, from_=0, to=float('inf'), increment=0.1)
+    self.entryInitialBitrate.config(textvariable=self.initialbitrateVar)
+    self.entryInitialBitrate.grid(row=1,column=1,sticky='ew')
 
     self.labelFilenamePrefix = ttk.Label(self.frameSequenceValues)
     self.labelFilenamePrefix.config(anchor='e', text='Output filename prefix')
     self.labelFilenamePrefix.grid(row=0,column=2,sticky='e')
 
-    self.entryFilenamePrefix = ttk.Entry(self.frameSequenceValues)
+    self.filenamePrefixFrame = ttk.Frame(self.frameSequenceValues)
+
+    self.entryFilenamePrefix = ttk.Entry(self.filenamePrefixFrame)
     self.entryFilenamePrefix.config(textvariable=self.filenamePrefixVar)
-    self.entryFilenamePrefix.grid(row=0,column=3,sticky='ew')
+    self.entryFilenamePrefix.grid(row=0,column=0,sticky='ew')
 
-    self.labelOutputFormat = ttk.Label(self.frameSequenceValues)
-    self.labelOutputFormat.config(anchor='e', text='Output format')
-    self.labelOutputFormat.grid(row=1,column=0,sticky='e')
+    self.entryAutomaticFileNaming = ttk.Checkbutton(self.filenamePrefixFrame,text='Auto-name',onvalue=True, offvalue=False)
+    self.entryAutomaticFileNaming.config(variable=self.automaticFileNamingVar)
+    self.entryAutomaticFileNaming.grid(row=0,column=1,sticky='ew')
 
-    self.comboboxOutputFormat= ttk.OptionMenu(self.frameSequenceValues,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
-    self.comboboxOutputFormat.grid(row=1,column=1,sticky='ew')
+    self.filenamePrefixFrame.columnconfigure(0, weight=100)
+    self.filenamePrefixFrame.columnconfigure(1, weight=1)
+    self.filenamePrefixFrame.rowconfigure(0, weight=1)
+
+    self.filenamePrefixFrame.grid(row=0,column=3,sticky='ew')
+
 
   
     self.labelSizeStrategy = ttk.Label(self.frameSequenceValues)
@@ -1008,8 +1060,6 @@ class MergeSelectionUi(ttk.Frame):
     self.labelAudioChannels.grid(row=3,column=0,sticky='e')
     self.entryAudioChannels = ttk.OptionMenu(self.frameSequenceValues,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
     self.entryAudioChannels.grid(row=3,column=1,sticky='ew')
-
-
 
 
 
@@ -1247,6 +1297,11 @@ class MergeSelectionUi(ttk.Frame):
       pass
 
     try:
+      self.initialbitrateValue = float(self.initialbitrateVar.get())
+    except:
+      pass
+
+    try:
       self.maximumSizeValue = float(self.maximumSizeVar.get())
     except:
       pass
@@ -1371,6 +1426,7 @@ class MergeSelectionUi(ttk.Frame):
       options={
         'frameSizeStrategy':self.frameSizeStrategyValue,
         'maximumSize':self.maximumSizeValue,
+        'initialBitrate':self.initialbitrateValue,
         'maximumWidth':self.maximumWidthValue,
         'transDuration':self.transDurationValue,
         'transStyle':self.transStyleValue,
@@ -1419,6 +1475,7 @@ class MergeSelectionUi(ttk.Frame):
         options={
           'frameSizeStrategy':self.frameSizeStrategyValue,
           'maximumSize':self.maximumSizeValue,
+          'initialBitrate':self.initialbitrateValue,
           'maximumWidth':self.maximumWidthValue,
           'transDuration':self.transDurationValue,
           'transStyle':self.transStyleValue,
@@ -1464,6 +1521,7 @@ class MergeSelectionUi(ttk.Frame):
           options={
             'frameSizeStrategy':self.frameSizeStrategyValue,
             'maximumSize':self.maximumSizeValue,
+            'initialBitrate':self.initialbitrateValue,
             'maximumWidth':self.maximumWidthValue,
             'transDuration':0.0,
             'transStyle':self.transStyleValue,
@@ -1582,6 +1640,11 @@ class MergeSelectionUi(ttk.Frame):
     self.controller=controller
     self.updateProfileSpecs()
 
+    for filterElem in self.postProcessingFilterOptions:
+      if filterElem.upper() == self.controller.getDefaultPostFilter().upper():
+        self.postProcessingFilterVar.set(filterElem)
+        break
+
 
 
   def updateProfileSpecs(self):
@@ -1694,6 +1757,38 @@ class MergeSelectionUi(ttk.Frame):
 
     self.scrolledframeInputCustContainer._scrollBothNow()
     self.scrolledframeSequenceContainer._scrollBothNow()
+
+  def addAllClipsInSmartRandomOrder(self):
+    smartOrder = []
+    smartCats  = {}
+    for clip in sorted(self.selectableVideos.values(),key=lambda x:random.random()):
+      smartCats.setdefault(clip.filename,[]).append(clip)
+    smartCats = list(smartCats.values())
+    random.shuffle(smartCats)
+
+    lastList=None
+    while sum([len(x) for x in smartCats])>0:
+      smartCats = [x for x in smartCats if len(x)>0]
+      if len(smartCats)==1:
+        lastList=smartCats[0]
+        smartOrder.append(lastList.pop())
+      else:
+        othercats = [x for x in smartCats if x != lastList]
+        lastList = random.choice(othercats)
+        smartOrder.append(lastList.pop())
+
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      self.clearAllColumns()
+      for ind,clip in enumerate(smartOrder):
+        self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
+          SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
+        )
+    else:
+      self.clearSequence()
+      for clip in smartOrder:
+        self.addClipToSequence(clip)
+
+
 
   def addAllClipsInRandomOrder(self):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':

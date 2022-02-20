@@ -454,6 +454,12 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
 
+    def setPausedStatus(self,paused):
+      if paused:
+        self.buttonvideoPause.config(text="⯈ Play")
+      else:
+        self.buttonvideoPause.config(text="⏸ Pause")
+
 
     def jumpClips(self,dir):
       self.controller.jumpClips(dir)
@@ -540,7 +546,13 @@ class CutselectionUi(ttk.Frame):
       self.controller.updateLoopMode(self.loopModeVar.get())
 
     def videoMousewheel(self,evt):
-      self.controller.seekRelative(evt.delta/20)
+      ctrl  = evt and ((evt.state & 0x4) != 0)
+
+      if ctrl:
+        self.controller.seekRelative(evt.delta/200)
+      else:
+        self.controller.seekRelative(evt.delta/20)
+
 
     def videomousePress(self,e):
       if e.type == tk.EventType.ButtonPress:

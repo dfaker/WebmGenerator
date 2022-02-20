@@ -163,11 +163,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     
     self.timeline_canvas.bind('v',       self.keyboardTempSection)
     self.timeline_canvas.bind('c',       self.keyboardCutatTime)
+    self.timeline_canvas.bind('m',       self.keyboardMergeatTime)
     self.timeline_canvas.bind('b',       self.keyboardBlockAtTime)
     self.timeline_canvas.bind('d',       self.keyboardRemoveBlockAtTime)
 
     self.timeline_canvas.bind('V',       self.keyboardTempSection)
     self.timeline_canvas.bind('C',       self.keyboardCutatTime)
+    self.timeline_canvas.bind('M',       self.keyboardMergeatTime)
     self.timeline_canvas.bind('B',       self.keyboardBlockAtTime)
     self.timeline_canvas.bind('D',       self.keyboardRemoveBlockAtTime)
 
@@ -354,6 +356,24 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def clearCurrentlySelectedRegion(self):
     self.tempRangeStart=None
     self.updateCanvas()
+
+  def keyboardMergeatTime(self,e):
+    if self.tempRangeStart is not None:
+      a,b = sorted([self.tempRangeStart,self.controller.getCurrentPlaybackPosition()])
+      overlappingRanges=[]
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      for rid,(s,e) in list(ranges):
+        if a<=s<=b or a<=e<=b:
+          overlappingRanges.append( (s,e,rid) )
+      if len(ranges)>1:
+        overlappingRanges = sorted(overlappingRanges)
+        finalend = overlappingRanges[-1][1]
+        for s,e,rid in overlappingRanges[1:]:
+          self.controller.removeSubclip((s+e)/2)
+        self.tempRangeStart=None
+        self.controller.updatePointForClip(self.controller.getcurrentFilename(),overlappingRanges[0][2],'e',finalend)
+        self.dirtySelectionRanges.add(overlappingRanges[0][2])
+
 
   def keyboardCutatTime(self,e):
     mid = self.controller.getCurrentPlaybackPosition()
@@ -558,10 +578,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
       ctrl  = (e.state & 0x4) != 0
       shift = (e.state & 0x1) != 0
-      for rid,(sts,ens) in ranges:          
+      for rid,(sts,ens) in ranges:
         st=self.secondsToXcoord(sts)
         en=self.secondsToXcoord(ens)
-        if st<=e.x<=en and e.y>self.winfo_height()-(self.midrangeHeight+10):
+        if st-self.handleWidth<=e.x<=en+self.handleWidth and e.y>self.winfo_height()-(self.midrangeHeight+10):
           targetSeconds = (sts+ens)/2
           if e.delta>0:
             targetSeconds+= 0.1 if shift else 0.01

@@ -17,6 +17,7 @@ import time
 import numpy as np
 
 from .encoders.gifEncoder     import encoder as gifEncoder
+from .encoders.apngEncoder    import encoder as apngEncoder
 from .encoders.mp4x264Encoder import encoder as mp4x264Encoder
 from .encoders.webmvp8Encoder import encoder as webmvp8Encoder
 from .encoders.webmvp9Encoder import encoder as webmvp9Encoder
@@ -45,6 +46,7 @@ encoderMap = {
   ,'mp4:x264':mp4x264Encoder
   ,'mp4:x264_Nvenc':mp4x264NvencEncoder
   ,'gif':gifEncoder
+  ,'apng':apngEncoder
 }
 
 class FFmpegService():
@@ -108,7 +110,7 @@ class FFmpegService():
         
         videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext,i)
 
-        comvcmd = ['ffmpeg', '-i', cleanFilenameForFfmpeg(clipfilename), '-ss', str(s), '-c', 'copy', '-t', str(etime), tempVideoFilePath]
+        comvcmd = ['ffmpeg', '-i', cleanFilenameForFfmpeg(clipfilename), '-c', 'copy', '-copyinkf', '-ss', str(s), '-t', str(etime), tempVideoFilePath]
         print(' '.join(comvcmd))
         proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
         
@@ -413,7 +415,11 @@ class FFmpegService():
           for line in outs.decode('utf8').split('\n'):
             if line.strip() != '':
               parts = line.strip().split(',')
-              ts,vol1,vol2 = parts[0],parts[1],parts[2]
+              try:
+                ts,vol1,vol2 = parts[0],parts[1],parts[2]
+              except:
+                ts,vol1,vol2 = parts[0],parts[1],parts[1]
+
               vol= -((float(vol1)+float(vol2))/2)
               minvol = min(minvol,vol)
               maxvol = max(maxvol,vol)
@@ -421,7 +427,10 @@ class FFmpegService():
           for line in outs.decode('utf8').split('\n'):
             if line.strip() != '':
               parts = line.strip().split(',')
-              ts,vol1,vol2 = parts[0],parts[1],parts[2]
+              try:
+                ts,vol1,vol2 = parts[0],parts[1],parts[2]
+              except:
+                ts,vol1,vol2 = parts[0],parts[1],parts[1]
               vol= -((float(vol1)+float(vol2))/2)
               vol = (vol-minvol)/(maxvol-minvol)
               vols.setdefault(round(float(ts),1),{}).setdefault(k,[]).append(vol)
@@ -603,7 +612,7 @@ class FFmpegService():
       clipDimensions = []
       infoOut={}
 
-      usNVHWenc = options.get('outputFormat','mp4:x264') == 'mp4:x264_Nvenc'
+      usNVHWenc = '_Nvenc' in options.get('outputFormat','mp4:x264') 
 
       fadeStartToEnd = options.get('fadeStartToEnd',True)
 
@@ -705,22 +714,26 @@ class FFmpegService():
           statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
           self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
           
+          cuda_flags = []
+
           if usNVHWenc:
+            if self.globalOptions.get('passCudaFlags',False):
+              cuda_flags = ['-hwaccel', 'cuda']
             slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'lossless']
-          else:
+          else:  
             slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast']
 
           if infoOut[rid].hasaudio:
-            comvcmd = ['ffmpeg','-y'                                
-                      ,'-ss', str(start)
+            comvcmd = ['ffmpeg','-y' ]+cuda_flags+[                                
+                       '-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)
                       ,'-filter_complex', filterexp ] + slice_encoder_preset + [
                        '-crf', '0'
                       ,'-ac', '1',outname]
           else:
-            comvcmd = ['ffmpeg','-y'
-                      ,'-f', 'lavfi', '-i', 'anullsrc'                                
+            comvcmd = ['ffmpeg','-y'  ]+cuda_flags+[
+                       '-f', 'lavfi', '-i', 'anullsrc'                                
                       ,'-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)

@@ -121,8 +121,6 @@ class WebmGeneratorController:
 
     open(self.configFileName,'w').write(json.dumps(self.globalOptions,indent=1))
 
-    self.globalOptions['titleMetadataSuffix'] = ' WmG';
-
     self.parallelVideoJobs    = self.globalOptions.get("parallelVideoJobs",3)
     self.statsWorkers         = self.globalOptions.get("statsWorkers",1)
     self.encodeWorkers        = self.globalOptions.get("encodeWorkers",1)

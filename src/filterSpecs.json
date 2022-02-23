@@ -720,7 +720,7 @@
   "desc": "Force constant framerate.",
   "params": [
    {"n": "fps", "d": 25.0, "type": "float","range": [null,null],"inc": 1},
-   {"n": "start_time", "d": "DBL_MAX", "type": "float","range": [null,null],"inc": 1},
+   {"n": "start_time", "d": "0", "type": "float","range": [null,null],"inc": 1},
    {"n": "round", "d": "near", "type": "cycle","cycle": [ "zero", "inf", "down", "up", "near"]},
    {"n": "eof_action", "d": "round", "type": "cycle","cycle": [ "round", "pass"]}
   ]
@@ -1738,21 +1738,31 @@
   ]
  },
 
+
+
  {
   "support": "...",
-  "category": "Timing and scynchronization",
+  "category": "Timing and scynchronization by start end seconds",
   "name": "Trim",
   "filter": "trim",
   "kind": "V->V",
   "desc": "Pick one continuous section from the input, drop the rest.",
   "params": [
-   {"n": "start",       "d": "INT64_MAX", "type": "float","range": [null,null],"inc": 1},
-   {"n": "end",         "d": "INT64_MAX", "type": "float","range": [null,null],"inc": 1},
-   {"n": "start_pts",   "d": "I64_MIN", "type": "float","range": [null,null],"inc": 1},
-   {"n": "end_pts",     "d": "I64_MIN", "type": "float","range": [null,null],"inc": 1},
-   {"n": "duration",    "d": 0.0, "type": "float","range": [null,null],"inc": 1},
-   {"n": "start_frame", "d": -1.0, "type": "float","range": [-1.0,null],"inc": 1},
-   {"n": "end_frame",   "d": "I64_MAX", "type": "float","range": [0.0,null],"inc": 1}
+   {"n": "start",       "d": "0", "type": "float","range": [null,null],"inc": 1},
+   {"n": "end",         "d": "0", "type": "float","range": [null,null],"inc": 1}
+  ]
+ },
+
+ {
+  "support": "...",
+  "category": "Timing and scynchronization by start end frames",
+  "name": "Trim",
+  "filter": "trim",
+  "kind": "V->V",
+  "desc": "Pick one continuous section from the input, drop the rest.",
+  "params": [
+   {"n": "start_frame", "d": "0", "type": "float","range": [-1.0,null],"inc": 1},
+   {"n": "end_frame",   "d": "0", "type": "float","range": [0.0,null],"inc": 1}
   ]
  },
 

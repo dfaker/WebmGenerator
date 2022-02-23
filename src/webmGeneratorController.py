@@ -68,6 +68,7 @@ class WebmGeneratorController:
       "cutsTabPlayerBackgroundColour":"#282828",
       "filtersTabPlayerBackgroundColour":"#282828",
       "autoLoadLastAutosave":False,
+      "deleteDownloadsAtExit":False,
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       
@@ -365,7 +366,6 @@ class WebmGeneratorController:
           self.saveProject(self.autosaveFilename)
     else:
       self.saveProject(self.autosaveFilename)
-
     
     logging.debug('self.ffmpegService.cancelAllEncodeRequests()')
     self.ffmpegService.cancelAllEncodeRequests()
@@ -388,15 +388,18 @@ class WebmGeneratorController:
           os.remove(os.path.join(self.tempFolder,f))
         except Exception as e:
           print(e)
+    print('temp clean up end')
 
+    print('download clean up start')
     if os.path.exists(self.tempDownloadFolder):
       for f in os.listdir(self.tempDownloadFolder):
-        if f.endswith('.part'):
+        if f.endswith('.part') or self.globalOptions.get('deleteDownloadsAtExit',False):
           try: 
             os.remove(os.path.join(self.tempDownloadFolder,f))
           except Exception as e:
             print(e)
-    print('temp clean up end')
+    print('download clean up end')
+
     
   def __call__(self):
     self.webmMegeneratorUi.run()

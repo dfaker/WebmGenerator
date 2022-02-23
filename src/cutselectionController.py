@@ -358,10 +358,10 @@ class CutselectionController:
     self.loadFiles([filename])
 
   def loadVideoYTdlFromClipboard(self,url):
-    self.ytdlService.loadUrl(url,0,'','',False,'',self.returnYTDLDownlaodedVideo)
+    self.ytdlService.loadUrl(url,0,'','',False,'','default',self.returnYTDLDownlaodedVideo)
 
-  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies,browserCookies):
-    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,self.returnYTDLDownlaodedVideo)
+  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort):
+    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,self.returnYTDLDownlaodedVideo)
 
   def returnImageLoadAsVideo(self,filename):
     self.loadFiles([filename])

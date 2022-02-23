@@ -51,7 +51,7 @@ class YTDLService():
     def downloadFunc():
       while 1:
         try:
-          url,fileLimit,username,password,useCookies,browserCookies,callback = self.downloadRequestQueue.get()
+          url,fileLimit,username,password,useCookies,browserCookies,qualitySort,callback = self.downloadRequestQueue.get()
           self.cancelEvent.clear()
           self.splitEvent.clear()
 
@@ -98,12 +98,15 @@ class YTDLService():
             if len(browserCookies)>0:
               extraFlags.extend(['--cookies-from-browser',browserCookies])
 
+            if len(qualitySort)>0 and qualitySort.upper() != 'DEFAULT':
+              extraFlags.extend(['-f',qualitySort])
+
 
 
             if hasattr(os.sys, 'winver'):
-              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+['-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
             else:
-              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+['-f','best',url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
 
             l = b''
             self.globalStatusCallback('Download start {}'.format(url),0)
@@ -199,8 +202,13 @@ class YTDLService():
                   seenFiles.add(finalName)
                   self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
                   logging.debug("Download complete {}".format(finalName))
+
                 if b'[download]' in l and b' has already been downloaded and merged' in l:
                   finalName = l.replace(b' has already been downloaded and merged',b'').replace(b'[download] ',b'').strip()
+                  seenFiles.add(finalName)
+                  self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
+                elif b'[download]' in l and b' has already been downloaded' in l:
+                  finalName = l.replace(b' has already been downloaded',b'').replace(b'[download] ',b'').strip()
                   seenFiles.add(finalName)
                   self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
 
@@ -258,11 +266,11 @@ class YTDLService():
   def togglePreview(self,toggleValue):
     self.pushPreview = toggleValue
 
-  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,callback):
-    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,callback))
+  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,callback):
+    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,qualitySort,callback))
 
   def update(self):
-    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None))
+    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None,None))
 
   def cancelCurrentYoutubeDl(self):
     self.cancelEvent.set()

@@ -178,6 +178,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind("e",        lambda x: self.controller.jumpClips(1))
     self.timeline_canvas.bind("Q",        lambda x: self.controller.jumpClips(-1))
     self.timeline_canvas.bind("E",        lambda x: self.controller.jumpClips(1))
+    self.timeline_canvas.bind("r",        lambda x: self.controller.randomClip())
+    self.timeline_canvas.bind("R",        lambda x: self.controller.randomClip())
 
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1

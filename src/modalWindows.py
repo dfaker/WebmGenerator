@@ -330,9 +330,18 @@ class YoutubeDLModal(tk.Toplevel):
     self.entryBrowserCookies.grid(row=5,column=1,sticky='new',padx=5,pady=5)
 
 
+    self.labelQualitySort = ttk.Label(self)
+    self.labelQualitySort.config(text='Video quality selection rule')
+    self.labelQualitySort.grid(row=6,column=0,sticky='new',padx=5,pady=5)
+    self.varQualitySort   = tk.StringVar(self,'default')
+    self.entryQualitySort =  ttk.Combobox(self,textvariable=self.varQualitySort)
+    self.entryQualitySort.config(values=['default', 'bestvideo+bestaudio/best', 'bestvideo*+bestaudio/best', 'best'])
+    self.entryQualitySort.grid(row=6,column=1,sticky='new',padx=5,pady=5)
+
+
     self.downloadCmd = ttk.Button(self)
     self.downloadCmd.config(text='Download',command=self.download)
-    self.downloadCmd.grid(row=6,column=0,columnspan=2,sticky='nesw')
+    self.downloadCmd.grid(row=7,column=0,columnspan=2,sticky='nesw')
     self.rowconfigure(5, weight=1)
 
     self.entryUrl.focus()
@@ -348,12 +357,13 @@ class YoutubeDLModal(tk.Toplevel):
     password=self.varPassword.get()
     useCookies = bool(self.useCookies.get())
     browserCookies=self.varBrowserCookies.get()
+    qualitySort=self.varQualitySort.get()
 
     try:
       fileLimit = int(float(self.varPlayListLimit.get()))
     except Exception as e:
       print(e)
-    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies)
+    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies,qualitySort)
     self.destroy()
 
 

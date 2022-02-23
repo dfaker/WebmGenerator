@@ -444,10 +444,13 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
 
 
-        self.frameVideoPlayerFrame.bind("q",        lambda s=self: s.controller.jumpClips(-1))
-        self.frameVideoPlayerFrame.bind("e",        lambda s=self: s.controller.jumpClips(1))
-        self.frameVideoPlayerFrame.bind("Q",        lambda s=self: s.controller.jumpClips(-1))
-        self.frameVideoPlayerFrame.bind("E",        lambda s=self: s.controller.jumpClips(1))
+        self.frameVideoPlayerFrame.bind("q",        lambda s=self: s.jumpClips(-1))
+        self.frameVideoPlayerFrame.bind("e",        lambda s=self: s.jumpClips(1))
+        self.frameVideoPlayerFrame.bind("Q",        lambda s=self: s.jumpClips(-1))
+        self.frameVideoPlayerFrame.bind("E",        lambda s=self: s.jumpClips(1))
+        
+        self.frameVideoPlayerFrame.bind("r",        lambda s=self: s.randomClip())
+        self.frameVideoPlayerFrame.bind("R",        lambda s=self: s.randomClip())
 
         self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
         self._previewtimer.daemon = True
@@ -459,7 +462,6 @@ class CutselectionUi(ttk.Frame):
         self.buttonvideoPause.config(text="⯈ Play")
       else:
         self.buttonvideoPause.config(text="⏸ Pause")
-
 
     def jumpClips(self,dir):
       self.controller.jumpClips(dir)
@@ -735,9 +737,9 @@ class CutselectionUi(ttk.Frame):
       modal = YoutubeDLModal(master=self,controller=self,initialUrl=defaultUrl)
       modal.mainloop()
       
-    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies,browserCookies):
+    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort):
       if url is not None and len(url)>0:
-        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies,browserCookies)
+        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort)
 
 
     def displayrunVoiceActivityDetectionmodal(self,useRange=False,rangeStart=None,rangeEnd=None):
@@ -806,7 +808,7 @@ class CutselectionUi(ttk.Frame):
                   foundUrls.append(substr)
                   print(substr)
           except Exception as e:
-            pass
+            print('loadClipboardUrls Exception',e)
         print("END WATCH")
 
       t = threading.Thread(target=clipWatchWorker,args=(self,))

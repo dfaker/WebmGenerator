@@ -73,7 +73,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
     
 
-    audioCodec = ["-c:a","libvorbis"]
+    audioCodec = ["-c:a","libopus"]
     if 'Copy' in options.get('audioChannels',''):
       audioCodec = []
 
@@ -94,11 +94,11 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-an"]    
     elif 'Stereo' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","2"]    
-      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-ar",'48k']
       ffmpegcommand+=["-b:a",str(audoBitrate)]
     elif 'Mono' in options.get('audioChannels',''):
       ffmpegcommand+=["-ac","1"]
-      ffmpegcommand+=["-ar",str(44100)]
+      ffmpegcommand+=["-ar",'48k']
       ffmpegcommand+=["-b:a",str(audoBitrate)]
     elif 'Copy' in options.get('audioChannels',''):
       ffmpegcommand+=["-c:a copy"]

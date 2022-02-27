@@ -1194,7 +1194,10 @@ class MergeSelectionUi(ttk.Frame):
 
   def selectAudioOverride(self):
     files = askopenfilename(multiple=False,filetypes=[('mp3','*.mp3',),('wav','*.wav')])
-    self.audioOverrideVar.set(str(files))
+    if files is None or len(files)==0:
+      self.audioOverrideVar.set('None')
+    else:
+      self.audioOverrideVar.set(str(files))
 
 
   def addRow(self):

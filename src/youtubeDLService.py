@@ -196,21 +196,37 @@ class YTDLService():
 
                 if b'[download] Destination:' in l:
                   finalName = l.replace(b'[download] Destination: ',b'').strip()
-                  seenFiles.add(finalName)
+                  if b'.mp4' in finalName:
+                    seenFiles.add(finalName)
                 if b'[ffmpeg] Merging formats into' in l:
                   finalName = l.split(b'"')[-2].strip()
-                  seenFiles.add(finalName)
-                  self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
-                  logging.debug("Download complete {}".format(finalName))
+                  if b'.mp4' in finalName:
+                    seenFiles.add(finalName)
+                    self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
+                    logging.debug("Download complete {}".format(finalName))
+                if b'[Merger] Merging formats into' in l:
+                  finalName = l.split(b'"')[-2].strip()
+                  if b'.mp4' in finalName:
+                    seenFiles.add(finalName)
+                    self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
+                    logging.debug("Download complete {}".format(finalName))
 
                 if b'[download]' in l and b' has already been downloaded and merged' in l:
                   finalName = l.replace(b' has already been downloaded and merged',b'').replace(b'[download] ',b'').strip()
-                  seenFiles.add(finalName)
-                  self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
+                  if b'.mp4' in finalName:
+                    seenFiles.add(finalName)
+                    self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
                 elif b'[download]' in l and b' has already been downloaded' in l:
                   finalName = l.replace(b' has already been downloaded',b'').replace(b'[download] ',b'').strip()
-                  seenFiles.add(finalName)
-                  self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
+                  if b'.mp4' in finalName:
+                    seenFiles.add(finalName)
+                    self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
+
+
+                if b"Deleting original file " in l:
+                  finalName = l.replace(b'Deleting original file',b'').replace(b'(pass -k to keep)',b'').strip()
+                  emittedFiles.add(finalName)
+
 
                 if b'[download]' in l and b'%' in l:
                   try:

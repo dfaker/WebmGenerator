@@ -903,6 +903,7 @@ class FilterSelectionUi(ttk.Frame):
     self.filterFailed=False
     self.filterFailedResetTimer=None
     self.timelineFileIndex=0    
+    self.keyValueSeparation=3
 
   def clearFilterFailure(self):
     self.filterFailed=False
@@ -1082,7 +1083,7 @@ class FilterSelectionUi(ttk.Frame):
 
       for timeStamp,value,_ in self.activeCommandFilterValuePair.getKeyValues():
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-        if posX-5<tx<posX+5:
+        if posX-self.keyValueSeparation<tx<posX+self.keyValueSeparation:
           self.activeCommandFilterValuePair.removeKeyValue(timeStamp)
           self.controller.seekToPercent(tx/self.canvasValueTimeline.winfo_width())
           self.refreshtimeLineForNewClip()
@@ -1113,7 +1114,7 @@ class FilterSelectionUi(ttk.Frame):
       existingTS=None
       for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues(interpolation=False):
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-        if posX-5<tx<posX+5:
+        if posX-self.keyValueSeparation<tx<posX+self.keyValueSeparation:
           existingTS=timeStamp
       if existingTS is None:
         self.activeCommandFilterValuePair.addKeyValue(posSeconds,value=increment,useIncrementMultiplier=useIncrementMultiplier,isAsoluteValue=isAsoluteValue)
@@ -1186,7 +1187,7 @@ class FilterSelectionUi(ttk.Frame):
       for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues():
         if real:
           tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-          if self.timeline_canvas_last_right_click_x-5<tx<self.timeline_canvas_last_right_click_x+5:
+          if self.timeline_canvas_last_right_click_x-self.keyValueSeparation<tx<self.timeline_canvas_last_right_click_x+self.keyValueSeparation:
             self.activeCommandFilterValuePair.removeKeyValue(timeStamp)
             self.controller.seekToPercent(tx/self.canvasValueTimeline.winfo_width())
             self.refreshtimeLineForNewClip()
@@ -1201,7 +1202,7 @@ class FilterSelectionUi(ttk.Frame):
       for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues():
         if real:
           tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-          if e.x-5<tx<e.x+5:
+          if e.x-self.keyValueSeparation<tx<e.x+self.keyValueSeparation:
             if e.delta>0:
               self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,10 if ctrl else 1)
             else:

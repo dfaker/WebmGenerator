@@ -64,7 +64,6 @@ buildOptions = dict(packages = ["os"],
                     ],
                     includes= ["tkinter","email","http","tkinter.ttk"],
                     excludes = [
-                    'PIL',
                     'distutils',  
                     'future', 
                     'pydoc_data',

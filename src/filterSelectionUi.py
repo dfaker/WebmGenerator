@@ -6,8 +6,6 @@ import copy
 
 import logging
 
-
-
 import colorsys
 
 import threading
@@ -809,13 +807,6 @@ class FilterSelectionUi(ttk.Frame):
     self.video_canvas_popup_menu.add_command(label="Set target position for X and Y warping."  ,command=lambda :self.addRegistrationMark("tvec"))
     self.video_canvas_popup_menu.add_separator()
     self.video_canvas_popup_menu.add_command(label="Clear Registration Marks"               ,command=lambda :self.addRegistrationMark("clear"))
-    self.video_canvas_popup_menu.add_separator()
-    self.video_canvas_popup_menu.add_command(label="Toggle frame as overlay"               ,command=lambda :self.overlay())
-                                
-
-
-
-
 
     self.video_canvas_popup_menu.add_separator()
 
@@ -1444,9 +1435,6 @@ class FilterSelectionUi(ttk.Frame):
     forceAR = 1/forceAR
     self.fixSeectionArVar.set(forceAR)
 
-
-  def overlay(self):
-    self.controller.toggleOverlay()
 
   def autoCrop(self):
     rid = self.subClipOrder[self.currentSubclipIndex]

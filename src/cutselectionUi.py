@@ -364,11 +364,7 @@ class CutselectionUi(ttk.Frame):
 
         self.video_canvas_popup_menu.add_command(label="Toggle scaling" ,command=lambda :self.fitoScreen())
 
-        self.video_canvas_popup_menu.add_command(label="Toggle frame as overlay" ,command=lambda :self.toggleOverlay())
-
-
-        
-                                
+                                      
 
 
         try:
@@ -478,9 +474,6 @@ class CutselectionUi(ttk.Frame):
 
     def showvideoContextMenu(self,e):
       self.video_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
-        
-    def toggleOverlay(self):
-      self.controller.toggleOverlay()
 
     def setPausedStatus(self,paused):
       if paused:

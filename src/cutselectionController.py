@@ -7,9 +7,6 @@ import os
 import logging
 import time
 
-
-from PIL import ImageFilter
-
 class CutselectionController:
 
   def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,globalOptions={}):
@@ -213,33 +210,6 @@ class CutselectionController:
     self.player.observe_property('duration', self.handleMpvDurationChange)
     self.player.observe_property('pause',    self.playbackStatusChanged)
     self.overlay = None
-
-  def toggleOverlay(self):
-    if self.overlay is None:
-      self.overlay = self.player.create_image_overlay()
-      img = self.player.screenshot_raw().convert('RGBA')
-
-
-      osd_dim = self.player.osd_dimensions
-      osd_top = osd_dim['mt']
-      osd_bottom = osd_dim['mb']
-      osd_left = osd_dim['ml']
-      osd_right = osd_dim['mr']
-
-      par = self.player.video_out_params.get('par',1)
-
-      osd_w = int((self.player.osd_width-osd_left-osd_right)*par)
-      osd_h = int(self.player.osd_height-osd_top-osd_bottom)
-
-      img.putalpha(100)
-
-      img = img.resize((osd_w,osd_h))
-
-
-      self.overlay.update(img, pos=(osd_left,osd_top))
-    else:
-      self.overlay.remove()
-      self.overlay = None
 
   def close_ui(self):
     try:

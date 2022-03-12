@@ -62,8 +62,9 @@ buildOptions = dict(packages = ["os"],
                     ,os.path.join(PYTHON_INSTALL_DIR, 'DLLs', 'tk86t.dll')
                     ,os.path.join(PYTHON_INSTALL_DIR, 'DLLs', 'tcl86t.dll')  
                     ],
-                    includes= ["tkinter","PIL","email","http","tkinter.ttk"],
+                    includes= ["tkinter","email","http","tkinter.ttk"],
                     excludes = [
+                    'PIL',  
                     'distutils',  
                     'future', 
                     'pydoc_data',

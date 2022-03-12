@@ -153,7 +153,7 @@ When an X or Y property is slected on the video player:
 
 Finally, is the **Merge** tab, If you've not visited it during the current clipping session it'll automatically add all current clips into the sequence on first visit.
 
-The top `Avlaible Cuts` frame shows all of your currently selected sub clips along with a preview of what they'll look like with their applied filters, the button below each is used to add them in to the lower `Sequence` frame.
+The top `Available Cuts` frame shows all of your currently selected sub clips along with a preview of what they'll look like with their applied filters, the button below each is used to add them in to the lower `Sequence` frame.
 
 The `Merge style` drop down allows you to switch between joining all the selected clips together, or outputting them as individual isolated clips.
 

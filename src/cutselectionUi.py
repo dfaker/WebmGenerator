@@ -359,6 +359,18 @@ class CutselectionUi(ttk.Frame):
             takefocus=True,style="PlayerFrame.TFrame"
         )
 
+        self.video_canvas_popup_menu = tk.Menu(self, tearoff=0)
+
+
+        self.video_canvas_popup_menu.add_command(label="Toggle scaling" ,command=lambda :self.fitoScreen())
+
+        self.video_canvas_popup_menu.add_command(label="Toggle frame as overlay" ,command=lambda :self.toggleOverlay())
+
+
+        
+                                
+
+
         try:
           self.frameVideoPlayerphoto = tk.PhotoImage(file=".\\resources\\playerbg.png")
           self.frameVideoPlayerlabel = ttk.Label(self.frameVideoPlayerFrame, image=self.frameVideoPlayerphoto)
@@ -444,6 +456,10 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("<MouseWheel>",        self.videoMousewheel)
 
 
+
+        self.frameVideoPlayerFrame.bind("<Button-3>",          self.showvideoContextMenu)
+
+
         self.frameVideoPlayerFrame.bind("q",        lambda s=self: s.jumpClips(-1))
         self.frameVideoPlayerFrame.bind("e",        lambda s=self: s.jumpClips(1))
         self.frameVideoPlayerFrame.bind("Q",        lambda s=self: s.jumpClips(-1))
@@ -456,6 +472,15 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.daemon = True
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
+
+    def fitoScreen(self):
+      self.controller.fitoScreen()
+
+    def showvideoContextMenu(self,e):
+      self.video_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
+        
+    def toggleOverlay(self):
+      self.controller.toggleOverlay()
 
     def setPausedStatus(self,paused):
       if paused:
@@ -854,8 +879,8 @@ class CutselectionUi(ttk.Frame):
     def getIsPlaybackStarted(self):
         return self.controller.getIsPlaybackStarted()
 
-    def update(self):
-        self.frameTimeLineFrame.updateCanvas()
+    def update(self,withLock=True):
+        self.frameTimeLineFrame.updateCanvas(withLock=True)
 
     def setUiDirtyFlag(self):
       self.frameTimeLineFrame.setUiDirtyFlag()

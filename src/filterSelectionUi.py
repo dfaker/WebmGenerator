@@ -7,6 +7,7 @@ import copy
 import logging
 
 
+
 import colorsys
 
 import threading
@@ -34,7 +35,7 @@ class FilterSpecification(ttk.Frame):
   def __init__(self, master,controller,spec, filterId, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     self.filterId=filterId
-    self.enabled=True
+    self.enabled=spec.get('enabled',True)
     self.spec=spec
     self.controller=controller
     self.frameFilterDetailsWidget = self
@@ -63,6 +64,14 @@ class FilterSpecification(ttk.Frame):
     self.buttonfilterActionRemove.pack(expand='true', fill='x', side='left')
     self.buttonfilterActionToggleEnabled = ttk.Button(self.frameFilterActions)
     self.buttonfilterActionToggleEnabled.config(text='Enabled', width='7')
+    if not self.enabled:
+      self.buttonfilterActionToggleEnabled.config(text='Disabled',style='filterDisabled.TButton')
+      self.frameFilterDetailsWidget.config(style='filterDisabled.TFrame')
+      self.labelFilterName.config(style='filterDisabled.TLabel')
+      if self.labelFilterDesc is not None:
+        self.labelFilterDesc.config(style='filterDisabled.TLabel')
+
+
     self.buttonfilterActionToggleEnabled.config(command=self.toggleEnabled)
     self.buttonfilterActionToggleEnabled.pack(expand='true', fill='x', side='left')
     self.buttonFilterActionDownStack = ttk.Button(self.frameFilterActions)
@@ -226,6 +235,8 @@ class FilterSpecification(ttk.Frame):
 
 
   def incrementBox(self,inc):
+    videoAR = self.controller.getViideoAR()
+    print(videoAR)
     for fvp in self.filterValuePairs:
       if fvp.rectProp is None:
         continue              
@@ -234,13 +245,13 @@ class FilterSpecification(ttk.Frame):
       value = int(value)
 
       if fvp.rectProp == 'x':
-        fvp.valueVar.set(str(value-inc))
+        fvp.valueVar.set(str(int(value-(inc*videoAR))))
         fvp.valueUpdated()
       elif fvp.rectProp == 'y':
         fvp.valueVar.set(str(value-inc))
         fvp.valueUpdated()
       elif fvp.rectProp == 'w':
-        fvp.valueVar.set(str(value+(inc*2)))
+        fvp.valueVar.set(str(int(value+((inc*videoAR)*2))))
         fvp.valueUpdated()
       elif fvp.rectProp == 'h':
         fvp.valueVar.set(str(value+(inc*2)))
@@ -716,6 +727,7 @@ class FilterSelectionUi(ttk.Frame):
     self.autocropButton.config(command=self.autoCrop)
     self.autocropButton.pack(side='left')
 
+
     self.volumeLabel = ttk.Label(self.selectionOptionsFrame)
     self.volumeLabel.config(text='Vol')
     self.volumeLabel.pack(expand='false', side='left')
@@ -797,7 +809,13 @@ class FilterSelectionUi(ttk.Frame):
     self.video_canvas_popup_menu.add_command(label="Set target position for X and Y warping."  ,command=lambda :self.addRegistrationMark("tvec"))
     self.video_canvas_popup_menu.add_separator()
     self.video_canvas_popup_menu.add_command(label="Clear Registration Marks"               ,command=lambda :self.addRegistrationMark("clear"))
+    self.video_canvas_popup_menu.add_separator()
+    self.video_canvas_popup_menu.add_command(label="Toggle frame as overlay"               ,command=lambda :self.overlay())
                                 
+
+
+
+
 
     self.video_canvas_popup_menu.add_separator()
 
@@ -816,6 +834,8 @@ class FilterSelectionUi(ttk.Frame):
     self.rect_aspect_popup_menu.add_command(label="16:10 - Display or tablet",command=lambda :self.setCropAspect(16/10))
     self.rect_aspect_popup_menu.add_command(label="16:9 - Standard HDTV",command=lambda :self.setCropAspect(16/9))
     self.rect_aspect_popup_menu.add_command(label="2:1 - Superscope",command=lambda :self.setCropAspect(2/1))
+    self.rect_aspect_popup_menu.add_separator()
+    self.rect_aspect_popup_menu.add_command(label="Match video aspect",command=lambda :self.setCropAspect(None))
 
 
     self.framePlayerFrame.bind("<Button-1>",          self.videomousePress)
@@ -904,6 +924,9 @@ class FilterSelectionUi(ttk.Frame):
     self.filterFailedResetTimer=None
     self.timelineFileIndex=0    
     self.keyValueSeparation=3
+
+  def getViideoAR(self):
+    return self.controller.getViideoAR()
 
   def clearFilterFailure(self):
     self.filterFailed=False
@@ -1421,6 +1444,10 @@ class FilterSelectionUi(ttk.Frame):
     forceAR = 1/forceAR
     self.fixSeectionArVar.set(forceAR)
 
+
+  def overlay(self):
+    self.controller.toggleOverlay()
+
   def autoCrop(self):
     rid = self.subClipOrder[self.currentSubclipIndex]
     subclip = self.subclips[rid]
@@ -1452,6 +1479,10 @@ class FilterSelectionUi(ttk.Frame):
     return self.videoMouseRect
 
   def setCropAspect(self,ar):
+
+    if ar is None:
+      ar = self.controller.getViideoAR()
+
     self.fixSeectionArEnabledVar.set(True)
     self.fixSeectionArVar.set( ar  )
 
@@ -1797,6 +1828,7 @@ class FilterSelectionUi(ttk.Frame):
       for spec in selectableFilters:
         if spec['name'] == ifilter.spec['name']:
           baseSpec=copy.deepcopy(spec)
+          baseSpec['enabled'] = ifilter.enabled
           break
       for n,v in [x.getValuePair(forFilter=False) for x in ifilter.filterValuePairs]:
         for param in baseSpec['params']:
@@ -2028,7 +2060,9 @@ class FilterSelectionUi(ttk.Frame):
       basename = os.path.basename(currentClip['filename'])[:18]
       s=currentClip['start']
       e=currentClip['end']
-      newLabel = '{n} {s:0.2f}-{e:0.2f} {i}/{len}'.format(n=basename,
+      rid = self.subClipOrder[self.currentSubclipIndex]
+      print(currentClip)
+      newLabel = '#{r} {n} {s:0.2f}-{e:0.2f} {i}/{len}'.format(r=rid, n=basename,
                                                 s=s,
                                                 e=e,
                                                 i=self.currentSubclipIndex+1,

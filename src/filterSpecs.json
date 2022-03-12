@@ -206,7 +206,7 @@
 
  {
   "support": "...",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Cue",
   "filter": "cue",
   "kind": "V->V",
@@ -289,7 +289,7 @@
 
  {
   "support": "...",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Decimate",
   "filter": "decimate",
   "kind": "N->V",
@@ -599,7 +599,7 @@
 
  {
   "support": "TS.",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Fade at frame",
   "filter": "fade",
   "kind": "V->V",
@@ -617,7 +617,7 @@
 
  {
   "support": "TS.",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Fade at seconds",
   "filter": "fade",
   "kind": "V->V",
@@ -713,7 +713,7 @@
 
  {
   "support": "...",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Fps",
   "filter": "fps",
   "kind": "V->V",
@@ -728,7 +728,7 @@
 
  {
   "support": ".S.",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Frame rate",
   "filter": "framerate",
   "kind": "V->V",
@@ -744,7 +744,7 @@
 
  {
   "support": "T..",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Frame step",
   "filter": "framestep",
   "kind": "V->V",
@@ -1060,7 +1060,7 @@
 
  {
   "support": "...",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Motion iterpolate",
   "filter": "minterpolate",
   "kind": "V->V",
@@ -1081,7 +1081,7 @@
 
  {
   "support": "...",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "MP decimate",
   "filter": "mpdecimate",
   "kind": "V->V",
@@ -1672,7 +1672,7 @@
 
  {
   "support": "T..",
-  "category": "Timing and scynchronization",
+  "category": "Timing and synchronization",
   "name": "Thumbnail",
   "filter": "thumbnail",
   "kind": "V->V",
@@ -1738,12 +1738,10 @@
   ]
  },
 
-
-
  {
   "support": "...",
-  "category": "Timing and scynchronization by start end seconds",
-  "name": "Trim",
+  "category": "Timing and synchronization",
+  "name": "Trim  by start and end seconds",
   "filter": "trim",
   "kind": "V->V",
   "desc": "Pick one continuous section from the input, drop the rest.",
@@ -1755,8 +1753,8 @@
 
  {
   "support": "...",
-  "category": "Timing and scynchronization by start end frames",
-  "name": "Trim",
+  "category": "Timing and synchronization",
+  "name": "Trim  by start and end frames",
   "filter": "trim",
   "kind": "V->V",
   "desc": "Pick one continuous section from the input, drop the rest.",

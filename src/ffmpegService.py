@@ -719,7 +719,7 @@ class FFmpegService():
           if usNVHWenc:
             if self.globalOptions.get('passCudaFlags',False):
               cuda_flags = ['-hwaccel', 'cuda']
-            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'lossless']
+            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'lossless','-pix_fmt','yuv420p']
           else:  
             slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast']
 
@@ -760,6 +760,8 @@ class FFmpegService():
               if len(c)==0:
                 break
               if c == b'\r':
+                logging.debug(ln)
+                print(ln)
                 for p in ln.split(b' '):
                   if b'time=' in p:
                     try:

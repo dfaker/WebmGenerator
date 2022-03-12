@@ -454,7 +454,7 @@ class SelectableVideoEntry(ttk.Frame):
     
     self.frameInputCutWidget = self
     self.labelInputCutName = ttk.Label(self.frameInputCutWidget)
-    self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
+    self.labelInputCutName.config(text='#{} {:0.2f}-{:0.2f} {:0.2f}s'.format(self.rid,self.s,self.e,self.e-self.s))
     self.labelInputCutName.pack(side='top')
     
     self.previewData = "P5\n124 80\n255\n"+("0"*80*124)
@@ -848,7 +848,7 @@ class MergeSelectionUi(ttk.Frame):
     self.gridPadWidthVar.set('0')
 
 
-    self.postProcessingFilterOptions = ['None']
+    self.postProcessingFilterOptions = ['None','Disable all filters']
     if os.path.exists('postFilters'):
       for f in os.listdir('postFilters'):
         if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
@@ -1385,6 +1385,9 @@ class MergeSelectionUi(ttk.Frame):
 
   def encodeCurrent(self):
 
+    nullfilter = ''
+    disableFilters = self.postProcessingFilterVar.get() == 'Disable all filters'
+
     if (not self.automaticFileNamingValue) and self.filenamePrefixValue is None or self.filenamePrefixValue.strip() == '':
       self.filenamePrefixValue = 'output'
 
@@ -1393,7 +1396,7 @@ class MergeSelectionUi(ttk.Frame):
       for clip in self.sequencedClips:
         encodeSequence = []
         self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp,nullfilter if disableFilters else clip.filterexpEnc)
         encodeSequence.append(definition)
         if len(encodeSequence)>0:
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self)
@@ -1417,7 +1420,7 @@ class MergeSelectionUi(ttk.Frame):
       for i,column in enumerate(self.gridColumns):
         outcol = []
         for clip in column['clips']:
-          definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
+          definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc)
           outcol.append(definition)
           if column == self.selectedColumn:
             selectedColumnInd=i
@@ -1473,7 +1476,7 @@ class MergeSelectionUi(ttk.Frame):
       encodeSequence = []
       self.encodeRequestId+=1
       for clip in self.sequencedClips:
-        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc)
         encodeSequence.append(definition)
       if len(encodeSequence)>0:
         options={
@@ -1519,7 +1522,7 @@ class MergeSelectionUi(ttk.Frame):
       for clip in self.sequencedClips:
         encodeSequence = []
         self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,clip.filterexp,clip.filterexpEnc)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp,nullfilter if disableFilters else clip.filterexpEnc)
         encodeSequence.append(definition)
         if len(encodeSequence)>0:
           options={

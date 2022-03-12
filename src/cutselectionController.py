@@ -8,6 +8,8 @@ import logging
 import time
 
 
+from PIL import ImageFilter
+
 class CutselectionController:
 
   def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,globalOptions={}):
@@ -34,7 +36,7 @@ class CutselectionController:
     self.currentLoop_a=None
     self.currentLoop_b=None
     self.copiedTimeRange = None
-
+    self.fit=True
 
     """
     if len(initialFiles)>1:
@@ -47,6 +49,11 @@ class CutselectionController:
 
     self.loadFiles(initialFiles)
 
+
+  def fitoScreen(self):
+    self.fit = not self.fit
+    self.player.video_unscaled = not self.fit
+    
     
 
   def takeScreenshotToFile(self,screenshotPath,includes='video'):
@@ -205,7 +212,34 @@ class CutselectionController:
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)
     self.player.observe_property('duration', self.handleMpvDurationChange)
     self.player.observe_property('pause',    self.playbackStatusChanged)
+    self.overlay = None
 
+  def toggleOverlay(self):
+    if self.overlay is None:
+      self.overlay = self.player.create_image_overlay()
+      img = self.player.screenshot_raw().convert('RGBA')
+
+
+      osd_dim = self.player.osd_dimensions
+      osd_top = osd_dim['mt']
+      osd_bottom = osd_dim['mb']
+      osd_left = osd_dim['ml']
+      osd_right = osd_dim['mr']
+
+      par = self.player.video_out_params.get('par',1)
+
+      osd_w = int((self.player.osd_width-osd_left-osd_right)*par)
+      osd_h = int(self.player.osd_height-osd_top-osd_bottom)
+
+      img.putalpha(100)
+
+      img = img.resize((osd_w,osd_h))
+
+
+      self.overlay.update(img, pos=(osd_left,osd_top))
+    else:
+      self.overlay.remove()
+      self.overlay = None
 
   def close_ui(self):
     try:
@@ -241,7 +275,7 @@ class CutselectionController:
       self.currentTimePos = value
       self.checkLoopCycleJump()
       if self.currentTotalDuration is not None:
-        self.ui.update()
+        self.ui.update(withLock=False)
 
   def handleMpvDurationChange(self,name,value):
     if value is not None:
@@ -338,6 +372,11 @@ class CutselectionController:
     self.player.command('seek',str(seconds),'absolute','exact')
 
   def getTotalDuration(self):
+    if self.currentTotalDuration is None:
+      tempdur = self.player.duration
+      if tempdur is not None and tempdur > 0:
+        self.currentTotalDuration = tempdur
+
     return self.currentTotalDuration
 
   def removeVideoFile(self,filename):

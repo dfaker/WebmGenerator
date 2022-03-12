@@ -73,6 +73,7 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
       if len(c)==0:
         break
       if c == b'\r':
+        logging.debug(ln)
         print(ln)
         for p in ln.split(b' '):
           if b'*:' in p:

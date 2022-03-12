@@ -15,6 +15,8 @@ import math
 
 from contextlib import contextmanager
 
+
+
 @contextmanager
 def acquire_timeout(lock, timeout):
   result = lock.acquire(timeout=timeout)
@@ -389,7 +391,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.updatePointForClip(self.controller.getcurrentFilename(),selectedRange,'e',mid)
       self.controller.addNewSubclip(mid,e,seekAfter=False)
       self.dirtySelectionRanges.add(selectedRange)
-      self.updateCanvas()
+      self.updateCanvas(withLock=False)
 
   def keyboardRemoveBlockAtTime(self,e):
     if self.tempRangeStart is not None:
@@ -519,7 +521,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def reconfigure(self,e):
     self.uiDirty=True
     if self.controller.getTotalDuration() is not None:
-      self.updateCanvas()
+      self.updateCanvas(withLock=False)
 
   def resetForNewFile(self):
     self.timelineZoomFactor=1.0
@@ -615,6 +617,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         newZoomFactor = min(max(1,newZoomFactor),100)
         if newZoomFactor == self.timelineZoomFactor:
           return
+          self.uiDirty=True
         self.timelineZoomFactor=newZoomFactor
 
   @debounce(0.1,0.5)
@@ -781,9 +784,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def requestFrames(self,filename,startTime,Endtime,timelineWidth,frameWidth):
     self.framesRequested=self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,self.frameResponseCallback)
 
-  def updateCanvas(self):
-    
-    with acquire_timeout(self.uiUpdateLock,0.5):
+  def updateCanvas(self,withLock=False):
+  
+    if withLock:
+      updateLock = acquire_timeout(self.uiUpdateLock,0.1)
+    else:
+      updateLock = contextlib.AbstractContextManager()
+
+
+    with updateLock:
 
       canvasUpdated = False
 

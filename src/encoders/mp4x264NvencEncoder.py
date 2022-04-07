@@ -56,6 +56,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if options.get('audioChannels') == 'No audio':
       ffmpegcommand+=['-filter_complex',encodefiltercommand+',[outa]anullsink']
       ffmpegcommand+=['-map','[outvfinal]']
+    elif 'Copy' in options.get('audioChannels',''):
+      ffmpegcommand+=['-filter_complex',encodefiltercommand]
+      ffmpegcommand+=['-map','[outvfinal]','-map','a:0']
     else:
       ffmpegcommand+=['-filter_complex',encodefiltercommand]
       ffmpegcommand+=['-map','[outvfinal]','-map','[outa]']
@@ -79,7 +82,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-pix_fmt","yuv420p"
                    ,"-bufsize", str(bufsize)
                    ,"-threads", str(threadCount)
-                   ,"-tune", "hq"
+                   ,"-tune", globalOptions.get('mp4NvencTuneParam','hq')
+                   ,"-preset", globalOptions.get('mp4NvencPresetParam','hq')
                    ,"-b_ref_mode", "middle"
                    ,"-temporal-aq", "1" 
                    ,"-rc-lookahead", "20"
@@ -104,7 +108,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-ar",str(44100)]
       ffmpegcommand+=["-b:a",str(audoBitrate)]
     elif 'Copy' in options.get('audioChannels',''):
-      ffmpegcommand+=["-c:a copy"]
+      ffmpegcommand+=["-c:a","copy"]
     else:
       ffmpegcommand+=["-an"]  
 
@@ -140,11 +144,12 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                           tempFilename=tempVideoFilePath,
                           outputFilename=videoFilePath,
                           initialDependentValue=initialBr,
-                          allowEarlyExitWhenUndersize=True,
+                          allowEarlyExitWhenUndersize=globalOptions.get('allowEarlyExitIfUndersized',True),
                           twoPassMode=True,
                           sizeLimitMin=sizeLimitMin,
                           sizeLimitMax=sizeLimitMax,
                           maxAttempts=globalOptions.get('maxEncodeAttempts',6),
+                          dependentValueMaximum=options.get('maximumBitrate',0),
                           requestId=requestId,
                           optimiserName=options.get('optimizer'))
 

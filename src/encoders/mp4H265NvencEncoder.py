@@ -32,23 +32,26 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
+  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'mp4', requestId)
 
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm', requestId)
-  
   def encoderStatusCallback(text,percentage,**kwargs):
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0, bufsize=None):
-    
+  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
+
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
+
+    if globalOptions.get('passCudaFlags',False):
+      ffmpegcommand+=['-hwaccel', 'cuda']
+
     ffmpegcommand+=inputsList
 
     if widthReduction>0.0:
-      encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(encodeStageFilter=encodeStageFilter,widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction)
     else:
-      encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},null[outvfinal]'.format(encodeStageFilter=encodeStageFilter)
+      encodefiltercommand = filtercommand+',[outv]null[outvfinal]'.format(widthReduction=widthReduction)
 
     if options.get('audioChannels') == 'No audio':
       ffmpegcommand+=['-filter_complex',encodefiltercommand+',[outa]anullsink']
@@ -65,35 +68,30 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     elif passPhase==2:
       ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
-
-
     if bufsize is None:
       bufsize = 3000000
-      if sizeLimitMax != 0.0:
-        bufsize = str(min(2000000000.0,br*2))
+
     threadCount = globalOptions.get('encoderStageThreads',4)
-    metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
+    ffmpegcommand+=["-shortest"
+                   ,"-copyts"
+                   ,"-start_at_zero"
+                   ,"-c:v","hevc_nvenc" 
+                   ,"-stats"
+                   ,"-profile", "main" 
+                   ,"-pix_fmt","yuv420p"
+                   ,"-bufsize", str(bufsize)
+                   ,"-threads", str(threadCount)
+                   ,"-tune", globalOptions.get('mp4NvencTuneParam','hq')
+                   ,"-preset", globalOptions.get('mp4NvencPresetParam','hq')
+                   ,"-crf"  ,'17'
+                   ,'-psnr'
+                   ,"-vsync","2"
+                   ,"-movflags","+faststart"]
 
-    audioCodec = ["-c:a","libvorbis"]
-    if 'Copy' in options.get('audioChannels',''):
-      audioCodec = []
-
-    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   
-                   ,"-start_at_zero", "-c:v","libvpx"] + audioCodec + [
-
-                    "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
-                   ,"-threads", str(threadCount),"-crf"  ,'4'
-                   ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
-                   ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
-    
-    print(ffmpegcommand)
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
     else:
-      ffmpegcommand+=["-b:v",str(br)]
-
+      ffmpegcommand+= ["-b:v", str(br), "-maxrate", str(br)]
 
     if 'No audio' in options.get('audioChannels','') or passPhase==1:
       ffmpegcommand+=["-an"]    
@@ -108,21 +106,22 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     elif 'Copy' in options.get('audioChannels',''):
       ffmpegcommand+=["-c:a","copy"]
     else:
-      ffmpegcommand+=["-an"]    
-
-    ffmpegcommand+=["-sn"]
+      ffmpegcommand+=["-an"]  
 
     if passPhase==1:
-      ffmpegcommand += ['-f', 'null', os.devnull]
+      ffmpegcommand += ["-sn",'-f', 'null', os.devnull]
     else:
-      ffmpegcommand += [tempVideoFilePath]
+      ffmpegcommand += ["-sn",tempVideoFilePath]
 
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
+    print("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
+
+    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    
+
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
 
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
       return 0, psnr
     if passPhase==1:
@@ -132,31 +131,23 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       encoderStatusCallback(None,None,lastEncodedSize=finalSize)
       return finalSize, psnr
 
-  encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-
-  minimumPSNR = 0.0
-  try:
-    minimumPSNR = float(options.get('minimumPSNR',0.0))
-  except:
-    pass
-
   optimiser = encodeTargetingSize_linear
   if  'Nelder-Mead' in options.get('optimizer'):
     optimiser = encodeTargetingSize_nelder_mead
 
+
   finalFilenameConfirmed = optimiser(encoderFunction=encoderFunction,
-                      tempFilename=tempVideoFilePath,
-                      outputFilename=videoFilePath,
-                      initialDependentValue=initialBr,
-                      twoPassMode=True,
-                      sizeLimitMin=sizeLimitMin,
-                      sizeLimitMax=sizeLimitMax,
-                      allowEarlyExitWhenUndersize=globalOptions.get('allowEarlyExitIfUndersized',True),
-                      maxAttempts=globalOptions.get('maxEncodeAttempts',6),
-                      dependentValueMaximum=options.get('maximumBitrate',0),
-                      requestId=requestId,
-                      minimumPSNR=minimumPSNR,
-                      optimiserName=options.get('optimizer') )
+                          tempFilename=tempVideoFilePath,
+                          outputFilename=videoFilePath,
+                          initialDependentValue=initialBr,
+                          allowEarlyExitWhenUndersize=globalOptions.get('allowEarlyExitIfUndersized',True),
+                          twoPassMode=True,
+                          sizeLimitMin=sizeLimitMin,
+                          sizeLimitMax=sizeLimitMax,
+                          maxAttempts=globalOptions.get('maxEncodeAttempts',6),
+                          dependentValueMaximum=options.get('maximumBitrate',0),
+                          requestId=requestId,
+                          optimiserName=options.get('optimizer'))
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)

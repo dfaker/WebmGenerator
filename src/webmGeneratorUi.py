@@ -14,7 +14,7 @@ import time
 import os
 import psutil
 
-RELEASE_NUMVER = 'v3.14.0'
+RELEASE_NUMVER = 'v3.16.0'
 
 class WebmGeneratorUi:
 

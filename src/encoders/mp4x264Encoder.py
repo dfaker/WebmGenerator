@@ -53,10 +53,13 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if options.get('audioChannels') == 'No audio':
       ffmpegcommand+=['-filter_complex',encodefiltercommand+',[outa]anullsink']
       ffmpegcommand+=['-map','[outvfinal]']
+    elif 'Copy' in options.get('audioChannels',''):
+      ffmpegcommand+=['-filter_complex',encodefiltercommand]
+      ffmpegcommand+=['-map','[outvfinal]','-map','a:0']
     else:
       ffmpegcommand+=['-filter_complex',encodefiltercommand]
       ffmpegcommand+=['-map','[outvfinal]','-map','[outa]']
-
+      
     if passPhase==1:
       ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
     elif passPhase==2:
@@ -76,7 +79,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-bufsize", str(bufsize)
                    ,"-threads", str(threadCount)
                    ,"-crf"  ,'17'
-                   ,"-preset", "slower"
+                   ,"-preset", globalOptions.get('mp4Libx264TuneParam',"slower")
                    ,"-tune", "film"
                    ,'-psnr'
                    ,"-vsync","2"
@@ -98,7 +101,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-ar",str(44100)]
       ffmpegcommand+=["-b:a",str(audoBitrate)]
     elif 'Copy' in options.get('audioChannels',''):
-      ffmpegcommand+=["-c:a copy"]
+      ffmpegcommand+=["-c:a","copy"]
     else:
       ffmpegcommand+=["-an"]  
 
@@ -137,7 +140,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                           twoPassMode=True,
                           sizeLimitMin=sizeLimitMin,
                           sizeLimitMax=sizeLimitMax,
+                          allowEarlyExitWhenUndersize=globalOptions.get('allowEarlyExitIfUndersized',True),
                           maxAttempts=globalOptions.get('maxEncodeAttempts',6),
+                          dependentValueMaximum=options.get('maximumBitrate',0),
                           requestId=requestId,
                           optimiserName=options.get('optimizer'))
 

@@ -12,7 +12,7 @@ from math import floor
 import logging
 import time
 import subprocess as sp
-from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal
+from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal,Tooltip
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -190,6 +190,9 @@ class CutselectionUi(ttk.Frame):
             to=float("inf"),
             increment=0.1,
         )
+
+        Tooltip(self.entrySiceLength,text='The default initial length of newly added subclips.')
+
         self.entrySiceLength.pack(anchor="e", side="right")
         self.frameSliceLength.config(height="200", width="200")
         self.frameSliceLength.pack(fill="x", pady="2", side="top")
@@ -205,6 +208,8 @@ class CutselectionUi(ttk.Frame):
             to=float("inf"),
             increment=0.1,
         )
+
+        Tooltip(self.entryTargetLength,text='The target length of the final clip, useful if you want to hit a certain duration.')
 
         self.entryTargetLength.pack(side="right")
         self.frameTargetLength.config(height="200", width="200")
@@ -222,6 +227,8 @@ class CutselectionUi(ttk.Frame):
             increment=0.1,
         )
 
+        Tooltip(self.entryTargetTrim,text='The expected overlap between clips, only useful if you plan to use join clips into a sequence and add fade effects between scenes.')
+
         self.entryTargetTrim.pack(side="right")
         self.frameTargetTrim.config(height="200", width="200")
         self.frameTargetTrim.pack(fill="x", pady="2", side="top")
@@ -237,6 +244,9 @@ class CutselectionUi(ttk.Frame):
             to=float("inf"),
             increment=0.01,
         )
+
+        Tooltip(self.entryPreviewPos,text='The number of seconds the preview is offset from the start or end of the clip when dragging, useful fo aligning events, hold ctrl to switch between offsetting from start or end.')
+
 
         self.entryPreviewPos.pack(side="right")
         self.framePreviewPos.config(height="200", width="200")
@@ -256,6 +266,10 @@ class CutselectionUi(ttk.Frame):
             self.loopModeVar.get(),
             *self.loopOptions
         )
+
+        Tooltip(self.entryLoopMode,text='How to loop between subclips, either just loop the current clip, or jump between clips for a full preview of all subclips.')
+
+
         self.entryLoopMode.config(style="small.TMenubutton")
         self.entryLoopMode.pack(side="right")
         self.frameLoopMode.config(height="200", width="200")
@@ -279,6 +293,9 @@ class CutselectionUi(ttk.Frame):
         self.labelCurrentSize = ttk.Label(self.frameCurrentSize)
         self.labelCurrentSize.config(text="0.00s 0.00% (-0.00s)")
         self.labelCurrentSize.pack(side="top")
+
+        Tooltip(self.labelCurrentSize,text='Current size counter displaying: Total Length, Percentage of Target size, (Seconds deducted by target trim overlap)')
+
 
         self.progressToSize = ttk.Progressbar(self.frameCurrentSize)
         self.progressToSize.config(mode="determinate", orient="horizontal")
@@ -304,11 +321,15 @@ class CutselectionUi(ttk.Frame):
         self.buttonLoadVideos.config(command=self.loadVideoFiles)
         self.buttonLoadVideos.pack(expand='true', fill="x", side="left")
 
+        Tooltip(self.buttonLoadVideos,text='Load a video file from your system')
+
         self.buttonLoadYTdl = ttk.Button(self.labelframeButtons)
         self.buttonLoadYTdl.config(text="Load URL")
         self.buttonLoadYTdl.config(style="small.TButton")
         self.buttonLoadYTdl.config(command=self.loadVideoYTdl)
         self.buttonLoadYTdl.pack(expand='true', fill="x", side="left")
+
+        Tooltip(self.buttonLoadYTdl,text='Download a video from a URL using yt-dlp, many popualr video and streaming sites automatically supported.')
 
         self.buttonClearSubclips = ttk.Button(self.labelframeButtons)
         self.buttonClearSubclips.config(text="Clear SubClips")
@@ -316,12 +337,23 @@ class CutselectionUi(ttk.Frame):
         self.buttonClearSubclips.config(command=self.clearSubclips)
         self.buttonClearSubclips.pack(expand='true', fill="x", side="left")
 
+        Tooltip(self.buttonClearSubclips,text='Remove all subclips to start a fresh with the same videos loaded.')
+
+
         self.labelframeButtons.pack(expand='false', fill="x", side="top")
+
+
+
+
+
 
 
         self.scrolledframeVideoPreviewContainer = ScrolledFrame(
             self.labelframeSourceVideos, scrolltype="vertical"
         )
+
+
+
         self.videoPreviewContainer = self.scrolledframeVideoPreviewContainer.innerframe
         self.previews = []
         self.scrolledframeVideoPreviewContainer.configure(usemousewheel=True)
@@ -333,6 +365,10 @@ class CutselectionUi(ttk.Frame):
             height="200", width="200"
         )
         self.labelframeSourceVideos.pack(expand="true", fill="both", side="top")
+
+
+
+
 
         self.progresspreviewLabel = ttk.Label(self.frameSliceSettings)
         self.progresspreviewLabel.config(text="")
@@ -584,7 +620,11 @@ class CutselectionUi(ttk.Frame):
         logging.debug('video mouse press drag')
         self.screenMouseRect[2]=e.x
         self.screenMouseRect[3]=e.y
-        self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
+        
+        vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
+        vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
+
+        self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
       if e.type == tk.EventType.ButtonRelease:
         logging.debug('video mouse press release')
         self.mouseRectDragging=False
@@ -593,7 +633,7 @@ class CutselectionUi(ttk.Frame):
           vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
 
           self.videoMouseRect=[vx1,vy1,vx2,vy2]
-          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
+          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
         
       if self.screenMouseRect[0] is not None and not self.mouseRectDragging and self.screenMouseRect[0]==self.screenMouseRect[2] and self.screenMouseRect[1]==self.screenMouseRect[3]:
         logging.debug('video mouse rect clear')

@@ -136,59 +136,10 @@ selectableFilters = [
                 "rectProp": "h",
                 "inc": 10,
                 "commandVar":['Crop-H',[['crop@{fn}','h']]]
-            }
-        ],
-    },
-
-  {
-        "name": "Crop Exact",
-        "category":['Resizing, Padding and Cropping'],
-        "desc":"Crop the input video with no rounding.",
-        "filter": "crop@{fn}",
-        "params": [
-            {
-                "n": "x",
-                "d": 0,
-                "type": "float",
-                "range": None,
-                "rectProp": "x",
-                "videoSpaceAxis":"x",
-                "videoSpaceSign":1,
-                "inc": 1,
-                "commandVar":['Crop-X',[['crop@{fn}','x']]]
-            },
-            {
-                "n": "y",
-                "d": 0,
-                "type": "float",
-                "range": None,
-                "rectProp": "y",
-                "videoSpaceAxis":"y",
-                "videoSpaceSign":1,
-                "inc": 1,
-                "commandVar":['Crop-Y',[['crop@{fn}','y']]]
-            },
-            {
-                "n": "w",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "w",
-                "inc": 10,
-                "commandVar":['Crop-W',[['crop@{fn}','w']]]
-            },
-            {
-                "n": "h",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "h",
-                "inc": 10,
-                "commandVar":['Crop-H',[['crop@{fn}','h']]]
             },
             {
                 "n": "exact",
-                "d": "true",
+                "d": "false",
                 "type": "cycle",
                 "cycle":['true','false']
             }
@@ -369,6 +320,79 @@ selectableFilters = [
       ]
     },
 
+
+    {
+        "name": "Zoom Lens",
+        "desc": "Zoom on a region of the video and overlay it.",
+        "category":['Overlay, text and masks'],
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]null[bg{fn}],[vina{fn}]crop@{fn}=w={w}:h={h}:x={x}:y={y},lenscorrection=cx={cx}:cy={cy}:k1={lensk1}:k2={lensk2}:i=bilinear[fg{fn}],[bg{fn}][fg{fn}]overlay@{fn}=x={x}:y={y}:alpha=premultiplied",
+        "params": [ 
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+                "commandVar":['Crop-X',[['crop@{fn}','x'],['overlay@{fn}','x']]]
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+                "commandVar":['Crop-Y',[['crop@{fn}','y'],['overlay@{fn}','y']]]
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1
+            },
+            
+            {
+                "n": "cx",
+                "d": 0.5,
+                "type": "float",
+                "range": [0,1],
+                "inc": 0.01
+            },
+            {
+                "n": "cy",
+                "d": 0.5,
+                "type": "float",
+                "range": [0,1],
+                "inc": 0.01
+            },
+
+            {
+                "n": "lensk1",
+                "d": 0,
+                "type": "float",
+                "range": [-1, 1],
+                "inc": 0.01,
+            },
+            {
+                "n": "lensk2",
+                "d": 0,
+                "type": "float",
+                "range": [-1, 1],
+                "inc": 0.01,
+            }
+        ],
+    },
 
     {
         "name": "Zoom PiP",
@@ -996,7 +1020,10 @@ selectableFilters = [
              "videoSpaceAxis":"roll",
              "videoSpaceSign":1,
             "commandVar":['VR-Roll',[['v360@{fn}','roll']]]},
-            
+
+            #{"n": "h_offset", "d": 0.0, "type": "float", "range": [-1, 1],   "inc": 0.01 },
+            #{"n": "v_offset", "d": 0.0, "type": "float", "range": [-1, 1],   "inc": 0.01 },
+
 
             {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180],   "inc": 1 , "videoSpaceAxis":"d_fov"  ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
             {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
@@ -1309,7 +1336,7 @@ selectableFilters = [
     
     
     {
-        "name": "Tonemap",
+        "name": "Tonemap and Zscale to bt709",
         "desc":"Conversion to/from different dynamic ranges.",
         "category":'Colour manipulation',
         "filter": "zscale=transfer=linear,tonemap={mapping}:param={param}:desat={desat},zscale=transfer=bt709,format=yuv420p",
@@ -1497,7 +1524,7 @@ selectableFilters = [
         "desc":"Rotate the input image.",
         "category":"Basic",
         "timelineSupport":True,
-        "filter": "rotate@{fn}=a={a}:out_w=rotw({a}):out_h=roth({a})",
+        "filter": "rotate@{fn}=a={a}:out_w=rotw({a}):out_h=roth({a}):fillcolor={fillcolor}",
         "params": [
             {
                 "n": "a",
@@ -1509,6 +1536,12 @@ selectableFilters = [
                 "videoSpaceSign":1,
                 "commandVar":['Rotation',[['rotate@{fn}','a']]]
             },
+            {
+                "n": "fillcolor",
+                "d": "Black",
+                "type": "cycle",
+                "cycle": '@COLOURS',
+            }
         ],
     },
     
@@ -1553,6 +1586,33 @@ selectableFilters = [
                 "inc": 1,
             },
           ]
+    },
+
+
+
+    {
+
+        "name":"Grayworld",
+        "desc":"Color correction based on the grayworld assumption.",
+        "category":['Colour manipulation'],
+        "timelineSupport":True,
+        "filter": "zscale=transfer=linear,grayworld,zscale=transfer=bt709,format=yuv420p",
+        "params": [
+        ]
+
+    },
+
+    {
+
+        "name":"Manual expression",
+        "desc":"Manually specified filter expression.",
+        "category":['Basic'],
+        "timelineSupport":True,
+        "filter": "{filter}",
+        "params": [
+          {"n": "filter", "d": "null", "type": "bareString"}
+        ]
+
     },
 
     {

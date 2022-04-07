@@ -5,7 +5,7 @@ import logging
 
 from ..encodingUtils import isRquestCancelled
 
-def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,allowEarlyExitWhenUndersize=True,twoPassMode=False,dependentValueName='BR',requestId=None,minimumPSNR=0.0,optimiserName=''):
+def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,allowEarlyExitWhenUndersize=True,twoPassMode=False,dependentValueName='BR',dependentValueMaximum=0,requestId=None,minimumPSNR=0.0,optimiserName=''):
 
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
@@ -17,9 +17,18 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
   lastpsnr = None
   psnrAdjusted=False
   widthReduction = 0.0
+
+  print('------')
+  print('dependentValueMaximum',dependentValueMaximum)
+  print('val',val)
+  print('------')
+
   while 1:
     val=int(val)
     passCount+=1
+
+    if dependentValueMaximum is not None and dependentValueMaximum > 0:
+      val = min(val,dependentValueMaximum)
 
     if isRquestCancelled(requestId):
       return
@@ -60,3 +69,4 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       val =  val * (1/(finalSize/targetSizeMedian))
       if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
         val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
+

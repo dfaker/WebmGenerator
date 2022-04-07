@@ -56,6 +56,17 @@ class FilterSelectionController:
     self.filterApplicationMode = 'lavfi_complex'
     self.overlay = None
 
+  def getStringValue(self,valueToken):
+    if valueToken == 'filename':
+      return self.player.filename
+    elif valueToken == 'title':
+      return self.player.title
+    elif valueToken == 'path':
+      return self.player.path
+    else:
+      return 'UNKNOWN'
+
+
   def faceDetectEnabled(self):
     return self.faceDetectService.faceDetectEnabled()
 
@@ -182,8 +193,8 @@ class FilterSelectionController:
   def addVideoRegMark(self,x,y,style='cross'):
     self.player.command('script-message','screenspacetools_regMark',x,y,style)
 
-  def setVideoRect(self,x,y,w,h):
-    self.player.command('script-message','screenspacetools_rect',x,y,w,h,'2f344bdd','69dbdbff',1,'inner')
+  def setVideoRect(self,x,y,w,h,desc=''):
+    self.player.command('script-message','screenspacetools_rect',x,y,w,h,desc,'2f344bdd','69dbdbff',1,'inner')
 
   def clearVideoRect(self):
     self.player.command('script-message','screenspacetools_clear')
@@ -197,6 +208,23 @@ class FilterSelectionController:
     vid_w = self.player.video_out_params['dw']
     vid_h = self.player.video_out_params['dh']
     return vid_w/vid_h
+
+  def getvideoOSDExtents(self):
+    par = self.player.video_out_params.get('par',1)
+
+    osd_w = self.player.osd_width
+    osd_h = self.player.osd_height
+
+    osd_dim = self.player.osd_dimensions
+    osd_top = osd_dim['mt']
+    osd_bottom = osd_dim['mb']
+    osd_left = osd_dim['ml']
+    osd_right = osd_dim['mr']
+
+    boxw = (osd_w-osd_right-osd_left)*par
+    boxh = osd_h-osd_top-osd_bottom
+
+    return osd_left,osd_top,osd_left+boxw,osd_top+boxh
 
   def screenSpaceToVideoSpace(self,x,y):
     try:

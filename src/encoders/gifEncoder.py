@@ -65,8 +65,10 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       initialDependentValue=initialWidth,
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
+                      allowEarlyExitWhenUndersize=globalOptions.get('allowEarlyExitIfUndersized',True),
                       maxAttempts=globalOptions.get('maxEncodeAttemptsGif',10),
                       dependentValueName='Width',
+                      dependentValueMaximum=options.get('maximumWidth',0),
                       requestId=requestId,
                       optimiserName=options.get('optimizer'))
 

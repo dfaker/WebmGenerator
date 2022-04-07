@@ -18,6 +18,7 @@ from .filterSpec import selectableFilters
 from .encodingUtils import cleanFilenameForFfmpeg
 from .filterValuePair import FilterValuePair
 
+from .modalWindows import Tooltip
 
 from math import atan2,pi
 
@@ -59,9 +60,15 @@ class FilterSpecification(ttk.Frame):
     self.buttonfilterActionRemove = ttk.Button(self.frameFilterActions)
     self.buttonfilterActionRemove.config(text='Remove')
     self.buttonfilterActionRemove.config(command=self.remove)    
+    
+    Tooltip(self.buttonfilterActionRemove,text='Remove this filter form the filter stack.')
+
     self.buttonfilterActionRemove.pack(expand='true', fill='x', side='left')
     self.buttonfilterActionToggleEnabled = ttk.Button(self.frameFilterActions)
     self.buttonfilterActionToggleEnabled.config(text='Enabled', width='7')
+
+    Tooltip(self.buttonfilterActionToggleEnabled,text='Disable this filter but keep it in the filter stack.')
+
     if not self.enabled:
       self.buttonfilterActionToggleEnabled.config(text='Disabled',style='filterDisabled.TButton')
       self.frameFilterDetailsWidget.config(style='filterDisabled.TFrame')
@@ -231,6 +238,9 @@ class FilterSpecification(ttk.Frame):
             if fvp.n == k:
               fvp.valueVar.set(v)
 
+
+  def getStringValue(self,valueToken):
+    return self.controller.getStringValue(valueToken)
 
   def incrementBox(self,inc):
     videoAR = self.controller.getViideoAR()
@@ -630,32 +640,40 @@ class FilterSelectionUi(ttk.Frame):
     self.frameVideoPickerFrame.config(height='200', width='200')
     self.frameVideoPickerFrame.pack(fill='x', padx='2', side='top')
 
+    self.applyToAll_popup_menu = tk.Menu(self, tearoff=0)
+    self.applyToAll_popup_menu.add_command(label="Append to all",command=self.appendFiltersToAll)
 
     self.frameFilterActionsGlobal = ttk.Frame(self.labelframeFilterBrowserFrame)
     
     self.buttonFilterActionClear = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonFilterActionClear.config(text='Clear')
     self.buttonFilterActionClear.config(command=self.clearFilters,style="smallTallSlim.TButton")
+    Tooltip(self.buttonFilterActionClear,text='Clear all of the filters applied to the current clip.')
     self.buttonFilterActionClear.pack(expand='true', fill='x', side='left')
 
     self.buttonOverrideFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonOverrideFilters.config(text='Apply to all')
     self.buttonOverrideFilters.config(command=self.overrideFilters,style="smallTall.TButton")
+    Tooltip(self.buttonOverrideFilters,text='Apply the current filters to all other clips, replacing their current filters.')
     self.buttonOverrideFilters.pack(expand='true', fill='x', side='right')
+    self.buttonOverrideFilters.bind("<Button-3>",self.showAppendMenu)
 
     self.buttonPasteFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonPasteFilters.config(text='Paste')
+    Tooltip(self.buttonPasteFilters,text='Paste filters from the internal clipboard replacing the current filters.')
     self.buttonPasteFilters.config(command=self.pasteFilters,style="smallTallSlim.TButton")
     self.buttonPasteFilters.pack(expand='true', fill='x', side='right')
 
     self.buttonAppendFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonAppendFilters.config(text='Append')
+    Tooltip(self.buttonAppendFilters,text='Append filters from the internal clipboard so they appear after the current filters.')
     self.buttonAppendFilters.config(command=self.appendFilters,style="smallTallSlimMid.TButton")
     self.buttonAppendFilters.pack(expand='true', fill='x', side='right')
 
     self.buttonCopyFilters = ttk.Button(self.frameFilterActionsGlobal)
     self.buttonCopyFilters.config(text='Copy')
     self.buttonCopyFilters.config(command=self.copyfilters,style="smallTallSlim.TButton")
+    Tooltip(self.buttonCopyFilters,text='Copy current filters to the internal clipboard.')
     self.buttonCopyFilters.pack(expand='true', fill='x', side='right')
 
     self.frameFilterActionsGlobal.config(height='200', width='200')
@@ -665,6 +683,7 @@ class FilterSelectionUi(ttk.Frame):
     self.framefilterAdditionFrame = ttk.Frame(self.labelframeFilterBrowserFrame)
     self.buttonAddFilter = ttk.Button(self.framefilterAdditionFrame)
     self.buttonAddFilter.config(text='Add Filter')
+    Tooltip(self.buttonAddFilter,text='Add the currently selected filter from the dropdown on the left to the current filter stack.')
     self.buttonAddFilter.config(command=self.addSelectedfilter)
     self.buttonAddFilter.pack(side='right')
     self.selectedFilter=tk.StringVar()
@@ -722,6 +741,7 @@ class FilterSelectionUi(ttk.Frame):
 
     self.autocropButton = ttk.Button(self.selectionOptionsFrame,style="smallMid.TButton")
     self.autocropButton.config(text='Autocrop')
+    Tooltip(self.autocropButton,text='Run atomatic detection on the current clip to crop off any black borders.')
     self.autocropButton.config(command=self.autoCrop)
     self.autocropButton.pack(side='left')
 
@@ -737,6 +757,8 @@ class FilterSelectionUi(ttk.Frame):
     self.fixSeectionArEnabledVar = tk.BooleanVar()
     self.fixSeectionArEnabledVar.set(False)
     self.arFixCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Force Aspect", variable=self.fixSeectionArEnabledVar)
+    Tooltip(self.arFixCheckbox,text='Clamp the aspect ratio of dragged selections to match the current aspect ratio.')
+
     self.arFixCheckbox.pack(expand='false', side='left')
     
     self.fixSeectionArVar = tk.StringVar()
@@ -747,12 +769,14 @@ class FilterSelectionUi(ttk.Frame):
     self.spinBoxArRatio.bind("<Button-3>",self.showAspectPopup)
 
     self.flipARButton = ttk.Button(self.selectionOptionsFrame,text="Flip AR",style="smallSlim.TButton", command=self.flipAR)
+    Tooltip(self.flipARButton,text='Flip the aspect ratio effectively rotating the selection rectangle 90 degrees.')
     self.flipARButton.pack(expand='false', side='left')
 
     self.fitToScreenVar = tk.BooleanVar()
     self.fitToScreenVar.trace('w',self.changeFitToScreen)
     self.fitToScreenVar.set(True)
     self.fitToScreenCheckbox = ttk.Checkbutton(self.selectionOptionsFrame,text="Scale", variable=self.fitToScreenVar)
+    Tooltip(self.fitToScreenCheckbox,text='Scale the video so that it fills the whole frame.')
     self.fitToScreenCheckbox.pack(expand='false', side='left')
 
     self.volumeLabel = ttk.Label(self.selectionOptionsFrame)
@@ -764,17 +788,20 @@ class FilterSelectionUi(ttk.Frame):
 
     self.templateButton = ttk.Button(self.selectionOptionsFrame)
     self.templateButton.config(text='Templates',style="smallMid.TButton")
+    Tooltip(self.templateButton,text='Load and apply a json filter template from the filterTemplates folder.')
     self.templateButton.config(command=self.showTemplateMenuPopup)
 
     self.templateButton.pack(side='right')
 
     self.importButton = ttk.Button(self.selectionOptionsFrame)
     self.importButton.config(text='Import JSON',style="small.TButton")
+    Tooltip(self.importButton,text='Load and apply a json filter from the system clipboard.')
     self.importButton.config(command=self.importJson)
     self.importButton.pack(side='right')
 
     self.exportButton = ttk.Button(self.selectionOptionsFrame)
     self.exportButton.config(text='Export JSON',style="small.TButton")
+    Tooltip(self.exportButton,text='Coppy the current filters as to the system clipboard in json format.')
     self.exportButton.config(command=self.exportJson)
     self.exportButton.pack(side='right')
 
@@ -782,6 +809,7 @@ class FilterSelectionUi(ttk.Frame):
     self.speedVar.trace('w',self.speedChange)
     self.speedVar.set('2.0')
     self.spinboxSpeed = ttk.Spinbox(self.selectionOptionsFrame,textvariable=self.speedVar,from_=float('0'), to=float('inf'), width=4,increment=0.1)
+    Tooltip(self.spinboxSpeed,text='Adjust playback speed 1 being normal speed 2 being double speed.')
     self.spinboxSpeed.pack(expand='false', side='right')
 
     self.speedLabel = ttk.Label(self.selectionOptionsFrame)
@@ -915,6 +943,9 @@ class FilterSelectionUi(ttk.Frame):
     self.filterFailedResetTimer=None
     self.timelineFileIndex=0    
     self.keyValueSeparation=3
+
+  def getStringValue(self,valueToken):
+    return self.controller.getStringValue(valueToken)
 
   def getViideoAR(self):
     return self.controller.getViideoAR()
@@ -1073,10 +1104,12 @@ class FilterSelectionUi(ttk.Frame):
     self.lastVideoRCX=e.x
     self.lastVideoRCY=e.y
     self.filterMenu.tk_popup(e.x_root,e.y_root)
-    
 
   def showAspectPopup(self,e):
     self.rect_aspect_popup_menu.tk_popup(e.x_root,e.y_root)
+
+  def showAppendMenu(self,e):
+    self.applyToAll_popup_menu.tk_popup(e.x_root,e.y_root)
 
   def showRegMarkMenu(self,e):
     self.lastVideoRCX=e.x
@@ -1152,11 +1185,21 @@ class FilterSelectionUi(ttk.Frame):
   def keyboardN(self,e):
     self.controller.pause()
     points = [0,self.controller.getClipDuration()]
-    points.extend([x[0] for x in self.activeCommandFilterValuePair.getKeyValues() if x[2]])
-    points = sorted(points,reverse=True)
-    mids = sorted([ (abs(x-y),(x+y)/2) for x,y in zip(points[1:], points)],reverse=True)[0][1]
-    self.seekToTimelinePoint(mids)
-    self.refreshtimeLineForNewClip()
+    
+    existingPoints = sorted([x[0] for x in self.activeCommandFilterValuePair.getKeyValues() if x[2]])
+
+    if len(existingPoints) < 1 or existingPoints[0] > 0.2:
+      self.seekToTimelinePoint(0.1)
+      self.refreshtimeLineForNewClip()
+    elif existingPoints[-1] < self.controller.getClipDuration()-0.3:
+      self.seekToTimelinePoint(self.controller.getClipDuration()-0.1)
+      self.refreshtimeLineForNewClip()
+    else:
+      points.extend(existingPoints)
+      points = sorted(points,reverse=True)
+      mids = sorted([ (abs(x-y),(x+y)/2) for x,y in zip(points[1:], points)],reverse=True)[0][1]
+      self.seekToTimelinePoint(mids)
+      self.refreshtimeLineForNewClip()
 
   def handleSeek(self,e,increment):
     ctrl  = (e.state & 0x4) != 0
@@ -1587,6 +1630,8 @@ class FilterSelectionUi(ttk.Frame):
       
       else:
 
+        videoOriginX,videoOriginY,videoMaxX,videoMaxY = self.controller.getvideoOSDExtents()
+
         if e.type == tk.EventType.ButtonPress:        
           if self.screenMouseRect[0] is not None and abs(((self.screenMouseRect[0]+self.screenMouseRect[2])/2)-e.x)<10 and abs(((self.screenMouseRect[1]+self.screenMouseRect[3])/2)-e.y)<10:
             self.mouseRectMoving=True
@@ -1605,16 +1650,30 @@ class FilterSelectionUi(ttk.Frame):
           if self.mouseRectMoving:
             haw = abs(self.screenMouseRect[0]-self.screenMouseRect[2])//2
             hah = abs(self.screenMouseRect[1]-self.screenMouseRect[3])//2
-            if shift:
-              self.screenMouseRect[0]=e.x-haw
-              self.screenMouseRect[1]=e.y-hah
-              self.screenMouseRect[2]=e.x+haw
-              self.screenMouseRect[3]=e.y+hah
-            else:
-              self.screenMouseRect[0]=e.x-haw
-              self.screenMouseRect[1]=e.y-hah
-              self.screenMouseRect[2]=e.x+haw
-              self.screenMouseRect[3]=e.y+hah
+
+            if haw*2 > videoMaxX-videoOriginX:
+              haw = (videoMaxX-videoOriginX)//2
+            if hah*2 > videoMaxY-videoOriginY:
+              hah = (videoMaxY-videoOriginY)//2
+
+            mcx,mcy = e.x,e.y
+
+            if (mcx - haw) < videoOriginX:
+              mcx = videoOriginX+haw
+            if (mcy - hah) < videoOriginY:
+              mcy = videoOriginY+hah
+            if (mcx + haw) > videoMaxX:
+              mcx = videoMaxX-haw
+            if (mcy + hah) > videoMaxY:
+              mcy = videoMaxY-hah
+
+
+            self.screenMouseRect[0]=mcx-haw
+            self.screenMouseRect[1]=mcy-hah
+            self.screenMouseRect[2]=mcx+haw
+            self.screenMouseRect[3]=mcy+hah
+
+
           else:
             if shift:
               dx=abs(self.mouseRectDragStart[0]-e.x)
@@ -1630,7 +1689,11 @@ class FilterSelectionUi(ttk.Frame):
               self.screenMouseRect[2]=e.x
               self.screenMouseRect[3]=e.y
           self.applyScreenSpaceAR(shift)
-          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
+
+          vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
+          vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
+
+          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
         if e.type == tk.EventType.ButtonRelease:
           logging.debug("videomousePress release")
           self.mouseRectDragging=False
@@ -1641,7 +1704,7 @@ class FilterSelectionUi(ttk.Frame):
           vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
 
           self.videoMouseRect=[vx1,vy1,vx2,vy2]
-          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3])
+          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))) )
           
         if self.screenMouseRect[0] is not None and not self.mouseRectDragging and self.screenMouseRect[0]==self.screenMouseRect[2] and self.screenMouseRect[1]==self.screenMouseRect[3]:
           logging.debug("videomousePress clear")
@@ -1941,6 +2004,15 @@ class FilterSelectionUi(ttk.Frame):
   def copyfilters(self):
     if self.currentSubclipIndex is not None:
       self.filterClipboard = self.convertFilterstoSpecDefaults()
+  
+  def appendFiltersToAll(self):
+    if self.currentSubclipIndex is not None:
+      resp = messagebox.askyesno(title="Append these filters to all clips?", message="This will add the filters on this clip to the end of all other clips, are you sure?")    
+      if resp:
+        tempfilterClipboard = self.convertFilterstoSpecDefaults()
+        for rid in self.subClipOrder:
+          self.subclips[rid].setdefault('filters',[]).extend(copy.deepcopy(tempfilterClipboard))
+        self.recaculateFilters('overrideFilters')
 
   def overrideFilters(self):
     if self.currentSubclipIndex is not None:

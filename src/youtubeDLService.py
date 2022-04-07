@@ -104,9 +104,9 @@ class YTDLService():
 
 
             if hasattr(os.sys, 'winver'):
-              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--keep-video','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
             else:
-              proc = sp.Popen(['yt-dlp','--ignore-errors','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
+              proc = sp.Popen(['yt-dlp','--ignore-errors','--keep-video','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
 
             l = b''
             self.globalStatusCallback('Download start {}'.format(url),0)

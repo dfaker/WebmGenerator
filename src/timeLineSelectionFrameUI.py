@@ -14,7 +14,7 @@ import numpy as np
 import math
 
 from contextlib import contextmanager
-
+from contextlib import AbstractContextManager
 
 
 @contextmanager
@@ -789,7 +789,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if withLock:
       updateLock = acquire_timeout(self.uiUpdateLock,0.1)
     else:
-      updateLock = contextlib.AbstractContextManager()
+      updateLock = AbstractContextManager()
 
 
     with updateLock:

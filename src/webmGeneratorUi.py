@@ -14,7 +14,7 @@ import time
 import os
 import psutil
 
-RELEASE_NUMVER = 'v3.15.0'
+RELEASE_NUMVER = 'v3.14.0'
 
 class WebmGeneratorUi:
 
@@ -99,8 +99,6 @@ class WebmGeneratorUi:
     self.master=master
 
     self.master.title('WebmGenerator')
-    #self.master.minsize(10,10)
-    self.master.minsize(1024,900)
     self.master.minsize(1024,720)
 
     self.iconLookup = {}

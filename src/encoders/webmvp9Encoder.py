@@ -54,6 +54,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if options.get('audioChannels') == 'No audio':
       ffmpegcommand+=['-filter_complex',encodefiltercommand+',[outa]anullsink']
       ffmpegcommand+=['-map','[outvfinal]']
+    elif 'Copy' in options.get('audioChannels',''):
+      ffmpegcommand+=['-filter_complex',encodefiltercommand]
+      ffmpegcommand+=['-map','[outvfinal]','-map','a:0']
     else:
       ffmpegcommand+=['-filter_complex',encodefiltercommand]
       ffmpegcommand+=['-map','[outvfinal]','-map','[outa]']
@@ -101,7 +104,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-ar",'48k']
       ffmpegcommand+=["-b:a",str(audoBitrate)]
     elif 'Copy' in options.get('audioChannels',''):
-      ffmpegcommand+=["-c:a copy"]
+      ffmpegcommand+=["-c:a","copy"]
     else:
       ffmpegcommand+=["-an"]  
 
@@ -136,9 +139,11 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       outputFilename=videoFilePath,
                       initialDependentValue=initialBr,
                       twoPassMode=True,
+                      allowEarlyExitWhenUndersize=globalOptions.get('allowEarlyExitIfUndersized',True),
                       sizeLimitMin=sizeLimitMin,
                       sizeLimitMax=sizeLimitMax,
                       maxAttempts=globalOptions.get('maxEncodeAttempts',6),
+                      dependentValueMaximum=options.get('maximumBitrate',0),
                       requestId=requestId,
                       optimiserName=options.get('optimizer'))
 

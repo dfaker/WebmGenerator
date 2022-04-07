@@ -29,11 +29,15 @@ import mimetypes
 from .cutselectionUi import CutselectionUi
 from .filterSelectionUi import FilterSelectionUi
 from .mergeSelectionUi import MergeSelectionUi
+from .composeUi import ComposeUi
 from .webmGeneratorUi import WebmGeneratorUi
-    
+
+
 from .cutselectionController import CutselectionController
 from .filterSelectionController import FilterSelectionController
 from .mergeSelectionController import MergeSelectionController
+from .composeController import ComposeController
+
 
 from .videoManager   import VideoManager
 from .ffmpegService import FFmpegService  
@@ -60,10 +64,14 @@ class WebmGeneratorController:
       "startFullscreen":False,
 
       "allowableTargetSizeUnderrun":0.15,
+      "allowEarlyExitIfUndersized":True,
       "initialBr":16777216,
       "maxEncodeAttemptsGif":10,
       "maxEncodeAttempts":6,
       'vp8lagInFrames':25,
+      'mp4NvencTuneParam':'hq',
+      'mp4NvencPresetParam':'hq',
+      'mp4Libx264TuneParam':'slower',
     
       "cutsTabPlayerBackgroundColour":"#282828",
       "filtersTabPlayerBackgroundColour":"#282828",
@@ -149,10 +157,12 @@ class WebmGeneratorController:
 
     self.cutselectionUi     = CutselectionUi(self.root,globalOptions=self.globalOptions)
     self.filterSselectionUi = FilterSelectionUi(self.root,globalOptions=self.globalOptions,enableFaceDetection=self.faceDetectionService.faceDetectEnabled())
+    self.composeUi   = ComposeUi(self.root,defaultProfile=self.defaultProfile,globalOptions=self.globalOptions)
     self.mergeSelectionUi   = MergeSelectionUi(self.root,defaultProfile=self.defaultProfile,globalOptions=self.globalOptions)
 
     self.webmMegeneratorUi.addPane(self.cutselectionUi,'Cuts')
     self.webmMegeneratorUi.addPane(self.filterSselectionUi,'Filters')
+    #self.webmMegeneratorUi.addPane(self.composeUi,'Compose')
     self.webmMegeneratorUi.addPane(self.mergeSelectionUi,'Merge')
 
     self.videoManager  = VideoManager(globalOptions=self.globalOptions)
@@ -183,12 +193,21 @@ class WebmGeneratorController:
                                                                self.faceDetectionService,
                                                                self.globalOptions)
 
+    self.composeController = ComposeController(self.composeUi,
+                                                             self.videoManager,
+                                                             self.ffmpegService,
+                                                             self.filterSelectionController,
+                                                             self.globalOptions
+                                                             )
+
     self.mergeSelectionController = MergeSelectionController(self.mergeSelectionUi,
                                                              self.videoManager,
                                                              self.ffmpegService,
                                                              self.filterSelectionController,
                                                              self.globalOptions
                                                              )
+
+
 
     if os.path.exists(self.autosaveFilename) and len(self.initialFiles)==0:
       lastSaveData = newSaveData = None
@@ -286,6 +305,7 @@ class WebmGeneratorController:
           for nf in fl:
             p = os.path.join(r,nf)
             if os.path.isfile(p):
+              print('Initial sub file',p)
               g = mimetypes.guess_type(p)
               if g is not None and g[0] is not None and 'video' in g[0]:
                 finalFiles.append(p)
@@ -302,6 +322,9 @@ class WebmGeneratorController:
     if filename is not None:
       with open(filename,'r') as loadFile:
         saveData = json.loads(loadFile.read())
+
+        print(saveData)
+
         self.newProject()
         self.lastSaveFile = filename
         self.cutselectionController.loadStateFromSave(saveData)

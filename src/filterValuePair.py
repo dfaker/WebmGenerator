@@ -416,8 +416,22 @@ class FilterValuePair(ttk.Frame):
       print(self.valueVar.get())
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))
 
+  def stringValueVarSubstitutions(self):
+    valVar = self.valueVar.get()
+
+    if "{!filename}" in valVar:
+      valVar = valVar.replace('{!filename}',self.controller.getStringValue('filename'))
+    elif "{!title}" in valVar:
+      valVar = valVar.replace('{!title}',self.controller.getStringValue('title'))
+    elif "{!path}" in valVar:
+      valVar = valVar.replace('{!path}',self.controller.getStringValue('path'))
+
+    if self.valueVar.get() != valVar:
+      self.valueVar.set(valVar)
+
   def getValuePair(self,forFilter=True):
     if self.param['type'] == 'string':
+      self.stringValueVarSubstitutions()
       val = self.valueVar.get()
 
       if forFilter:

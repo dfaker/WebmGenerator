@@ -40,14 +40,9 @@ buildOptions = dict(packages = ["os"],
                      
                     ,('resources\\cascade\\','resources\\cascade\\')
                       
-                    ,('postFilters\\PostFilter-addQRCode.txt','postFilters\\PostFilter-addQRCode.txt')
-                    ,('postFilters\\PostFilter-chromaShift.txt','postFilters\\PostFilter-chromaShift.txt')
-                    ,('postFilters\\PostFilter-rainbow.txt','postFilters\\PostFilter-rainbow.txt')
-                    ,('postFilters\\PostFilter-vhsishclean.txt','postFilters\\PostFilter-vhsishclean.txt')
+                    ,('postFilters\\','postFilters\\')
                     
-                    ,('customEncodeprofiles\\4Chan 3Meg Webm with no Sound.json','customEncodeprofiles\\4Chan 3Meg Webm with no Sound.json')
-                    ,('customEncodeprofiles\\4Chan 4Meg Webm with sound.json','customEncodeprofiles\\4Chan 4Meg Webm with sound.json')
-                    ,('customEncodeprofiles\\Discord 8M limit mp4.json','customEncodeprofiles\\Discord 8M limit mp4.json')
+                    ,('customEncodeprofiles\\','customEncodeprofiles\\')
                     
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     ,('src\\vrscript.lua','src\\vrscript.lua')

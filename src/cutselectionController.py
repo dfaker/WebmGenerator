@@ -43,9 +43,13 @@ class CutselectionController:
     """
     
     self.ui.setinitialFocus()
+    self.initialFiles = initialFiles
 
-    self.loadFiles(initialFiles)
+    self.ui.after(50, self.loadInitialFiles)
 
+  def loadInitialFiles(self):
+    if self.initialFiles is not None and len(self.initialFiles)>0:
+      self.loadFiles(self.initialFiles)
 
   def fitoScreen(self):
     self.fit = not self.fit
@@ -288,8 +292,8 @@ class CutselectionController:
     self.currentlyPlayingFileName=filename
     self.ui.restartForNewFile(self.currentlyPlayingFileName)
 
-  def setVideoRect(self,x,y,w,h):
-    self.player.command('script-message','screenspacetools_rect',x,y,w,h,'2f344bdd','69dbdbff',1,'inner')
+  def setVideoRect(self,x,y,w,h,desc=''):
+    self.player.command('script-message','screenspacetools_rect',x,y,w,h,desc,'2f344bdd','69dbdbff',1,'inner')
 
   def clearVideoRect(self):
     self.player.command('script-message','screenspacetools_clear')

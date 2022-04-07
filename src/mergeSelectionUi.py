@@ -11,6 +11,7 @@ from collections import deque
 import logging 
 import json
 import threading
+from .modalWindows import Tooltip
 
 class EncodeProgress(ttk.Frame):
 
@@ -562,6 +563,7 @@ class MergeSelectionUi(ttk.Frame):
     
 
     self.mergeStyleCombo = ttk.OptionMenu(self.mergeStyleFrame,self.mergeStyleVar,self.mergeStyleVar.get(),*self.mergeStyles)
+    self.mergeStyleCombo['padding']=2
     self.mergeStyleCombo.pack(expand='true', fill='x', side='right')
 
     self.mergeStyleFrame.pack(expand='false', fill='x', padx='5', pady='0', side='top')
@@ -591,15 +593,18 @@ class MergeSelectionUi(ttk.Frame):
       self.profileVar.set(self.profiles[0])
 
     self.profileCombo = ttk.OptionMenu(self.profileFrame,self.profileVar,self.profileVar.get(),*self.profiles)
+    self.profileCombo['padding']=2
     self.profileCombo.pack(expand='true', fill='x', side='left')
 
 
     self.profileDelete = ttk.Button(self.profileFrame, command=self.deleteProfile)
     self.profileDelete.configure(text='Delete Profile')
+    self.profileDelete['padding']=2
     self.profileDelete.state(["disabled"])
     self.profileDelete.pack(expand='false', side='right')
 
     self.profileSave = ttk.Button(self.profileFrame, command=self.saveProfile)
+    self.profileSave['padding']=2
     self.profileSave.configure(text='Save New Profile')
     self.profileSave.pack(expand='false', side='right')
 
@@ -701,6 +706,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSizeStrategyVar     = tk.StringVar()
     self.maximumSizeVar           = tk.StringVar()
     self.initialbitrateVar        = tk.StringVar()
+    self.maxbitrateVar            = tk.StringVar()
     self.maximumWidthVar          = tk.StringVar()
     self.minimumPSNRVar           = tk.StringVar()
     self.optimizerVar             = tk.StringVar()
@@ -726,6 +732,7 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSizeStrategyVar.trace('w',self.valueChange)
     self.maximumSizeVar.trace('w',self.valueChange)
     self.initialbitrateVar.trace('w',self.valueChange)
+    self.maxbitrateVar.trace('w',self.valueChange)
     self.maximumWidthVar.trace('w',self.valueChange)
     self.transDurationVar.trace('w',self.valueChange)
     self.transStyleVar.trace('w',self.valueChange)
@@ -778,6 +785,8 @@ class MergeSelectionUi(ttk.Frame):
     self.outputFormats = [
       'mp4:x264',
       'mp4:x264_Nvenc',
+      'mp4:H265_Nvenc',
+      'mp4:AV1',
       'webm:VP8',
       'webm:VP9',
       'gif',      
@@ -801,25 +810,30 @@ class MergeSelectionUi(ttk.Frame):
 
     self.maximumSizeVar.set('0.0')
     self.initialbitrateVar.set('2000.0')
+    self.maxbitrateVar.set('6000.0')
 
     self.minimumPSNRVar.set('0.0')
     self.maximumWidthVar.set('1280')
     self.transDurationVar.set('0.0')       
 
-    self.transStyles = ['fade','wipeleft','wiperight','wipeup'
-    ,'wipedown','slideleft','slideright','slideup','slidedown'
-    ,'circlecrop','rectcrop','distance','fadeblack','fadewhite'
-    ,'radial','smoothleft','smoothright','smoothup','smoothdown'
-    ,'circleopen','circleclose','vertopen','vertclose','horzopen'
-    ,'horzclose','dissolve','pixelize','diagtl','diagtr','diagbl'
-    ,'diagbr','hlslice','hrslice','vuslice','vdslice']
+    self.transStyles = ['fade','wipeleft','wiperight','wipeup','wipedown',
+                        'slideleft','slideright','slideup','slidedown',
+                        'circlecrop','rectcrop','distance','fadeblack',
+                        'fadewhite','radial','smoothleft','smoothright',
+                        'smoothup','smoothdown','circleopen','circleclose',
+                        'vertopen','vertclose','horzopen','horzclose',
+                        'dissolve','pixelize','diagtl','diagtr','diagbl',
+                        'diagbr','hlslice','hrslice','vuslice','vdslice',
+                        'hblur','fadegrays','wipetl','wipetr','wipebl',
+                        'wipebr','squeezeh','squeezev','zoomin']
+    
     self.transStyleVar.set('fade')
     self.speedAdjustmentVar.set(1.0)
 
 
     self.audioChannelsOptions = [
        'Stereo - Low    48 kbps'
-      , 'Stereo - Medium 64 kbps'
+      ,'Stereo - Medium 64 kbps'
       ,'Stereo - High   96 kbps'
       ,'Stereo - HD     128 kbps'
       ,'Stereo - Ultra  192 kbps'
@@ -828,7 +842,7 @@ class MergeSelectionUi(ttk.Frame):
       ,'Mono - High   96 kbps'
       ,'Mono - HD     128 kbps'
       ,'Mono - Ultra  192 kbps'
-      ,'Directly Copy Source'
+      #,'Directly Copy Source'
       ,'No audio'
     ]
 
@@ -866,14 +880,23 @@ class MergeSelectionUi(ttk.Frame):
 
     self.frameSequenceActions = ttk.Frame(self.frameEncodeSettings)
     self.buttonSequenceClear = ttk.Button(self.frameSequenceActions)
-    self.buttonSequenceClear.config(text='Clear Sequence')
+    self.buttonSequenceClear.config(text='Clear Sequence',style='small.TButton')
     self.buttonSequenceClear.config(command=self.clearSequence)
     self.buttonSequenceClear.pack(side='top')
+
 
     self.buttonSequenceEncode = ttk.Button(self.frameSequenceActions)
     self.buttonSequenceEncode.config(text='Encode')
     self.buttonSequenceEncode.config(command=self.encodeCurrent)
     self.buttonSequenceEncode.pack(expand='true', fill='both', side='top')
+
+
+    self.buttonSequenceCancel = ttk.Button(self.frameSequenceActions)
+    self.buttonSequenceCancel.config(text='Cancel all',style='small.TButton')
+    self.buttonSequenceCancel.config(command=self.cancelAllEncodes)
+    self.buttonSequenceCancel.pack(fill='x',side='top')
+
+
     self.frameSequenceActions.config(height='200', width='200')
     self.frameSequenceActions.pack(expand='false', fill='both', side='right')
 
@@ -922,6 +945,7 @@ class MergeSelectionUi(ttk.Frame):
     self.labelAudioMerge.pack(side='left')
     
     self.entryAudioMerge = ttk.OptionMenu(self.frameAudioMerge,self.audioMergeOptionsVar,self.audioMergeOptionsVar.get(),*self.audioMergeOptions)
+    self.entryAudioMerge['padding']=2
     self.entryAudioMerge.pack(expand='true', fill='both', side='left')
 
     self.frameAudioMerge.pack(fill='x', side='top')
@@ -934,6 +958,7 @@ class MergeSelectionUi(ttk.Frame):
     self.labelGridLoopOptions.pack(side='left')
     
     self.entryGridLoopOptions = ttk.OptionMenu(self.frameGridLoopOptions,self.gridLoopMergeOptionsVar,self.gridLoopMergeOptionsVar.get(),*self.gridLoopMergeOptions)
+    self.entryGridLoopOptions['padding']=2
     self.entryGridLoopOptions.pack(expand='true', fill='both', side='left')
     self.frameGridLoopOptions.pack(fill='x', side='bottom')
 
@@ -945,6 +970,7 @@ class MergeSelectionUi(ttk.Frame):
     self.labelPadColourOptions.pack(side='left')
 
     self.gridPadColourOptions = ttk.OptionMenu(self.frameGridLoopPadColourOptions,self.gridPadColourOptionsVar,self.gridPadColourOptionsVar.get(),*self.gridPadColourOptions)
+    self.gridPadColourOptions['padding']=2
     self.gridPadColourOptions.pack(expand='true', fill='both', side='left')
     self.frameGridLoopPadColourOptions.pack(fill='x', side='bottom')
 
@@ -993,16 +1019,32 @@ class MergeSelectionUi(ttk.Frame):
     self.labelOutputFormat.grid(row=0,column=0,sticky='e')
 
     self.comboboxOutputFormat= ttk.OptionMenu(self.frameSequenceValues,self.outputFormatVar,self.outputFormatVar.get(),*self.outputFormats)
+
+    Tooltip(self.comboboxOutputFormat,text='The output format of the rendered video, nvenc GPU accelerated options require a nvidia graphics card.')
+
+    self.comboboxOutputFormat['padding']=2
     self.comboboxOutputFormat.grid(row=0,column=1,sticky='ew')
 
 
     self.labelInitialBitrate = ttk.Label(self.frameSequenceValues)
-    self.labelInitialBitrate.config(anchor='e', text='Initial Bitrate (KB/s)', width='25')
+    self.labelInitialBitrate.config(anchor='e', text='Initial Bitrate estimate (KB/s)', width='25')
     self.labelInitialBitrate.grid(row=1,column=0,sticky='e')
 
     self.entryInitialBitrate = ttk.Spinbox(self.frameSequenceValues, from_=0, to=float('inf'), increment=0.1)
     self.entryInitialBitrate.config(textvariable=self.initialbitrateVar)
+    Tooltip(self.entryInitialBitrate,text='The initial bitrate guess, is overriden if you specify a maximum file size, otherwise used directly if maximum file size is zero.')
     self.entryInitialBitrate.grid(row=1,column=1,sticky='ew')
+
+
+    self.labelMaxBitrate = ttk.Label(self.frameSequenceValues)
+    self.labelMaxBitrate.config(anchor='e', text='Bitrate Cap (KB/s)', width='25')
+    self.labelMaxBitrate.grid(row=2,column=0,sticky='e')
+
+    self.entryMaxBitrate = ttk.Spinbox(self.frameSequenceValues, from_=0, to=float('inf'), increment=0.1)
+    self.entryMaxBitrate.config(textvariable=self.maxbitrateVar)
+    Tooltip(self.entryMaxBitrate,text='The maximum bitrate that will be tried.')
+    self.entryMaxBitrate.grid(row=2,column=1,sticky='ew')
+
 
     self.labelFilenamePrefix = ttk.Label(self.frameSequenceValues)
     self.labelFilenamePrefix.config(anchor='e', text='Output filename prefix')
@@ -1012,10 +1054,12 @@ class MergeSelectionUi(ttk.Frame):
 
     self.entryFilenamePrefix = ttk.Entry(self.filenamePrefixFrame)
     self.entryFilenamePrefix.config(textvariable=self.filenamePrefixVar)
+    Tooltip(self.entryFilenamePrefix,text='Manually specify the output filename (is also used as video \'title\' metdata).')
     self.entryFilenamePrefix.grid(row=0,column=0,sticky='ew')
 
     self.entryAutomaticFileNaming = ttk.Checkbutton(self.filenamePrefixFrame,text='Auto-name',onvalue=True, offvalue=False)
     self.entryAutomaticFileNaming.config(variable=self.automaticFileNamingVar)
+    Tooltip(self.entryAutomaticFileNaming,text='When checked will attempt to use the input filename to automatically create the output filename.')
     self.entryAutomaticFileNaming.grid(row=0,column=1,sticky='ew')
 
     self.filenamePrefixFrame.columnconfigure(0, weight=100)
@@ -1031,15 +1075,18 @@ class MergeSelectionUi(ttk.Frame):
     self.labelSizeStrategy.grid(row=1,column=2,sticky='e')
     
     self.comboboxSizeStrategy = ttk.OptionMenu(self.frameSequenceValues,self.frameSizeStrategyVar,self.frameSizeStrategyVar.get(),*self.frameSizeStrategies)
+    Tooltip(self.comboboxSizeStrategy,text='When two clips of different aspect ratios are sequenced once after another, how the system attempts to manage the different in their frame sizes.')
+    self.comboboxSizeStrategy['padding']=2
     self.comboboxSizeStrategy.grid(row=1,column=3,sticky='ew')
 
     self.labelMaximumSize = ttk.Label(self.frameSequenceValues)
     self.labelMaximumSize.config(anchor='e', text='Maximum File Size (MB)')
-    self.labelMaximumSize.grid(row=2,column=0,sticky='e')
+    self.labelMaximumSize.grid(row=3,column=0,sticky='e')
 
     self.entryMaximumSize = ttk.Spinbox(self.frameSequenceValues, from_=0, to=float('inf'), increment=0.1)
+    Tooltip(self.entryMaximumSize,text='The maximum allowable fiel size for the output file, bitrate and other parameters will be tuned to get the maximumum quality but with a file size no greather than this, set as 0.0 to allow any size.')
     self.entryMaximumSize.config(textvariable=self.maximumSizeVar)
-    self.entryMaximumSize.grid(row=2,column=1,sticky='ew')
+    self.entryMaximumSize.grid(row=3,column=1,sticky='ew')
 
 
 
@@ -1048,19 +1095,22 @@ class MergeSelectionUi(ttk.Frame):
     self.labelMaximumWidth.grid(row=2,column=2,sticky='e')
 
 
-    self.defaultMaxWidthWidthOptions = ['1920', '1600', '1440', '1280', '1024', '960', '854', '720', '640', '480']
+    self.defaultMaxWidthWidthOptions = ['3840', '2560', '2048', '1920', '1600', '1440', '1280', '1024', '960', '854', '720', '640', '480']
     self.entryMaximumWidth = ttk.Combobox(self.frameSequenceValues)
     self.entryMaximumWidth.config(textvariable=self.maximumWidthVar)
     self.entryMaximumWidth.config(values=self.defaultMaxWidthWidthOptions)
+    Tooltip(self.entryMaximumWidth,text='The maximum width or height, if either is greater the video will be scaled down, smaller videos left untouched.')
     self.entryMaximumWidth.grid(row=2,column=3,sticky='ew')
 
 
 
     self.labelAudioChannels = ttk.Label(self.frameSequenceValues)
     self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels')
-    self.labelAudioChannels.grid(row=3,column=0,sticky='e')
+    self.labelAudioChannels.grid(row=4,column=0,sticky='e')
     self.entryAudioChannels = ttk.OptionMenu(self.frameSequenceValues,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
-    self.entryAudioChannels.grid(row=3,column=1,sticky='ew')
+    Tooltip(self.entryAudioChannels,text='The audio quality of the final video.')
+    self.entryAudioChannels['padding']=2
+    self.entryAudioChannels.grid(row=4,column=1,sticky='ew')
 
 
 
@@ -1079,12 +1129,14 @@ class MergeSelectionUi(ttk.Frame):
                                          to=2.0, 
                                          increment=0.01,
                                          textvariable=self.speedAdjustmentVar)
+    Tooltip(self.entrySpeedChange,text='Speed up or slow down the final video and audio.')
     self.entrySpeedChange.grid(row=0,column=0,sticky='ew')
 
 
 
     self.speedChangeInterpolate = ttk.Checkbutton(self.speedChangeContainer,text='Interpolate',onvalue=True, offvalue=False)
     self.speedChangeInterpolate.config(variable=self.interpolateSpeedChangeVar)
+    Tooltip(self.speedChangeInterpolate,text='Use motion interpolation to speed up or slow down the final video.')
     self.speedChangeInterpolate.grid(row=0,column=1,sticky='e')
 
     self.speedChangeContainer.columnconfigure(0, weight=100)
@@ -1097,27 +1149,32 @@ class MergeSelectionUi(ttk.Frame):
 
     self.labelminimumPSNR = ttk.Label(self.frameSequenceValues)
     self.labelminimumPSNR.config(anchor='e', text='Minumum PSNR')
-    self.labelminimumPSNR.grid(row=4,column=0,sticky='e')
+    self.labelminimumPSNR.grid(row=5,column=0,sticky='e')
     self.entryminimumPSNR = ttk.Spinbox(self.frameSequenceValues, 
                                          from_=0, 
                                          to=48, 
                                          increment=1,
                                          textvariable=self.minimumPSNRVar)
-    self.entryminimumPSNR.grid(row=4,column=1,sticky='ew')
+    Tooltip(self.entryminimumPSNR,text='Minimum acceptable video quality leave as zero to ignore.')
+    self.entryminimumPSNR.grid(row=5,column=1,sticky='ew')
 
 
     self.labelpostOptimiser = ttk.Label(self.frameSequenceValues)
     self.labelpostOptimiser.config(anchor='e', text='Optimiser')
     self.labelpostOptimiser.grid(row=4,column=2,sticky='e')
     self.entrypostOptimiser = ttk.OptionMenu(self.frameSequenceValues,self.optimizerVar,self.optimizerVar.get(),*self.optimziers)
+    Tooltip(self.entrypostOptimiser,text='Video optimiser to use to search for best video parameters.')
+    self.entrypostOptimiser['padding']=2
     self.entrypostOptimiser.grid(row=4,column=3,sticky='ew')
 
 
     self.labelpostAudioOverride = ttk.Label(self.frameSequenceValues)
     self.labelpostAudioOverride.config(anchor='e',  text='Audio Dub')
-    self.labelpostAudioOverride.grid(row=5,column=0,sticky='e')
+    self.labelpostAudioOverride.grid(row=6,column=0,sticky='e')
     self.entrypostAudioOverride = ttk.Button(self.frameSequenceValues,textvariable=self.audioOverrideVar,command=self.selectAudioOverride)
-    self.entrypostAudioOverride.grid(row=5,column=1,sticky='ew')
+    Tooltip(self.entrypostAudioOverride,text='An mp3 audio file to use to replace the original video audio.')
+    self.entrypostAudioOverride['padding']=2
+    self.entrypostAudioOverride.grid(row=6,column=1,sticky='ew')
 
 
 
@@ -1127,19 +1184,21 @@ class MergeSelectionUi(ttk.Frame):
     self.entrypostAudioOverrideDelay = ttk.Spinbox(self.frameSequenceValues, textvariable=self.audiOverrideDelayVar,from_=float('-inf'), 
                                           to=float('inf'), 
                                           increment=0.5)
+    Tooltip(self.entrypostAudioOverrideDelay,text='Delay before the start of the mp3 dub audio.')
     self.entrypostAudioOverrideDelay.grid(row=5,column=3,sticky='ew')
 
     
 
     self.labelaudiOverrideBias = ttk.Label(self.frameSequenceValues)
     self.labelaudiOverrideBias.config(anchor='e', text='Dub Mix Bias')
-    self.labelaudiOverrideBias.grid(row=6,column=0,sticky='e')
+    self.labelaudiOverrideBias.grid(row=7,column=0,sticky='e')
     self.entryaudiOverrideBias = ttk.Spinbox(self.frameSequenceValues, 
                                          from_=0.0, 
                                          to=1.0, 
                                          increment=0.05,
                                          textvariable=self.audiOverrideBiasVar)
-    self.entryaudiOverrideBias.grid(row=6,column=1,sticky='ew')
+    Tooltip(self.entryaudiOverrideBias,text='Mix between the original video audio and the provided dub audio, 1 being all dub, 0 being all original video audio, 0.5 being a 50/50 mix.')
+    self.entryaudiOverrideBias.grid(row=7,column=1,sticky='ew')
 
 
 
@@ -1147,14 +1206,15 @@ class MergeSelectionUi(ttk.Frame):
     self.labelpostProcessingFilter.config(anchor='e', text='Post filter')
     self.labelpostProcessingFilter.grid(row=6,column=2,sticky='e')
     self.entrypostProcessingFilter = ttk.OptionMenu(self.frameSequenceValues,self.postProcessingFilterVar,self.postProcessingFilterVar.get(),*self.postProcessingFilterOptions)
+    Tooltip(self.entryaudiOverrideBias,text='A custom final filter to apply to all clips.')
+    self.entrypostProcessingFilter['padding']=2
     self.entrypostProcessingFilter.grid(row=6,column=3,sticky='ew')
-
-
-
 
 
     
     self.comboboxTransStyle = ttk.OptionMenu(self.frameTransStyle,self.transStyleVar,self.transStyleVar.get(),*self.transStyles)
+    self.comboboxTransStyle['padding']=2
+    Tooltip(self.comboboxTransStyle,text='The transition style to use between cuts.')
 
     self.comboboxTransStyle.pack(expand='true', fill='x', side='right')
 
@@ -1301,9 +1361,15 @@ class MergeSelectionUi(ttk.Frame):
       pass
 
     try:
-      self.initialbitrateValue = float(self.initialbitrateVar.get())
+      self.initialbitrateValue = float(self.initialbitrateVar.get())*1024
     except:
       pass
+
+    try:
+      self.maxbitrateValue = float(self.maxbitrateVar.get())*1024
+    except:
+      pass
+
 
     try:
       self.maximumSizeValue = float(self.maximumSizeVar.get())
@@ -1383,6 +1449,10 @@ class MergeSelectionUi(ttk.Frame):
   def cancelEncodeRequest(self,requestId):
     self.controller.cancelEncodeRequest(requestId)
 
+  def cancelAllEncodes(self):
+    for epw in self.encoderProgress:
+      epw.cancelEncodeRequest()
+
   def encodeCurrent(self):
 
     nullfilter = ''
@@ -1434,6 +1504,7 @@ class MergeSelectionUi(ttk.Frame):
         'frameSizeStrategy':self.frameSizeStrategyValue,
         'maximumSize':self.maximumSizeValue,
         'initialBitrate':self.initialbitrateValue,
+        'maximumBitrate':self.maxbitrateValue,
         'maximumWidth':self.maximumWidthValue,
         'transDuration':self.transDurationValue,
         'transStyle':self.transStyleValue,
@@ -1483,6 +1554,7 @@ class MergeSelectionUi(ttk.Frame):
           'frameSizeStrategy':self.frameSizeStrategyValue,
           'maximumSize':self.maximumSizeValue,
           'initialBitrate':self.initialbitrateValue,
+          'maximumBitrate':self.maxbitrateValue,
           'maximumWidth':self.maximumWidthValue,
           'transDuration':self.transDurationValue,
           'transStyle':self.transStyleValue,
@@ -1529,6 +1601,7 @@ class MergeSelectionUi(ttk.Frame):
             'frameSizeStrategy':self.frameSizeStrategyValue,
             'maximumSize':self.maximumSizeValue,
             'initialBitrate':self.initialbitrateValue,
+            'maximumBitrate':self.maxbitrateValue,
             'maximumWidth':self.maximumWidthValue,
             'transDuration':0.0,
             'transStyle':self.transStyleValue,
@@ -1639,8 +1712,17 @@ class MergeSelectionUi(ttk.Frame):
             break 
 
   def convertFilenameToBaseName(self,filename):
-    usableChars = string.ascii_letters+string.digits+'-_'
-    basename = ''.join(x for x in os.path.basename(filename).rpartition('.')[0] if x in usableChars)
+    whitespaceChars = '-_. '
+    usableChars = string.ascii_letters+string.digits+whitespaceChars
+    basenameList = ''.join(x for x in os.path.basename(filename).rpartition('.')[0] if x in usableChars)
+    for c in whitespaceChars:
+      basenameList = basenameList.replace(c,'-')
+    basename = ''
+    for c in basenameList:
+      if len(basename) == 0 or (basename[-1] != c and c == '-') or c != '-':
+        basename = basename+c
+    if len(basename)==0:
+      basename='output'
     return basename
 
   def setController(self,controller):

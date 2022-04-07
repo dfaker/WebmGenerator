@@ -22,6 +22,8 @@ from .encoders.mp4x264Encoder import encoder as mp4x264Encoder
 from .encoders.webmvp8Encoder import encoder as webmvp8Encoder
 from .encoders.webmvp9Encoder import encoder as webmvp9Encoder
 from .encoders.mp4x264NvencEncoder import encoder as mp4x264NvencEncoder
+from .encoders.mp4H265NvencEncoder import encoder as mp4H265NvencEncoder
+from .encoders.mp4AV1Encoder       import encoder as mp4AV1Encoder
 
 from .encodingUtils import cleanFilenameForFfmpeg
 from .encodingUtils import getFreeNameForFileAndLog
@@ -45,6 +47,8 @@ encoderMap = {
   ,'webm:VP9':webmvp9Encoder
   ,'mp4:x264':mp4x264Encoder
   ,'mp4:x264_Nvenc':mp4x264NvencEncoder
+  ,'mp4:H265_Nvenc':mp4H265NvencEncoder
+  ,'mp4:AV1':mp4AV1Encoder
   ,'gif':gifEncoder
   ,'apng':apngEncoder
 }
@@ -719,7 +723,7 @@ class FFmpegService():
           if usNVHWenc:
             if self.globalOptions.get('passCudaFlags',False):
               cuda_flags = ['-hwaccel', 'cuda']
-            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'lossless','-pix_fmt','yuv420p']
+            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'losslesshp','-pix_fmt','yuv420p']
           else:  
             slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast']
 
@@ -838,6 +842,12 @@ class FFmpegService():
       if fadeDuration > 0.0:
         inputsList = []
 
+        splitTemplate     = '[{i}:v]{splitexp},split[vid{i}a][vid{i}b];'
+        xFadeTemplate     = '[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
+        fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
+        asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
+        crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
+
 
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
@@ -852,17 +862,12 @@ class FFmpegService():
         crossfades=[]
         crossfadeOut=''
 
-        splitTemplate     = '[{i}:v]{splitexp},split[vid{i}a][vid{i}b];'
-        xFadeTemplate     = '[vid{i}a][vid{n}b]xfade=transition={trans}:duration={fdur}:offset={o}[fade{i}];'
-        fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
-        asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
-        crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
 
         for i,dur in enumerate(expectedFadeDurations):
           n=0 if i==len(expectedFadeDurations)-1 else i+1
           o=dur-offset
           preo=offset          
-          totalExpectedFinalLength-= (fadeDuration*2)
+          totalExpectedFinalLength-=offset
 
           splitexp = 'null'
           if mode == 'CONCAT' and len(dimensionsSet) > 1:

@@ -134,8 +134,22 @@ function screenspacetools_regMark(x,y,type)
     draw_merged_ssa()
 end
 
+local function ass_escape(str)
+    str = str:gsub('\\', '\\\239\187\191')
+    str = str:gsub('{', '\\{')
+    str = str:gsub('}', '\\}')
+    -- Precede newlines with a ZWNBSP to prevent ASS's weird collapsing of
+    -- consecutive newlines
+    str = str:gsub('\n', '\239\187\191\\N')
+    -- Turn leading spaces into hard spaces to prevent ASS from stripping them
+    str = str:gsub('\\N ', '\\N\\h')
+    str = str:gsub('^ ', '\\h')
+    return str
+end
 
-function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
+
+
+function screenspacetools_rect(p1x,p1y,p2x,p2y,dim,fill,border,width,visible)
 
     local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
 
@@ -259,9 +273,25 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,fill,border,width,visible)
         ass:append("{\\bord1}")
 
         ass:rect_cw(tonumber(p1x), tonumber(p1y), tonumber(p2x), tonumber(p2y))
+        ass:pos(0, 0)
+
+        ass:draw_stop()
+
+        ass:new_event()
+
+
+        ass:append(ass_set_color(1, border))
+        ass:append(ass_set_color(3, border))
+
+        ass:append("{\\fs18}")
+        ass:append("{\\bord0}")
+        
+        ass:pos(tonumber(p1x), tonumber(p2y))
+
+        ass:append(  ass_escape( dim ))
 
         ass:pos(0, 0)
-        ass:draw_stop()
+
         cropAss = ass.text;
         draw_merged_ssa()
     end

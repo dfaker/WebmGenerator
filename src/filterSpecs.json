@@ -377,8 +377,36 @@
   "timelineSupport": true
  },
 
+
+
  {
   "support": "T..",
+  "category": "Overlay, text and masks",
+  "name": "ZoomPan Centre",
+  "filter": "zoompan=z='min(max(zoom,pzoom)+{zoomSpeed},{zoomMax})+({offsetClipStartSeconds}*0)':s={size}:d={frameDuration}:x='(iw*{zoomXCentre})-((iw*{zoomXCentre})/max(zoom,pzoom))':y='(ih*{zoomYCentre})-((ih*{zoomYCentre})/max(zoom,pzoom))':fps={fps}",
+  "filterPreview":  "zoompan=z='if( lte(in_time,{offsetClipStartSeconds}), min(max(zoom,pzoom)+0,{zoomMax}), min(max(zoom,pzoom)+{zoomSpeed},{zoomMax}) ) ':s={size}:d={frameDuration}:x='(iw*{zoomXCentre})-((iw*{zoomXCentre})/max(zoom,pzoom))':y='(ih*{zoomYCentre})-((ih*{zoomYCentre})/max(zoom,pzoom))':fps={fps}",
+
+
+  "kind": "V->V",
+  "desc": "Remove logo from input video.",
+  "params": [
+    {"n": "zoomSpeed", "d": 0.0015, "type": "float","range": [null,null],"inc": 0.0001},
+    {"n": "zoomMax", "d": 1.5, "type": "float","range": [null,null],"inc": 0.1},
+
+    {"n": "zoomXCentre", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1},
+    {"n": "zoomYCentre", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1},
+    {"n": "frameDuration", "d": 1, "type": "int","range": [0, null],"inc": 1},
+    {"n": "fps", "d": 25, "type": "float","range": [0.1,null],"inc": 0.5},
+    {"n": "size", "d": "hd720", "type": "cycle","cycle": [ "hd720", "hd1080", "800x600"]},
+    {"n": "offsetClipStartSeconds", "d": 0.0, "type": "float","range": [0.0,null],"inc": 0.1}    
+
+  ],
+  "timelineSupport": true
+ },
+
+
+ {
+  "support": "...",
   "category": "Denoising",
   "name": "Derain",
   "filter": "derain",
@@ -391,7 +419,7 @@
    {"n": "input", "d": "x", "type": "string","range": [null,null],"inc": 1},
    {"n": "output", "d": "y", "type": "string","range": [null,null],"inc": 1}
   ],
-  "timelineSupport": true
+  "timelineSupport": false
  },
 
  {
@@ -1607,9 +1635,21 @@
   "desc": "Convert video stereoscopic 3D view.",
   "params": [
    {"n": "in", "d": "sbsl", "type": "cycle","cycle": [ "ab2l", "tb2l", "ab2r", "tb2r", "abl", "tbl", "abr", "tbr", "al", "ar", "sbs2l", "sbs2r", "sbsl", "sbsr", "irl", "irr", "icl", "icr"]},
-   {"n": "out", "d": "arcd", "type": "cycle","cycle": [ "ab2l", "tb2l", "ab2r", "tb2r", "abl", "tbl", "abr", "tbr", "agmc", "agmd", "agmg", "agmh", "al", "ar", "arbg", "arcc", "arcd", "arcg", "arch", "argg", "aybc", "aybd", "aybg", "aybh", "irl", "irr", "ml", "mr", "sbs2l", "sbs2r", "sbsl", "sbsr", "chl", "chr", "icl", "icr", "hdmi"]}
+   {"n": "out", "d": "arbg", "type": "cycle","cycle": [ "ab2l", "tb2l", "ab2r", "tb2r", "abl", "tbl", "abr", "tbr", "agmc", "agmd", "agmg", "agmh", "al", "ar", "arbg", "arcc", "arcd", "arcg", "arch", "argg", "aybc", "aybd", "aybg", "aybh", "irl", "irr", "ml", "mr", "sbs2l", "sbs2r", "sbsl", "sbsr", "chl", "chr", "icl", "icr", "hdmi"]}
   ]
  },
+
+
+ {
+  "support": ".S.",
+  "category": "VR and 3D",
+  "name": "Wiggle 3D",
+  "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],",
+  "kind": "V->V",
+  "desc": "Convert video stereoscopic 3D view.",
+  "params": []
+ },
+
 
  {
   "support": ".S.",
@@ -1733,7 +1773,7 @@
   "kind": "V->V",
   "desc": "Transpose input video.",
   "params": [
-   {"n": "dir", "d": "cclock_flip", "type": "cycle","cycle": [ "cclock_flip", "clock", "cclock", "clock_flip"]},
+   {"n": "dir", "d": "cclock", "type": "cycle","cycle": [ "cclock_flip", "clock", "cclock", "clock_flip"]},
    {"n": "passthrough", "d": "none", "type": "cycle","cycle": [ "none", "portrait", "landscape"]}
   ]
  },
@@ -2089,5 +2129,390 @@
    {"n": "draw", "d": "scale", "type": "cycle","cycle": ["scale","full"]},
    {"n": "filter", "d": "average", "type": "cycle","cycle": ["average","peak"]}
   ]
+ },
+
+
+ {
+  "support": "TSC",
+  "category": "Frame and pixel reordering",
+  "name": "scroll",
+  "filter": "scroll@{fn}",
+  "kind": "V->V",
+  "desc": "Scroll input video.",
+  "params": [
+   {
+    "n": "horizontal",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 0.001
+   },
+   {
+    "n": "vertical",
+    "d": 0.001,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 0.001
+   },
+   {
+    "n": "hpos",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "vpos",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 1
+   }
+  ],
+  "timelineSupport": true
+ },
+
+  {
+  "support": "TSC",
+  "category": "Colour manipulation",
+  "name": "hsvhold",
+  "filter": "hsvhold@{fn}",
+  "kind": "V->V",
+  "desc": "Turns a certain HSV range into gray.",
+  "params": [
+   {
+    "n": "hue",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -360.0,
+     360.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "sat",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "val",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "similarity",
+    "d": 0.01,
+    "type": "float",
+    "range": [
+     1e-05,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "blend",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 1
+   }
+  ],
+  "timelineSupport": true
+ },
+ {
+  "support": "TSC",
+  "category": "Colour manipulation",
+  "name": "hsvkey",
+  "filter": "hsvkey@{fn}",
+  "kind": "V->V",
+  "desc": "Turns a certain HSV range into transparency. Operates on YUV colors.",
+  "params": [
+   {
+    "n": "hue",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -360.0,
+     360.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "sat",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "val",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "similarity",
+    "d": 0.01,
+    "type": "float",
+    "range": [
+     1e-05,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "blend",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 1
+   }
+  ],
+  "timelineSupport": true
+ },
+ {
+  "support": "TSC",
+  "category": "Colour manipulation",
+  "name": "scharr",
+  "filter": "scharr@{fn}",
+  "kind": "V->V",
+  "desc": "Apply scharr operator.",
+  "params": [
+   {
+    "n": "planes",
+    "d": 15,
+    "type": "int",
+    "range": [
+     0,
+     15
+    ],
+    "inc": 1
+   },
+   {
+    "n": "scale",
+    "d": 1.0,
+    "type": "float",
+    "range": [
+     0.0,
+     65535.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "delta",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -65535.0,
+     65535.0
+    ],
+    "inc": 1
+   }
+  ],
+  "timelineSupport": true
+ },
+
+
+
+  {
+  "support": "TSC",
+  "category": "Colour manipulation",
+  "name": "huesaturation",
+  "filter": "huesaturation@{fn}",
+  "kind": "V->V",
+  "desc": "Apply hue-saturation-intensity adjustments.",
+  "params": [
+   {
+    "n": "hue",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -180.0,
+     180.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "saturation",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 0.01
+   },
+   {
+    "n": "intensity",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 0.01
+   },
+   {
+    "n": "colors",
+    "d": "r+y+g+c+b+m+a",
+    "type": "cycle",
+    "inc": 1,
+    "cycle": [
+      "r+y+g+c+b+m+a",
+     "r",
+     "y",
+     "g",
+     "c",
+     "b",
+     "m",
+     "a"
+    ]
+   },
+   {
+    "n": "strength",
+    "d": 1.0,
+    "type": "float",
+    "range": [
+     0.0,
+     100.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "rw",
+    "d": 0.333,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 0.01
+   },
+   {
+    "n": "gw",
+    "d": 0.334,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 0.01
+   },
+   {
+    "n": "bw",
+    "d": 0.333,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 0.01
+   },
+   {
+    "n": "lightness",
+    "d": "false",
+    "type": "cycle",
+    "range": [
+     null,
+     null
+    ],
+    "inc": 1,
+    "cycle": [
+     "true",
+     "false"
+    ]
+   }
+  ],
+  "timelineSupport": true
+ },
+
+  {
+  "support": "TSC",
+  "category": "Colour manipulation",
+  "name": "monochrome",
+  "filter": "monochrome@{fn}",
+  "kind": "V->V",
+  "desc": "Convert video to gray using custom color filter.",
+  "params": [
+   {
+    "n": "cb",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "cr",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     -1.0,
+     1.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "size",
+    "d": 1.0,
+    "type": "float",
+    "range": [
+     0.1,
+     10.0
+    ],
+    "inc": 1
+   },
+   {
+    "n": "high",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 1
+   }
+  ],
+  "timelineSupport": true
  }
+
+
 ]

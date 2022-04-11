@@ -913,12 +913,12 @@ class CutselectionUi(ttk.Frame):
         return self.controller.getIsPlaybackStarted()
 
     def update(self,withLock=True):
-        self.frameTimeLineFrame.updateCanvas(withLock=True)
+        self.frameTimeLineFrame.updateCanvas(withLock=False)
 
-    def setUiDirtyFlag(self):
+    def setUiDirtyFlag(self,withLock=False):
       self.frameTimeLineFrame.setUiDirtyFlag()
       try:
-        self.frameTimeLineFrame.updateCanvas() 
+        self.frameTimeLineFrame.updateCanvas(withLock=withLock) 
       except Exception as e:
         print(e)
 

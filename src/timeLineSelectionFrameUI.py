@@ -14,7 +14,17 @@ import numpy as np
 import math
 
 from contextlib import contextmanager
-from contextlib import AbstractContextManager
+
+class AbstractContextManager:
+
+  def __init__(self):
+    pass
+
+  def __enter__(self):
+    pass
+
+  def __exit__(self ,type, value, traceback):
+    pass
 
 
 @contextmanager
@@ -785,7 +795,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.framesRequested=self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,self.frameResponseCallback)
 
   def updateCanvas(self,withLock=False):
-  
+    
     if withLock:
       updateLock = acquire_timeout(self.uiUpdateLock,0.1)
     else:

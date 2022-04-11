@@ -572,7 +572,7 @@ class CutselectionController:
     elif kind == 'Cut':
       self.videoManager.registerNewSubclip(filename,timestamp,max(timestamp+0.01,timestampEnd-0.01))
     self.updateProgressStatistics()
-    self.ui.setUiDirtyFlag()
+    self.ui.setUiDirtyFlag(withLock=True)
 
   def askToUseRangeIfSet(self):
     useRange=False

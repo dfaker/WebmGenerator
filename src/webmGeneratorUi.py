@@ -14,7 +14,7 @@ import time
 import os
 import psutil
 
-RELEASE_NUMVER = 'v3.14.0'
+RELEASE_NUMVER = 'v3.17.0'
 
 class WebmGeneratorUi:
 
@@ -101,23 +101,25 @@ class WebmGeneratorUi:
     self.style.configure('PSNRGood.TLabel',foreground='green')
     self.style.configure('PSNRFair.TLabel',foreground='dark orange')
     self.style.configure('PSNRPoor.TLabel',foreground='red')
-
-
       
 
     if darkMode:
       self.style.configure (".",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
       
-      self.style.configure ("TToolbutton",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
-      
+      self.style.configure ("TToolbutton",color='white',foreground='white',background='#0f0f0f',activeforeground='white',activebackground='#0f0f0f',bordercolor='#0f0f0f',lightcolor='white',darkcolor='#0f0f0f',highlightbackground='#69bfdb',highlightcolor='#282828')
+
+      self.style.map('TToolbutton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
+
       self.style.configure ("TProgressbar.trough",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
       
-
-
       self.style.configure ("TMenu",color='white',foreground='white',background='#0f0f0f')
       self.style.configure ("TNotebook",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
       
       self.style.configure ("TNotebook.Tab",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f',lightcolor='#0f0f0f')
+      self.style.map("TNotebook.Tab",
+                            background=[("selected", '#2f2f2f'),("disabled", '#0f0f0f')], foreground=[("selected", 'white'),("disabled", '#0f0f0f')]
+                     )
+
       self.style.configure ("TNotebook.Tab.Label",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f',lightcolor='#0f0f0f')
 
       self.style.configure ("TNotebook.label",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f',lightcolor='#0f0f0f')
@@ -135,6 +137,8 @@ class WebmGeneratorUi:
       self.style.configure ("TLabelframe.Frame",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
       
       self.style.configure ("TButton",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',activebackground='#282828',activeforeground='#282828',highlightcolor='#282828',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',highlightbackground='#69bfdb')
+      self.style.map('TButton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
+
       self.style.configure ("TCheckbutton",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f')
       self.style.configure ("TCheckbutton.Label",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f')
       self.style.configure ("TEntry",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f')

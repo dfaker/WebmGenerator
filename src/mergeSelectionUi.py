@@ -66,21 +66,21 @@ class EncodeProgress(ttk.Frame):
     self.labelLastEncodedBR.config(text='Bitrate: -', relief='flat')
     self.labelLastEncodedBR.grid(row=1,column=4,sticky='nesw')
 
-    self.labelLastEncodedPSNR = ttk.Label(self.frameEncodeProgressWidget)
-    self.labelLastEncodedPSNR.config(text='PSNR: -', relief='flat')
-    self.labelLastEncodedPSNR.grid(row=1,column=5,sticky='nesw')
-
     self.labelLastBuff = ttk.Label(self.frameEncodeProgressWidget)
     self.labelLastBuff.config(text='Buffer: -', relief='flat')
-    self.labelLastBuff.grid(row=1,column=6,sticky='nesw')
+    self.labelLastBuff.grid(row=1,column=5,sticky='nesw')
 
     self.labelLastWR = ttk.Label(self.frameEncodeProgressWidget)
     self.labelLastWR.config(text='Width Change: -', relief='flat')
-    self.labelLastWR.grid(row=1,column=7,sticky='nesw')
+    self.labelLastWR.grid(row=1,column=6,sticky='nesw')
 
     self.labelTimeLeft  = ttk.Label(self.frameEncodeProgressWidget)
     self.labelTimeLeft.config(text='Idle', width='19')
-    self.labelTimeLeft.grid(row=1,column=8,sticky='nesw')
+    self.labelTimeLeft.grid(row=1,column=7,sticky='nesw')
+
+    self.labelLastEncodedPSNR = ttk.Label(self.frameEncodeProgressWidget)
+    self.labelLastEncodedPSNR.config(text='Quality: -', relief='flat')
+    self.labelLastEncodedPSNR.grid(row=1,column=8,sticky='nesw')
 
     self.progressbarEncodeProgressLabel = ttk.Progressbar(self.frameEncodeProgressWidget)
     self.progressbarEncodeProgressLabel.config(mode='determinate', orient='horizontal')
@@ -180,17 +180,22 @@ class EncodeProgress(ttk.Frame):
 
     if lastEncodedPSNR is not None:
       PSNRGrade = 'Terrible'
+      self.labelLastEncodedPSNR.config(style='PSNRTerrible.TLabel')
 
       if int(lastEncodedPSNR) >= 48:
         PSNRGrade = 'Excellent'
+        self.labelLastEncodedPSNR.config(style='PSNRExcellent.TLabel')
       elif int(lastEncodedPSNR) >= 40:
         PSNRGrade = 'Good'
+        self.labelLastEncodedPSNR.config(style='PSNRGood.TLabel')
       elif int(lastEncodedPSNR) >= 38:
         PSNRGrade = 'fair'
+        self.labelLastEncodedPSNR.config(style='PSNRFair.TLabel')
       elif int(lastEncodedPSNR) >= 30:
         PSNRGrade = 'Poor'
+        self.labelLastEncodedPSNR.config(style='PSNRPoor.TLabel')
       
-      self.labelLastEncodedPSNR.config(text='PSNR: {} ({})'.format(lastEncodedPSNR,PSNRGrade), relief='flat')
+      self.labelLastEncodedPSNR.config(text='Quality: {} ({})'.format(lastEncodedPSNR,PSNRGrade), relief='flat')
     
     if lastBuff is not None:
       lastBuffSizeHuman = self.sizeof_fmt(lastBuff,'B') 
@@ -227,7 +232,7 @@ class EncodeProgress(ttk.Frame):
 
         try:
           remaining = (1.0 - currentValue) * (currentKey - oldestKey) / (currentValue - oldestValue)
-          self.labelTimeLeft.config(text=str(round(remaining,2))+'s left')
+          self.labelTimeLeft.config(text=str(round(remaining,2))+'s left ({:.0%})'.format(percent))
         except:
           pass
       

@@ -94,7 +94,16 @@ class WebmGeneratorUi:
     self.style.configure('smallTall.TButton', padding=(0,10))
     self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)
     self.style.configure('smallextra.TButton', padding=-20)
+    self.style.configure('Horizontal.TProgressbar', thickness=20)
 
+    self.style.configure('PSNRTerrible.TLabel',foreground='red')
+    self.style.configure('PSNRExcellent.TLabel',foreground='green')
+    self.style.configure('PSNRGood.TLabel',foreground='green')
+    self.style.configure('PSNRFair.TLabel',foreground='dark orange')
+    self.style.configure('PSNRPoor.TLabel',foreground='red')
+
+
+      
 
     if darkMode:
       self.style.configure (".",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
@@ -136,7 +145,6 @@ class WebmGeneratorUi:
       self.style.configure ("TEntry",color='white',foreground='white',fieldbackground='#0f0f0f',background='#0f0f0f',bordercolor='#0f0f0f')
       self.style.configure ("TCombobox",color='white',foreground='white',fieldbackground='#0f0f0f',background='#0f0f0f',bordercolor='#0f0f0f')
 
-      
 
 
     self.panes=[]

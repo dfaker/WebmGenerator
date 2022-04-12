@@ -14,7 +14,7 @@ import time
 import os
 import psutil
 
-RELEASE_NUMVER = 'v3.16.1'
+RELEASE_NUMVER = 'v3.14.0'
 
 class WebmGeneratorUi:
 
@@ -35,6 +35,9 @@ class WebmGeneratorUi:
                            highlightcolor=bg,
                            activehighlightcolor=bg,
                            relief='flat')
+
+    darkMode = self.controller.globalOptions.get('darkMode',False)
+
 
     self.style.configure ("Bold.TLabel", font = ('Sans','10','bold'))
 
@@ -67,9 +70,6 @@ class WebmGeneratorUi:
     
     self.style.configure('small.TMenubutton',padding=0)
 
-
-
-
     self.style.configure('subtle.TEntry', highlightbackground="#282828", highlightcolor="#282828",border=0,borderwidth =0,highlightthickness=0, padding=(0,0),bordercolor='#282828',
                                           background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     
@@ -94,6 +94,48 @@ class WebmGeneratorUi:
     self.style.configure('smallTall.TButton', padding=(0,10))
     self.style.configure('smallBlue.TButton', padding=0,background='blue',foreground='white',lightcolor='blue',darkcolor='blue',border=0)
     self.style.configure('smallextra.TButton', padding=-20)
+
+
+    if darkMode:
+      self.style.configure (".",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+      
+      self.style.configure ("TToolbutton",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+      
+      self.style.configure ("TProgressbar.trough",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+      
+
+
+      self.style.configure ("TMenu",color='white',foreground='white',background='#282828')
+      self.style.configure ("TNotebook",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+      
+      self.style.configure ("TNotebook.Tab",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828',lightcolor='#282828')
+      self.style.configure ("TNotebook.Tab.Label",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828',lightcolor='#282828')
+
+      self.style.configure ("TNotebook.label",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828',lightcolor='#282828')
+
+      self.style.configure ("TNotebook.Pane",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+
+      self.style.configure ("TLabel",color='white',foreground='white',background='#282828')
+      self.style.configure ("TFrame",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+      self.style.configure ("TLabelframe",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+
+      self.style.configure ("TLabelframe.Label",color='white',foreground='white',background='#282828',bordercolor='#282828')
+
+      self.style.configure ("TLabelframe.Frame",color='white',foreground='white',background='#282828',bordercolor='#282828',highlightbackground='#282828')
+      
+      self.style.configure ("TButton",color='white',foreground='white',background='#282828',bordercolor='#282828')
+      self.style.configure ("TCheckbutton",color='white',foreground='white',background='#282828',bordercolor='#282828')
+      self.style.configure ("TCheckbutton.Label",color='white',foreground='white',background='#282828',bordercolor='#282828')
+      self.style.configure ("TEntry",color='white',foreground='white',background='#282828',bordercolor='#282828')
+
+      self.style.configure ("TMenubutton",color='white',foreground='white',background='#282828',bordercolor='#282828')
+
+      self.style.configure ("TSpinbox",color='white',foreground='white',fieldbackground='#282828',background='#282828',bordercolor='#282828')
+      self.style.configure ("TEntry",color='white',foreground='white',fieldbackground='#282828',background='#282828',bordercolor='#282828')
+      self.style.configure ("TCombobox",color='white',foreground='white',fieldbackground='#282828',background='#282828',bordercolor='#282828')
+
+      
+
 
     self.panes=[]
     self.master=master

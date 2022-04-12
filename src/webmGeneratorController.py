@@ -62,6 +62,7 @@ class WebmGeneratorController:
       "defaultAutosaveFilename":'autosave.webgproj',
       "titleMetadataSuffix":' WmG',
       "startFullscreen":False,
+      "darkMode":False,
 
       "allowableTargetSizeUnderrun":0.15,
       "allowEarlyExitIfUndersized":True,

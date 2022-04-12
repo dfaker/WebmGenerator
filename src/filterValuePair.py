@@ -118,6 +118,7 @@ class FilterValuePair(ttk.Frame):
     self.interpVar = tk.StringVar()
     self.interpVar.set(self.commandInterpolationMode)
 
+    self.originalIncrement = param.get('inc',1)
     self.interpVar.trace('w',self.interpolationChanged)
 
     self.commandVarTarget = []
@@ -145,6 +146,7 @@ class FilterValuePair(ttk.Frame):
     self.entryInterpValue = ttk.Combobox(self.frameFilterValuePair)
     self.entryInterpValue.config(textvariable=self.interpVar)
     self.entryInterpValue.config(values=self.interpolationModes)
+
 
 
     if param.get('desc','') != '':
@@ -177,6 +179,16 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
+      
+      self.entryFilterValueValue.bind('<KeyPress>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<KeyRelease>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<Motion>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<MouseWheel>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<FocusIn>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<FocusOut>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<Enter>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<Leave>',self.checkCtrl)
+
     elif param['type'] == 'string' or param['type'] == 'bareString':
       self.valueVar.set(param['d'])
       self.entryFilterValueValue = ttk.Entry(self.frameFilterValuePair)
@@ -197,6 +209,16 @@ class FilterValuePair(ttk.Frame):
       self.entryFilterValueValue.config(from_=vmin)
       self.entryFilterValueValue.config(to=vmax)
       self.entryFilterValueValue.config(increment=param['inc'])
+
+      self.entryFilterValueValue.bind('<KeyPress>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<KeyRelease>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<Motion>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<MouseWheel>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<FocusIn>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<FocusOut>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<Enter>',self.checkCtrl)
+      self.entryFilterValueValue.bind('<Leave>',self.checkCtrl)
+
     elif param['type'] == 'file':
       self.valueVar.set(param['d'])
       self.entryFilterValueValue = ttk.Button(self.frameFilterValuePair)
@@ -214,6 +236,18 @@ class FilterValuePair(ttk.Frame):
     self.commandVarSelected = self.param.get('commandVarSelected',False)
     self.commandVarEnabled  = self.param.get('commandVarEnabled',False)
     self.updateCommandButtonStyles()
+
+  def checkCtrl(self,e):
+    ctrl  = e and ((e.state & 0x4)  != 0)
+    shift = e and ((e.state & 0x1) != 0)
+    
+    if ctrl and not shift:
+      self.entryFilterValueValue.config(increment=self.originalIncrement*10)
+    elif shift:
+      self.entryFilterValueValue.config(increment=self.originalIncrement*100)
+    else:
+      self.entryFilterValueValue.config(increment=self.originalIncrement)
+
 
   def updateCommandButtonStyles(self):
     if self.commandVarAvaliable:

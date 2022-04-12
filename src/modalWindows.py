@@ -876,15 +876,31 @@ class OptionsDialog(tk.Toplevel):
       row = i%columnHeight
 
       labelValue.grid(row=row,column=column,sticky='new',padx=5,pady=1)
-      valueVar   = tk.StringVar(self)
-      self.varMap[k]=valueVar
-      entryValue = ttk.Entry(self,textvariable=self.varMap[k])
-    
-      okayCommand = self.register(lambda val,t=type(v):self.validateType(t,val))  
-      self.validatorMap[k]=okayCommand
-      entryValue.config(validate='key',validatecommand=(okayCommand ,'%P'))
 
-      valueVar.set(str(v))
+      if type(v) == bool:
+
+        valueVar   = tk.BooleanVar(self)
+        self.varMap[k]=valueVar
+
+        entryValue = ttk.Checkbutton(self,text="", variable=self.varMap[k])
+
+        #okayCommand = self.register(lambda val,t=type(v):self.validateType(t,val))  
+        #self.validatorMap[k]=okayCommand
+        #entryValue.config(validate='key',validatecommand=(okayCommand ,'%P'))
+
+        valueVar.set(v)
+
+      else:
+        valueVar   = tk.StringVar(self)
+        self.varMap[k]=valueVar
+        entryValue = ttk.Entry(self,textvariable=self.varMap[k])
+      
+        okayCommand = self.register(lambda val,t=type(v):self.validateType(t,val))  
+        self.validatorMap[k]=okayCommand
+        entryValue.config(validate='key',validatecommand=(okayCommand ,'%P'))
+
+        valueVar.set(str(v))
+
       entryValue.grid(row=row,column=column+1,sticky='new',padx=5,pady=0)
       self.entryMap[k]=entryValue
       valueVar.set(str(v))
@@ -921,7 +937,7 @@ class OptionsDialog(tk.Toplevel):
       elif type(originalValue) == float:
         self.changedProperties[valueKey] = float(self.varMap.get(valueKey).get())
       elif type(originalValue) == bool:
-        self.changedProperties[valueKey] = bool(self.varMap.get(valueKey).get()=='True')
+        self.changedProperties[valueKey] = bool(self.varMap.get(valueKey).get())
       else:
         self.changedProperties[valueKey] = self.varMap.get(valueKey).get()
     except Exception as e:

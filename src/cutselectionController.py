@@ -520,7 +520,7 @@ class CutselectionController:
     try:
       targetTrim=float(self.ui.targetTrimVar.get())
     except Exception as e:
-      print(e)
+      print('updateProgressStatistics',e)
 
     for filename,rid,s,e in self.videoManager.getAllClips():
       totalExTrim += (e-s)-(targetTrim*2)

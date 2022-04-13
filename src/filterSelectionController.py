@@ -20,11 +20,9 @@ class FilterSelectionController:
           name = fn.rpartition('.')[0]
           value = json.loads(open(os.path.join('filterTemplates',fn),'r').read())
           self.templates[name]=value
-          print(name,value)
+          print('filter template load:',name)
         except Exception as e:
           print(e)
-
-    print(self.templates)
 
     self.ui.setController(self)
     self.videoManager = videoManager
@@ -210,7 +208,10 @@ class FilterSelectionController:
     return vid_w/vid_h
 
   def getvideoOSDExtents(self):
-    par = self.player.video_out_params.get('par',1)
+    if self.player.video_out_params is not None:
+      par = self.player.video_out_params.get('par',1)
+    else:
+      par =1
 
     osd_w = self.player.osd_width
     osd_h = self.player.osd_height

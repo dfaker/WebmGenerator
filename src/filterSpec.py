@@ -1724,7 +1724,3 @@ if __name__ == "__main__":
     if flt in filterDupes:
       print(f['name'],'Duplicate filter')
     filterDupes.add(flt)
-
-  print('\n---CATLIST----\n')
-  for k,v in sorted(catcounts.items(),key=lambda x:x[1],reverse=True):
-    print(k,'-',v)

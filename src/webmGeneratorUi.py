@@ -104,11 +104,22 @@ class WebmGeneratorUi:
       
 
     if darkMode:
-      self.style.configure (".",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
-      
-      self.style.configure ("TToolbutton",color='white',foreground='white',background='#0f0f0f',activeforeground='white',activebackground='#0f0f0f',bordercolor='#0f0f0f',lightcolor='white',darkcolor='#0f0f0f',highlightbackground='#69bfdb',highlightcolor='#282828')
+      self.style.configure (".",color='white',foreground='white',background='#0f0f0f',bordercolor='#000000',highlightbackground='#0f0f0f',troughcolor='#0f0f0f',border=0)
+      self.style.map('.',background=[('active', '#69bfdb'),('disabled', '#060B0C')], foreground=[('active', '#282828'),('disabled', '#4c4c4c')] )
 
-      self.style.map('TToolbutton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
+
+      self.style.configure ("TMenu",color='white',foreground='white',background='#0f0f0f',bordercolor='#000000',highlightbackground='#0f0f0f',troughcolor='#0f0f0f')
+      
+
+      self.style.configure ("TToolbutton",color='white',foreground='white',background='#1f1f1f',activeforeground='white',activebackground='#1f1f1f',bordercolor='#1f1f1f',lightcolor='white',darkcolor='#1f1f1f',highlightbackground='#1f1f1f',highlightcolor='#282828')
+      self.style.configure ("TToolbutton.button",color='white',foreground='white',background='#1f1f1f',activeforeground='white',activebackground='#1f1f1f',bordercolor='#1f1f1f',lightcolor='white',darkcolor='#1f1f1f',highlightbackground='#1f1f1f',highlightcolor='#282828')
+
+
+      self.style.map('TToolbutton',background=[('active', '#1f1f1f')], foreground=[('active', '#282828')] )
+      self.style.map('TRadiobutton',background=[('active', '#1f1f1f')], foreground=[('active', '#282828')] )
+
+      self.style.map('TToolbutton.button',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
+
 
       self.style.configure ("TProgressbar.trough",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
       
@@ -127,14 +138,14 @@ class WebmGeneratorUi:
       self.style.configure ("TNotebook.Pane",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
 
       self.style.configure ("TLabel",color='white',foreground='white',background='#0f0f0f')
-      self.style.configure ("TFrame",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
+      self.style.configure ("TFrame",color='white',foreground='white',background='#0f0f0f',bordercolor='#1f1f1f',highlightbackground='#0f0f0f')
 
 
-      self.style.configure ("TLabelframe",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f',relief='flat')
+      self.style.configure ("TLabelframe",color='white',foreground='white',background='#0f0f0f',bordercolor='#1f1f1f',highlightbackground='#0f0f0f',relief='flat')
 
-      self.style.configure ("TLabelframe.Label",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f')
+      self.style.configure ("TLabelframe.Label",color='white',foreground='white',background='#0f0f0f',bordercolor='#1f1f1f')
 
-      self.style.configure ("TLabelframe.Frame",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',highlightbackground='#0f0f0f')
+      self.style.configure ("TLabelframe.Frame",color='white',foreground='white',background='#0f0f0f',bordercolor='#1f1f1f',highlightbackground='#0f0f0f')
       
       self.style.configure ("TButton",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f',activebackground='#282828',activeforeground='#282828',highlightcolor='#282828',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',highlightbackground='#69bfdb')
       self.style.map('TButton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
@@ -145,8 +156,8 @@ class WebmGeneratorUi:
 
       self.style.configure ("TMenubutton",color='white',foreground='white',background='#0f0f0f',bordercolor='#0f0f0f')
 
-      self.style.configure ("TSpinbox",color='white',foreground='white',fieldbackground='#0f0f0f',background='#0f0f0f',bordercolor='#0f0f0f',buttonbackground='white')
-      self.style.configure ("TEntry",color='white',foreground='white',fieldbackground='#0f0f0f',background='#0f0f0f',bordercolor='#0f0f0f')
+      self.style.configure ("TSpinbox",color='white',foreground='white',fieldbackground='#1f1f1f',background='#0f0f0f',bordercolor='darkgrey',buttonbackground='white')
+      self.style.configure ("TEntry",color='white',foreground='white',fieldbackground='#1f1f1f',background='#0f0f0f',bordercolor='darkgrey')
       self.style.configure ("TCombobox",color='white',foreground='white',fieldbackground='#0f0f0f',background='#0f0f0f',bordercolor='#0f0f0f')
 
 

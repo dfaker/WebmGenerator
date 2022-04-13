@@ -618,7 +618,7 @@ class FilterSpecification(ttk.Frame):
 
 
 class FilterSelectionUi(ttk.Frame):
-  def __init__(self, master=None, enableFaceDetection=False, *args, **kwargs):
+  def __init__(self, master=None, enableFaceDetection=False, globalOptions={}, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     # build ui
     self.frameFilterFrame = self
@@ -706,10 +706,15 @@ class FilterSelectionUi(ttk.Frame):
 
     basicFilters=[]
 
+    quickFilters = [x.strip().upper() for x in globalOptions.get('quickFilters','').split(',') if len(x.strip())>0]
+    
     for fltx in sorted(selectableFilters,key=lambda x:x.get('name','').upper()):
       categories = fltx.get('category',['General'])
 
-      if 'Basic' in categories:
+      if len(quickFilters) > 0:
+        if fltx.get('name','ALL').upper() in quickFilters:
+          basicFilters.append(fltx)  
+      elif 'Basic' in categories:
         basicFilters.append(fltx)      
       
       if type(categories) != list:
@@ -717,6 +722,9 @@ class FilterSelectionUi(ttk.Frame):
       for cat in categories:
         submenu = self.submenuMap.setdefault( cat, tk.Menu(self.filterMenu, tearoff=0) )
         submenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))
+
+    if len(quickFilters)>0:
+       basicFilters = sorted(basicFilters,key=lambda x:quickFilters.index(x.get('name','').upper()))        
 
     for fltx in basicFilters:
       self.filterMenu.add_command(label="{} - {}".format(fltx.get('name','UNAMED'),fltx.get('desc',fltx.get('name','UNAMED')+' filter')),command=lambda n=fltx.get('name','UNAMED') :self.selectedFilter.set(n))

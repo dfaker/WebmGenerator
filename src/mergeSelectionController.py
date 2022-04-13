@@ -34,7 +34,7 @@ class MergeSelectionController:
             profile['editable'] = True
             profileName = profile['name']
             profile['name'] = profileName 
-            print('Custom profile:',profile)
+            print('Custom profile load:',profileName)
             self.customProfileSpecs.append( profile )
           except Exception as e:
             print('Custom profile load error',profileFilename,e)

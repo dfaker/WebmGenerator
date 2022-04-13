@@ -63,6 +63,7 @@ class WebmGeneratorController:
       "titleMetadataSuffix":' WmG',
       "startFullscreen":False,
       "darkMode":False,
+      "quickFilters":"",
 
       "allowableTargetSizeUnderrun":0.15,
       "allowEarlyExitIfUndersized":True,
@@ -180,6 +181,7 @@ class WebmGeneratorController:
                                      globalOptions=self.globalOptions)
 
 
+
     self.cutselectionController = CutselectionController(self.cutselectionUi,
                                                          self.initialFiles,
                                                          self.videoManager,
@@ -187,12 +189,14 @@ class WebmGeneratorController:
                                                          self.ytdlService,
                                                          self.voiceActivityService,
                                                          self.globalOptions)
+    print('cutselectionController loaded')
 
     self.filterSelectionController = FilterSelectionController(self.filterSselectionUi,
                                                                self.videoManager,
                                                                self.ffmpegService,
                                                                self.faceDetectionService,
                                                                self.globalOptions)
+    print('filterSelectionController loaded')
 
     self.composeController = ComposeController(self.composeUi,
                                                              self.videoManager,
@@ -200,6 +204,8 @@ class WebmGeneratorController:
                                                              self.filterSelectionController,
                                                              self.globalOptions
                                                              )
+    print('composeController loaded')
+
 
     self.mergeSelectionController = MergeSelectionController(self.mergeSelectionUi,
                                                              self.videoManager,
@@ -207,7 +213,7 @@ class WebmGeneratorController:
                                                              self.filterSelectionController,
                                                              self.globalOptions
                                                              )
-
+    print('mergeSelectionController loaded')
 
 
     if os.path.exists(self.autosaveFilename) and len(self.initialFiles)==0:

@@ -143,12 +143,24 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.perfectLoopMenu = tk.Menu(self, tearoff=0)
 
+
+    
+    self.perfectLoopMenu.add_command(label="Move Center on highest inter-frame difference to Start",command=lambda : self.canvasPopupReCenterOnInterFrameDistance('start'))
+    self.perfectLoopMenu.add_command(label="Move Center on highest inter-frame difference to Middle",command=lambda : self.canvasPopupReCenterOnInterFrameDistance('mid'))
+    self.perfectLoopMenu.add_command(label="Move Center on highest inter-frame difference to End",command=lambda : self.canvasPopupReCenterOnInterFrameDistance('end'))
+
+
+
+    self.perfectLoopMenu.add_separator()
+
     self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}%".format(self.globalOptions.get('loopNudgeLimit1',1)),command=self.canvasPopupFindLowestError1s)
     self.perfectLoopMenu.add_command(label="Improve this loop moving the ends at most {}%".format(self.globalOptions.get('loopNudgeLimit2',2)),command=self.canvasPopupFindLowestError2s)
     
     self.perfectLoopMenu.add_separator()
     self.perfectLoopMenu.add_command(label="Find best loop between {} and {}s centered here".format(  self.globalOptions.get('loopSearchLower1',2), self.globalOptions.get('loopSearchUpper1',3)),command=self.canvasPopupFindContainingLoop3s)
     self.perfectLoopMenu.add_command(label="Find best loop between {} and {}s  centered here".format( self.globalOptions.get('loopSearchLower2',3), self.globalOptions.get('loopSearchUpper2',6)),command=self.canvasPopupFindContainingLoop6s)
+
+
 
     self.timeline_canvas_popup_menu.add_cascade(label="Loop tools",  menu=self.perfectLoopMenu)
     
@@ -215,7 +227,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.canvasRegionCache = {}
     self.timeline_mousedownstate={}
     self.tickmarks=[]
-    self.uiDirty=True
+    self.uiDirty=1
     self.clickTarget=None
 
     self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,9,0,fill="#4E4E4E")
@@ -258,7 +270,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('previewFrame')
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
-    self.uiDirty=True
+    self.uiDirty=1
     self.uiUpdateLock = threading.RLock()
     self.clipped=None
 
@@ -438,7 +450,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.controller.addNewSubclip(a,b,seekAfter=False)
       self.tempRangeStart=None
       self.updateCanvas()
-      self.uiDirty = True
+      self.setUiDirtyFlag()
 
   def keyboardTempSection(self,e):
     if self.tempRangeStart is None:
@@ -529,7 +541,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.dragPreviewPos = value
 
   def reconfigure(self,e):
-    self.uiDirty=True
+    self.setUiDirtyFlag()
     if self.controller.getTotalDuration() is not None:
       self.updateCanvas(withLock=False)
 
@@ -549,7 +561,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
 
-    self.uiDirty=True
+    self.setUiDirtyFlag()
 
   @staticmethod
   def pureGetClampedCenterPosAndRange(totalDuration,zoomFactor,currentMidpoint):
@@ -620,14 +632,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         newZoomFactor = self.timelineZoomFactor
         if e.delta>0:
           newZoomFactor *= 1.5 if ctrl else 1.01
-          self.uiDirty=True
+          self.setUiDirtyFlag()
         else:
           newZoomFactor *= 0.666 if ctrl  else 0.99
-          self.uiDirty=True
+          self.setUiDirtyFlag()
         newZoomFactor = min(max(1,newZoomFactor),100)
         if newZoomFactor == self.timelineZoomFactor:
           return
-          self.uiDirty=True
+          self.setUiDirtyFlag()
         self.timelineZoomFactor=newZoomFactor
 
   @debounce(0.1,0.5)
@@ -734,13 +746,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if self.timeline_mousedownstate.get(2,False):
       if self.rangeHeaderClickStart is not None:
         self.currentZoomRangeMidpoint = (e.x/self.winfo_width())+self.rangeHeaderClickStart
-        self.uiDirty=True
+        self.setUiDirtyFlag()
 
     if self.timeline_mousedownstate.get(1,False):
       if self.clickTarget is None:
         if self.rangeHeaderClickStart is not None:
           self.currentZoomRangeMidpoint = ((e.x)/self.winfo_width())+self.rangeHeaderClickStart
-          self.uiDirty=True
+          self.setUiDirtyFlag()
         else:          
           seconds = self.xCoordToSeconds(e.x)
           self.controller.pause()
@@ -833,7 +845,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
         self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text="")
 
-      if self.uiDirty and self.generateWaveImages:
+      if self.uiDirty>0 and self.generateWaveImages:
 
         if self.audioToBytesThread is None: 
           self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
@@ -861,7 +873,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.canvasRegionCache[previewName] = self.timeline_canvas.create_image(ts_x, 20, image=frameData, anchor='n',tags='previewFrame')
           self.timeline_canvas.lower(self.canvasRegionCache[previewName])
           self.timeline_canvas.lower(self.previewBG)
-        elif self.uiDirty:
+        elif self.uiDirty>0:
           self.timeline_canvas.coords(self.canvasRegionCache[previewName],ts_x, 20)
 
       if not self.framesRequested and self.controller.getcurrentFilename() is not None and self.controller.getTotalDuration() is not None:
@@ -875,7 +887,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       seekMidpc  = (startpc+endpc)/2
       self.timeline_canvas.coords(self.rangeHeaderActiveMid,seekMidpc*timelineWidth,0,seekMidpc*timelineWidth,20)
 
-      if self.uiDirty:
+      if self.uiDirty>0:
         self.timeline_canvas.delete('ticks')
 
         for ts,interesttype in self.controller.getInterestMarks():
@@ -915,7 +927,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         activeRanges.add(rid)
         
-        if rid in self.dirtySelectionRanges or self.uiDirty or (rid,'main') not in self.canvasRegionCache:
+        if rid in self.dirtySelectionRanges or self.uiDirty>0 or (rid,'main') not in self.canvasRegionCache:
           
           self.dirtySelectionRanges.add(rid)
 
@@ -976,7 +988,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
               try:
                 self.dirtySelectionRanges.remove(rid)
               except Exception as e:
-                self.uiDirty=True
+                self.setUiDirtyFlag()
                 print(e)
             else:
               self.clipped=None
@@ -1011,6 +1023,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.dirtySelectionRanges.add(rid)
             canvasUpdated = True
 
+      if self.uiDirty>0:
+        self.decrementUiDirtyFlag()
+
       if canvasUpdated:
         self.timeline_canvas.update_idletasks()
         self.timeline_canvas.update()
@@ -1019,16 +1034,17 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if rid not in activeRanges and rid != 'previewFrame':
           self.timeline_canvas.delete(i)
           del self.canvasRegionCache[(rid,name)]
-      self.uiDirty=False
 
   def setUiDirtyFlag(self):
-    self.uiDirty=True    
+    self.uiDirty+=1
 
+  def decrementUiDirtyFlag(self):
+    self.uiDirty = min(max(0,self.uiDirty-1),5)
 
   def canvasPopupAddNewSubClipToInterestMarksCallback(self):
     self.canvasPopupAddNewSubClipCallback(setDirtyAfter=False)
     self.canvasPopupExpandSublcipToInterestMarksCallback(setDirtyAfter=False)
-    self.uiDirty=True
+    self.setUiDirtyFlag()
 
   def canvasPopupExpandSublcipToInterestMarksCallback(self,setDirtyAfter=True):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -1045,7 +1061,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           break
     self.timeline_canvas_last_right_click_x=None
     if setDirtyAfter:
-      self.uiDirty=True
+      self.setUiDirtyFlag()
 
 
   def canvasPopupCloneSubClipCallback(self):
@@ -1062,7 +1078,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.cloneSubclip((e+s)/2)
           break
     self.timeline_canvas_last_right_click_x=None
-    self.uiDirty=True
+    self.setUiDirtyFlag()
 
 
   def canvasPopupCopySubClipCallback(self):
@@ -1079,12 +1095,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.copySubclip((e+s)/2)
           break
     self.timeline_canvas_last_right_click_x=None
-    self.uiDirty=True
+    self.setUiDirtyFlag()
 
   def canvasPopupPasteSubClipCallback(self):
     self.controller.pasteSubclip()
     self.timeline_canvas_last_right_click_x=None
-    self.uiDirty=True
+    self.setUiDirtyFlag()
 
   def canvasPopupRemoveSubClipCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -1104,7 +1120,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def canvasPopupAddNewInterestMarkCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:
       self.controller.addNewInterestMark( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x))
-      self.uiDirty=True
+      self.setUiDirtyFlag()
 
   def canvasPopupAddNewSubClipCallback(self,setDirtyAfter=True):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -1114,7 +1130,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.timeline_canvas_last_right_click_x=None
     if setDirtyAfter:
-      self.uiDirty=True
+      self.setUiDirtyFlag()
 
   def canvasPopupFindLowestError1s(self):
     self.findLowestErrorForBetterLoop( self.globalOptions.get('loopNudgeLimit1',1.0))
@@ -1127,6 +1143,24 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def canvasPopupFindContainingLoop6s(self):
     self.findLoopAroundFrame(self.globalOptions.get('loopSearchLower2',3), self.globalOptions.get('loopSearchUpper2',6))
+
+  def canvasPopupReCenterOnInterFrameDistance(self,pos):
+    if self.timeline_canvas_last_right_click_x is not None:
+      selectedRange = None
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+      upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+      for rid,(s,e) in list(ranges):
+        if s<mid<e:
+          selectedRange=rid
+          break
+        if lower<e<upper or lower<s<upper:
+          selectedRange=rid
+          break
+      if selectedRange is not None:
+        self.controller.moveToMaximumInterFrameDistance(rid,pos)
+    self.timeline_canvas_last_right_click_x=None
 
   def findLoopAroundFrame(self,minSeconds,maxSeconds):
     if self.timeline_canvas_last_right_click_x is not None:

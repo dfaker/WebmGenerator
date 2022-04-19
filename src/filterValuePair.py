@@ -459,6 +459,10 @@ class FilterValuePair(ttk.Frame):
       valVar = valVar.replace('{!title}',self.controller.getStringValue('title'))
     elif "{!path}" in valVar:
       valVar = valVar.replace('{!path}',self.controller.getStringValue('path'))
+    elif "{!startts}" in valVar:
+      valVar = valVar.replace('{!startts}',self.controller.getStringValue('startts'))
+    elif "{!endts}" in valVar:
+      valVar = valVar.replace('{!endts}',self.controller.getStringValue('endts'))
 
     if self.valueVar.get() != valVar:
       self.valueVar.set(valVar)

@@ -22,7 +22,15 @@ except Exception as e:
 
 os.environ["FREI0R_PATH"] = os.path.abspath(os.path.join('src','frei0r-1'))
 
+
 from tkinter import Tk
+
+try:
+  from tkinterdnd2 import Tk as TkinterDnDTk
+  from tkinterdnd2 import DND_FILES
+except Exception as e:
+  print(e)
+
 import json
 import mimetypes
 
@@ -145,7 +153,15 @@ class WebmGeneratorController:
 
 
     self.initialFiles = self.cleanInitialFiles(initialFiles)
-    self.root = Tk()
+    
+    try:
+      self.root = TkinterDnDTk()
+      self.root.drop_target_register(DND_FILES)
+      self.root.dnd_bind('<<Drop>>',self.loadDrop)
+    except Exception as e:
+      self.root = Tk()
+      print(e)
+
     
     self.keyQueue=[]
     self.root.bind_all("<Key>", self.globalKeyCallback)
@@ -226,7 +242,33 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
 
+  def loadDrop(self,drop):
+    dropfiles = []
+    bopen=False
+    print(drop.data)
+    lastchar = ' '
+    for c in drop.data:
+      if c == '{' and lastchar != '\\':
+        bopen=True
+        dropfiles.append('')
+      elif c == '}' and bopen and lastchar != '\\':
+        bopen=False
+        dropfiles.append('')
+      elif c == ' ' and not bopen and lastchar != '\\':
+        dropfiles.append('')
+      else:
+        if len(dropfiles)==0:
+          dropfiles.append('')
+        if lastchar == '\\':
+          dropfiles[-1] = dropfiles[-1][:-1]+c
+        else:
+          dropfiles[-1] = dropfiles[-1]+c
+      lastchar=c
 
+    dropfiles = [x for x in dropfiles if x.strip() != '']
+    if len(dropfiles)>0:
+      self.cutselectionController.loadFiles(self.cleanInitialFiles(dropfiles))
+    self.cutselectionUi.clearVideoMousePress()
 
   def updateGlobalOptions(self,changedOptions):
     print(changedOptions)

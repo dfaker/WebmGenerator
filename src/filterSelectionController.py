@@ -61,6 +61,10 @@ class FilterSelectionController:
       return self.player.title
     elif valueToken == 'path':
       return self.player.path
+    elif valueToken == 'startts':
+      return self.player.ab_loop_a
+    elif valueToken == 'endts':
+      return self.player.ab_loop_b
     else:
       return 'UNKNOWN'
 
@@ -168,6 +172,7 @@ class FilterSelectionController:
       self.player.command('async','vf', 'del',    "@filterStack")
 
   def setFilter(self,filterExpStr):
+    print(filterExpStr)
     if self.filterApplicationMode == 'lavfi_complex':
       self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
     else:

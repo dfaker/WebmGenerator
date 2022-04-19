@@ -537,6 +537,10 @@ class CutselectionController:
     self.ui.setUiDirtyFlag()
     self.seekTo(finals)
 
+  def moveToMaximumInterFrameDistance(self,rid,pos):
+    filename,start,end = self.videoManager.getDetailsForRangeId(rid)
+    self.ffmpegService.moveToMaximumInterFrameDistance( filename,start,end,pos,rid,self.lowestErrorLoopCallback )
+
   def findLowestErrorForBetterLoop(self,rid,secondsChange,rect):
     filename,start,end = self.videoManager.getDetailsForRangeId(rid)
 

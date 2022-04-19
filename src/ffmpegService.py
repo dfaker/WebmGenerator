@@ -40,7 +40,52 @@ import subprocess as sp
 import numpy as np
 from collections import defaultdict, deque
 
+def rgb2gray(rgb):
+    r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
+    gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+    return np.clip(gray,0,255,dtype='uint8')
 
+def lucas_kanade_np(im1, im2, win=2):
+    im1 = rgb2gray(im1)
+    im2 = rgb2gray(im2)
+
+    assert im1.shape == im2.shape
+    I_x = np.zeros(im1.shape)
+    I_y = np.zeros(im1.shape)
+    I_t = np.zeros(im1.shape)
+    I_x[1:-1, 1:-1] = (im1[1:-1, 2:] - im1[1:-1, :-2]) / 2
+    I_y[1:-1, 1:-1] = (im1[2:, 1:-1] - im1[:-2, 1:-1]) / 2
+    I_t[1:-1, 1:-1] = im1[1:-1, 1:-1] - im2[1:-1, 1:-1]
+    params = np.zeros(im1.shape + (5,)) #Ix2, Iy2, Ixy, Ixt, Iyt
+    params[..., 0] = I_x * I_x # I_x2
+    params[..., 1] = I_y * I_y # I_y2
+    params[..., 2] = I_x * I_y # I_xy
+    params[..., 3] = I_x * I_t # I_xt
+    params[..., 4] = I_y * I_t # I_yt
+    del I_x, I_y, I_t
+    cum_params = np.cumsum(np.cumsum(params, axis=0), axis=1)
+    del params
+    win_params = (cum_params[2 * win + 1:, 2 * win + 1:] -
+                  cum_params[2 * win + 1:, :-1 - 2 * win] -
+                  cum_params[:-1 - 2 * win, 2 * win + 1:] +
+                  cum_params[:-1 - 2 * win, :-1 - 2 * win])
+    del cum_params
+    op_flow = np.zeros(im1.shape + (2,))
+    det = win_params[...,0] * win_params[..., 1] - win_params[..., 2] **2
+    op_flow_x = np.where(det != 0,
+                         (win_params[..., 1] * win_params[..., 3] -
+                          win_params[..., 2] * win_params[..., 4]) / det,
+                         0)
+    op_flow_y = np.where(det != 0,
+                         (win_params[..., 0] * win_params[..., 4] -
+                          win_params[..., 2] * win_params[..., 3]) / det,
+                         0)
+    op_flow[win + 1: -1 - win, win + 1: -1 - win, 0] = op_flow_x[:-1, :-1]
+    op_flow[win + 1: -1 - win, win + 1: -1 - win, 1] = op_flow_y[:-1, :-1]
+
+    mag = np.hypot(op_flow[:,:,0], op_flow[:,:,1])
+
+    return mag.max()-mag.mean()
 
 encoderMap = {
    'webm:VP8':webmvp8Encoder
@@ -1029,7 +1074,91 @@ class FFmpegService():
           filename,requestType,options,callback = self.statsRequestQueue.get()
           print(requestType,options)
           
-          if requestType == 'FullLoopSearch':
+
+          if requestType =='MaxInterFrameMove':
+
+
+            logging.debug('inter frame move start')
+            filename = options.get('filename')
+            start = options.get('start')
+            end   = options.get('end')
+            position= options.get('pos','mid')
+            clipDur = (end-start)
+
+            cropRect = options.get('cropRect')
+            rid = options.get('rid')
+            
+            od=256
+            nbytes = 3 * od * od
+
+            if cropRect is None:
+              videofilter = "scale={}:{}:flags=bicubic".format(od,od)
+            else:
+              x,y,w,h = cropRect
+              videofilter = "crop={}:{}:{}:{},scale={}:{}:flags=bicubic".format(x,y,w,h,od,od)
+
+            popen_params = {
+              "bufsize": 10 ** 5,
+              "stdout": sp.PIPE,
+              #"stderr": sp.DEVNULL,
+            }
+
+            self.globalStatusCallback('Finding greatest motion',0)
+            
+            famesCmd = ["ffmpeg"
+                      ,'-ss',str(start)
+                      ,"-i", cleanFilenameForFfmpeg(filename)  
+                      ,'-s', '{}x{}'.format(od,od)
+                      ,'-ss',str(start)
+                      ,'-t', str(clipDur)
+                      ,"-filter_complex", videofilter
+                      ,"-copyts"
+                      ,"-f","image2pipe"
+                      ,"-an"
+                      ,"-pix_fmt","bgr24"
+                      ,"-vcodec","rawvideo"
+                      ,"-vsync", "vfr"
+                      ,"-"]
+
+            frames = np.frombuffer(sp.Popen(famesCmd,**popen_params).stdout.read(), dtype="uint8")
+            frames.shape = (-1,od,od,3)
+
+            lastFrame=None
+            maxInterFrame=0
+            maxFrameInd=None
+
+            for si,frame in enumerate(frames):
+              
+              self.globalStatusCallback('Finding greatest motion',si/frames.shape[0])
+
+              if lastFrame is not None:
+                #mse = ((frames[si] - lastFrame)**2).mean()
+                mse = lucas_kanade_np(frames[si],lastFrame)
+                print(si,mse)
+
+                if mse > maxInterFrame:
+                  maxInterFrame = mse
+                  maxFrameInd = si
+
+              lastFrame = frames[si]
+
+            if maxFrameInd is not None:
+              pc = maxFrameInd/frames.shape[0]
+              pcSeconds = (clipDur*pc)
+              secondsAdjust = pcSeconds-(clipDur/2)
+
+              self.globalStatusCallback('Finding greatest motion, updating',1)
+              if position == 'start':
+                callback(filename,rid,mse,start+pcSeconds,end+pcSeconds)
+              elif position == 'end':
+                callback(filename,rid,mse,start-pcSeconds,end-pcSeconds)
+              else:
+                callback(filename,rid,mse,start+secondsAdjust,end+secondsAdjust)
+            else:
+              self.globalStatusCallback('No maximum found, closing',1)
+              
+
+          elif requestType == 'FullLoopSearch':
             addCuts        = bool(options.get('addCuts',True))
             
             totalDuration  = float(options.get('duration'))
@@ -1821,6 +1950,13 @@ class FFmpegService():
                                                                  rangeEnd=rangeEnd,                                                                 
                                                                  threshold=threshold),callback) )    
 
+
+  def moveToMaximumInterFrameDistance(self, filename,start,end,pos,rid,callback):
+    self.statsRequestQueue.put( (filename,'MaxInterFrameMove',dict(filename=filename,
+                                                              start=start,
+                                                              end=end,
+                                                              pos=pos,
+                                                              rid=rid),callback) )
 
   def findLowerErrorRangeforLoop(self,filename,start,end,rid,secondsChange,cropRect,callback):
     self.statsRequestQueue.put( (filename,'MSESearchImprove',dict(filename=filename,

@@ -609,6 +609,10 @@ class CutselectionUi(ttk.Frame):
       else:
         self.controller.seekRelative(evt.delta/20)
 
+    def clearVideoMousePress(self):
+        self.screenMouseRect=[None,None,None,None]
+        self.mouseRectDragging=False
+        self.controller.clearVideoRect()
 
     def videomousePress(self,e):
       if e.type == tk.EventType.ButtonPress:
@@ -662,6 +666,9 @@ class CutselectionUi(ttk.Frame):
 
     def playerFrameKeypress(self,e):
       pass
+
+    def moveToMaximumInterFrameDistance(self,rid,pos):
+      self.controller.moveToMaximumInterFrameDistance(rid,pos)
 
     def findLowestErrorForBetterLoop(self,rid,secondsChange):
       self.controller.findLowestErrorForBetterLoop(rid,secondsChange,self.videoMouseRect)

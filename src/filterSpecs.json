@@ -378,13 +378,14 @@
  },
 
 
-
  {
   "support": "T..",
   "category": "Overlay, text and masks",
   "name": "ZoomPan Centre",
+  "appendUnusedParams":false,
   "filter": "zoompan=z='min(max(zoom,pzoom)+{zoomSpeed},{zoomMax})+({offsetClipStartSeconds}*0)':s={size}:d={frameDuration}:x='(iw*{zoomXCentre})-((iw*{zoomXCentre})/max(zoom,pzoom))':y='(ih*{zoomYCentre})-((ih*{zoomYCentre})/max(zoom,pzoom))':fps={fps}",
-  "filterPreview":  "zoompan=z='if( lte(in_time,{offsetClipStartSeconds}), min(max(zoom,pzoom)+0,{zoomMax}), min(max(zoom,pzoom)+{zoomSpeed},{zoomMax}) ) ':s={size}:d={frameDuration}:x='(iw*{zoomXCentre})-((iw*{zoomXCentre})/max(zoom,pzoom))':y='(ih*{zoomYCentre})-((ih*{zoomYCentre})/max(zoom,pzoom))':fps={fps}",
+  "filterPreview":  "drawbox=c=pink:x='(iw*{zoomXCentre})-((iw*(1/{zoomMax}))/2)':y='(ih*{zoomYCentre})-((ih*(1/{zoomMax}))/2)':w='iw*(1/{zoomMax})':h='ih*(1/{zoomMax})'",
+  "filterPreviewold":  "zoompan=z='if( lte(in_time,{offsetClipStartSeconds}), min(max(zoom,pzoom)+0,{zoomMax}), min(max(zoom,pzoom)+{zoomSpeed},{zoomMax}) ) ':s={size}:d={frameDuration}:x='(iw*{zoomXCentre})-((iw*{zoomXCentre})/max(zoom,pzoom))':y='(ih*{zoomYCentre})-((ih*{zoomYCentre})/max(zoom,pzoom))':fps={fps}",
 
 
   "kind": "V->V",
@@ -393,8 +394,8 @@
     {"n": "zoomSpeed", "d": 0.0015, "type": "float","range": [null,null],"inc": 0.0001},
     {"n": "zoomMax", "d": 1.5, "type": "float","range": [null,null],"inc": 0.1},
 
-    {"n": "zoomXCentre", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1},
-    {"n": "zoomYCentre", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1},
+    {"n": "zoomXCentre", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1,"rectProp": "cxf"},
+    {"n": "zoomYCentre", "d": 0.5, "type": "float","range": [0.0,1.0],"inc": 0.1,"rectProp": "cyf"},
     {"n": "frameDuration", "d": 1, "type": "int","range": [0, null],"inc": 1},
     {"n": "fps", "d": 25, "type": "float","range": [0.1,null],"inc": 0.5},
     {"n": "size", "d": "hd720", "type": "cycle","cycle": [ "hd720", "hd1080", "800x600"]},

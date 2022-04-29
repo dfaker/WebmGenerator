@@ -705,6 +705,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.automaticFileNamingVar    = tk.BooleanVar()
     self.interpolateSpeedChangeVar = tk.BooleanVar()
+    self.loopStartAndendVar        = tk.BooleanVar()
 
     self.filenamePrefixVar        = tk.StringVar()
     self.outputFormatVar          = tk.StringVar()
@@ -732,6 +733,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.automaticFileNamingVar.trace('w',self.valueChange)
     self.interpolateSpeedChangeVar.trace('w',self.valueChange)
+    self.loopStartAndendVar.trace('w',self.valueChange)
     self.filenamePrefixVar.trace('w',self.valueChange)
     self.outputFormatVar.trace('w',self.valueChange)
     self.frameSizeStrategyVar.trace('w',self.valueChange)
@@ -782,6 +784,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.automaticFileNamingVar.set(True)
     self.interpolateSpeedChangeVar.set(False)
+    self.loopStartAndendVar.set(True)
     self.filenamePrefixVar.set('')
 
     self.audioOverrideVar.set('None')
@@ -1221,6 +1224,14 @@ class MergeSelectionUi(ttk.Frame):
     self.comboboxTransStyle['padding']=2
     Tooltip(self.comboboxTransStyle,text='The transition style to use between cuts.')
 
+    self.entryTransLoop = ttk.Checkbutton(self.frameTransStyle,text='Loop start to end',onvalue=True, offvalue=False)
+    self.entryTransLoop.config(variable=self.loopStartAndendVar)
+    self.entryTransLoop['padding']=2
+    Tooltip(self.entryTransLoop,text='Trim a little from the start of the sequence and add it to a fade at the end so that it cycles as a perfect loop.')
+
+    self.entryTransLoop.pack(expand='false', fill='x', side='right')
+
+
     self.comboboxTransStyle.pack(expand='true', fill='x', side='right')
 
     self.frameTransStyle.config(height='200', width='100')
@@ -1338,6 +1349,11 @@ class MergeSelectionUi(ttk.Frame):
       if self.audioOverrideValue.upper() == 'NONE':
         self.audioOverrideValue = None
 
+    except:
+      pass
+
+    try:
+      self.loopStartAndendValue = self.loopStartAndendVar.get()
     except:
       pass
 
@@ -1575,6 +1591,7 @@ class MergeSelectionUi(ttk.Frame):
           'minimumPSNR':self.minimumPSNR,
           'optimizer':self.optimizer,
           'audioOverrideBias':self.audiOverrideBiasValue,
+          'loopStartAndEnd':self.loopStartAndendValue,
         }
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)

@@ -27,7 +27,7 @@ from tkinter import Tk
 
 try:
   from tkinterdnd2 import Tk as TkinterDnDTk
-  from tkinterdnd2 import DND_FILES
+  from tkinterdnd2 import DND_FILES,DND_TEXT,CF_UNICODETEXT,CF_TEXT
 except Exception as e:
   print(e)
 
@@ -73,6 +73,7 @@ class WebmGeneratorController:
       "darkMode":False,
       "quickFilters":"",
 
+      "useNewCrossfade":True,
       "allowableTargetSizeUnderrun":0.15,
       "allowEarlyExitIfUndersized":True,
       "initialBr":16777216,
@@ -157,6 +158,8 @@ class WebmGeneratorController:
     try:
       self.root = TkinterDnDTk()
       self.root.drop_target_register(DND_FILES)
+      self.root.drop_target_register(DND_TEXT)
+
       self.root.dnd_bind('<<Drop>>',self.loadDrop)
     except Exception as e:
       self.root = Tk()
@@ -245,6 +248,12 @@ class WebmGeneratorController:
   def loadDrop(self,drop):
     dropfiles = []
     bopen=False
+
+    print(drop.type)
+    if drop.type in (CF_UNICODETEXT,CF_TEXT):
+      self.cutselectionController.loadVideoYTdlFromClipboard(drop.data)
+      return
+
     print(drop.data)
     lastchar = ' '
     for c in drop.data:
@@ -292,6 +301,8 @@ class WebmGeneratorController:
         self.root.destroy()
       elif evt.keysym=='n':
         self.webmMegeneratorUi.newProject()
+      elif evt.keysym=='b':
+        self.webmMegeneratorUi.toggleBoringMode()
     self.cutselectionController.handleGlobalKeyEvent(evt)
 
   def autoSaveExists(self):

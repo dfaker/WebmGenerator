@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk,Menu,END,LEFT,PhotoImage
+from tkinter import Tk,Menu,END,LEFT,PhotoImage,CENTER,BOTTOM
 import tkinter.ttk as ttk
 import webbrowser
-from .modalWindows import SubtitleExtractionModal, OptionsDialog
 from tkinter.filedialog import askopenfilename,asksaveasfilename
 import sys
 import logging
@@ -13,8 +12,14 @@ import threading
 import time
 import os
 import psutil
+import random
+from math import sin,cos,floor
+from .modalWindows import SubtitleExtractionModal, OptionsDialog
+import colorsys
+import numpy as np
 
-RELEASE_NUMVER = 'v3.18.0'
+
+RELEASE_NUMVER = 'v3.17.0'
 
 class WebmGeneratorUi:
 
@@ -101,9 +106,11 @@ class WebmGeneratorUi:
     self.style.configure('PSNRGood.TLabel',foreground='green')
     self.style.configure('PSNRFair.TLabel',foreground='dark orange')
     self.style.configure('PSNRPoor.TLabel',foreground='red')
-      
+    
+    self.style.configure('boringMode.TLabel',foreground='white',background='black',font = 'TkFixedFont' )
 
     if darkMode:
+      #self.style.theme_use('black')
       self.style.configure (".",color='white',foreground='white',background='#0f0f0f',bordercolor='#000000',highlightbackground='#0f0f0f',troughcolor='#0f0f0f',border=0)
       self.style.map('.',background=[('active', '#69bfdb'),('disabled', '#060B0C')], foreground=[('active', '#282828'),('disabled', '#4c4c4c')] )
 
@@ -320,10 +327,153 @@ class WebmGeneratorUi:
 
     self.statusFrame.pack(expand=0, fill='x',side='bottom')
 
+
+
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
 
+    self.boringw=1000
+    self.boringh=600
+    self.boringscale=1
+    self.boringSteps=1
+
+    self.boringImageHeader = bytes("P6\n{} {}\n255\n".format(self.boringw,self.boringh),encoding='ascii')
+    self.boringImageArray  = bytearray([0]*(self.boringw * self.boringh *3))
+    self.boringImage       = PhotoImage(data= self.boringImageHeader+bytes(self.boringImageArray))
+    self.boringImageScaled = self.boringImage.zoom(self.boringscale,self.boringscale)
+
+    self.boringText = ttk.Label(self.master,text='',style='boringMode.TLabel',cursor='X_cursor',compound=BOTTOM,justify=CENTER,anchor=CENTER,image=self.boringImageScaled)
+    self.boringText.bind('<Button-1>',self.resetBoringText)
+    self.boringText.bind('<MouseWheel>',self.adjustToneMap)
+    self.boringMode=False
+    
+    self.boringFloats   = [[0]*self.boringw for _ in range(self.boringh)]
+    self.boringVelocity = [[0]*self.boringw for _ in range(self.boringh)]
+
+    self.algorithms = {
+      'Clifford Attractor':(        lambda x,y,a,b,c,d:sin(a*y)+c*cos(a*x),       lambda x,y,a,b,c,d:sin(b*x)+d*cos(b*y)  ,8,8),
+      'Jason Rampe 1':(             lambda x,y,a,b,c,d:cos(y*b)+c*sin(x*b),       lambda x,y,a,b,c,d:cos(x*a)+d*sin(y*a)  ,8,8),
+      'Jason Rampe 2':(             lambda x,y,a,b,c,d:cos(y*b)+c*cos(x*b),       lambda x,y,a,b,c,d:cos(x*a)+d*cos(y*a)  ,8,8),
+      'Jason Rampe 3':(             lambda x,y,a,b,c,d:sin(y*b)+c*cos(x*b),       lambda x,y,a,b,c,d:cos(x*a)+d*sin(y*a)  ,8,8),
+      'Johnny Svensson Attractor':( lambda x,y,a,b,c,d:d*sin(x*a)-sin(y*b),       lambda x,y,a,b,c,d:c*cos(x*a)+cos(y*b)  ,8,8),
+      'Peter DeJong Attractor':(    lambda x,y,a,b,c,d:sin(y*a)-cos(x*b),         lambda x,y,a,b,c,d:sin(x*c)-cos(y*d)    ,6,6),
+
+    }
+
+    self.algo='Peter DeJong Attractor'
+
+    self.boringi=0
+
+    self.boringx = 0.1
+    self.boringy = 0.1
+
+    self.lastboringx = 0.1
+    self.lastboringx = 0.1
+
+    self.boringa = 0.0
+    self.boringb = 0.0
+    self.boringc = 0.0
+    self.boringd = 0.0
+    self.tonemapScale=1000
+
+    self.boringFloats = np.array([[0]*self.boringw for _ in range(self.boringh)])
+    self.boringMax = 0.0
+
     self.versioncheckResultIndex=None
+
+  def adjustToneMap(self,e):
+    ctrl  = e and ((e.state & 0x4) != 0)
+    if ctrl:
+      alist = sorted(self.algorithms.keys())
+      algind = (alist.index(self.algo)+1)%len(alist)
+      self.algo = alist[algind]
+      self.resetBoringText()
+    else:
+      if e.delta>0:
+        self.tonemapScale -= 125
+      else:
+        self.tonemapScale += 125
+      self.tonemapScale = max(0,self.tonemapScale)
+
+  def regenerateBoringText(self):
+
+    E_map = np.empty_like(self.boringFloats,dtype='float32')
+    E_min = self.boringFloats.min()
+    E_max = self.boringFloats.max()
+    E_map = ((self.boringFloats - E_min) / (E_max - E_min))*self.tonemapScale
+
+    tonemap = np.clip(E_map, 0.0, 255.0).astype('uint8')
+    tonemap = bytearray(np.dstack([tonemap,tonemap,tonemap]).flatten().tobytes())
+
+    if tonemap == self.boringImageArray:
+      self.boringi+=1
+    else:
+      self.boringi=0
+
+    boringTextContent=''
+    boringTextContent += '\nBoring "{}" Strange Attractor Render\n'.format(self.algo)
+    boringTextContent += 'CLICK TO RANDOMISE ATTRACTOR, SCROLL TO ADJUST WHITEPOINT, CTRL-SCROLL to switch algorithms\n'
+    boringTextContent += 'PRESS CTRL-N TO RESET WMG - CHANGES WILL BE LOST\n'
+    boringTextContent += 'PRESS CTRL-B TO RESTORE WMG - WILL RESTORE LAST WORKING SESSION\n'
+    boringTextContent += 'x:{:+0.5f} y:{:+0.4f} frozenSteps:{:03d} whitepoint:{}\na:{:0.5f} b:{:0.5f} c:{:0.5f} d:{:0.5f}\n'.format(self.boringx,self.boringy,self.boringi,self.tonemapScale,self.boringa,self.boringb,self.boringc,self.boringd)
+
+
+    if self.boringi>10:
+      self.resetBoringText()
+
+    self.boringImageArray = tonemap
+
+    self.boringImage       = PhotoImage(data= self.boringImageHeader+bytes(self.boringImageArray))
+    #self.boringImageScaled = self.boringImage.zoom(self.boringscale,self.boringscale)
+    self.boringText.configure(image=self.boringImage)
+
+
+    self.boringSteps = min(self.boringSteps+10,1530)
+    
+    algx,algy,xscale,yscale = self.algorithms[self.algo]
+
+    for i in range(self.boringSteps):
+      
+      xnew = algx(self.boringx,self.boringy,self.boringa,self.boringb,self.boringc,self.boringd)
+      ynew = algy(self.boringx,self.boringy,self.boringa,self.boringb,self.boringc,self.boringd)
+
+
+      self.boringx = xnew
+      self.boringy = ynew
+
+      xnew = int((self.boringw//2)+ (xnew*(self.boringw/xscale)))
+      ynew = int((self.boringh//2)+ (ynew*(self.boringh/yscale)))
+
+      if 0<xnew<self.boringw and 0<ynew<self.boringh: 
+        newVal = self.boringFloats[ynew][xnew]+1
+        self.boringMax = max(self.boringMax,newVal)
+        self.boringFloats[ynew][xnew] = newVal
+      else:
+        self.boringi+=1
+
+
+      self.lastboringx = xnew
+      self.lastboringx = ynew
+
+
+
+    self.boringText.configure(text=boringTextContent)
+    if self.boringMode:
+      self.master.after(1, self.regenerateBoringText)
+
+  def resetBoringText(self,e=None):
+    self.boringi=0
+    self.boringx=0.1
+    self.boringy=0.1
+    self.boringa=random.uniform(-3,3)
+    self.boringb=random.uniform(-3,3)
+    self.boringc=random.uniform(-3,3)
+    self.boringd=random.uniform(-3,3)  
+    self.boringFloats = np.array([[0]*self.boringw for _ in range(self.boringh)])
+    self.boringImageArray  = bytearray([0]*(self.boringw * self.boringh *3))
+    self.boringMax = 0.0
+    self.boringSteps = 1
+
 
   def updatePreferences(self):
     changedOptions = {}
@@ -521,6 +671,26 @@ class WebmGeneratorUi:
       logging.debug('webmGeneratorUi destroyed')
     except:
       pass
+
+  def toggleBoringMode(self):
+    self.boringMode = not self.boringMode
+    
+    if(self.boringMode):
+      self.controller.cutselectionController.setVolume(0)
+      self.controller.filterSelectionController.setVolume(0)
+      self.notebook.pack_forget()
+      self.statusFrame.pack_forget()
+      self.boringText.pack(expand=True, fill='both',side='top')
+      self.master.title('Boring Strange Attractor Renderer')
+      self.master.config(menu='')
+      self.resetBoringText()
+      self.regenerateBoringText()
+    else:
+      self.boringText.pack_forget()
+      self.notebook.pack(expand=1, fill='both')
+      self.statusFrame.pack(expand=0, fill='x',side='bottom')
+      self.master.title('WebmGenerator')
+      self.master.config(menu=self.menubar)
 
 if __name__ == '__main__':
   import webmGenerator

@@ -884,7 +884,113 @@ class FFmpegService():
         if fpse != 0:
           fpsCmd = 'fps={},settb=AVTB'.format(targetfps)
 
-      if fadeDuration > 0.0:
+      useNewCrossfade=self.globalOptions.get('useNewCrossfade',True)
+      loopStartAndEnd=options.get('loopStartAndEnd',False)
+
+      if useNewCrossfade and fadeDuration > 0.0 and len(fileSequence)>1:
+        inputsList = []
+
+        splitInitTemplate = '[0:v]{splitexp},null[vidsz0];'
+        splitTemplate     = '[{i}:v]{splitexp},null[vidsz{i}];'
+
+        audioSplitInitTemplate = '[0:a]anull[audsz0];'
+        audioSplitTemplate     = '[{i}:a]anull[audsz{i}];'
+
+
+        xFadeInitTemplate = '[vidsz0][vidsz1]xfade=transition={transition}:duration={fadeDuration}s:offset={fadeOffset}s[fade1];'
+        xFadeTemplate     = '[fade{i}][vidsz{nexti}]xfade=transition={transition}:duration={fadeDuration}s:offset={fadeOffset}s[fade{nexti}];'
+
+        crossfadeInitTemplate = '[audsz0][audsz1]acrossfade=d={fadeDuration}s[afade1];'
+        crossfadeTemplate     = '[afade{i}][audsz{nexti}]acrossfade=d={fadeDuration}s[afade{nexti}];'
+
+
+  
+        if loopStartAndEnd:
+          audioSplitInitTemplate = '[0:a]asplit[tsa0][tsa1];[tsa0]atrim={fadedur}:{dur},asetpts=PTS-STARTPTS[audsz0a];[tsa1]atrim=0:{fadedur},asetpts=PTS-STARTPTS[audsz0];'        
+          splitInitTemplate      = '[0:v]{splitexp},split[tsv0][tsv1];[tsv0]trim={fadedur}:{dur},setpts=PTS-STARTPTS[vidsz0a];[tsv1]trim=0:{fadedur},setpts=PTS-STARTPTS[vidsz0];'
+          
+          crossfadeInitTemplate = '[audsz0a][audsz1]acrossfade=d={fadeDuration}s[afade1];'
+          xFadeInitTemplate     = '[vidsz0a][vidsz1]xfade=transition={transition}:duration={fadeDuration}s:offset={fadeOffset}s[fade1];'
+
+
+        for vi,v in enumerate(fileSequence):
+          inputsList.extend(['-i',v])
+
+        transition = options.get('transStyle','smoothleft')
+        offset=fadeDuration*2
+        expectedFadeDurations = expectedTimes[:-1]
+
+        audioSplits=[]
+        videoSplits=[]
+        xfades=[]
+        crossfades=[]
+        crossfadeOut=''
+        
+        previousXfadeOffset = 0
+        for i,dur in enumerate(expectedFadeDurations):
+          nexti= 0 if i==(len(expectedFadeDurations)-1) else i+1
+
+          fadeoffset = (dur+previousXfadeOffset)-(fadeDuration)
+
+          if loopStartAndEnd and i==0:
+            fadeoffset -= fadeDuration
+
+          totalExpectedFinalLength-=offset
+
+          splitexp = 'null'
+          if mode == 'CONCAT' and len(dimensionsSet) > 1:
+            splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
+
+          if i == 0:
+            videoSplits.append(splitInitTemplate.format(i=i,splitexp=splitexp,dur=dur,fadedur=fadeDuration,fadedurend=dur-fadeDuration))
+            xfades.append(xFadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01,transition=transition))
+            
+            audioSplits.append(audioSplitInitTemplate.format(i=i,dur=dur,fadedur=fadeDuration,fadedurend=dur-fadeDuration))
+            crossfades.append(crossfadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01))
+          else:
+            videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
+            xfades.append(xFadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01,transition=transition))
+            
+            audioSplits.append(audioSplitTemplate.format(i=i))
+            crossfades.append(crossfadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01))
+
+
+
+          print('------------------------')  
+          print(i,dur)
+          print(videoSplits[-1])
+          print(xfades[-1])
+          print(crossfades[-1])
+
+          previousXfadeOffset = fadeoffset
+
+        if loopStartAndEnd:
+          crossfadeOut='[fade{i}]null[concatOutV],[afade{i}]anull[concatOutA]'.format(i=0)
+        else:
+          xfades=xfades[:-1]
+          crossfades=crossfades[:-1]
+          crossfadeOut='[fade{i}]null[concatOutV],[afade{i}]anull[concatOutA]'.format(i=i)
+
+
+        if speedAdjustment==1.0:
+          crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
+        else:
+          try:
+            vfactor=1/speedAdjustment
+            afactor=speedAdjustment
+            if interpolateSpeedAdjustment:
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+            else:
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+          except Exception as e:
+            logging.error("Crossfade exception",exc_info =e)
+            crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
+
+        filtercommand = ''.join(videoSplits+xfades+audioSplits+crossfades+[crossfadeOut])
+        print(filtercommand)
+
+      elif fadeDuration > 0.0 and len(fileSequence)>1:
+
         inputsList = []
 
         splitTemplate     = '[{i}:v]{splitexp},split[vid{i}a][vid{i}b];'
@@ -892,7 +998,6 @@ class FFmpegService():
         fadeTrimTemplate  = '[fade{i}]trim={preo}:{dur},setpts=PTS-STARTPTS[fadet{i}];'
         asplitTemplate    = '[{i}:a]asplit[ata{i}][atb{i}];[ata{i}]atrim={preo}:{dur}[atat{i}];'
         crossfadeTemplate = '[atat{i}][atb{n}]acrossfade=d={preo},atrim=0:{o}[audf{i}];'
-
 
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
@@ -941,6 +1046,7 @@ class FFmpegService():
             crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
 
         filtercommand = ''.join(videoSplits+transitionFilters+audioSplits+crossfades+[crossfadeOut])
+      
       else:
         inputsList   = []
         filterInputs = ''

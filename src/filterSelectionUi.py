@@ -462,7 +462,11 @@ class FilterSpecification(ttk.Frame):
     rectDerivedProps = dict(
       x=x1,y=y1,x1=x1,y1=y1,x2=x2,y2=y2,
       w=x2-x1,h=y2-y1,cx=(x1+x2)/2,cy=(y1+y2)/2,
-      xf=round(x1/iw,4),yf=round(y1/ih,4),wf=round((x2-x1)/iw,4),hf=round((y2-y1)/ih,4),
+      xf=round(x1/iw,4),yf=round(y1/ih,4),
+      wf=round((x2-x1)/iw,4),hf=round((y2-y1)/ih,4),
+
+      cxf=((x1+x2)/2)/iw,cyf=((y1+y2)/2)/ih,
+
       px0=x1,py0=y1,
       px1=x2,py1=y1,
       px2=x1,py2=y2,
@@ -526,7 +530,7 @@ class FilterSpecification(ttk.Frame):
       if param.get('n') is not None:
         if '{'+param['n']+'}' in filterExp:
           formatDict.update({'fn':i,param['n']:values[param['n']] },)
-        else:
+        elif self.spec.get('appendUnusedParams',True):
           try:
             if param['type'] == 'float':
               try:

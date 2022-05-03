@@ -43,7 +43,7 @@ from collections import defaultdict, deque
 def rgb2gray(rgb):
     r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
     gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-    return np.clip(gray,0,255,dtype='uint8')
+    return gray
 
 def lucas_kanade_np(im1, im2, win=2):
     im1 = rgb2gray(im1)
@@ -887,6 +887,9 @@ class FFmpegService():
       useNewCrossfade=self.globalOptions.get('useNewCrossfade',True)
       loopStartAndEnd=options.get('loopStartAndEnd',False)
 
+      transition = options.get('transStyle','smoothleft,smoothright').split(',')
+      transition = itertools.cycle([x.strip() for x in transition if len(x.strip())>0])
+
       if useNewCrossfade and fadeDuration > 0.0 and len(fileSequence)>1:
         inputsList = []
 
@@ -897,26 +900,25 @@ class FFmpegService():
         audioSplitTemplate     = '[{i}:a]anull[audsz{i}];'
 
 
-        xFadeInitTemplate = '[vidsz0][vidsz1]xfade=transition={transition}:duration={fadeDuration}s:offset={fadeOffset}s[fade1];'
-        xFadeTemplate     = '[fade{i}][vidsz{nexti}]xfade=transition={transition}:duration={fadeDuration}s:offset={fadeOffset}s[fade{nexti}];'
+        xFadeInitTemplate = '[vidsz0][vidsz1]xfade=transition={transition}:duration={fadeDuration:0.4f}s:offset={fadeOffset:0.4f}s[fade1];'
+        xFadeTemplate     = '[fade{i}][vidsz{nexti}]xfade=transition={transition}:duration={fadeDuration:0.4f}s:offset={fadeOffset:0.4f}s[fade{nexti}];'
 
         crossfadeInitTemplate = '[audsz0][audsz1]acrossfade=d={fadeDuration}s[afade1];'
-        crossfadeTemplate     = '[afade{i}][audsz{nexti}]acrossfade=d={fadeDuration}s[afade{nexti}];'
-
+        crossfadeTemplate     = '[afade{i}]asetpts=PTS-STARTPTS,adelay=delays={delays}s:all=1,asetpts=PTS-STARTPTS[afade{i}ad],[afade{i}ad][audsz{nexti}]acrossfade=d={fadeDuration:0.4f}s,atrim={delays}s,asetpts=PTS-STARTPTS[afade{nexti}];'
 
   
         if loopStartAndEnd:
-          audioSplitInitTemplate = '[0:a]asplit[tsa0][tsa1];[tsa0]atrim={fadedur}:{dur},asetpts=PTS-STARTPTS[audsz0a];[tsa1]atrim=0:{fadedur},asetpts=PTS-STARTPTS[audsz0];'        
-          splitInitTemplate      = '[0:v]{splitexp},split[tsv0][tsv1];[tsv0]trim={fadedur}:{dur},setpts=PTS-STARTPTS[vidsz0a];[tsv1]trim=0:{fadedur},setpts=PTS-STARTPTS[vidsz0];'
+          audioSplitInitTemplate = '[0:a]asplit[tsa0][tsa1];[tsa0]atrim={fadedur:0.4f}:{dur},asetpts=PTS-STARTPTS[audsz0a];[tsa1]atrim=0:{fadedur:0.4f},asetpts=PTS-STARTPTS[audsz0];'        
+          splitInitTemplate      = '[0:v]{splitexp},split[tsv0][tsv1];[tsv0]trim={fadedur}:{dur},setpts=PTS-STARTPTS[vidsz0a];[tsv1]trim=0:{fadedur:0.4f},setpts=PTS-STARTPTS[vidsz0];'
           
-          crossfadeInitTemplate = '[audsz0a][audsz1]acrossfade=d={fadeDuration}s[afade1];'
-          xFadeInitTemplate     = '[vidsz0a][vidsz1]xfade=transition={transition}:duration={fadeDuration}s:offset={fadeOffset}s[fade1];'
+          crossfadeInitTemplate = '[audsz0a]asetpts=PTS-STARTPTS,adelay=delays={delays}s:all=1,asetpts=PTS-STARTPTS[audsz0ad],[audsz0ad][audsz1]acrossfade=d={fadeDuration:0.4f}s,atrim={delays}s,asetpts=PTS-STARTPTS[afade1];'
+          xFadeInitTemplate     = '[vidsz0a][vidsz1]xfade=transition={transition}:duration={fadeDuration:0.4f}s:offset={fadeOffset}s[fade1];'
 
 
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
 
-        transition = options.get('transStyle','smoothleft')
+        
         offset=fadeDuration*2
         expectedFadeDurations = expectedTimes[:-1]
 
@@ -943,16 +945,15 @@ class FFmpegService():
 
           if i == 0:
             videoSplits.append(splitInitTemplate.format(i=i,splitexp=splitexp,dur=dur,fadedur=fadeDuration,fadedurend=dur-fadeDuration))
-            xfades.append(xFadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01,transition=transition))
-            
+            xfades.append(xFadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,transition=next(transition)))
             audioSplits.append(audioSplitInitTemplate.format(i=i,dur=dur,fadedur=fadeDuration,fadedurend=dur-fadeDuration))
-            crossfades.append(crossfadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01))
+            crossfades.append(crossfadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,delays=int(dur+1)))
           else:
             videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
-            xfades.append(xFadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01,transition=transition))
+            xfades.append(xFadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,transition=next(transition)))
             
             audioSplits.append(audioSplitTemplate.format(i=i))
-            crossfades.append(crossfadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset-0.01))
+            crossfades.append(crossfadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,delays=int(dur+1)))
 
 
 
@@ -1024,7 +1025,7 @@ class FFmpegService():
             splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
 
           videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
-          transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=transition))
+          transitionFilters.append(xFadeTemplate.format(i=i,n=n,o=o,fdur=fadeDuration,trans=next(transition)))
           audioSplits.append(fadeTrimTemplate.format(i=i,preo=preo,dur=dur))
           audioSplits.append(asplitTemplate.format(i=i,preo=preo,dur=dur))
           crossfades.append(crossfadeTemplate.format(i=i,preo=preo,dur=dur,n=n,o=o))

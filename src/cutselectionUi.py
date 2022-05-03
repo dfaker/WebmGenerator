@@ -161,7 +161,7 @@ class CutselectionUi(ttk.Frame):
         self.frameCutSelection = self
         self.frameUpperFrame = ttk.Frame(self.frameCutSelection)
         self.frameSliceSettings = ttk.Frame(self.frameUpperFrame)
-        self.labelFrameSlice = ttk.Labelframe(self.frameSliceSettings)
+        self.labelFrameSlice = ttk.Frame(self.frameSliceSettings)
 
         self.sliceLength = globalOptions.get('defaultSliceLength',30.0)
         self.sliceLengthVar = tk.StringVar()
@@ -306,7 +306,7 @@ class CutselectionUi(ttk.Frame):
         self.frameCurrentSize.config(height="200", width="200")
         self.frameCurrentSize.pack(fill="x", side="top")
 
-        self.labelFrameSlice.config(height="200", text="Slice Settings", width="200")
+        self.labelFrameSlice.config(height="200", width="200")
         self.labelFrameSlice.pack(fill="x", side="top")
 
         self.labelframeSourceVideos = ttk.Frame(self.frameSliceSettings)

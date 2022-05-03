@@ -422,7 +422,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       for rid,(s,e) in list(ranges):
         if a<=s<=b and a<=e<=b:
           self.controller.removeSubclip((s+e)/2)
+          self.dirtySelectionRanges.add(rid)
       self.tempRangeStart=None
+
       #self.updateCanvas()
     else:
       mid = self.controller.getCurrentPlaybackPosition()
@@ -430,13 +432,17 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       #self.updateCanvas()
 
   def keyboardBlockAtTime(self,e):
+    
+    ctrl  = (e.state & 0x4) != 0
+    if ctrl:
+      return
+
     pos = self.controller.getCurrentPlaybackPosition()
     if pos is not None:
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5
-      self.controller.addNewSubclip( pos-pre,pos+post  )
-
-
+      self.controller.addNewSubclip( pos-pre,pos+post,seekAfter=False )
+      
   def startTempSelection(self,startOverride=None):
     if startOverride is not None:
       self.tempRangeStart = startOverride
@@ -530,11 +536,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if pos == 's':
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,sts+(increment*0.05))
           self.dirtySelectionRanges.add(rid)
-          self.seekto(sts+(increment*0.05))
+          self.seekto(sts+abs(increment*0.05))
         elif pos == 'e':
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,ens+(increment*0.05))
           self.dirtySelectionRanges.add(rid)
-          self.seekto(ens+(increment*0.05)-0.001)
+          self.seekto(ens-abs(increment*0.05)-0.001)
         break
 
   def setDragPreviewPos(self,value):
@@ -780,13 +786,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if pos == 's':
           self.controller.seekTo( targetSeconds )
         elif pos == 'e':
-          self.controller.seekTo( targetSeconds-0.1 )
+          self.controller.seekTo( targetSeconds )
         elif pos == 'm':
           if ctrl:
             targetSeconds = targetSeconds-((oe-os)/2)
+            self.controller.seekTo( targetSeconds+self.dragPreviewPos )
           else:
             targetSeconds = targetSeconds+((oe-os)/2)
-          self.controller.seekTo( targetSeconds-self.dragPreviewPos )
+            self.controller.seekTo( targetSeconds-self.dragPreviewPos )
 
     if e.type == tk.EventType.ButtonPress:
       if e.num==3:      
@@ -920,10 +927,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX),2)), '{hours_total}:{minutes2}:{seconds:02.2F}'))
       activeRanges=set()
 
+      checkRanges=True
+
       for rid,(s,e) in list(ranges):
 
-        if s<self.controller.getCurrentPlaybackPosition()<e:
+        if checkRanges and s<self.controller.getCurrentPlaybackPosition()<=e:
           self.controller.setLoopPos(s,e)
+          checkRanges=False
+        elif checkRanges and s<self.controller.getCurrentPlaybackPosition()<=e+0.01:
+          self.controller.setLoopPos(s,e)
+          checkRanges=False
 
         activeRanges.add(rid)
         

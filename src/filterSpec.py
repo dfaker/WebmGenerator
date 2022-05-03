@@ -1625,8 +1625,8 @@ selectableFilters = [
         "params": [
             {"n": "text", "d": "Text", "type": "string"},
             {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file", "fileCategory":"font"},
-            {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1, "_commandVar":['Text-X',[['drawtext@{fn}','x']]] },
-            {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1, "_commandVar":['Text-Y',[['drawtext@{fn}','y']]]},
+            {"n": "x", "d": "1", "type": "int", "range": None, "rectProp": "x", "inc": 1, "_commandVar":['Text-X',[['drawtext@{fn}','x']]] },
+            {"n": "y", "d": "1", "type": "int", "range": None, "rectProp": "y", "inc": 1, "_commandVar":['Text-Y',[['drawtext@{fn}','y']]]},
             {
                 "n": "borderw",
                 "d": 1,
@@ -1668,9 +1668,13 @@ selectableFilters = [
                 "d":"none",
                 "cycle":["none","strftime","normal"]
             },
-            {"n": "fontsize", "d": 16, "type": "int", "rectProp": "h", "range": None, "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
+            {"n": "fontsize", "d": "12", "type": "int", "rectProp": "h", "range": None, "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] }
         ],
+        "presets":[
+          {"preset_name":"Centered Large White",        "x":"(w/2)-(text_w/2)","y":"(h/2)-(text_h/2)",  "fontsize":"w/7", "fontcolor":"white", "borderw":"10" },
+          {"preset_name":"Centered Large Violet",   "x":"(w/2)-(text_w/2)","y":"(h/2)-(text_h/2)",      "fontsize":"w/7", "fontcolor":"violet","borderw":"10" },
+        ]
     },
 
 

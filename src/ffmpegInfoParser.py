@@ -55,6 +55,16 @@ def getVideoInfo(filename,filters=None):
             logging.error("getVideoInfo Exception",exc_info=e)
         elif errElem.endswith(b'tbn'):
           try:
+            mult=1
+            temptbnerr = errElem.split(b' ')[0]
+            if b'k' in temptbnerr:
+              temptbnerr = temptbnerr.replace(b'k',b'')
+              mult=1000
+            stats['tbn']=float(temptbnerr)*mult
+          except Exception as e:
+            logging.error("getVideoInfo Exception",exc_info=e)
+        elif errElem.endswith(b'tbn'):
+          try:
             tbnval = errElem.split(b' ')[0]
             if b'k' in tbnval:
               stats['tbn']=float(tbnval.replace(b'k',b'000'))

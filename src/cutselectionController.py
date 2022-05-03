@@ -478,6 +478,7 @@ class CutselectionController:
     self.updateProgressStatistics()
     if seekAfter:
       self.seekTo(start+((end-start)*0.8))
+    self.ui.setUiDirtyFlag()
     return newRID
 
   def expandSublcipToInterestMarks(self,point):
@@ -510,7 +511,7 @@ class CutselectionController:
     self.currentLoop_b=None
     self.player.ab_loop_a=-1
     self.player.ab_loop_b=-1
-
+    self.ui.setUiDirtyFlag()
 
   def updateProgressStatistics(self):
     totalExTrim=0.0

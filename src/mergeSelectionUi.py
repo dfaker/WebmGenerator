@@ -833,7 +833,13 @@ class MergeSelectionUi(ttk.Frame):
                         'dissolve','pixelize','diagtl','diagtr','diagbl',
                         'diagbr','hlslice','hrslice','vuslice','vdslice',
                         'hblur','fadegrays','wipetl','wipetr','wipebl',
-                        'wipebr','squeezeh','squeezev','zoomin']
+                        'wipebr','squeezeh','squeezev','zoomin',  
+                        'fadewhite, fadeblack',
+                        'smoothleft, smoothright',
+                        'smoothdown, smoothup',
+                        'slideleft, slideright', 
+                        'wipetl, wipetr, wipebl, wipebr', 
+                        'circleopen, circleclose' ]
     
     self.transStyleVar.set('fade')
     self.speedAdjustmentVar.set(1.0)
@@ -1220,9 +1226,9 @@ class MergeSelectionUi(ttk.Frame):
 
 
     
-    self.comboboxTransStyle = ttk.OptionMenu(self.frameTransStyle,self.transStyleVar,self.transStyleVar.get(),*self.transStyles)
-    self.comboboxTransStyle['padding']=2
-    Tooltip(self.comboboxTransStyle,text='The transition style to use between cuts.')
+    self.comboboxTransStyle = ttk.Combobox(self.frameTransStyle,textvariable=self.transStyleVar,values=self.transStyles)
+    #self.comboboxTransStyle['padding']=2
+    Tooltip(self.comboboxTransStyle,text='The transition style to use between cuts, comma delimited lists are allowed and will cycle through multiple styles.')
 
     self.entryTransLoop = ttk.Checkbutton(self.frameTransStyle,text='Loop start to end',onvalue=True, offvalue=False)
     self.entryTransLoop.config(variable=self.loopStartAndendVar)
@@ -1231,6 +1237,8 @@ class MergeSelectionUi(ttk.Frame):
 
     self.entryTransLoop.pack(expand='false', fill='x', side='right')
 
+    self.buttonPreviewSequence = ttk.Button(self.frameTransStyle,text='Preview sequence timings',command=self.previewSequencetimings,style='small.TButton')
+    self.buttonPreviewSequence.pack(expand='true', fill='x', side='bottom')
 
     self.comboboxTransStyle.pack(expand='true', fill='x', side='right')
 
@@ -1261,6 +1269,45 @@ class MergeSelectionUi(ttk.Frame):
     self.encodeRequestId=0
     self.selectableVideos={}
     self.selectedColumn = None
+    self.player=None
+
+  def previewSequencetimings(self):
+    edlstr = '# mpv EDL v0\n'
+    for sv in self.sequencedClips:
+      fn = sv.filename
+      start = sv.s
+      end = sv.e
+      if self.transDurationValue < (end-start):
+        start += (self.transDurationValue/2)
+        end   -= (self.transDurationValue/2)
+
+      edlstr += '{},{},{}\n'.format(fn,start,end-start)
+    open('pl.edl','wb').write(edlstr.encode('utf8'))
+
+    if self.player is not None:
+      self.player.terminate()
+
+    self.player = mpv.MPV(loop='inf',
+                          mute=True,
+                          volume=0,
+                          autofit_larger='1280')
+
+    self.player.play('pl.edl')
+
+    def quitFunc(key_state, key_name, key_char):
+      def playerReaper():
+        print('ReaperKill')
+        player=self.player
+        self.player=None
+        player.terminate()
+        player.wait_for_shutdown()
+      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+      self.playerReaper.start()
+
+    self.quitFunc = quitFunc
+    self.player.register_key_binding("q", quitFunc)
+    self.player.register_key_binding("Q", quitFunc)        
+    self.player.register_key_binding("CLOSE_WIN", quitFunc)
 
   def deleteProfile(self):
     pass

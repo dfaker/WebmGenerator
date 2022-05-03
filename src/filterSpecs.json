@@ -90,11 +90,11 @@
   "kind": "V->V",
   "desc": "Blur the input.",
   "params": [
-   {"n": "luma_radius", "d": 2.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "luma_radius", "d": 2.0, "type": "float","range": [null,null],"inc": 1},
    {"n": "luma_power", "d": 2, "type": "int","range": [0,null],"inc": 1},
-   {"n": "chroma_radius", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "chroma_radius", "d": 0, "type": "float","range": [null,null],"inc": 1},
    {"n": "chroma_power", "d": -1, "type": "int","range": [-1,null],"inc": 1},
-   {"n": "alpha_radius", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "alpha_radius", "d": 0, "type": "float","range": [null,null],"inc": 1},
    {"n": "alpha_power", "d": -1, "type": "int","range": [-1,null],"inc": 1}
   ],
   "timelineSupport": true
@@ -539,8 +539,8 @@
    {"n": "boxborderw", "d": 0, "type": "int","range": [null,null],"inc": 1},
    {"n": "line_spacing", "d": 0, "type": "int","range": [null,null],"inc": 1},
    {"n": "fontsize", "d": 0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "x", "d": 0.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "y", "d": 0.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "x", "d": 0.0, "type": "int","range": [null,null],"inc": 1},
+   {"n": "y", "d": 0.0, "type": "int","range": [null,null],"inc": 1},
    {"n": "shadowx", "d": 0, "type": "int","range": [null,null],"inc": 1},
    {"n": "shadowy", "d": 0, "type": "int","range": [null,null],"inc": 1},
    {"n": "borderw", "d": 0, "type": "int","range": [null,null],"inc": 1},
@@ -613,14 +613,14 @@
   "kind": "V->V",
   "desc": "Adjust brightness, contrast, gamma, and saturation.",
   "params": [
-   {"n": "contrast", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "brightness", "d": 0.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "saturation", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "gamma", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "gamma_r", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "gamma_g", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "gamma_b", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "gamma_weight", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "contrast", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "brightness", "d": 0.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "saturation", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "gamma", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "gamma_r", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "gamma_g", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "gamma_b", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "gamma_weight", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
    {"n": "eval", "d": "init", "type": "cycle","cycle": [ "init", "frame"]}
   ],
   "timelineSupport": true
@@ -692,9 +692,9 @@
    {"n": "dc_Y", "d": 0, "type": "int","range": [0, 1000],"inc": 1},
    {"n": "dc_U", "d": 0, "type": "int","range": [0, 1000],"inc": 1},
    {"n": "dc_V", "d": 0, "type": "int","range": [0, 1000],"inc": 1},
-   {"n": "weight_Y", "d": 1.0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "weight_U", "d": 0, "type": "string","range": [null,null],"inc": 1},
-   {"n": "weight_V", "d": 0, "type": "string","range": [null,null],"inc": 1},
+   {"n": "weight_Y", "d": 1.0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "weight_U", "d": 0, "type": "float","range": [null,null],"inc": 1},
+   {"n": "weight_V", "d": 0, "type": "float","range": [null,null],"inc": 1},
    {"n": "eval", "d": "init", "type": "cycle","cycle": [ "init", "frame"]}
   ],
   "timelineSupport": true
@@ -2072,9 +2072,8 @@
   "kind": "V->V",
   "desc": "Apply resizing, colorspace and bit depth conversion.",
   "params": [
-   {"n": "w",           "d": 0,             "type": "string","range": [null,null],"inc": 1},
-   {"n": "width",       "d": 0,             "type": "string","range": [null,null],"inc": 1},
-   {"n": "height",      "d": 0,             "type": "string","range": [null,null],"inc": 1},
+   {"n": "width",       "d": 0,             "type": "int","range": [null,null],"inc": 1},
+   {"n": "height",      "d": 0,             "type": "int","range": [null,null],"inc": 1},
    {"n": "size",        "d": 0,             "type": "string","range": [null,null],"inc": 1},
    {"n": "dither",      "d": "none",        "type": "cycle","cycle": ["none","ordered","random","error_diffusion"]},
    {"n": "filter",      "d": "bilinear",    "type": "cycle","cycle": ["point","bilinear","bicubic","spline16","spline36","lanczos"]},

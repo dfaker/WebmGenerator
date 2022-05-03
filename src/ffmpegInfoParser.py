@@ -24,6 +24,7 @@ def getVideoInfo(filename,filters=None):
   outs,errs = proc.communicate()
   for errLine in errs.split(b'\n'):
     for errElem in [x.strip() for x in errLine.split(b',')]:
+      print(errElem)
       if errElem.startswith(b'Duration:'):
         try:
           timeParts = [float(x) for x in errElem.split()[-1].split(b':')]
@@ -36,7 +37,6 @@ def getVideoInfo(filename,filters=None):
         elif b'Audio:' in errElem:
           state = 'Audio'
           stats['hasaudio'] = True
-
       elif state=='Video':
         if errElem.endswith(b'fps'):
           try:
@@ -53,7 +53,7 @@ def getVideoInfo(filename,filters=None):
             stats['tbr']=float(temptbrerr)*mult
           except Exception as e:
             logging.error("getVideoInfo Exception",exc_info=e)
-        elif errElem.endswith(b'tbn'):
+        elif errElem.endswith(b'tbn') or b' tbn' in errElem:
           try:
             mult=1
             temptbnerr = errElem.split(b' ')[0]

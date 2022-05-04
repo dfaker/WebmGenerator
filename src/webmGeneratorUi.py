@@ -19,7 +19,7 @@ import colorsys
 import numpy as np
 
 
-RELEASE_NUMVER = 'v3.17.0'
+RELEASE_NUMVER = 'v3.19.0'
 
 class WebmGeneratorUi:
 
@@ -263,8 +263,11 @@ class WebmGeneratorUi:
     self.commandDetectormenu.add_command(label="Run voice activity detection", command=self.controller.runVoiceActivityDetection)
     
     self.commandmenu.add_cascade(label="Content detectors", menu=self.commandDetectormenu)
+    self.commandmenu.add_separator()
 
     self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
+    #self.commandmenu.add_checkbutton(label="Generate motion spectra", command=self.generateMotionWaveBackgrounds)
+    
     self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Clear all SubClips on current clip", command=self.clearAllSubclipsOnCurrentClip)
     self.commandmenu.add_command(label="Clear all Interest Marks on current clip", command=self.clearAllInterestMarksOnCurrentClip)
@@ -537,6 +540,9 @@ class WebmGeneratorUi:
 
   def splitClipIntoSectionsOfLengthN(self):
     self.controller.splitClipIntoSectionsOfLengthN()
+
+  def generateMotionWaveBackgrounds(self):
+    self.controller.generateMotionWaveBackgrounds()
 
   def generateSoundWaveBackgrounds(self):
     self.controller.generateSoundWaveBackgrounds()

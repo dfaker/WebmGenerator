@@ -37,15 +37,16 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       passReason='Stats Pass {} {}'.format(passCount+1,lastFailReason)
       _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId,widthReduction=widthReduction)
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction)
+      finalSize,lastpsnr,returnCode = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction)
     else:
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr = encoderFunction(val,passCount,passReason,requestId=requestId,widthReduction=widthReduction)
+      finalSize,lastpsnr,returnCode = encoderFunction(val,passCount,passReason,requestId=requestId,widthReduction=widthReduction)
 
     if isRquestCancelled(requestId):
       return
 
     adjustval = True
+    print('---- RETURN CODE',returnCode)
     if lastpsnr is not None and lastpsnr < minimumPSNR and (widthReduction+0.1)<=1.0:
       widthReduction+=0.1
       maxAttempts += passCount

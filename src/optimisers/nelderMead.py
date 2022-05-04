@@ -226,10 +226,10 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       passReason='Nelder-Mead Stats Pass {} {}'.format(passCount+1,lastFailReason)
       _         = encoderFunction(bitrate,passCount,passReason,passPhase=1,requestId=requestId,widthReduction=widthReduction,bufsize=buff)
       passReason='Nelder-Mead Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr = encoderFunction(bitrate,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction,bufsize=buff)
+      finalSize,lastpsnr, returnCode = encoderFunction(bitrate,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction,bufsize=buff)
     else:
       passReason='Nelder-Mead Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr = encoderFunction(bitrate,passCount,passReason,requestId=requestId,widthReduction=widthReduction,bufsize=buff)
+      finalSize,lastpsnr, returnCode = encoderFunction(bitrate,passCount,passReason,requestId=requestId,widthReduction=widthReduction,bufsize=buff)
 
     try:
       if lastpsnr is not None and lastpsnr != float('inf'):

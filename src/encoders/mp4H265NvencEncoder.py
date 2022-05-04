@@ -85,7 +85,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-preset", globalOptions.get('mp4NvencPresetParam','hq')
                    ,"-crf"  ,'17'
                    ,'-psnr'
-                   ,"-vsync","2"
+                   ,"-vsync","vfr"
                    ,"-movflags","+faststart"]
 
     if sizeLimitMax == 0.0:
@@ -121,15 +121,15 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
 
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0, psnr
+      return 0, psnr, returnCode
     if passPhase==1:
-      return 0, psnr
+      return 0, psnr, returnCode
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
       encoderStatusCallback(None,None,lastEncodedSize=finalSize)
-      return finalSize, psnr
+      return finalSize, psnr, returnCode
 
   optimiser = encodeTargetingSize_linear
   if  'Nelder-Mead' in options.get('optimizer'):

@@ -101,10 +101,16 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
       ln+=c
     except Exception as e:
       logging.error("Encode progress Exception",exc_info=e)
+
+  outs, errs = proc.communicate()
+
+  if proc.returncode == 1:
+    statusCallback('Encode Failed '+processLabel,1,lastEncodedPSNR=psnr,encodeStage='Encode Failed', encodePass='Error code {}'.format(proc.returncode) )
+  
   if passNumber == 0:
     statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr )
   elif passNumber == 1:
     statusCallback('Complete '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr )
   elif passNumber == 2:
     statusCallback('Complete '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr )
-  return psnr
+  return psnr,proc.returncode

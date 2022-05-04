@@ -27,14 +27,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
   def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
 
-    giffiltercommand = filtercommand+',[outv]scale=\'max({}\\,min({}\\,iw)):-1\':flags=bicubic,split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
+    giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1,scale=\'max({}\\,min({}\\,iw)):-1\':flags=area,split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
     ffmpegcommand+=inputsList
     ffmpegcommand+=['-filter_complex',giffiltercommand]
     ffmpegcommand+=['-map','[outvgif]']
-    ffmpegcommand+=["-vsync", '0'
+    ffmpegcommand+=["-vsync", 'passthrough'
                    ,"-shortest" 
                    ,"-copyts"
                    ,"-start_at_zero"
@@ -46,12 +46,12 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0, psnr
+      return 0, psnr, returnCode
     finalSize = os.stat(tempVideoFilePath).st_size
     encoderStatusCallback(None,None,lastEncodedSize=finalSize)
-    return finalSize, psnr
+    return finalSize, psnr, returnCode
 
   initialWidth = options.get('maximumWidth',1280)
 

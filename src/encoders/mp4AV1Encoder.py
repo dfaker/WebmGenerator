@@ -81,7 +81,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       audioCodec = []
 
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   ,"-start_at_zero", "-c:v","libaom-av1"] + audioCodec + [
+                   ,"-start_at_zero", "-c:v","libsvtav1"] + audioCodec + [
                     "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25','-g', '300'
                    ,'-psnr','-cpu-used','0','-row-mt', '1',  '-preset', '8'
@@ -117,15 +117,15 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0, psnr
+      return 0, psnr, returnCode
     if passPhase==1:
-      return 0, psnr
+      return 0, psnr, returnCode
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
       encoderStatusCallback(None,None,lastEncodedSize=finalSize)
-      return finalSize, psnr
+      return finalSize, psnr, returnCode
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 

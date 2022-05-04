@@ -35,7 +35,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand+=['-plays', '0']
     ffmpegcommand+=['-filter_complex',giffiltercommand]
     ffmpegcommand+=['-map','[outvgif]']
-    ffmpegcommand+=["-vsync", '0'
+    ffmpegcommand+=["-vsync", 'passthrough'
                    ,"-shortest" 
                    ,"-copyts"
                    ,"-start_at_zero"
@@ -48,12 +48,12 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0, psnr
+      return 0, psnr, returnCode
     finalSize = os.stat(tempVideoFilePath).st_size
     encoderStatusCallback(None,None,lastEncodedSize=finalSize)
-    return finalSize, psnr
+    return finalSize, psnr, returnCode
 
   initialWidth = options.get('maximumWidth',1280)
 

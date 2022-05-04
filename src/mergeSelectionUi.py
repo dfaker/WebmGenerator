@@ -161,8 +161,20 @@ class EncodeProgress(ttk.Frame):
 
   def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None):
 
+    if self.cancelled:
+      return
+
     if requestStatus is not None:
       self.labelRequestStatus.config(text=str(requestStatus))
+
+    if encodeStage == 'Encode Failed':
+      self.progressbarEncodeProgressLabel.config(style="Red.Horizontal.TProgressbar")
+      self.progressbarEncodeProgressLabel['value']=100
+      self.labelTimeLeft.config(text='Failed')
+      self.progresspercent = 100
+      self.progressbarEncodeCancelButton.state(["disabled"])
+      self.cancelled = True
+
 
     if encodeStage is not None:
       self.labelEncodeStage.config(text='Stage: {}'.format(encodeStage), relief='flat')
@@ -206,6 +218,7 @@ class EncodeProgress(ttk.Frame):
 
     if self.cancelled:
       return
+    
     if finalFilename is not None:
       self.finalFilename = finalFilename
 

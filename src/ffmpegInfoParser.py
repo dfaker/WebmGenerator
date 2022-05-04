@@ -24,7 +24,6 @@ def getVideoInfo(filename,filters=None):
   outs,errs = proc.communicate()
   for errLine in errs.split(b'\n'):
     for errElem in [x.strip() for x in errLine.split(b',')]:
-      print(errElem)
       if errElem.startswith(b'Duration:'):
         try:
           timeParts = [float(x) for x in errElem.split()[-1].split(b':')]

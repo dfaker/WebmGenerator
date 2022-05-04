@@ -912,7 +912,7 @@ class FFmpegService():
           splitInitTemplate      = '[0:v]{splitexp},split[tsv0][tsv1];[tsv0]trim={fadedur}:{dur},setpts=PTS-STARTPTS[vidsz0a];[tsv1]trim=0:{fadedur:0.4f},setpts=PTS-STARTPTS[vidsz0];'
           
           crossfadeInitTemplate = '[audsz0a]asetpts=PTS-STARTPTS,adelay=delays={delays}s:all=1,asetpts=PTS-STARTPTS[audsz0ad],[audsz0ad][audsz1]acrossfade=d={fadeDuration:0.4f}s,atrim={delays}s,asetpts=PTS-STARTPTS[afade1];'
-          xFadeInitTemplate     = '[vidsz0a][vidsz1]xfade=transition={transition}:duration={fadeDuration:0.4f}s:offset={fadeOffset}s[fade1];'
+          xFadeInitTemplate     = '[vidsz0a][vidsz1]xfade=transition={transition}:duration={fadeDuration:0.4f}s:offset={fadeOffset:0.4f}s[fade1];'
 
 
         for vi,v in enumerate(fileSequence):
@@ -939,7 +939,7 @@ class FFmpegService():
 
           totalExpectedFinalLength-=offset
 
-          splitexp = 'null'
+          splitexp = fpsCmd
           if mode == 'CONCAT' and len(dimensionsSet) > 1:
             splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
 
@@ -1020,7 +1020,7 @@ class FFmpegService():
           preo=offset          
           totalExpectedFinalLength-=offset
 
-          splitexp = 'null'
+          splitexp = fpsCmd
           if mode == 'CONCAT' and len(dimensionsSet) > 1:
             splitexp = "scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,fpsCmd=fpsCmd)
 

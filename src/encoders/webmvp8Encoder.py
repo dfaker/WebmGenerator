@@ -86,7 +86,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-threads", str(threadCount),"-crf"  ,'4'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
                    ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
+                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) ]
     
     print(ffmpegcommand)
     if sizeLimitMax == 0.0:
@@ -122,15 +122,15 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
 
-    psnr = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
     if isRquestCancelled(requestId):
-      return 0, psnr
+      return 0, psnr, returnCode
     if passPhase==1:
-      return 0, psnr
+      return 0, psnr, returnCode
     else:
       finalSize = os.stat(tempVideoFilePath).st_size
       encoderStatusCallback(None,None,lastEncodedSize=finalSize)
-      return finalSize, psnr
+      return finalSize, psnr, returnCode
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 

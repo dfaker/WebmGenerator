@@ -937,7 +937,7 @@ class FFmpegService():
           if loopStartAndEnd and i==0:
             fadeoffset -= fadeDuration
 
-          totalExpectedFinalLength-=offset
+          totalExpectedFinalLength=(dur+previousXfadeOffset+fadeDuration)
 
           splitexp = fpsCmd
           if mode == 'CONCAT' and len(dimensionsSet) > 1:

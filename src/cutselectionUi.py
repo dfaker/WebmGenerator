@@ -569,6 +569,10 @@ class CutselectionUi(ttk.Frame):
       except:
         self.labelVideoSummaryVar.set("")
 
+    def generateMotionWaveBackgrounds(self):
+      self.frameTimeLineFrame.generateMotionImages = not self.frameTimeLineFrame.generateMotionImages
+      self.frameTimeLineFrame.uiDirty = True
+
     def generateSoundWaveBackgrounds(self):
       self.frameTimeLineFrame.generateWaveImages = not self.frameTimeLineFrame.generateWaveImages
       self.frameTimeLineFrame.uiDirty = True

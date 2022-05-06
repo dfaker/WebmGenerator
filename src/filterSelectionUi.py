@@ -532,7 +532,9 @@ class FilterSpecification(ttk.Frame):
           formatDict.update({'fn':i,param['n']:values[param['n']] },)
         elif self.spec.get('appendUnusedParams',True):
           try:
-            if param['type'] == 'float':
+            if param['type'] == 'file':
+              filerExprams.append(':{}=\'{}\''.format(param['n'],values[param['n']]) )
+            elif param['type'] == 'float':
               try:
                 floatVal=float(values[param['n']])
                 if param.get('offsetClipStartSeconds',False) and preview:
@@ -550,7 +552,7 @@ class FilterSpecification(ttk.Frame):
             else:
               filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
           except:
-            filerExprams.append(':{}={}'.format(param['n'],values[param['n']]) )
+            filerExprams.append(':{}=\'{}\''.format(param['n'],values[param['n']]) )
 
     if '{fn}' in filterExp:
       formatDict.update({'fn':i,})

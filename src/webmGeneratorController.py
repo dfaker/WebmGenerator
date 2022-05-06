@@ -397,6 +397,9 @@ class WebmGeneratorController:
   def splitClipIntoSectionsOfLengthN(self):
     self.cutselectionController.splitClipIntoSectionsOfLengthN()
 
+  def generateMotionWaveBackgrounds(self):
+    self.cutselectionController.generateMotionWaveBackgrounds()
+
   def generateSoundWaveBackgrounds(self):
     self.cutselectionController.generateSoundWaveBackgrounds()
 

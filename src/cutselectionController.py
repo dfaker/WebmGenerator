@@ -114,6 +114,9 @@ class CutselectionController:
       self.ui.setUiDirtyFlag()
       self.seekTo(endPoint)
 
+  def generateMotionWaveBackgrounds(self):
+    self.ui.generateMotionWaveBackgrounds()
+
   def generateSoundWaveBackgrounds(self):
     self.ui.generateSoundWaveBackgrounds()
 

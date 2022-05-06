@@ -512,7 +512,7 @@ selectableFilters = [
         "name": "Trans Text",
         "desc": "Draw a coloured box with text masked out and made transparent.",
         "category":['Overlay, text and masks'],
-        "filter": "null[vin{fn}],color=s={w}x{h}:c={boxColour}[cbg],color=c=white:s={w}x{h}[abg],[abg]drawtext=text={text}:fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=black[cbox],[cbg][cbox]alphamerge[c],[vin{fn}][c]overlay=eval=init",      
+        "filter": "null[vin{fn}],color=s={w}x{h}:c={boxColour}[cbg],color=c=white:s={w}x{h}[abg],[abg]drawtext=text='{text}':fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=black[cbox],[cbg][cbox]alphamerge[c],[vin{fn}][c]overlay=eval=init",      
         "filterPreview": "drawbox=c={boxColour}:x=0:y=0:w={w}:h={h},drawtext=text={text}:fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=red",
         "params": [ 
 

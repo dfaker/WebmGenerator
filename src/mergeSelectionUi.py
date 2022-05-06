@@ -1761,16 +1761,13 @@ class MergeSelectionUi(ttk.Frame):
 
       self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
 
-    
-
-
       
   def updatedPredictedDuration(self):
     totalTime=0
     timeTrimmedByFade=0
     for sv in self.sequencedClips:
       totalTime+=(sv.e-sv.s)
-      timeTrimmedByFade+=self.transDurationValue*2 
+      timeTrimmedByFade+=self.transDurationValue 
 
     self.labelSequenceSummary.config(text='Number of Subclips: {n} Total subclip duration {td:0.2f}s Output Duration {tdext:0.2f}s'.format(
                                      n=len(self.sequencedClips),

@@ -250,6 +250,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.dirtySelectionRanges = set()
 
     self.generateWaveImages = False
+    self.generateMotionImages = False
 
     self.lastFilenameForAudioToBytesRequest = None
     self.audioByteValuesReadLock = threading.Lock()
@@ -474,7 +475,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     ctrl  = (e.state & 0x4) != 0
 
     if self.lastClickedEndpoint is not None:
-      self.incrementEndpointPosition(self.seekSpeedFast if shift else self.seekSpeedNormal,*self.lastClickedEndpoint)
+      self.incrementEndpointPosition(self.seekSpeedSlow if ctrl and shift else self.seekSpeedFast if shift else self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
       if ctrl and shift:
         self.controller.seekRelative(self.seekSpeedSlow)
@@ -500,7 +501,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     ctrl  = (e.state & 0x4) != 0
 
     if self.lastClickedEndpoint is not None:
-      self.incrementEndpointPosition(-self.seekSpeedFast if shift else -self.seekSpeedNormal,*self.lastClickedEndpoint)
+      self.incrementEndpointPosition(-self.seekSpeedSlow if ctrl and shift else -self.seekSpeedFast if shift else -self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
       if ctrl and shift:
         self.controller.seekRelative(-self.seekSpeedSlow)
@@ -852,10 +853,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
         self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text="")
 
-      if self.uiDirty>0 and self.generateWaveImages:
+      if self.uiDirty>0 and (self.generateWaveImages or self.generateMotionImages):
 
         if self.audioToBytesThread is None: 
-          self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
+          if self.generateWaveImages:          
+            self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
+          else:
+            self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
+
+
           self.audioToBytesThread.daemon=True
           self.audioToBytesThread.start()
 
@@ -869,9 +875,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.wavePicSectionsThread.daemon=True
           self.wavePicSectionsThread.start()
           self.lastWavePicSectionsRequested = newWaveAsPicRequest
-
-        self.timeline_canvas.coords(self.rangeHeaderBG,0,0,timelineWidth,20,)
-        self.timeline_canvas.coords(self.previewBG,0,20,timelineWidth,20+45,)
 
       for ts,(frameWidth,frameData) in list(self.previewFrames.items()):
         previewName = ('previewFrame',ts)

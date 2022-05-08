@@ -663,6 +663,11 @@ class MergeSelectionUi(ttk.Frame):
     self.addAllClipsSmartRandombutton.config(style="small.TButton")
     self.addAllClipsSmartRandombutton.pack(expand='false', fill='x', padx='0', pady='3', side='right')
 
+    self.addAllClipsInterpsersed = ttk.Button(self.addAddClipsFrame,text=' Add all clips interspsersed')
+    self.addAllClipsInterpsersed.config(command=self.addAllClipsInInterspersedOrder)
+    self.addAllClipsInterpsersed.config(style="small.TButton")
+    self.addAllClipsInterpsersed.pack(expand='false', fill='x', padx='0', pady='3', side='right')
+
     self.addAddClipsFrame.pack(expand='false', fill='x', padx='0', pady='0', side='top')
 
     self.labelframeSequenceFrame = ttk.Labelframe(self.frameMergeSelection)
@@ -837,22 +842,59 @@ class MergeSelectionUi(ttk.Frame):
     self.maximumWidthVar.set('1280')
     self.transDurationVar.set('0.0')       
 
-    self.transStyles = ['fade','wipeleft','wiperight','wipeup','wipedown',
-                        'slideleft','slideright','slideup','slidedown',
-                        'circlecrop','rectcrop','distance','fadeblack',
-                        'fadewhite','radial','smoothleft','smoothright',
-                        'smoothup','smoothdown','circleopen','circleclose',
-                        'vertopen','vertclose','horzopen','horzclose',
-                        'dissolve','pixelize','diagtl','diagtr','diagbl',
-                        'diagbr','hlslice','hrslice','vuslice','vdslice',
-                        'hblur','fadegrays','wipetl','wipetr','wipebl',
-                        'wipebr','squeezeh','squeezev','zoomin',  
+    self.transStyles = [
+                        'circleclose',
+                        'circlecrop',
+                        'circleopen',
+                        'diagbl',
+                        'diagbr',
+                        'diagtl',
+                        'diagtr',
+                        'dissolve',
+                        'distance',
+                        'fade',
+                        'fadeblack',
+                        'fadegrays',
+                        'fadewhite',
+                        'hblur',
+                        'hlslice',
+                        'horzclose',
+                        'horzopen',
+                        'hrslice',
+                        'pixelize',
+                        'radial',
+                        'rectcrop',
+                        'slidedown',
+                        'slideleft',
+                        'slideright',
+                        'slideup',
+                        'smoothdown',
+                        'smoothleft',
+                        'smoothright',
+                        'smoothup',
+                        'squeezeh',
+                        'squeezev',
+                        'vdslice',
+                        'vertclose',
+                        'vertopen',
+                        'vuslice',
+                        'wipebl',                        
+                        'wipebr',
+                        'wipedown',
+                        'wipeleft',
+                        'wiperight',
+                        'wipetl',
+                        'wipetr',
+                        'wipeup',
+                        'zoomin',
+
+                        'circleopen, circleclose',
                         'fadewhite, fadeblack',
-                        'smoothleft, smoothright',
-                        'smoothdown, smoothup',
                         'slideleft, slideright', 
+                        'smoothdown, smoothup',
+                        'smoothleft, smoothright',
                         'wipetl, wipetr, wipebl, wipebr', 
-                        'circleopen, circleclose' ]
+                        ]
     
     self.transStyleVar.set('fade')
     self.speedAdjustmentVar.set(1.0)
@@ -1925,6 +1967,31 @@ class MergeSelectionUi(ttk.Frame):
 
     self.scrolledframeInputCustContainer._scrollBothNow()
     self.scrolledframeSequenceContainer._scrollBothNow()
+
+  def addAllClipsInInterspersedOrder(self):
+    finalOrder=[]
+    clipsByFile  = {}
+    for clip in sorted(self.selectableVideos.values(),key=lambda x:x.s,reverse=True):
+      clipsByFile.setdefault(clip.filename,[]).append(clip)
+    clipsByFile = list(clipsByFile.values())
+    random.shuffle(clipsByFile)
+
+    while sum([len(x) for x in clipsByFile])>0:
+      for fileClips in clipsByFile:
+        if len(fileClips)>0:
+          finalOrder.append(fileClips.pop())
+
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      self.clearAllColumns()
+      for ind,clip in enumerate(finalOrder):
+        self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
+          SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
+        )
+    else:
+      self.clearSequence()
+      for clip in finalOrder:
+        self.addClipToSequence(clip)
+
 
   def addAllClipsInSmartRandomOrder(self):
     smartOrder = []

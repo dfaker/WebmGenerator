@@ -33,7 +33,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
 
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm', requestId)
+  videoFileName,logFilePath,filterFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm', requestId)
   
   def encoderStatusCallback(text,percentage,**kwargs):
     statusCallback(text,percentage,**kwargs)
@@ -51,13 +51,19 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},null[outvfinal]'.format(encodeStageFilter=encodeStageFilter)
 
     if options.get('audioChannels') == 'No audio':
-      ffmpegcommand+=['-filter_complex',encodefiltercommand+',[outa]anullsink']
+      encodefiltercommand+=',[outa]anullsink'
+
+    with open(filterFilePath,'wb') as filterFile:
+      filterFile.write(encodefiltercommand.encode('utf8'))
+
+    if options.get('audioChannels') == 'No audio':
+      ffmpegcommand+=['-filter_complex_script',filterFilePath]
       ffmpegcommand+=['-map','[outvfinal]']
     elif 'Copy' in options.get('audioChannels',''):
-      ffmpegcommand+=['-filter_complex',encodefiltercommand]
+      ffmpegcommand+=['-filter_complex_script',filterFilePath]
       ffmpegcommand+=['-map','[outvfinal]','-map','a:0']
     else:
-      ffmpegcommand+=['-filter_complex',encodefiltercommand]
+      ffmpegcommand+=['-filter_complex_script',filterFilePath]
       ffmpegcommand+=['-map','[outvfinal]','-map','[outa]']
 
     if passPhase==1:

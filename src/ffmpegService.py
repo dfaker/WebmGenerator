@@ -947,13 +947,13 @@ class FFmpegService():
             videoSplits.append(splitInitTemplate.format(i=i,splitexp=splitexp,dur=dur,fadedur=fadeDuration,fadedurend=dur-fadeDuration))
             xfades.append(xFadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,transition=next(transition)))
             audioSplits.append(audioSplitInitTemplate.format(i=i,dur=dur,fadedur=fadeDuration,fadedurend=dur-fadeDuration))
-            crossfades.append(crossfadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,delays=int(dur+1)))
+            crossfades.append(crossfadeInitTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,delays=int(dur+(fadeDuration*2)+1)))
           else:
             videoSplits.append(splitTemplate.format(i=i,splitexp=splitexp))
             xfades.append(xFadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,transition=next(transition)))
             
             audioSplits.append(audioSplitTemplate.format(i=i))
-            crossfades.append(crossfadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,delays=int(dur+1)))
+            crossfades.append(crossfadeTemplate.format(i=i,nexti=nexti,fadeDuration=fadeDuration,fadeOffset=fadeoffset,delays=int(dur+(fadeDuration*2)+1)))
 
 
 

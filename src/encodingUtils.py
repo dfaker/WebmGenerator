@@ -48,14 +48,17 @@ def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=1):
       
       videoFileName = '{}_{}.{}'.format(filenamePrefix,fileN,extension)
       outLogFilename = 'encoder_{}.log'.format(fileN)
+      outFilterFilename = 'filters_{}.txt'.format(fileN)
 
       logFilePath        = os.path.join('tempVideoFiles',outLogFilename)
       tempVideoFilePath  = os.path.join('tempVideoFiles',videoFileName)
+      filterFilePath     = os.path.join('tempVideoFiles',outFilterFilename)
       videoFilePath      = os.path.join('finalVideos',videoFileName)
+      
 
-      if not os.path.exists(tempVideoFilePath) and not os.path.exists(videoFilePath) and not os.path.exists(logFilePath) and videoFileName not in filesPlannedForCreation:
+      if not os.path.exists(tempVideoFilePath) and not os.path.exists(filterFilePath) and not os.path.exists(videoFilePath) and not os.path.exists(logFilePath) and videoFileName not in filesPlannedForCreation:
         filesPlannedForCreation.add(videoFileName)
-        return videoFileName,logFilePath,tempVideoFilePath,videoFilePath
+        return videoFileName,logFilePath,filterFilePath,tempVideoFilePath,videoFilePath
 
       fileN+=1
 
@@ -63,19 +66,17 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
   currentEncodedTotal=0
   psnr = None
   ln=b''
+  logging.debug('Encode Start')
   while 1:
     try:
       if isRquestCancelled(requestId):
         proc.kill()
         outs, errs = proc.communicate()
-        return
+        return 0,0
       c = proc.stderr.read(1)
       if len(c)==0:
         break
       if c == b'\r':
-        logging.debug(ln)
-        print(ln)
-
         for p in ln.split(b' '):
           if b'*:' in p:
             try:
@@ -106,7 +107,7 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
 
   if proc.returncode == 1:
     statusCallback('Encode Failed '+processLabel,1,lastEncodedPSNR=psnr,encodeStage='Encode Failed', encodePass='Error code {}'.format(proc.returncode) )
-  
+
   if passNumber == 0:
     statusCallback('Complete '+processLabel,(currentEncodedTotal+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr )
   elif passNumber == 1:

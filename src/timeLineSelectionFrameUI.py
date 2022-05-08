@@ -787,7 +787,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if pos == 's':
           self.controller.seekTo( targetSeconds )
         elif pos == 'e':
-          self.controller.seekTo( targetSeconds )
+          self.controller.seekTo( targetSeconds-0.001 )
         elif pos == 'm':
           if ctrl:
             targetSeconds = targetSeconds-((oe-os)/2)
@@ -934,10 +934,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
       for rid,(s,e) in list(ranges):
 
-        if checkRanges and s<self.controller.getCurrentPlaybackPosition()<=e:
-          self.controller.setLoopPos(s,e)
-          checkRanges=False
-        elif checkRanges and s<self.controller.getCurrentPlaybackPosition()<=e+0.01:
+        if checkRanges and (s+0.01)<self.controller.getCurrentPlaybackPosition()<(e-0.01):
           self.controller.setLoopPos(s,e)
           checkRanges=False
 

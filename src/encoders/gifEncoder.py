@@ -19,7 +19,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*(1.0-globalOptions.get('allowableTargetSizeUnderrun',0.25))
 
-  videoFileName,logFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif', requestId)
+  videoFileName,logFilePath,filterFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif', requestId)
 
   def encoderStatusCallback(text,percentage,**kwargs):
     statusCallback(text,percentage,**kwargs)
@@ -29,10 +29,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1,scale=\'max({}\\,min({}\\,iw)):-1\':flags=area,split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
 
+
+    with open(filterFilePath,'wb') as filterFile:
+      filterFile.write(giffiltercommand.encode('utf8'))
+
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
     ffmpegcommand+=inputsList
-    ffmpegcommand+=['-filter_complex',giffiltercommand]
+    ffmpegcommand+=['-filter_complex_script',filterFilePath]
     ffmpegcommand+=['-map','[outvgif]']
     ffmpegcommand+=["-vsync", 'passthrough'
                    ,"-shortest" 

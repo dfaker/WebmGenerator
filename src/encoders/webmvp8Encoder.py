@@ -2,6 +2,7 @@
 import os
 import logging
 import subprocess as sp
+import datetime
 
 from ..encodingUtils import getFreeNameForFileAndLog
 from ..encodingUtils import logffmpegEncodeProgress
@@ -92,7 +93,11 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-threads", str(threadCount),"-crf"  ,'4'
                    ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
                    ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) ]
+                   ,"-metadata", 'title={}'.format(filenamePrefix + metadataSuffix)
+                   ,"-metadata", 'WritingApp=WebmGenerator'
+                   ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() )
+
+                    ]
     
     print(ffmpegcommand)
     if sizeLimitMax == 0.0:

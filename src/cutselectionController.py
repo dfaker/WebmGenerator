@@ -114,11 +114,8 @@ class CutselectionController:
       self.ui.setUiDirtyFlag()
       self.seekTo(endPoint)
 
-  def generateMotionWaveBackgrounds(self):
-    self.ui.generateMotionWaveBackgrounds()
-
-  def generateSoundWaveBackgrounds(self):
-    self.ui.generateSoundWaveBackgrounds()
+  def generateSoundWaveBackgrounds(self,style='GENERAL'):
+    self.ui.generateSoundWaveBackgrounds(style=style)
 
   def clearAllSubclipsOnCurrentClip(self):
     if self.currentlyPlayingFileName is not None:

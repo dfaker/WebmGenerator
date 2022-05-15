@@ -468,6 +468,10 @@ class FilterValuePair(ttk.Frame):
       self.valueVar.set(valVar)
 
   def getValuePair(self,forFilter=True):
+    val = self.valueVar.get()
+    if val in ('inf','-inf',float('inf'),float('-inf')):
+      self.valueVar.set(0)
+
     if self.param['type'] == 'string':
       self.stringValueVarSubstitutions()
       val = self.valueVar.get()

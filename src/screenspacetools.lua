@@ -260,7 +260,7 @@ function screenspacetools_rect(p1x,p1y,p2x,p2y,dim,fill,border,width,visible)
         ass:append(ass_set_color(1, "00000000"))
         ass:append(ass_set_color(3, "FF0000FF"))
         ass:append("{\\bord1}")
-        ass:rect_cw(tonumber(midy)-5, tonumber(midx)-5, tonumber(midy)+5, tonumber(midx)+5)
+        ass:rect_cw(tonumber(midy)-15, tonumber(midx)-15, tonumber(midy)+15, tonumber(midx)+15)
         ass:draw_stop()
 
 

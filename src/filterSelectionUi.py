@@ -1647,7 +1647,7 @@ class FilterSelectionUi(ttk.Frame):
         videoOriginX,videoOriginY,videoMaxX,videoMaxY = self.controller.getvideoOSDExtents()
 
         if e.type == tk.EventType.ButtonPress:        
-          if self.screenMouseRect[0] is not None and abs(((self.screenMouseRect[0]+self.screenMouseRect[2])/2)-e.x)<10 and abs(((self.screenMouseRect[1]+self.screenMouseRect[3])/2)-e.y)<10:
+          if self.screenMouseRect[0] is not None and abs(((self.screenMouseRect[0]+self.screenMouseRect[2])/2)-e.x)<30 and abs(((self.screenMouseRect[1]+self.screenMouseRect[3])/2)-e.y)<30:
             self.mouseRectMoving=True
             self.mouseRectMoveStart=(e.x,e.y)
           else:

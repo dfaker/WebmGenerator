@@ -258,6 +258,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.latestAudioByteDecoded = 0
     self.completedAudioByteDecoded = False
     self.audioToBytesThread     = None
+    self.generateWaveStyle      = 'GENERAL'
 
     self.lastWavePicSectionsRequested = None
     self.waveAsPicSections            = []
@@ -283,13 +284,22 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       return a,b 
     return None,None
 
-  def processFileAudioToBytes(self,filename,totalDuration):
+  def processFileAudioToBytes(self,filename,totalDuration,style='SPEECH'):
+    print('processFileAudioToBytes ENTRY')
     import subprocess as sp
     sampleRate = 4000
-    proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,highpass=f=200,lowpass=f=3000,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+    if self.generateWaveStyle == 'SPEECH':
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/speechModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+    elif self.generateWaveStyle == 'VOICE':
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/voiceModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+    else:
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,highpass=f=200,lowpass=f=3000,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+    
     n=0
     self.completedAudioByteDecoded = False
     while 1:
+      if self.audioToBytesThreadKill:
+        break
       n+=1
       l = proc.stdout.read(1)
       if len(l)==0:
@@ -304,7 +314,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         print(e)
       self.audioByteValuesReadLock.release()
     proc.communicate()
+
+    if self.audioToBytesThreadKill:
+      self.audioToBytesThreadKill=False
+      return
+
     self.completedAudioByteDecoded = True
+    self.audioToBytesThreadKill=False
     self.audioToBytesThread = None
 
   def generateImageSections(self,filename,startpc,endpc,totalDuration,outputWidth):
@@ -567,6 +583,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('previewFrame')
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
+    self.audioToBytesThreadKill=True
+    self.audioToBytesThread=None
+    self.completedAudioByteDecoded = False
 
     self.setUiDirtyFlag()
 
@@ -608,9 +627,20 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       return 0
 
   def timelineMousewheel(self,e):    
-      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
       ctrl  = (e.state & 0x4) != 0
       shift = (e.state & 0x1) != 0
+      if e.y<20:
+        if e.delta>0:
+          self.currentZoomRangeMidpoint += 0.25/self.timelineZoomFactor
+          self.setUiDirtyFlag()
+          return
+        else:
+          self.currentZoomRangeMidpoint -= 0.25/self.timelineZoomFactor
+          self.setUiDirtyFlag()
+          return
+
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+
       for rid,(sts,ens) in ranges:
         st=self.secondsToXcoord(sts)
         en=self.secondsToXcoord(ens)
@@ -643,7 +673,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         else:
           newZoomFactor *= 0.666 if ctrl  else 0.99
           self.setUiDirtyFlag()
-        newZoomFactor = min(max(1,newZoomFactor),100)
+        newZoomFactor = min(max(1,newZoomFactor),150)
         if newZoomFactor == self.timelineZoomFactor:
           return
           self.setUiDirtyFlag()
@@ -853,15 +883,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
         self.timeline_canvas.itemconfig(self.tempRangePreviewDurationLabel,text="")
 
-      if self.uiDirty>0 and (self.generateWaveImages or self.generateMotionImages):
+      if self.uiDirty>0 and self.generateWaveImages:
 
-        if self.audioToBytesThread is None: 
-          if self.generateWaveImages:          
-            self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
-          else:
-            self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
+        if self.audioToBytesThread is None and not self.completedAudioByteDecoded: 
+          self.audioToBytesThread = threading.Timer(0.0, self.processFileAudioToBytes,args=(self.controller.controller.getcurrentFilename(),self.controller.getTotalDuration()))
 
-
+          self.audioToBytesThreadKill=False
           self.audioToBytesThread.daemon=True
           self.audioToBytesThread.start()
 

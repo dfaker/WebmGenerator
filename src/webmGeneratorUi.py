@@ -265,9 +265,15 @@ class WebmGeneratorUi:
     self.commandmenu.add_cascade(label="Content detectors", menu=self.commandDetectormenu)
     self.commandmenu.add_separator()
 
-    self.commandmenu.add_checkbutton(label="Generate audio spectra", command=self.generateSoundWaveBackgrounds)
-    #self.commandmenu.add_checkbutton(label="Generate motion spectra", command=self.generateMotionWaveBackgrounds)
+    self.commandmenu.add_command(label="Generate general audio spectra", command=self.generateSoundWaveBackgrounds)
     
+    voiceModelEnabled = 'normal' if os.path.exists(os.path.join('resources','voiceModel','model.rnnn')) else 'disabled'
+    self.commandmenu.add_command(label="Generate voice spectra", command=self.generateSoundVoiceBackgrounds,state=voiceModelEnabled)
+
+    speechModelEnabled = 'normal' if os.path.exists(os.path.join('resources','speechModel','model.rnnn')) else 'disabled'
+    self.commandmenu.add_command(label="Generate speech spectra", command=self.generateSoundSpeechBackgrounds,state=speechModelEnabled)
+    
+
     self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Clear all SubClips on current clip", command=self.clearAllSubclipsOnCurrentClip)
     self.commandmenu.add_command(label="Clear all Interest Marks on current clip", command=self.clearAllInterestMarksOnCurrentClip)
@@ -541,11 +547,14 @@ class WebmGeneratorUi:
   def splitClipIntoSectionsOfLengthN(self):
     self.controller.splitClipIntoSectionsOfLengthN()
 
-  def generateMotionWaveBackgrounds(self):
-    self.controller.generateMotionWaveBackgrounds()
+  def generateSoundVoiceBackgrounds(self):
+    self.controller.generateSoundWaveBackgrounds(style='VOICE')
+
+  def generateSoundSpeechBackgrounds(self):
+    self.controller.generateSoundWaveBackgrounds(style='SPEECH')
 
   def generateSoundWaveBackgrounds(self):
-    self.controller.generateSoundWaveBackgrounds()
+    self.controller.generateSoundWaveBackgrounds(style='GENERAL')
 
   def clearAllSubclipsOnCurrentClip(self):
     self.controller.clearAllSubclipsOnCurrentClip()

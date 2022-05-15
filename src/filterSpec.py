@@ -512,19 +512,22 @@ selectableFilters = [
         "name": "Trans Text",
         "desc": "Draw a coloured box with text masked out and made transparent.",
         "category":['Overlay, text and masks'],
-        "filter": "null[vin{fn}],color=s={w}x{h}:c={boxColour}[cbg],color=c=white:s={w}x{h}[abg],[abg]drawtext=text='{text}':fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=black[cbox],[cbg][cbox]alphamerge[c],[vin{fn}][c]overlay=eval=init",      
-        "filterPreview": "drawbox=c={boxColour}:x=0:y=0:w={w}:h={h},drawtext=text={text}:fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=red",
+        "filter": "null[vin{fn}],color=s={w}x{h}:c={boxColour}[cbg],color=c={bgDensity}:s={w}x{h},format=yuv420p[abg],[abg]drawtext=text='{text}':fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=black,format=yuv420p[cbox],[cbg][cbox]alphamerge[c],[vin{fn}][c]overlay=eval=init",      
+        "filterPreview": "drawbox=c={boxColour}:x=0:y=0:w={w}:h={h},drawbox=c={bgDensity}@0.2:x=0:y=0:w={w}:h={h},drawtext=text={text}:fontsize={fontsize}:x={x}:y={y}:fontfile='{fontfile}':fontcolor=red",
         "params": [ 
 
             {"n": "text", "d": "Text", "type": "string"},
             {"n": "fontfile", "d": "resources/quicksand.otf", "type": "file", "fileCategory":"font"},
             {"n": "boxColour","d": "Black","type": "cycle","cycle": '@COLOURS'},
+
+            {"n": "bgDensity","d": "White","type": "cycle","cycle": ['White','LightGrey','Gray','DimGray']},
+
             {"n": "w", "d": 1, "type": "int", "range": None, "rectProp": "w", "inc": 1},
             {"n": "h", "d": 1, "type": "int", "range": None, "rectProp": "h", "inc": 1},
 
             {"n": "x", "d": 1, "type": "int", "range": None, "rectProp": "x", "inc": 1},
             {"n": "y", "d": 1, "type": "int", "range": None, "rectProp": "y", "inc": 1},
-            {"n": "fontsize", "d": 18, "type": "int", "range": None, "inc": 1},
+            {"n": "fontsize", "d": 18, "type": "int", "range": [1,None], "inc": 1},
 
 
 
@@ -1025,8 +1028,8 @@ selectableFilters = [
             #{"n": "v_offset", "d": 0.0, "type": "float", "range": [-1, 1],   "inc": 0.01 },
 
 
-            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 180],   "inc": 1 , "videoSpaceAxis":"d_fov"  ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
-            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 180], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
+            {"n": "d_fov", "d": 90.0, "type": "float", "range": [0, 200],   "inc": 1 , "videoSpaceAxis":"d_fov"  ,"commandVar":['VR-OutFOV',[['v360@{fn}','d_fov']]]},
+            {"n": "id_fov", "d": 180.0, "type": "float", "range": [0, 200], "inc": 1 ,"commandVar":['VR-InFOV',[['v360@{fn}','id_fov']]]},
             {
                 "n": "interp",
                 "d": "linear",
@@ -1668,7 +1671,7 @@ selectableFilters = [
                 "d":"none",
                 "cycle":["none","strftime","normal"]
             },
-            {"n": "fontsize", "d": "12", "type": "int", "rectProp": "h", "range": None, "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
+            {"n": "fontsize", "d": "12", "type": "int", "rectProp": "h", "range": [1,None], "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] }
         ],
         "presets":[

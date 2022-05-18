@@ -889,7 +889,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
       endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
 
-
       if self.tempRangeStart is not None:
         a = self.tempRangeStart
         b = self.controller.getCurrentPlaybackPosition()
@@ -1099,10 +1098,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           del self.canvasRegionCache[(rid,name)]
 
   def setUiDirtyFlag(self):
-    self.uiDirty+=1
+    self.uiDirty = min(max(0,self.uiDirty+1),2)
 
   def decrementUiDirtyFlag(self):
-    self.uiDirty = min(max(0,self.uiDirty-1),5)
+    self.uiDirty = min(max(0,self.uiDirty-1),2)
 
   def canvasPopupAddNewSubClipToInterestMarksCallback(self):
     self.canvasPopupAddNewSubClipCallback(setDirtyAfter=False)

@@ -1367,7 +1367,7 @@ class MergeSelectionUi(ttk.Frame):
       
       endOffset += end-start
 
-      edlstr += '{},{},{}\n'.format(fn,start,end-start)
+      edlstr += '%{}%{},{},{}\n'.format(len(fn),fn,start,end-start)
     open('pl.edl','wb').write(edlstr.encode('utf8'))
 
     if self.player is not None:

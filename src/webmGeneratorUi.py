@@ -263,16 +263,19 @@ class WebmGeneratorUi:
     self.commandDetectormenu.add_command(label="Run voice activity detection", command=self.controller.runVoiceActivityDetection)
     
     self.commandmenu.add_cascade(label="Content detectors", menu=self.commandDetectormenu)
-    self.commandmenu.add_separator()
 
-    self.commandmenu.add_command(label="Generate general audio spectra", command=self.generateSoundWaveBackgrounds)
+
+    self.commandspectramenu = Menu(self.menubar, tearoff=0)
+
+    self.commandspectramenu.add_command(label="Generate general audio spectra", command=self.generateSoundWaveBackgrounds)
     
     voiceModelEnabled = 'normal' if os.path.exists(os.path.join('resources','voiceModel','model.rnnn')) else 'disabled'
-    self.commandmenu.add_command(label="Generate voice spectra", command=self.generateSoundVoiceBackgrounds,state=voiceModelEnabled)
+    self.commandspectramenu.add_command(label="Generate voice spectra", command=self.generateSoundVoiceBackgrounds,state=voiceModelEnabled)
 
     speechModelEnabled = 'normal' if os.path.exists(os.path.join('resources','speechModel','model.rnnn')) else 'disabled'
-    self.commandmenu.add_command(label="Generate speech spectra", command=self.generateSoundSpeechBackgrounds,state=speechModelEnabled)
+    self.commandspectramenu.add_command(label="Generate speech spectra", command=self.generateSoundSpeechBackgrounds,state=speechModelEnabled)
     
+    self.commandmenu.add_cascade(label="Audio spectra", menu=self.commandspectramenu)
 
     self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Clear all SubClips on current clip", command=self.clearAllSubclipsOnCurrentClip)

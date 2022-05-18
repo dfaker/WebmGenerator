@@ -649,6 +649,8 @@ class CutselectionController:
 
       self.ffmpegService.scanAndAddLoudSections(self.currentlyPlayingFileName,self.currentTotalDuration,threshold,self.scanAndAddLoudSectionsCallback,useRange=useRange,rangeStart=a,rangeEnd=b)
 
+  
+
   def setLoopPos(self,start,end):
     if self.loopMode == 'Loop current':
       if (self.currentLoop_a is None or 

@@ -5,6 +5,7 @@ import os
 import string 
 import mpv
 from tkinter.filedialog import askopenfilename
+import subprocess as sp
 import random
 import time
 from collections import deque
@@ -12,6 +13,7 @@ import logging
 import json
 import threading
 from .modalWindows import Tooltip
+import platform
 
 class EncodeProgress(ttk.Frame):
 
@@ -98,7 +100,12 @@ class EncodeProgress(ttk.Frame):
     self.progressbarPlayButton.config(text='Play')
     self.progressbarPlayButton.config(command=self.playFinal)
     self.progressbarPlayButton.config(style="small.TButton")
-    
+
+    self.progressbarOpenContainingFolderButton = ttk.Button(self.frameEncodeProgressWidget)
+    self.progressbarOpenContainingFolderButton.config(text='Open folder')
+    self.progressbarOpenContainingFolderButton.config(command=self.openFolder)
+    self.progressbarOpenContainingFolderButton.config(style="small.TButton")
+
 
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=0,pady=5, fill='x', side='top')
     
@@ -112,6 +119,15 @@ class EncodeProgress(ttk.Frame):
 
     self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
 
+  def openFolder(self):
+    if self.finalFilename is not None:
+      path,_ = os.path.split(self.finalFilename)
+      if platform.system() == "Windows":
+          os.startfile(path)
+      elif platform.system() == "Darwin":
+          sp.Popen(["open", path])
+      else:
+          sp.Popen(["xdg-open", path])
 
   def playFinal(self):
     if self.finalFilename is not None:
@@ -260,6 +276,8 @@ class EncodeProgress(ttk.Frame):
         if self.finalFilename is not None:
           self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
           self.progressbarPlayButton.grid(row=2,column=9,sticky='nesw')
+          self.progressbarOpenContainingFolderButton.grid(row=2,column=10,sticky='nesw')
+          
       else:
         self.progressbarEncodeProgressLabel.config(style="Blue.Horizontal.TProgressbar")
         self.progressbarEncodeCancelButton.grid(row=2,column=9,sticky='nesw') 
@@ -1328,13 +1346,26 @@ class MergeSelectionUi(ttk.Frame):
 
   def previewSequencetimings(self):
     edlstr = '# mpv EDL v0\n'
+    endOffset=0
+    startoffset=0
+    audioFilename=None
+
+    if self.audioOverrideValue is not None and os.path.exists(self.audioOverrideValue):
+
+      endOffset    = float(self.audiOverrideDelayValue)
+      startoffset = float(self.audiOverrideDelayValue)
+      audioFilename = self.audioOverrideValue.replace('\\','/').replace(':','\\:').replace('\'','\\\\\'')
+
     for sv in self.sequencedClips:
       fn = sv.filename
       start = sv.s
       end = sv.e
+
       if self.transDurationValue < (end-start):
         start += (self.transDurationValue/2)
         end   -= (self.transDurationValue/2)
+      
+      endOffset += end-start
 
       edlstr += '{},{},{}\n'.format(fn,start,end-start)
     open('pl.edl','wb').write(edlstr.encode('utf8'))
@@ -1348,6 +1379,11 @@ class MergeSelectionUi(ttk.Frame):
                           autofit_larger='1280')
 
     self.player.play('pl.edl')
+
+    if audioFilename is not None:
+      self.player.mute=False
+      self.player.volume=100
+      self.player.lavfi_complex="amovie=filename='{fn}',atrim=start={starts}:end={endts},asetpts=PTS-STARTPTS[ao]".format(fn=audioFilename,starts=startoffset,endts=endOffset)
 
     def quitFunc(key_state, key_name, key_char):
       def playerReaper():

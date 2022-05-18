@@ -247,7 +247,7 @@ class WebmGeneratorController:
 
   def loadDrop(self,drop):
     dropfiles = []
-    bopen=False
+    bopen=0
 
     print(drop.type)
     if drop.type in (CF_UNICODETEXT,CF_TEXT):
@@ -257,15 +257,22 @@ class WebmGeneratorController:
     print(drop.data)
     lastchar = ' '
     for c in drop.data:
-      if c == '{' and lastchar != '\\':
-        bopen=True
+      
+      if c == '{' and lastchar != '\\' and bopen == 0:
+        bopen=1
         dropfiles.append('')
-      elif c == '}' and bopen and lastchar != '\\':
-        bopen=False
+      elif c == '}' and bopen==1 and lastchar != '\\':
+        bopen=0
         dropfiles.append('')
       elif c == ' ' and not bopen and lastchar != '\\':
         dropfiles.append('')
       else:
+
+        if c == '{':
+          bopen+=1
+        elif c == '}':
+          bopen-=1
+
         if len(dropfiles)==0:
           dropfiles.append('')
         if lastchar == '\\':

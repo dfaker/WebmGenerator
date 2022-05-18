@@ -1671,7 +1671,7 @@ selectableFilters = [
                 "d":"none",
                 "cycle":["none","strftime","normal"]
             },
-            {"n": "fontsize", "d": "12", "type": "int", "rectProp": "h", "range": [1,None], "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
+            {"n": "fontsize", "d": 12, "type": "int", "rectProp": "h", "range": [1,None], "inc": 1, "_commandVar":['Text-size',[['drawtext@{fn}','fontsize']]] },
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] }
         ],
         "presets":[

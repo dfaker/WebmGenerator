@@ -230,7 +230,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.uiDirty=1
     self.clickTarget=None
 
-    self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,9,0,fill="#4E4E4E")
+    self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,20,0,fill="#3F3F7F")
     self.rangeHeaderActiveRange = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#9E9E9E")
     
     self.rangeHeaderActiveMid = self.timeline_canvas.create_line(0,0,0,0,fill="#4E4E4E")
@@ -362,7 +362,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
           sampleszMin = tempsamples[samp0:samp1].min()-1
           sampleszMin = int((sampleszMin/255)*40)
-
+          
           background[sampleszMin:sampleszMax,x,0]=250
 
         except Exception as e:
@@ -374,7 +374,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       for row in background:
         rowdata = []
         for dtum in row:
-          rowdata.append('{c}{c}{c}'.format(c=chr(int(dtum[0]))))
+          if dtum[0] > 30:
+            rowdata.append('{c}{c}{b}'.format(c=chr(int(dtum[0]*0.8)),b=chr(int(dtum[0]))))
+          else:
+            rowdata.append('{c}{c}{c}'.format(c=chr(int(dtum[0]))))
+
         picdata += ''.join(rowdata)
 
       self.timeline_canvas.delete('waveAsPicImage')
@@ -581,8 +585,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
     self.previewFrames = {}
     self.timeline_canvas.delete('previewFrame')
+    self.timeline_canvas.delete('waveAsPicImage')
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
+    self.generateWaveImages = False
+    self.generateMotionImages = False
     self.audioToBytesThreadKill=True
     self.audioToBytesThread=None
     self.completedAudioByteDecoded = False
@@ -630,12 +637,19 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       ctrl  = (e.state & 0x4) != 0
       shift = (e.state & 0x1) != 0
       if e.y<20:
+
+        factor = 0.10
+        if shift:
+          factor=0.25
+        if ctrl:
+          factor=1
+
         if e.delta>0:
-          self.currentZoomRangeMidpoint += 0.25/self.timelineZoomFactor
+          self.currentZoomRangeMidpoint += factor/self.timelineZoomFactor
           self.setUiDirtyFlag()
           return
         else:
-          self.currentZoomRangeMidpoint -= 0.25/self.timelineZoomFactor
+          self.currentZoomRangeMidpoint -= factor/self.timelineZoomFactor
           self.setUiDirtyFlag()
           return
 
@@ -775,6 +789,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if self.tempRangeStart is not None:
         self.endTempSelection()
 
+      if self.clickTarget is not None:
+        rid,pos,os,oe = self.clickTarget
+        if pos == 'e':
+          self.controller.seekTo( os )
+
       self.clickTarget = None
       self.rangeHeaderClickStart=None
       self.controller.play()
@@ -852,6 +871,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       updateLock = AbstractContextManager()
 
 
+
     with updateLock:
 
       canvasUpdated = False
@@ -863,6 +883,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       timelineWidth = self.winfo_width()
       timelineHeight = self.winfo_height()
       
+      if self.uiDirty>0:
+        self.timeline_canvas.coords(self.rangeHeaderBG,0, 0, timelineWidth, 20)
+
       startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
       endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
 
@@ -961,7 +984,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
       for rid,(s,e) in list(ranges):
 
-        if checkRanges and (s+0.01)<self.controller.getCurrentPlaybackPosition()<(e-0.01):
+        if checkRanges and (s)<self.controller.getCurrentPlaybackPosition()<(e):
           self.controller.setLoopPos(s,e)
           checkRanges=False
 

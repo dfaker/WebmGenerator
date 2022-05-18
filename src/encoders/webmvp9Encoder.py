@@ -8,6 +8,8 @@ from ..encodingUtils import getFreeNameForFileAndLog
 from ..encodingUtils import logffmpegEncodeProgress
 from ..encodingUtils import isRquestCancelled
 
+from ..webmGeneratorUi import RELEASE_NUMVER
+
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
@@ -39,18 +41,16 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0,bufsize=None):
+  def encoderFunction(br, passNumber, passReason, passPhase=0, requestId=None, widthReduction=0.0, bufsize=None):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
     ffmpegcommand+=inputsList
 
-
-
     if widthReduction>0.0:
-      encodefiltercommand = filtercommand+',[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(encodeStageFilter=encodeStageFilter,widthReduction=widthReduction)
     else:
-      encodefiltercommand = filtercommand+',[outv]null[outvfinal]'.format(widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},null[outvfinal]'.format(encodeStageFilter=encodeStageFilter)
 
     if options.get('audioChannels') == 'No audio':
       encodefiltercommand+=',[outa]anullsink'
@@ -67,7 +67,6 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     else:
       ffmpegcommand+=['-filter_complex_script',filterFilePath]
       ffmpegcommand+=['-map','[outvfinal]','-map','[outa]']
-
 
     if passPhase==1:
       ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
@@ -94,7 +93,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
                    ,"-deadline","best",'-slices','8','-psnr','-cpu-used','0'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) 
-                   ,"-metadata", 'WritingApp=WebmGenerator'
+                   ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
                    ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() )
                    ]
     

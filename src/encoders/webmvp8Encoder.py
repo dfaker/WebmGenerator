@@ -8,6 +8,8 @@ from ..encodingUtils import getFreeNameForFileAndLog
 from ..encodingUtils import logffmpegEncodeProgress
 from ..encodingUtils import isRquestCancelled
 
+from ..webmGeneratorUi import RELEASE_NUMVER
+
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
@@ -33,14 +35,13 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
-
   videoFileName,logFilePath,filterFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm', requestId)
   
   def encoderStatusCallback(text,percentage,**kwargs):
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0, requestId=None,widthReduction=0.0, bufsize=None):
+  def encoderFunction(br, passNumber, passReason, passPhase=0, requestId=None, widthReduction=0.0, bufsize=None):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -72,8 +73,6 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     elif passPhase==2:
       ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
-
-
     if bufsize is None:
       bufsize = 3000000
       if sizeLimitMax != 0.0:
@@ -94,7 +93,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
                    ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
                    ,"-metadata", 'title={}'.format(filenamePrefix + metadataSuffix)
-                   ,"-metadata", 'WritingApp=WebmGenerator'
+                   ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
                    ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() )
 
                     ]

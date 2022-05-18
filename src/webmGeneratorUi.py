@@ -19,7 +19,7 @@ import colorsys
 import numpy as np
 
 
-RELEASE_NUMVER = 'v3.20.0'
+RELEASE_NUMVER = 'v3.21.0'
 
 class WebmGeneratorUi:
 

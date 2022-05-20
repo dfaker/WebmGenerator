@@ -740,9 +740,11 @@ class CutselectionUi(ttk.Frame):
         if str(self) == tabName:
             if self.playingOnLastSwitchAway:
               self.controller.play()
+              self.controller.isActiveTab=True
         else:
             self.playingOnLastSwitchAway = self.controller.isplaying()
             self.controller.pause()
+            self.controller.isActiveTab=False
 
     def updateFileListing(self, files):
         currentFiles = set([x.filename for x in self.previews])
@@ -791,6 +793,9 @@ class CutselectionUi(ttk.Frame):
 
     def askString(self,title, prompt, initialvalue=None):
       return simpledialog.askstring(title, prompt, initialvalue=initialvalue) 
+
+    def centerTimelineOnCurrentPosition(self):
+      self.frameTimeLineFrame.centerTimelineOnCurrentPosition()
 
     def loadVideoYTdl(self):
       defaultUrl=''

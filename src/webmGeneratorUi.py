@@ -245,6 +245,10 @@ class WebmGeneratorUi:
 
     self.commandmenu = Menu(self.menubar, tearoff=0)
     
+    self.commandmenu.add_command(label="Show sequence preview",command=self.showSequencePreview)
+
+    self.commandmenu.add_separator()
+
     self.commandSplitmenu = Menu(self.menubar, tearoff=0)
     self.commandSplitmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
     self.commandSplitmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
@@ -293,6 +297,7 @@ class WebmGeneratorUi:
 
     self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
+
 
     def checkFreeSpaceWorker():
       try:
@@ -393,6 +398,10 @@ class WebmGeneratorUi:
 
     self.versioncheckResultIndex=None
 
+  def showSequencePreview(self):
+    self.controller.showSequencePreview()
+
+
   def adjustToneMap(self,e):
     ctrl  = e and ((e.state & 0x4) != 0)
     if ctrl:
@@ -471,7 +480,7 @@ class WebmGeneratorUi:
 
     self.boringText.configure(text=boringTextContent)
     if self.boringMode:
-      self.master.after(1, self.regenerateBoringText)
+      self.master.after(100, self.regenerateBoringText)
 
   def resetBoringText(self,e=None):
     self.boringi=0

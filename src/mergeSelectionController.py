@@ -4,12 +4,13 @@ import json
 
 class MergeSelectionController:
 
-  def __init__(self,ui,videoManager,ffmpegService,filterController,globalOptions={}):
+  def __init__(self,ui,videoManager,ffmpegService,filterController,cutController,globalOptions={}):
     self.ui=ui
     self.globalOptions=globalOptions
     self.videoManager=videoManager
     self.ffmpegService=ffmpegService
     self.filterController=filterController
+    self.cutController=cutController
     self.profileSpecPath = 'customEncodeProfiles'
 
     self.stdProfileSpecs = [ 
@@ -40,6 +41,11 @@ class MergeSelectionController:
             print('Custom profile load error',profileFilename,e)
 
     self.ui.setController(self)
+
+    self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
+
+  def synchroniseCutController(self,rid,startoffset,forceTabJump=False):
+    self.cutController.jumpToRidAndOffset(rid,startoffset,forceTabJump)
 
   def getDefaultPostFilter(self):
     return self.globalOptions.get('defaultPostProcessingFilter','')

@@ -6,7 +6,15 @@ class VideoManager:
     self.interestMarks = {}
     self.subClipCounter=0
     self.globalOptions=globalOptions
+    self.subclipChangeCallbacks=[]
 
+  def addSubclipChangeCallback(self,callback):
+    if callback not in self.subclipChangeCallbacks:
+      self.subclipChangeCallbacks.append(callback)
+
+  def updateCallbacks(self,rid=None,pos=None,action='UPDATE'):
+    for callback in self.subclipChangeCallbacks:
+      callback(rid=rid,pos=pos,action=action)
 
   def getStateForSave(self):
     return {'subclips':self.subclips.copy(),'interestMarks':{},'subClipCounter':self.subClipCounter}
@@ -53,6 +61,7 @@ class VideoManager:
     self.subClipCounter+=1
     start,end = sorted([start,end])
     self.subclips.setdefault(filename,{})[self.subClipCounter]=[start,end]
+    self.updateCallbacks(rid=self.subClipCounter,pos='s',action='NEW')
     return self.subClipCounter
 
   def expandSublcipToInterestMarks(self,filename,point):
@@ -98,16 +107,15 @@ class VideoManager:
         clipsToRemove.add(rid)
     for rid in clipsToRemove:
       del self.subclips.get(filename,{})[rid]
+      self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
 
   def getRangesForClip(self,filename):
     return self.subclips.get(filename,{}).items()
 
   def updateDetailsForRangeId(self,filename,rid,start,end):
     start,end = sorted([start,end])
-    print('updateDetailsForRangeId',filename,rid,start,end)
     self.subclips.get(filename,{}).get(rid,[0,0])[0]=start
     self.subclips.get(filename,{}).get(rid,[0,0])[1]=end
-
 
   def getDetailsForRangeId(self,searchrid):
     for filename,clips in self.subclips.items():
@@ -116,6 +124,7 @@ class VideoManager:
           return filename,s,e
 
   def updatePointForClip(self,filename,rid,pos,ts):
+    print('updatePointForClip',filename,rid,pos,ts)
     if pos == 's':
       self.subclips.get(filename,{}).get(rid,[0,0])[0]=ts
     elif pos == 'e':
@@ -132,6 +141,8 @@ class VideoManager:
     self.subclips.get(filename,{}).get(rid,[0,0])[1]=e
 
     print(self.subclips)
+
+    self.updateCallbacks(rid=rid,pos=pos,action='UPDATE')
 
 
 if __name__ == '__main__':

@@ -863,14 +863,17 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def requestFrames(self,filename,startTime,Endtime,timelineWidth,frameWidth):
     self.framesRequested=self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,self.frameResponseCallback)
 
+  def centerTimelineOnCurrentPosition(self):
+    seekpc = self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
+    self.currentZoomRangeMidpoint = seekpc
+    self.setUiDirtyFlag()
+
   def updateCanvas(self,withLock=False):
     
     if withLock:
       updateLock = acquire_timeout(self.uiUpdateLock,0.1)
     else:
       updateLock = AbstractContextManager()
-
-
 
     with updateLock:
 

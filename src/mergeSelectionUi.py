@@ -13,6 +13,7 @@ import logging
 import json
 import threading
 from .modalWindows import Tooltip
+from .modalWindows import VideoAudioSync
 import platform
 
 class EncodeProgress(ttk.Frame):
@@ -1343,62 +1344,25 @@ class MergeSelectionUi(ttk.Frame):
     self.selectableVideos={}
     self.selectedColumn = None
     self.player=None
+    self.syncModal=None
 
   def previewSequencetimings(self):
-    edlstr = '# mpv EDL v0\n'
-    endOffset=0
-    startoffset=0
-    audioFilename=None
+    
+    if self.mergeStyleVar.get() != self.mergeStyles[1]:
+      self.mergeStyleVar.set(self.mergeStyles[1])
 
-    if self.audioOverrideValue is not None and os.path.exists(self.audioOverrideValue):
-
-      endOffset    = float(self.audiOverrideDelayValue)
-      startoffset = float(self.audiOverrideDelayValue)
-      audioFilename = self.audioOverrideValue.replace('\\','/').replace(':','\\:').replace('\'','\\\\\'')
-
-    for sv in self.sequencedClips:
-      fn = sv.filename
-      start = sv.s
-      end = sv.e
-
-      if self.transDurationValue < (end-start):
-        start += (self.transDurationValue/2)
-        end   -= (self.transDurationValue/2)
-      
-      endOffset += end-start
-
-      edlstr += '%{}%{},{},{}\n'.format(len(fn),fn,start,end-start)
-    open('pl.edl','wb').write(edlstr.encode('utf8'))
-
-    if self.player is not None:
-      self.player.terminate()
-
-    self.player = mpv.MPV(loop='inf',
-                          mute=True,
-                          volume=0,
-                          autofit_larger='1280')
-
-    self.player.play('pl.edl')
-
-    if audioFilename is not None:
-      self.player.mute=False
-      self.player.volume=100
-      self.player.lavfi_complex="amovie=filename='{fn}',atrim=start={starts}:end={endts},asetpts=PTS-STARTPTS[ao]".format(fn=audioFilename,starts=startoffset,endts=endOffset)
-
-    def quitFunc(key_state, key_name, key_char):
-      def playerReaper():
-        print('ReaperKill')
-        player=self.player
-        self.player=None
-        player.terminate()
-        player.wait_for_shutdown()
-      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
-      self.playerReaper.start()
-
-    self.quitFunc = quitFunc
-    self.player.register_key_binding("q", quitFunc)
-    self.player.register_key_binding("Q", quitFunc)        
-    self.player.register_key_binding("CLOSE_WIN", quitFunc)
+    if self.syncModal is not None:
+      self.syncModal.destroy()
+    
+    self.syncModal = VideoAudioSync(master=self,
+                             controller=self.controller,
+                             sequencedClips=self.sequencedClips,
+                             dubFile=self.audioOverrideVar, 
+                             dubOffsetVar=self.audiOverrideDelayVar, 
+                             fadeVar=self.transDurationVar,
+                             mixVar=self.audiOverrideBiasVar)
+    self.syncModal.mainloop()
+    return
 
   def deleteProfile(self):
     pass
@@ -1604,6 +1568,11 @@ class MergeSelectionUi(ttk.Frame):
 
     self.updatedPredictedDuration()
   
+
+  def toggleBoringMode(self,boringMode):
+    if self.syncModal is not None and self.syncModal.isActive:
+      self.syncModal.toggleBoringMode(boringMode)
+
 
   def cancelEncodeRequest(self,requestId):
     self.controller.cancelEncodeRequest(requestId)
@@ -1944,6 +1913,17 @@ class MergeSelectionUi(ttk.Frame):
       self.scrolledframeSequenceContainer._scrollBothNow()
     self.updatedPredictedDuration()
 
+    if self.syncModal is not None:
+      self.syncModal.recalculateEDLTimings() 
+
+
+  def moveSequencedClipByIndex(self,clipIndex,move):
+    clip=self.sequencedClips[clipIndex]
+    self.moveSequencedClip(clip,move)
+
+    if self.syncModal is not None:
+      self.syncModal.recalculateEDLTimings() 
+
   def moveSequencedClip(self,clip,move):
     currentIndex = self.sequencedClips.index(clip)
     
@@ -1958,7 +1938,13 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeSequenceContainer.reposition()
     self.scrolledframeInputCustContainer._scrollBothNow()
     self.scrolledframeSequenceContainer._scrollBothNow()
+
+    if self.syncModal is not None:
+      self.syncModal.recalculateEDLTimings(rid=clip.rid) 
       
+  def synchroniseCutController(self,rid,startoffset,forceTabJump=False):
+    self.controller.synchroniseCutController(rid,startoffset,forceTabJump=forceTabJump)
+
   def removeSequencedClip(self,clip):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       for column in self.gridColumns:
@@ -1979,8 +1965,37 @@ class MergeSelectionUi(ttk.Frame):
       self.scrolledframeSequenceContainer._scrollBothNow()
       self.updatedPredictedDuration()
 
-  def tabSwitched(self,tabName):
-    if str(self) == tabName:
+    if self.syncModal is not None:
+      self.syncModal.recalculateEDLTimings() 
+
+  def videoSubclipDurationChangeCallback(self,rid=None,pos=None,action='UPDATE'):
+    if self.syncModal is not None and self.syncModal.isActive:
+      if action == 'NEW':
+        self.updateSelectableVideos()        
+        self.addClipToSequence(self.selectableVideos[rid])
+
+      if action == 'REMOVE':
+          clipsforRemoval=[]
+          for sv in self.sequencedClips:
+            if sv.rid==rid:
+              clipsforRemoval.append(sv)
+          for clip in clipsforRemoval:      
+            self.removeSequencedClip(clip)
+
+      changedrid=rid
+      for filename,rid,s,e,filterexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
+        for sv in self.sequencedClips:
+          if sv.rid==rid and (changedrid is None or changedrid==rid):
+            sv.update(s,e,filterexp,filterexpEnc)
+
+      try:
+        self.syncModal.keepWidth=True
+        self.syncModal.recalculateEDLTimings(rid=changedrid,pos=pos)
+        self.syncModal.keepWidth=False
+      except:
+        pass
+
+  def updateSelectableVideos(self):
       unusedRids=set(self.selectableVideos.keys())
       for filename,rid,s,e,filterexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
         if rid in self.selectableVideos:
@@ -1998,11 +2013,17 @@ class MergeSelectionUi(ttk.Frame):
         self.selectableVideos[rid].destroy()
         del self.selectableVideos[rid]
       self.updatedPredictedDuration()
-    self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
-    self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
 
-    self.scrolledframeInputCustContainer._scrollBothNow()
-    self.scrolledframeSequenceContainer._scrollBothNow()
+
+  def tabSwitched(self,tabName):
+    if str(self) == tabName:
+      self.updateSelectableVideos()
+
+      self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
+      self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
+
+      self.scrolledframeInputCustContainer._scrollBothNow()
+      self.scrolledframeSequenceContainer._scrollBothNow()
 
   def addAllClipsInInterspersedOrder(self):
     finalOrder=[]

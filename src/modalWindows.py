@@ -6,6 +6,9 @@ from tkinter.filedialog import askopenfilename
 import subprocess as sp
 import string
 import os
+
+import sys
+
 import threading
 try:
   from .encodingUtils import cleanFilenameForFfmpeg
@@ -14,11 +17,127 @@ except:
 from datetime import datetime
 
 
+scriptPath = os.path.dirname(os.path.abspath(__file__))
+basescriptPath = os.path.split(scriptPath)[0]
+scriptPath_frozen = os.path.dirname(os.path.abspath(sys.executable))
+os.environ["PATH"] = scriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
+print(scriptPath)
+print(scriptPath_frozen)
+
+os.add_dll_directory(basescriptPath)
+os.add_dll_directory(scriptPath)
+os.add_dll_directory(scriptPath_frozen)
+
+import mpv
+
+class CutSpecificationPlanner(tk.Toplevel):
+
+  def __init__(self, master=None, controller=None, *args):
+    tk.Toplevel.__init__(self, master)
+    
+    self.title('Audio Sync Specification Planner')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,400)
 
 
+    self.loadbutton = ttk.Button(self,text='Load Audio',command=self.selectFile)
+    self.loadbutton.grid(row=0,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
+
+
+    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
+    self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
+
+    self.timeline_canvas = tk.Canvas(self,width=200, height=130, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
+    self.timeline_canvas.grid(row=2,column=0,columnspan=9,sticky="nesw")
+    
+    self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
+
+    self.canvasSeekPointer = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
+
+    self.playerwid = self.playerFrame.winfo_id()
+
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=1)
+    self.rowconfigure(2, weight=0)
+
+    self.columnconfigure(0, weight=1)
+
+    self.currentTimePos=None
+    self.currentTotalDuration=None
+
+    self.player = mpv.MPV(loop='inf',
+                          mute=False,
+                          volume=50,
+                          autofit_larger='1280', wid=str(self.playerwid))
+
+    self.player.lavfi_complex="[aid1]asplit[as1][as2],[as1]showcqt=s=640x518[vo],[as2]anull[ao]"
+
+    self.attributes('-topmost', True)
+    self.update()
+
+    self.player.observe_property('time-pos', self.handleMpvTimePosChange)
+    self.player.observe_property('duration', self.handleMpvDurationChange)
+
+
+
+    def quitFunc(key_state, key_name, key_char):
+    
+      try:
+        self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
+      except Exception as e:
+        print(e)
+
+      try:
+        self.player.unobserve_property('duration', self.handleMpvDurationChange)
+      except Exception as e:
+        print(e)
+
+      try:
+        self.player.unobserve_property('af-metadata', self.handleMpvafMetdata)
+      except Exception as e:
+        print(e)
+
+      def playerReaper():
+        print('ReaperKill')
+        player=self.player
+        self.player=None
+        player.terminate()
+        player.wait_for_shutdown()
+      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+      self.playerReaper.start()
+      self.attributes('-topmost', False)
+      self.update()
+
+
+  def timelineMousePress(self,e):  
+    self.player.command('seek',str((e.x/self.timeline_canvas.winfo_width())*100),'absolute-percent','exact')
+
+
+  def handleMpvafMetdata(self,name,value):
+    print(name,value)
+
+  def handleMpvTimePosChange(self,name,value):
+    
+    timelineWidth = self.timeline_canvas.winfo_width()
+    timelineHeight = self.timeline_canvas.winfo_height()
+
+    if value is not None:
+      self.currentTimePos = value
+      if self.currentTotalDuration is not None:
+        currentPlaybackX = int((self.currentTimePos/self.currentTotalDuration)*timelineWidth)
+        self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+
+  def handleMpvDurationChange(self,name,value):
+    if value is not None:
+      self.currentTotalDuration=value
+
+  def selectFile(self):
+    self.file = askopenfilename(multiple=False,filetypes=[('All files','*.*',)])
+    if os.path.isfile(self.file):
+      self.player.play(self.file)
 
 class Tooltip:
-
 
   def __init__(self, widget,
                *,
@@ -133,6 +252,445 @@ class Tooltip:
     if tw:
       tw.destroy()
     self.tw = None
+
+class VideoAudioSync(tk.Toplevel):
+  def __init__(self, master=None, controller=None, sequencedClips=[], dubFile=None, dubOffsetVar=None, fadeVar=None, mixVar=None, *args):
+
+    tk.Toplevel.__init__(self, master)
+    
+    self.title('Sequence Preview and Audio Track Sync')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,100)
+    self.controller=controller
+    self.master=master
+
+    self.isActive=True
+
+    self.labelInstructions = ttk.Label(self)
+    self.labelInstructions.config(text='Timing preview of the planned Sequence - No Audio Dub Selected.',anchor="center")
+    self.labelInstructions.grid(row=0,column=0,sticky='new',padx=0,pady=0)
+
+    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
+    self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=14)
+
+    self.timeline_canvas = tk.Canvas(self,width=200, height=50, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
+    self.timeline_canvas.grid(row=2,column=0,columnspan=14,sticky="nesw")
+    
+    self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
+    self.timeline_canvas.bind("<B1-Motion>", self.timelineMousePress)
+
+    self.canvasSeekPointer = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
+
+    self.playerwid = self.playerFrame.winfo_id()
+
+    self.dubFile   = dubFile
+    self.dubOffsetVar = dubOffsetVar
+    self.fadeVar      = fadeVar
+    self.sequencedClips = sequencedClips
+    self.volumeVar = tk.StringVar()
+    self.seekOffsetVar = tk.StringVar()
+    self.seekOffsetVar.set(-1)
+    self.speedVar = tk.StringVar()
+    self.speedVar.set(1)
+    self.textInfo = tk.StringVar()
+    self.textInfo.set('offset=0.00')
+
+    self.mixVar = mixVar
+
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=1)
+    self.rowconfigure(2, weight=0)
+    self.rowconfigure(3, weight=0)
+    self.rowconfigure(4, weight=0)
+
+    self.columnconfigure(0, weight=1)
+    self.columnconfigure(1, weight=1)
+    self.columnconfigure(2, weight=1)
+    self.columnconfigure(3, weight=1)
+    self.columnconfigure(4, weight=1)
+    self.columnconfigure(5, weight=1)
+    self.columnconfigure(6, weight=1)
+    self.columnconfigure(7, weight=1)
+    self.columnconfigure(8, weight=1)
+    self.columnconfigure(9, weight=1)
+    self.columnconfigure(10, weight=1)
+    self.columnconfigure(11, weight=1)
+    self.columnconfigure(12, weight=1)
+    self.columnconfigure(13, weight=1)
+
+
+    self.tickColours=["#a9f9b9","#7dc4ed","#f46350","#edc1a6","#dfff91","#0f21e0","#f73dc8","#8392db","#72dbb4","#cc8624","#88ed71","#d639be"]
+
+    self.player = mpv.MPV(loop='inf',
+                          mute=False,
+                          volume=10,
+                          autofit_larger='1280', wid=str(self.playerwid))
+
+    self.currentTotalDuration=None
+    self.currentTimePos=None
+    self.ticktimestamps=[]
+    self.tickXpos=[]
+    self.colourMap={}
+    self.ridListing=[]
+
+    self.player.observe_property('time-pos', self.handleMpvTimePosChange)
+    self.player.observe_property('duration', self.handleMpvDurationChange)
+    self.player.observe_property('af-metadata',self.handleMpvafMetdata)
+
+
+    if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()):
+      mp3name = os.path.basename(self.dubFile.get()) 
+      self.labelInstructions.config(text='Timing preview of the planned Sequence - AudioDub:{}'.format(mp3name),anchor="center")
+
+    self.labeldubFile = ttk.Label(self)
+    self.labeldubFile.config(anchor='e',  text='Dubbing file:')
+    self.labeldubFile.grid(row=3,column=0,sticky='ew')
+    self.entrydubFile = ttk.Button(self,textvariable=self.dubFile,command=self.selectAudioOverride)
+    Tooltip(self.entrydubFile,text='An mp3 audio file to use to replace the original video audio.')
+    self.entrydubFile.grid(row=3,column=1,sticky='ew')
+ 
+
+    self.labelpostSeekOffset = ttk.Label(self)
+    self.labelpostSeekOffset.config(anchor='e',  text='Edit Seek Offset')
+    self.labelpostSeekOffset.grid(row=3,column=2,sticky='ew')
+    self.entrypostSeekOffset = ttk.Spinbox(self, textvariable=self.seekOffsetVar,from_=float('-inf'), 
+                                          to=float('inf'), 
+                                          increment=0.1)
+    Tooltip(self.entrypostSeekOffset,text='Edit Seek Offset')
+    self.entrypostSeekOffset.grid(row=3,column=3,sticky='ew')
+
+    self.labelpostAudioVolume = ttk.Label(self)
+    self.labelpostAudioVolume.config(anchor='e',  text='Volume')
+    self.labelpostAudioVolume.grid(row=3,column=4,sticky='ew')
+    self.entrypostAudioVolume = ttk.Spinbox(self, textvariable=self.volumeVar,from_=0, 
+                                          to=100, 
+                                          increment=5)
+    Tooltip(self.entrypostAudioVolume,text='Audio Volume.')
+    self.entrypostAudioVolume.grid(row=3,column=5,sticky='ew')
+    self.volumeVar.set(0)
+    self.volumeVar.trace('w',self.valueChangeVolume)
+
+
+    self.labelpostAudioOverrideDelay = ttk.Label(self)
+    self.labelpostAudioOverrideDelay.config(anchor='e',  text='Dub Delay (seconds)')
+    self.labelpostAudioOverrideDelay.grid(row=3,column=6,sticky='ew')
+    self.entrypostAudioOverrideDelay = ttk.Spinbox(self, textvariable=self.dubOffsetVar,from_=float('-inf'), 
+                                          to=float('inf'), 
+                                          increment=0.1)
+    Tooltip(self.entrypostAudioOverrideDelay,text='Delay before the start of the mp3 dub audio.')
+    self.entrypostAudioOverrideDelay.grid(row=3,column=7,sticky='ew')
+
+    self.dubOffsetVar.trace('w',self.valueChangeCallback)      
+    
+    self.labelTransDuration = ttk.Label(self)
+    self.labelTransDuration.config(anchor='e', padding='2', text='Transition Duration')
+    self.labelTransDuration.grid(row=4,column=0,sticky='ew')
+    self.entryTransDuration = ttk.Spinbox(self, 
+                                          from_=0, 
+                                          to=float('inf'), 
+                                          increment=0.01,
+                                          textvariable=self.fadeVar)
+
+    self.entryTransDuration.grid(row=4,column=1,sticky='ew')
+    self.fadeVar.trace('w',self.valueChangeCallback)
+
+    self.labelPlaybackSpeed = ttk.Label(self)
+    self.labelPlaybackSpeed.config(anchor='e', padding='2', text='Playback Speed')
+    self.labelPlaybackSpeed.grid(row=4,column=2,sticky='ew')
+    self.entrySpeed = ttk.Spinbox(self, 
+                                          from_=0, 
+                                          to=50, 
+                                          increment=0.1,
+                                          textvariable=self.speedVar)
+    self.entrySpeed.grid(row=4,column=3,sticky='ew')
+    self.speedVar.trace('w',self.speedChange)
+
+    self.labelMixBias = ttk.Label(self)
+    self.labelMixBias.config(anchor='e', padding='2', text='Audio Mix')
+    self.labelMixBias.grid(row=4,column=4,sticky='ew')
+    self.entryMixBias = ttk.Spinbox(self,
+                                          from_=0, 
+                                          to=1, 
+                                          increment=0.1,
+                                          textvariable=self.mixVar)
+    self.entryMixBias.grid(row=4,column=5,sticky='ew')
+    self.mixVar.trace('w',self.valueChangeCallback)
+
+    self.labelMixInfo = ttk.Label(self,textvariable=self.textInfo)
+    self.labelMixInfo.grid(row=4,column=6,sticky='ew',columnspan=2)
+
+    self.attributes('-topmost', True)
+    self.update()
+    self.edlBytes=b''
+    self.edlStreamFunc=None
+
+    self.keepWidth=False
+    self.durationForScale=0
+    self.redrawTimer=None
+    
+    def quitFunc(key_state, key_name, key_char):
+      self.isActive=False
+
+      try:
+        self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
+      except Exception as e:
+        print(e)
+
+      try:
+        self.player.unobserve_property('duration', self.handleMpvDurationChange)
+      except Exception as e:
+        print(e)
+
+      try:
+        self.player.unobserve_property('af-metadata', self.handleMpvafMetdata)
+      except Exception as e:
+        print(e)
+
+      def playerReaper():
+        print('ReaperKill')
+        player=self.player
+        self.player=None
+        player.terminate()
+        player.wait_for_shutdown()
+      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+      self.playerReaper.start()
+      self.isActive=False
+      self.attributes('-topmost', False)
+      self.update()
+
+    self.player.register_key_binding("CLOSE_WIN", quitFunc)
+    self.bind('<Configure>', self.reconfigureWindow)
+
+    self.recalculateEDLTimings()
+
+  def speedChange(self,*args):
+    newspeed = min(max(0,float(self.speedVar.get())),50)
+    self.player.speed = str(newspeed)
+
+
+  def handleMpvafMetdata(self,name,value):
+    print(name,value)
+
+
+  def toggleBoringMode(self,boringMode):
+    if boringMode:
+      self.playerFrame.grid_forget()
+      if self.dubFile.get() is None or self.dubFile.get() == 'None' or (not os.path.exists(self.dubFile.get())):
+        self.player.volume=0
+    else:
+      self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
+
+  def selectAudioOverride(self):
+    files = askopenfilename(multiple=False,filetypes=[('mp3','*.mp3',),('wav','*.wav')])
+    if files is None or len(files)==0:
+      self.dubFile.set('None')
+    else:
+      self.dubFile.set(str(files))
+
+  def timelineMousePress(self,e):  
+    if 5<e.y<20:
+      for tx,tidx in self.tickXpos:
+        if tx-6-5-4<e.x<tx:
+          print(tidx,'+1')
+          self.master.moveSequencedClipByIndex(tidx,+1)
+          return
+        elif tx<e.x<tx+6+5+4:
+          print(tidx+1,'-1')
+          self.master.moveSequencedClipByIndex(tidx+1,-1)
+          return
+
+    if self.currentTotalDuration is None:
+      self.player.command('seek','0','absolute-percent','exact')
+
+
+    self.player.command('seek',str((e.x/self.timeline_canvas.winfo_width())*100),'absolute-percent','exact')
+
+    pressSeconds = (e.x/self.timeline_canvas.winfo_width())*self.currentTotalDuration
+    for st,et,rid in self.ridListing:
+      if st<pressSeconds<et:
+        startoffset = pressSeconds-st
+        self.master.synchroniseCutController(rid,startoffset)
+        break
+
+
+  def handleMpvTimePosChange(self,name,value):
+    
+    timelineWidth = self.timeline_canvas.winfo_width()
+    timelineHeight = self.timeline_canvas.winfo_height()
+
+    if value is not None:
+      self.currentTimePos = value
+      if self.currentTotalDuration is not None:
+        currentPlaybackX = int((self.currentTimePos/self.currentTotalDuration)*timelineWidth)
+        self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+
+        for st,et,rid in self.ridListing:
+          if st<self.currentTimePos<et:
+            self.textInfo.set('offset={:0.4f}'.format(self.currentTimePos-st))
+
+  def handleMpvDurationChange(self,name,value):
+    if value is not None:
+      self.currentTotalDuration=value
+
+  def valueChangeVolume(self,*args):
+    self.player.volume = int(self.volumeVar.get())
+
+  def valueChangeCallback(self,*args):
+    if self.player:
+      self.recalculateEDLTimings()
+
+  def reconfigureWindow(self,e):
+    self.recalculateEDLTimings(seekAfter=self.currentTimePos)
+
+  def recalculateEDLTimings(self,rid=None,pos=None,seekAfter=None):
+
+    try:
+      self.redrawTimer.cancel()
+    except:
+      pass
+
+    if self.keepWidth:
+      self.redrawTimer = threading.Timer(0.8, self.recalculateEDLTimings)
+      self.redrawTimer.start()
+
+    if len(self.sequencedClips)==0:
+      self.timeline_canvas.delete('ticks')
+      self.player.stop()
+      return
+
+    edlstr = '# mpv EDL v0\n'
+    endOffset=0
+    startoffset=0
+    audioFilename=self.dubFile.get()
+
+    seekTarget=None
+    seekOffset =  0
+    try:
+      seekOffset = float(self.seekOffsetVar.get())
+    except:
+      pass
+
+    self.timeline_canvas.delete('ticks')
+    self.ticktimestamps=[]
+    self.tickXpos=[]
+    self.ridListing=[]
+
+    if audioFilename is not None and os.path.exists(audioFilename):
+      endOffset    = float(self.dubOffsetVar.get())
+      startoffset = float(self.dubOffsetVar.get())
+      audioFilename = audioFilename.replace('\\','/').replace(':','\\:').replace('\'','\\\\\'')
+    else:
+      audioFilename=None
+
+    tickCounter=0
+    for sv in self.sequencedClips:
+      fn = sv.filename
+      start = sv.s
+      end = sv.e
+
+      if rid is not None and rid==sv.rid:
+        print(rid,sv.rid)
+        if pos == 'e':
+          seekTarget = tickCounter+(end-start)+seekOffset
+        else:
+          seekTarget = tickCounter+seekOffset
+
+      if float(self.fadeVar.get()) < (end-start):
+        start += (float(self.fadeVar.get())/2)
+        end   -= (float(self.fadeVar.get())/2)
+      tempTickCounter=tickCounter
+      tickCounter += (end-start)
+      self.ridListing.append( (tempTickCounter,tickCounter,sv.rid) )
+
+      self.ticktimestamps.append(tickCounter)
+      endOffset += end-start
+
+
+      edlstr += '%{}%{},{},{}\n'.format(len(fn.encode('utf8')),fn,start,end-start)
+    
+
+    timelineWidth = self.timeline_canvas.winfo_width()
+    
+    lastTick=0
+
+
+    if not self.keepWidth:
+      self.durationForScale=tickCounter
+
+    idx=-1
+    for idx,tick in enumerate(self.ticktimestamps[:-1]):
+
+      tickrid = self.sequencedClips[idx].rid
+      tickColour = self.colourMap.get(tickrid)
+      if tickColour is None:
+        tickColour = self.tickColours[0]
+        self.colourMap[tickrid]=tickColour
+        self.tickColours.append(self.tickColours.pop(0))
+
+
+      txl = (lastTick/self.durationForScale)*timelineWidth
+      tx = (tick/self.durationForScale)*timelineWidth
+      self.tickXpos.append((tx,idx))
+
+      self.timeline_canvas.create_rectangle(txl, 0,tx, 5,fill=tickColour,tags='ticks')
+      
+      self.timeline_canvas.create_polygon(tx-6-5,    9, tx-6-5, 9+10, tx-4, 9+5, fill='grey',tags='ticks')
+      self.timeline_canvas.create_polygon(tx+6+5,    9, tx+6+5, 9+10, tx+4, 9+5, fill='grey',tags='ticks')
+
+      self.timeline_canvas.create_line(tx, 0, tx, 20,fill='grey',tags='ticks')
+
+      self.timeline_canvas.create_line(tx-6-5-4, 5, tx-6-5-4, 20,fill='grey',tags='ticks')
+      self.timeline_canvas.create_line(tx+6+5+4, 5, tx+6+5+4, 20,fill='grey',tags='ticks')
+
+      
+      lastTick=tick
+
+    self.timeline_canvas.create_line(0, 20, timelineWidth, 20,fill='grey',tags='ticks')
+
+    txl = (lastTick/self.durationForScale)*timelineWidth
+    tx  = timelineWidth
+
+    tickrid = self.sequencedClips[idx+1].rid
+    tickColour = self.colourMap.get(tickrid)
+    if tickColour is None:
+      tickColour = self.tickColours[0]
+      self.colourMap[tickrid]=tickColour
+      self.tickColours.append(self.tickColours.pop(0))
+
+    self.timeline_canvas.create_rectangle(txl, 0,tx, 5,fill=tickColour,tags='ticks')
+
+    self.timeline_canvas.tag_lower('ticks', self.canvasSeekPointer)
+
+    if seekAfter is not None:
+      seekAfter = max(min(seekAfter,endOffset),0)
+      self.player.start=str(seekAfter)
+
+    if seekTarget is not None:
+      seekTarget = max(min(seekTarget,endOffset),0)
+      self.player.start=str(seekTarget) 
+
+    self.player._python_streams = {}
+
+    edlBytes = edlstr.encode('utf8')
+
+    @self.player.python_stream('edlStream',len(edlBytes))
+    def edlstream():
+      yield edlBytes
+
+    self.player.play('python://edlStream')
+
+    del edlstream
+
+    if audioFilename is not None:
+
+      audioOverrideBias = float(self.mixVar.get())
+      weightDub    = audioOverrideBias
+      weightSource = 1-audioOverrideBias
+
+      self.player.lavfi_complex="amovie=filename='{fn}',atrim=start={starts}:end={endts},asetpts=PTS-STARTPTS[ao]".format(fn=audioFilename,starts=startoffset,endts=endOffset,wd=weightDub,ws=weightSource)
+    else:
+      self.player.lavfi_complex=''
 
 
 class V360HeadTrackingModal(tk.Toplevel):
@@ -273,7 +831,6 @@ class VoiceActivityDetectorModal(tk.Toplevel):
     self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr)
     self.destroy()
 
-    
 class TimestampModal(tk.Toplevel):
   
   def __init__(self, master=None,controller=None,initialValue='',videoDuration=0, *args):
@@ -948,5 +1505,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = V360HeadTrackingModal()
+  app = CutSpecificationPlanner()
   app.mainloop()

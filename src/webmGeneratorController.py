@@ -220,7 +220,7 @@ class WebmGeneratorController:
     self.composeController = ComposeController(self.composeUi,
                                                              self.videoManager,
                                                              self.ffmpegService,
-                                                             self.filterSelectionController,
+                                                             self.filterSelectionController,                                                             
                                                              self.globalOptions
                                                              )
     print('composeController loaded')
@@ -230,6 +230,7 @@ class WebmGeneratorController:
                                                              self.videoManager,
                                                              self.ffmpegService,
                                                              self.filterSelectionController,
+                                                             self.cutselectionController,
                                                              self.globalOptions
                                                              )
     print('mergeSelectionController loaded')
@@ -244,6 +245,9 @@ class WebmGeneratorController:
           self.loadAutoSave()
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
+
+  def showSequencePreview(self):
+    self.mergeSelectionUi.previewSequencetimings()
 
   def loadDrop(self,drop):
     dropfiles = []
@@ -310,6 +314,8 @@ class WebmGeneratorController:
         self.webmMegeneratorUi.newProject()
       elif evt.keysym=='b':
         self.webmMegeneratorUi.toggleBoringMode()
+        self.mergeSelectionUi.toggleBoringMode(self.webmMegeneratorUi.boringMode)
+
     self.cutselectionController.handleGlobalKeyEvent(evt)
 
   def autoSaveExists(self):

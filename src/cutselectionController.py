@@ -34,6 +34,7 @@ class CutselectionController:
     self.currentLoop_b=None
     self.copiedTimeRange = None
     self.fit=True
+    self.isActiveTab=True
 
     """
     if len(initialFiles)>1:
@@ -91,9 +92,18 @@ class CutselectionController:
       self.seekTo(endPoint)
 
   def addSubclipByTextRange(self):
-
     self.ui.addSubclipByTextRange(self,self.getTotalDuration())
 
+
+  def jumpToRidAndOffset(self,rid,startoffset,forceTabJump=False):
+    if self.isActiveTab:
+      filename,s,e = self.videoManager.getDetailsForRangeId(rid)
+      if self.currentlyPlayingFileName != filename:
+        for file in self.files:
+          if file == filename:
+            self.playVideoFile(file,s+startoffset)
+      elif self.currentlyPlayingFileName == filename:
+        self.seekTo(s+startoffset,centerAfter=True)
 
   def splitClipIntoSectionsOfLengthN(self):
     sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be? (Seconds)', initialvalue=30)
@@ -339,11 +349,13 @@ class CutselectionController:
   def pause(self):
     self.player.pause=True
 
-  def seekTo(self,seconds):
+  def seekTo(self,seconds,centerAfter=False):
     if self.currentTotalDuration is not None:
       self.ui.updateSummary( self.player.filename,self.player.duration,self.player.video_params,self.player.container_fps,self.player.estimated_vf_fps)
     
     self.player.command('seek',str(seconds),'absolute','exact')
+    if centerAfter:
+      self.ui.centerTimelineOnCurrentPosition()
 
   def getTotalDuration(self):
     if self.currentTotalDuration is None:

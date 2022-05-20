@@ -7,10 +7,11 @@ import time
 
 class FilterSelectionController:
 
-  def __init__(self,ui,videoManager,ffmpegService,faceDetectService,globalOptions={}):
+  def __init__(self,controller,ui,videoManager,ffmpegService,faceDetectService,globalOptions={}):
     self.globalOptions=globalOptions
     self.ui = ui
     self.templates = {}
+    self.controller = controller
     self.faceDetectService = faceDetectService
 
     os.path.exists('filterTemplates') or os.mkdir('filterTemplates')
@@ -53,6 +54,13 @@ class FilterSelectionController:
     self.installedFonts = None
     self.filterApplicationMode = 'lavfi_complex'
     self.overlay = None
+
+  def jumpToOwnTab(self):
+    print('jumpToOwnTab')
+    self.controller.jumpToTab(1)
+
+  def jumpToFilterByRid(self,rid):
+    self.ui.jumpToFilterByRid(rid)
 
   def getStringValue(self,valueToken):
     if valueToken == 'filename':

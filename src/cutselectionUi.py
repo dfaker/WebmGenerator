@@ -12,7 +12,7 @@ from math import floor
 import logging
 import time
 import subprocess as sp
-from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal,Tooltip
+from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal,Tooltip,CutSpecificationPlanner
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -70,7 +70,7 @@ class VideoFilePreview(ttk.Frame):
         self.frameVideoFileWidget = self
 
         self.labelVideoFileTitle = ttk.Label(self.frameVideoFileWidget)
-        self.labelVideoFileTitle.config(text=self.basename)
+        self.labelVideoFileTitle.config(text=self.basename,width=30)
         self.labelVideoFileTitle.pack(anchor="n", side="top")
 
         self.labelVideoPreviewLabel = ttk.Label(self.frameVideoFileWidget)
@@ -504,6 +504,9 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.daemon = True
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
+
+    def showSlicePlanner(self):
+      pass
 
     def fitoScreen(self):
       self.controller.fitoScreen()

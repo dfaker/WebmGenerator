@@ -245,9 +245,7 @@ class WebmGeneratorUi:
 
     self.commandmenu = Menu(self.menubar, tearoff=0)
     
-    self.commandmenu.add_command(label="Show sequence preview",command=self.showSequencePreview)
 
-    self.commandmenu.add_separator()
 
     self.commandSplitmenu = Menu(self.menubar, tearoff=0)
     self.commandSplitmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
@@ -294,6 +292,12 @@ class WebmGeneratorUi:
     self.helpmenu.add_command(label="Open Check for new version", command=self.versioncheck)
     self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
     self.menubar.add_cascade(label="Help", menu=self.helpmenu)
+
+    self.commandmenu.add_separator()
+
+    self.commandmenu.add_command(label="Show sequence editor",command=self.showSequencePreview)
+    self.commandmenu.add_command(label="Show audio slice planner",command=self.showSlicePlanner,state='disabled')
+
 
     self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
@@ -397,6 +401,9 @@ class WebmGeneratorUi:
     self.boringMax = 0.0
 
     self.versioncheckResultIndex=None
+
+  def showSlicePlanner(self):
+    self.controller.showSlicePlanner()
 
   def showSequencePreview(self):
     self.controller.showSequencePreview()

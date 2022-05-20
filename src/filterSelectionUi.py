@@ -638,7 +638,7 @@ class FilterSelectionUi(ttk.Frame):
     self.buttonVideoPickerPrevious.pack(anchor='w', side='left')
     self.labelVideoPickerLabel = ttk.Label(self.frameVideoPickerFrame)
     self.labelVideoPickerLabel.config(text='No Subclips Selected 0/0')
-    self.labelVideoPickerLabel.pack(expand='true', fill='x', side='left')
+    self.labelVideoPickerLabel.pack(expand='true', fill='x', side='left',anchor='w')
     self.VideoPickerNext = ttk.Button(self.frameVideoPickerFrame)
     self.VideoPickerNext.config(text='>', width='1')
     self.VideoPickerNext.config(command=self.goToNextSubclip)    
@@ -2001,6 +2001,14 @@ class FilterSelectionUi(ttk.Frame):
       logging.error("getCurrentClip Exception",exc_info=e)
     return None
 
+  def jumpToFilterByRid(self,rid):
+    self.recauclateSubclips()
+    ridInd = self.subClipOrder.index(rid)
+    self.setSubclipIndex( ridInd )
+    self.updateFilterDisplay()
+    self.refreshtimeLineForNewClip()
+    self.controller.jumpToOwnTab()
+
   def goToNextSubclip(self):
     if self.currentSubclipIndex is not None:
       self.activeCommandFilterValuePair=None
@@ -2131,7 +2139,7 @@ class FilterSelectionUi(ttk.Frame):
     if currentClip is None:
       pass
     else:
-      basename = os.path.basename(currentClip['filename'])[:18]
+      basename = os.path.basename(currentClip['filename'])[:16]
       s=currentClip['start']
       e=currentClip['end']
       rid = self.subClipOrder[self.currentSubclipIndex]

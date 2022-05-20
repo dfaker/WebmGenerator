@@ -315,6 +315,13 @@ class SequencedVideoEntry(ttk.Frame):
       self.labelSequenceVideoName.pack(side='top')
     self.frameOrderingButtons = ttk.Frame(self.frameSequenceVideoEntry)
 
+    self.buttonSequenceEntryFilter = ttk.Button(self.frameSequenceVideoEntry)
+    self.buttonSequenceEntryFilter.config(text='View filter')
+    self.buttonSequenceEntryFilter.config(command=self.viewFilter)
+    self.buttonSequenceEntryFilter.config(style="small.TButton")
+    self.buttonSequenceEntryFilter.pack(expand='false', fill='x', side='bottom')
+
+
     if direction == 'LEFT_RIGHT':
       self.buttonSequencePushEntryBack = ttk.Button(self.frameOrderingButtons)
       self.buttonSequencePushEntryBack.config(text='⯇', width='2')
@@ -347,6 +354,8 @@ class SequencedVideoEntry(ttk.Frame):
     self.buttonSequenceEntryREmove.config(text='Remove ✖')
     self.buttonSequenceEntryREmove.config(command=self.remove)
     self.buttonSequenceEntryREmove.config(style="small.TButton")
+
+
     if direction == 'LEFT_RIGHT':
       self.buttonSequenceEntryREmove.pack(expand='true', fill='both', side='left')
     else:
@@ -359,6 +368,9 @@ class SequencedVideoEntry(ttk.Frame):
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
     elif direction == 'UP_DOWN':
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='top')
+
+  def viewFilter(self):
+    self.controller.viewFilterForClip(self)
 
   def preview(self):
     if self.player is not None:
@@ -1345,6 +1357,9 @@ class MergeSelectionUi(ttk.Frame):
     self.selectedColumn = None
     self.player=None
     self.syncModal=None
+
+  def viewFilterForClip(self,clip):
+    self.controller.jumpToFilterByRid(clip.rid)
 
   def previewSequencetimings(self):
     

@@ -30,229 +30,6 @@ os.add_dll_directory(scriptPath_frozen)
 
 import mpv
 
-class CutSpecificationPlanner(tk.Toplevel):
-
-  def __init__(self, master=None, controller=None, *args):
-    tk.Toplevel.__init__(self, master)
-    
-    self.title('Audio Sync Specification Planner')
-    self.style = ttk.Style()
-    self.style.theme_use('clam')
-    self.minsize(600,400)
-
-
-    self.loadbutton = ttk.Button(self,text='Load Audio',command=self.selectFile)
-    self.loadbutton.grid(row=0,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
-
-
-    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
-    self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
-
-    self.timeline_canvas = tk.Canvas(self,width=200, height=130, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
-    self.timeline_canvas.grid(row=2,column=0,columnspan=9,sticky="nesw")
-    
-    self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
-
-    self.canvasSeekPointer = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
-
-    self.playerwid = self.playerFrame.winfo_id()
-
-    self.rowconfigure(0, weight=0)
-    self.rowconfigure(1, weight=1)
-    self.rowconfigure(2, weight=0)
-
-    self.columnconfigure(0, weight=1)
-
-    self.currentTimePos=None
-    self.currentTotalDuration=None
-
-    self.player = mpv.MPV(loop='inf',
-                          mute=False,
-                          volume=50,
-                          autofit_larger='1280', wid=str(self.playerwid))
-
-    self.player.lavfi_complex="[aid1]asplit[as1][as2],[as1]showcqt=s=640x518[vo],[as2]anull[ao]"
-
-    self.attributes('-topmost', True)
-    self.update()
-
-    self.player.observe_property('time-pos', self.handleMpvTimePosChange)
-    self.player.observe_property('duration', self.handleMpvDurationChange)
-
-
-
-    def quitFunc(key_state, key_name, key_char):
-    
-      try:
-        self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
-      except Exception as e:
-        print(e)
-
-      try:
-        self.player.unobserve_property('duration', self.handleMpvDurationChange)
-      except Exception as e:
-        print(e)
-
-      try:
-        self.player.unobserve_property('af-metadata', self.handleMpvafMetdata)
-      except Exception as e:
-        print(e)
-
-      def playerReaper():
-        print('ReaperKill')
-        player=self.player
-        self.player=None
-        player.terminate()
-        player.wait_for_shutdown()
-      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
-      self.playerReaper.start()
-      self.attributes('-topmost', False)
-      self.update()
-
-
-  def timelineMousePress(self,e):  
-    self.player.command('seek',str((e.x/self.timeline_canvas.winfo_width())*100),'absolute-percent','exact')
-
-
-  def handleMpvafMetdata(self,name,value):
-    print(name,value)
-
-  def handleMpvTimePosChange(self,name,value):
-    
-    timelineWidth = self.timeline_canvas.winfo_width()
-    timelineHeight = self.timeline_canvas.winfo_height()
-
-    if value is not None:
-      self.currentTimePos = value
-      if self.currentTotalDuration is not None:
-        currentPlaybackX = int((self.currentTimePos/self.currentTotalDuration)*timelineWidth)
-        self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
-
-  def handleMpvDurationChange(self,name,value):
-    if value is not None:
-      self.currentTotalDuration=value
-
-  def selectFile(self):
-    self.file = askopenfilename(multiple=False,filetypes=[('All files','*.*',)])
-    if os.path.isfile(self.file):
-      self.player.play(self.file)
-
-class Tooltip:
-
-  def __init__(self, widget,
-               *,
-               bg='#a7d9ea',
-               fg='#282828',
-               pad=(5, 3, 5, 3),
-               text='widget info',
-               waittime=400,
-               wraplength=450):
-
-    self.waittime = waittime  # in miliseconds, originally 500
-    self.wraplength = wraplength  # in pixels, originally 180
-    self.widget = widget
-    self.text = text
-    self.widget.bind("<Enter>", self.onEnter)
-    self.widget.bind("<Leave>", self.onLeave)
-    self.widget.bind("<ButtonPress>", self.onLeave)
-    self.bg = bg
-    self.fg=fg
-    self.pad = pad
-    self.id = None
-    self.tw = None
-
-  def onEnter(self, event=None):
-    self.schedule()
-
-  def onLeave(self, event=None):
-    self.unschedule()
-    self.hide()
-
-  def schedule(self):
-    self.unschedule()
-    self.id = self.widget.after(self.waittime, self.show)
-
-  def unschedule(self):
-    id_ = self.id
-    self.id = None
-    if id_:
-      self.widget.after_cancel(id_)
-
-  def show(self):
-    def tip_pos_calculator(widget, label,
-                           *,
-                           tip_delta=(10, 5), pad=(5, 3, 5, 3)):
-
-        w = widget
-
-        s_width, s_height = w.winfo_screenwidth(), w.winfo_screenheight()
-
-        width, height = (pad[0] + label.winfo_reqwidth() + pad[2],
-                         pad[1] + label.winfo_reqheight() + pad[3])
-
-        mouse_x, mouse_y = w.winfo_pointerxy()
-
-        x1, y1 = mouse_x + tip_delta[0], mouse_y + tip_delta[1]
-        x2, y2 = x1 + width, y1 + height
-
-        x_delta = x2 - s_width
-        if x_delta < 0:
-          x_delta = 0
-        y_delta = y2 - s_height
-        if y_delta < 0:
-          y_delta = 0
-
-        offscreen = (x_delta, y_delta) != (0, 0)
-
-        if offscreen:
-          if x_delta:
-            x1 = mouse_x - tip_delta[0] - width
-          if y_delta:
-            y1 = mouse_y - tip_delta[1] - height
-
-        offscreen_again = y1 < 0  # out on the top
-
-        if offscreen_again:
-          y1 = 0
-
-        return x1, y1
-
-    bg = self.bg
-    pad = self.pad
-    widget = self.widget
-
-    # creates a toplevel window
-    self.tw = tk.Toplevel(widget)
-
-    # Leaves only the label and removes the app window
-    self.tw.wm_overrideredirect(True)
-
-    win = tk.Frame(self.tw,
-                   background=bg,
-                   borderwidth=0)
-    label = tk.Label(win,
-                      text=self.text,
-                      justify=tk.LEFT,
-                      background=bg,
-                      relief=tk.SOLID,
-                      borderwidth=0,
-                      wraplength=self.wraplength)
-
-    label.grid(padx=(pad[0], pad[2]),
-               pady=(pad[1], pad[3]),
-               sticky=tk.NSEW)
-    win.grid()
-
-    x, y = tip_pos_calculator(widget, label)
-
-    self.tw.wm_geometry("+%d+%d" % (x, y))
-
-  def hide(self):
-    tw = self.tw
-    if tw:
-      tw.destroy()
-    self.tw = None
-
 class VideoAudioSync(tk.Toplevel):
   def __init__(self, master=None, controller=None, sequencedClips=[], dubFile=None, dubOffsetVar=None, fadeVar=None, mixVar=None, *args):
 
@@ -274,13 +51,15 @@ class VideoAudioSync(tk.Toplevel):
     self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
     self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=14)
 
-    self.timeline_canvas = tk.Canvas(self,width=200, height=50, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
+    self.timeline_canvas = tk.Canvas(self,width=200, height=120, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
     self.timeline_canvas.grid(row=2,column=0,columnspan=14,sticky="nesw")
     
     self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
+    self.timeline_canvas.bind("<ButtonRelease-1>", self.timelineMousePress)
     self.timeline_canvas.bind("<B1-Motion>", self.timelineMousePress)
 
-    self.canvasSeekPointer = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
+
+    self.canvasSeekPointer = self.timeline_canvas.create_line(-1, 0, -1, self.timeline_canvas.winfo_height(),fill="white")
 
     self.playerwid = self.playerFrame.winfo_id()
 
@@ -426,9 +205,14 @@ class VideoAudioSync(tk.Toplevel):
     self.edlStreamFunc=None
 
     self.keepWidth=False
+    self.blockSpectrumUpdates=False
     self.durationForScale=0
     self.redrawTimer=None
-    
+    self.lastseekPos=0
+
+    self.draggingTickIndex=None
+    self.draggingTickOffset=0
+
     def quitFunc(key_state, key_name, key_char):
       self.isActive=False
 
@@ -464,6 +248,42 @@ class VideoAudioSync(tk.Toplevel):
 
     self.recalculateEDLTimings()
 
+  def generateSpectrum(self):
+    if (not self.blockSpectrumUpdates) and self.dubFile.get() is not None and os.path.exists(self.dubFile.get()) and self.currentTotalDuration is not None:
+      t = threading.Thread(target=self.generateSpectrum_async,daemon=True)
+      t.start()
+
+  def generateSpectrum_async(self):
+    if (not self.blockSpectrumUpdates) and self.dubFile.get() is not None and os.path.exists(self.dubFile.get()) and self.currentTotalDuration is not None:
+      
+      self.timeline_canvas.delete('waveAsPicImage')
+
+      startoffset=0
+      try:
+        startoffset = float(self.dubOffsetVar.get())
+      except:
+        pass
+
+      orig_startoffset = startoffset
+      orig_currentTotalDuration = self.currentTotalDuration
+      orig_height = self.timeline_canvas.winfo_height()
+      orig_width = self.timeline_canvas.winfo_width()
+
+      proc = sp.Popen(['ffmpeg', '-y', '-i', self.dubFile.get(), '-filter_complex', "[0:a]atrim={}:{},bass=g=3,showwavespic=s={}x100:colors=gray".format(orig_startoffset,orig_startoffset+orig_currentTotalDuration,orig_width), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
+      outs,errs = proc.communicate()        
+
+      try:
+        startoffset = float(self.dubOffsetVar.get())
+      except:
+        pass
+
+      if orig_startoffset == startoffset and orig_currentTotalDuration == self.currentTotalDuration and orig_width == self.timeline_canvas.winfo_width():
+        self.waveAsPicImage = tk.PhotoImage(data=outs)
+        self.timeline_canvas.delete('waveAsPicImage')
+        canvasimg = self.timeline_canvas.create_image(0,orig_height-100,image=self.waveAsPicImage,anchor='nw',tags='waveAsPicImage')
+        self.timeline_canvas.lower(canvasimg)
+
+
   def speedChange(self,*args):
     newspeed = min(max(0,float(self.speedVar.get())),50)
     self.player.speed = str(newspeed)
@@ -488,7 +308,78 @@ class VideoAudioSync(tk.Toplevel):
     else:
       self.dubFile.set(str(files))
 
+    self.generateSpectrum()
+
+  def updateRegionsOnDrag(self,index,timestamp):
+    movestart=moveend=ots=sv=otsn=svn = False
+
+    if index>=0:
+      movestart=True
+      ots = self.ticktimestamps[index]
+      sv  = self.sequencedClips[index]
+
+    if index+2<=len(self.ticktimestamps):
+      moveend=True
+      otsn = self.ticktimestamps[index+1]
+      svn  = self.sequencedClips[index+1]
+
+    self.keepWidth=True
+    if movestart:
+      self.controller.updateSubclipBoundry(sv,ots,timestamp,'e')
+    if moveend:
+      self.controller.updateSubclipBoundry(svn,otsn,timestamp,'s')
+
   def timelineMousePress(self,e):  
+    pressSeconds = (e.x /self.timeline_canvas.winfo_width())*self.currentTotalDuration
+
+
+    if e.type == tk.EventType.ButtonPress:
+      if 20<e.y<20+15:
+        for tx,tidx in self.tickXpos:
+          if tx-6-5-4<e.x<tx+6+5+4:
+            self.draggingTickIndex=tidx
+            self.draggingTickOffset=e.x-tx
+        else:
+          tlw=self.timeline_canvas.winfo_width()
+          if e.x<6+5+4:
+            self.draggingTickIndex=-1
+            self.draggingTickOffset=e.x-0
+          elif e.x>tlw-6-5-4:
+            self.draggingTickIndex=len(self.tickXpos)
+            self.draggingTickOffset=e.x-tlw
+
+
+    elif e.type == tk.EventType.ButtonRelease:
+      if self.draggingTickIndex is not None:
+        self.updateRegionsOnDrag(self.draggingTickIndex,pressSeconds)
+        self.draggingTickIndex=None
+        try:
+          self.redrawTimer.cancel()
+        except:
+          pass
+        self.restoreKeepWidthAndRecaulate()
+      self.draggingTickIndex=None
+      self.timeline_canvas.delete('dragTick')
+      return
+
+    if self.draggingTickIndex is not None:
+      
+      self.timeline_canvas.delete('dragTick')
+
+      self.timeline_canvas.create_rectangle(e.x-6-5-4, 20,e.x+6+5+4, 20+15,outline='grey',tags='dragTick')
+
+      self.timeline_canvas.create_polygon(  e.x,    20+2, 
+                                            e.x-7,  20+2+5, 
+                                            e.x,    20+2+11,
+                                            e.x+7,  20+2+5,
+
+                                          fill='grey',tags='dragTick')
+
+      self.timeline_canvas.create_line(e.x, 0, e.x, 200,fill='white',tags='dragTick')
+
+
+    self.timeline_canvas.focus_set()
+
     if 5<e.y<20:
       for tx,tidx in self.tickXpos:
         if tx-6-5-4<e.x<tx:
@@ -503,15 +394,14 @@ class VideoAudioSync(tk.Toplevel):
     if self.currentTotalDuration is None:
       self.player.command('seek','0','absolute-percent','exact')
 
-
     self.player.command('seek',str((e.x/self.timeline_canvas.winfo_width())*100),'absolute-percent','exact')
 
-    pressSeconds = (e.x/self.timeline_canvas.winfo_width())*self.currentTotalDuration
-    for st,et,rid in self.ridListing:
-      if st<pressSeconds<et:
-        startoffset = pressSeconds-st
-        self.master.synchroniseCutController(rid,startoffset)
-        break
+    if self.draggingTickIndex is None:
+      for st,et,rid in self.ridListing:
+        if st<pressSeconds<et:
+          startoffset = pressSeconds-st
+          self.master.synchroniseCutController(rid,startoffset)
+          break
 
 
   def handleMpvTimePosChange(self,name,value):
@@ -523,7 +413,12 @@ class VideoAudioSync(tk.Toplevel):
       self.currentTimePos = value
       if self.currentTotalDuration is not None:
         currentPlaybackX = int((self.currentTimePos/self.currentTotalDuration)*timelineWidth)
-        self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+
+        if self.draggingTickIndex is None:
+          self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+        else:
+          self.timeline_canvas.coords(self.canvasSeekPointer, -1,0,-1,timelineHeight )
+
 
         for st,et,rid in self.ridListing:
           if st<self.currentTimePos<et:
@@ -532,6 +427,7 @@ class VideoAudioSync(tk.Toplevel):
   def handleMpvDurationChange(self,name,value):
     if value is not None:
       self.currentTotalDuration=value
+      self.generateSpectrum()
 
   def valueChangeVolume(self,*args):
     self.player.volume = int(self.volumeVar.get())
@@ -543,6 +439,17 @@ class VideoAudioSync(tk.Toplevel):
   def reconfigureWindow(self,e):
     self.recalculateEDLTimings(seekAfter=self.currentTimePos)
 
+  def restoreKeepWidthAndRecaulate(self):
+    if self.draggingTickIndex is not None:
+      self.redrawTimer = threading.Timer(0.8, self.restoreKeepWidthAndRecaulate)
+      self.redrawTimer.start()
+      return
+
+    self.keepWidth=False
+    self.blockSpectrumUpdates=False
+    self.recalculateEDLTimings()
+    self.generateSpectrum()
+
   def recalculateEDLTimings(self,rid=None,pos=None,seekAfter=None):
 
     try:
@@ -551,7 +458,8 @@ class VideoAudioSync(tk.Toplevel):
       pass
 
     if self.keepWidth:
-      self.redrawTimer = threading.Timer(0.8, self.recalculateEDLTimings)
+      self.blockSpectrumUpdates=True
+      self.redrawTimer = threading.Timer(0.8, self.restoreKeepWidthAndRecaulate)
       self.redrawTimer.start()
 
     if len(self.sequencedClips)==0:
@@ -628,7 +536,6 @@ class VideoAudioSync(tk.Toplevel):
         self.colourMap[tickrid]=tickColour
         self.tickColours.append(self.tickColours.pop(0))
 
-
       txl = (lastTick/self.durationForScale)*timelineWidth
       tx = (tick/self.durationForScale)*timelineWidth
       self.tickXpos.append((tx,idx))
@@ -638,7 +545,17 @@ class VideoAudioSync(tk.Toplevel):
       self.timeline_canvas.create_polygon(tx-6-5,    9, tx-6-5, 9+10, tx-4, 9+5, fill='grey',tags='ticks')
       self.timeline_canvas.create_polygon(tx+6+5,    9, tx+6+5, 9+10, tx+4, 9+5, fill='grey',tags='ticks')
 
-      self.timeline_canvas.create_line(tx, 0, tx, 20,fill='grey',tags='ticks')
+      print(self.draggingTickIndex,idx)
+      self.timeline_canvas.create_rectangle(tx-6-5-4, 20,tx+6+5+4, 20+15,outline='grey',tags='ticks')
+
+      self.timeline_canvas.create_polygon(  tx,    20+2, 
+                                            tx-7,  20+2+5, 
+                                            tx,    20+2+11,
+                                            tx+7,  20+2+5,
+
+                                          fill='grey',tags='ticks')
+
+      self.timeline_canvas.create_line(tx, 0, tx, 200,fill='white',tags='ticks')
 
       self.timeline_canvas.create_line(tx-6-5-4, 5, tx-6-5-4, 20,fill='grey',tags='ticks')
       self.timeline_canvas.create_line(tx+6+5+4, 5, tx+6+5+4, 20,fill='grey',tags='ticks')
@@ -646,10 +563,31 @@ class VideoAudioSync(tk.Toplevel):
       
       lastTick=tick
 
+
+    self.timeline_canvas.create_rectangle(0, 20, 6+5+4, 20+15,outline='grey',tags='ticks')
+
+    self.timeline_canvas.create_polygon(  0,    20+2, 
+                                          0-7,  20+2+5, 
+                                          0,    20+2+11,
+                                          0+7,  20+2+5,
+                                        fill='grey',tags='ticks')
+    tx = timelineWidth
+
+    self.timeline_canvas.create_rectangle(tx-6-5-4, 20,tx+6+5+4, 20+15,outline='grey',tags='ticks')
+
+    self.timeline_canvas.create_polygon(  tx,    20+2, 
+                                          tx-7,  20+2+5, 
+                                          tx,    20+2+11,
+                                          tx+7,  20+2+5,
+
+                                        fill='grey',tags='ticks')
+
+
+
     self.timeline_canvas.create_line(0, 20, timelineWidth, 20,fill='grey',tags='ticks')
 
     txl = (lastTick/self.durationForScale)*timelineWidth
-    tx  = timelineWidth
+
 
     tickrid = self.sequencedClips[idx+1].rid
     tickColour = self.colourMap.get(tickrid)
@@ -692,6 +630,232 @@ class VideoAudioSync(tk.Toplevel):
     else:
       self.player.lavfi_complex=''
 
+
+class CutSpecificationPlanner(tk.Toplevel):
+
+  def __init__(self, master=None, controller=None, *args):
+    tk.Toplevel.__init__(self, master)
+    
+    self.title('Audio Sync Specification Planner')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,400)
+
+
+    self.loadbutton = ttk.Button(self,text='Load Audio',command=self.selectFile)
+    self.loadbutton.grid(row=0,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
+
+
+    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
+    self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
+
+    self.timeline_canvas = tk.Canvas(self,width=200, height=130, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
+    self.timeline_canvas.grid(row=2,column=0,columnspan=9,sticky="nesw")
+    
+    self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
+
+
+    self.canvasSeekPointer = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
+
+    self.playerwid = self.playerFrame.winfo_id()
+
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=1)
+    self.rowconfigure(2, weight=0)
+
+    self.columnconfigure(0, weight=1)
+
+    self.currentTimePos=None
+    self.currentTotalDuration=None
+
+    self.player = mpv.MPV(loop='inf',
+                          mute=False,
+                          volume=50,
+                          autofit_larger='1280', wid=str(self.playerwid))
+
+    self.player.lavfi_complex="[aid1]asplit[as1][as2],[as1]showcqt=s=640x518[vo],[as2]anull[ao]"
+
+    self.attributes('-topmost', True)
+    self.update()
+
+    self.player.observe_property('time-pos', self.handleMpvTimePosChange)
+    self.player.observe_property('duration', self.handleMpvDurationChange)
+
+
+
+    def quitFunc(key_state, key_name, key_char):
+    
+      try:
+        self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
+      except Exception as e:
+        print(e)
+
+      try:
+        self.player.unobserve_property('duration', self.handleMpvDurationChange)
+      except Exception as e:
+        print(e)
+
+      try:
+        self.player.unobserve_property('af-metadata', self.handleMpvafMetdata)
+      except Exception as e:
+        print(e)
+
+      def playerReaper():
+        print('ReaperKill')
+        player=self.player
+        self.player=None
+        player.terminate()
+        player.wait_for_shutdown()
+      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+      self.playerReaper.start()
+      self.attributes('-topmost', False)
+      self.update()
+
+
+
+
+  def timelineMousePress(self,e):  
+    self.player.command('seek',str((e.x/self.timeline_canvas.winfo_width())*100),'absolute-percent','exact')
+
+
+  def handleMpvafMetdata(self,name,value):
+    print(name,value)
+
+  def handleMpvTimePosChange(self,name,value):
+    
+    timelineWidth = self.timeline_canvas.winfo_width()
+    timelineHeight = self.timeline_canvas.winfo_height()
+
+    if value is not None:
+      self.currentTimePos = value
+      if self.currentTotalDuration is not None:
+        currentPlaybackX = int((self.currentTimePos/self.currentTotalDuration)*timelineWidth)
+        self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+
+  def handleMpvDurationChange(self,name,value):
+    if value is not None:
+      self.currentTotalDuration=value
+
+  def selectFile(self):
+    self.file = askopenfilename(multiple=False,filetypes=[('All files','*.*',)])
+    if os.path.isfile(self.file):
+      self.player.play(self.file)
+
+class Tooltip:
+
+  def __init__(self, widget,
+               *,
+               bg='#a7d9ea',
+               fg='#282828',
+               pad=(5, 3, 5, 3),
+               text='widget info',
+               waittime=400,
+               wraplength=450):
+
+    self.waittime = waittime  # in miliseconds, originally 500
+    self.wraplength = wraplength  # in pixels, originally 180
+    self.widget = widget
+    self.text = text
+    self.widget.bind("<Enter>", self.onEnter)
+    self.widget.bind("<Leave>", self.onLeave)
+    self.widget.bind("<ButtonPress>", self.onLeave)
+    self.bg = bg
+    self.fg=fg
+    self.pad = pad
+    self.id = None
+    self.tw = None
+
+  def onEnter(self, event=None):
+    self.schedule()
+
+  def onLeave(self, event=None):
+    self.unschedule()
+    self.hide()
+
+  def schedule(self):
+    self.unschedule()
+    self.id = self.widget.after(self.waittime, self.show)
+
+  def unschedule(self):
+    id_ = self.id
+    self.id = None
+    if id_:
+      self.widget.after_cancel(id_)
+
+  def show(self):
+    def tip_pos_calculator(widget, label,
+                           *,
+                           tip_delta=(10, 5), pad=(5, 3, 5, 3)):
+
+        w = widget
+
+        s_width, s_height = w.winfo_screenwidth(), w.winfo_screenheight()
+
+        width, height = (pad[0] + label.winfo_reqwidth() + pad[2],
+                         pad[1] + label.winfo_reqheight() + pad[3])
+
+        mouse_x, mouse_y = w.winfo_pointerxy()
+
+        x1, y1 = mouse_x + tip_delta[0], mouse_y + tip_delta[1]
+        x2, y2 = x1 + width, y1 + height
+
+        x_delta = x2 - s_width
+        if x_delta < 0:
+          x_delta = 0
+        y_delta = y2 - s_height
+        if y_delta < 0:
+          y_delta = 0
+
+        offscreen = (x_delta, y_delta) != (0, 0)
+
+        if offscreen:
+          if x_delta:
+            x1 = mouse_x - tip_delta[0] - width
+          if y_delta:
+            y1 = mouse_y - tip_delta[1] - height
+
+        offscreen_again = y1 < 0  # out on the top
+
+        if offscreen_again:
+          y1 = 0
+
+        return x1, y1
+
+    bg = self.bg
+    pad = self.pad
+    widget = self.widget
+
+    # creates a toplevel window
+    self.tw = tk.Toplevel(widget)
+
+    # Leaves only the label and removes the app window
+    self.tw.wm_overrideredirect(True)
+
+    win = tk.Frame(self.tw,
+                   background=bg,
+                   borderwidth=0)
+    label = tk.Label(win,
+                      text=self.text,
+                      justify=tk.LEFT,
+                      background=bg,
+                      relief=tk.SOLID,
+                      borderwidth=0,
+                      wraplength=self.wraplength)
+
+    label.grid(padx=(pad[0], pad[2]),
+               pady=(pad[1], pad[3]),
+               sticky=tk.NSEW)
+    win.grid()
+
+    x, y = tip_pos_calculator(widget, label)
+
+    self.tw.wm_geometry("+%d+%d" % (x, y))
+
+  def hide(self):
+    tw = self.tw
+    if tw:
+      tw.destroy()
+    self.tw = None
 
 class V360HeadTrackingModal(tk.Toplevel):
   def __init__(self, master=None, controller=None, filterReference=None, *args):

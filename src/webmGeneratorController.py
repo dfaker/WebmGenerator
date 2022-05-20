@@ -210,7 +210,8 @@ class WebmGeneratorController:
                                                          self.globalOptions)
     print('cutselectionController loaded')
 
-    self.filterSelectionController = FilterSelectionController(self.filterSselectionUi,
+    self.filterSelectionController = FilterSelectionController(self,
+                                                               self.filterSselectionUi,
                                                                self.videoManager,
                                                                self.ffmpegService,
                                                                self.faceDetectionService,
@@ -245,6 +246,12 @@ class WebmGeneratorController:
           self.loadAutoSave()
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
+
+  def jumpToTab(self,tabInd):
+    self.webmMegeneratorUi.switchTab(1)
+
+  def showSlicePlanner(self):
+    self.cutselectionUi.showSlicePlanner()
 
   def showSequencePreview(self):
     self.mergeSelectionUi.previewSequencetimings()

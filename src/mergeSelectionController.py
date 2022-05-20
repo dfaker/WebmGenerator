@@ -44,6 +44,13 @@ class MergeSelectionController:
 
     self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
 
+  def jumpToFilterByRid(self,rid):
+    self.filterController.jumpToFilterByRid(rid)
+
+  def updateSubclipBoundry(self,subclip,originalts,ts,pos):
+    filename,s,e = self.videoManager.getDetailsForRangeId(subclip.rid)
+    self.videoManager.updatePointForClip(filename,subclip.rid,pos,e-(originalts-ts))
+
   def synchroniseCutController(self,rid,startoffset,forceTabJump=False):
     self.cutController.jumpToRidAndOffset(rid,startoffset,forceTabJump)
 

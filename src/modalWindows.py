@@ -10,10 +10,12 @@ import logging
 import sys
 
 import threading
+
 try:
   from .encodingUtils import cleanFilenameForFfmpeg
 except:
   from encodingUtils import cleanFilenameForFfmpeg
+
 from datetime import datetime
 
 
@@ -43,11 +45,7 @@ class VideoAudioSync(tk.Toplevel):
     self.master=master
 
     self.isActive=True
-
-    self.labelInstructions = ttk.Label(self)
-    self.labelInstructions.config(text='Timing preview of the planned Sequence - No Audio Dub Selected.',anchor="center")
-    self.labelInstructions.grid(row=0,column=0,sticky='new',padx=0,pady=0)
-
+    
     self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
     self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=14)
 
@@ -59,13 +57,17 @@ class VideoAudioSync(tk.Toplevel):
     self.timeline_canvas.bind("<B1-Motion>", self.timelineMousePress)
 
     self.timeline_canvas.bind("<MouseWheel>", self.timelineMousewheel)
+    self.timeline_canvas.bind("<Motion>", self.timelineMouseMotion)
 
 
-    self.canvasSeekPointer = self.timeline_canvas.create_line(-1, 0, -1, self.timeline_canvas.winfo_height(),fill="white")
+
 
     self.canvasZoomBG         = self.timeline_canvas.create_rectangle(-1, 0, -1, 20,fill="#3F3F7F")
     self.canvasZoomBGRange    = self.timeline_canvas.create_rectangle(-1, 0, -1, 20,fill="#9E9E9E")
     self.canvasZoomRangeMid   = self.timeline_canvas.create_line(-1, 0, -1, 20,fill="#3F3F7F")
+
+    self.canvasSeekPointer      = self.timeline_canvas.create_line(-1, 0, -1, self.timeline_canvas.winfo_height(),fill="white")
+    self.canvasUpperSeekPointer = self.timeline_canvas.create_rectangle(-1, 0, -1, self.timeline_canvas.winfo_height(),fill="#c5c5d8",outline='white')
 
 
 
@@ -130,12 +132,11 @@ class VideoAudioSync(tk.Toplevel):
 
     if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()):
       mp3name = os.path.basename(self.dubFile.get()) 
-      self.labelInstructions.config(text='Timing preview of the planned Sequence - AudioDub:{}'.format(mp3name),anchor="center")
 
     self.labeldubFile = ttk.Label(self)
     self.labeldubFile.config(anchor='e',  text='Dubbing file:')
     self.labeldubFile.grid(row=3,column=0,sticky='ew')
-    self.entrydubFile = ttk.Button(self,textvariable=self.dubFile,command=self.selectAudioOverride)
+    self.entrydubFile = ttk.Button(self,text='None',command=self.selectAudioOverride,width=40)
     Tooltip(self.entrydubFile,text='An mp3 audio file to use to replace the original video audio.')
     self.entrydubFile.grid(row=3,column=1,sticky='ew')
  
@@ -362,13 +363,11 @@ class VideoAudioSync(tk.Toplevel):
       orig_height = self.timeline_canvas.winfo_height()
       orig_width = self.timeline_canvas.winfo_width()
 
-
-
       orig_startoffset = startoffset
       orig_currentTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
       
 
-      proc = sp.Popen(['ffmpeg', '-y', '-i', self.dubFile.get(), '-filter_complex', "[0:a]atrim={}:{},bass=g=3,showwavespic=s={}x80:colors=gray".format(orig_startoffset,orig_currentTotalDuration+orig_startoffset,orig_width), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
+      proc = sp.Popen(['ffmpeg', '-y', '-i', self.dubFile.get(), '-filter_complex', "[0:a]atrim={}:{},bass=g=3,showwavespic=s={}x80:colors=5C5CAE".format(orig_startoffset,orig_currentTotalDuration+orig_startoffset,orig_width), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
       outs,errs = proc.communicate()        
 
       startoffset=self.xCoordToSeconds(0)
@@ -406,7 +405,9 @@ class VideoAudioSync(tk.Toplevel):
     files = askopenfilename(multiple=False,filetypes=[('mp3','*.mp3',),('wav','*.wav')])
     if files is None or len(files)==0:
       self.dubFile.set('None')
+      self.entrydubFile.config(text='None')
     else:
+      self.entrydubFile.config(text=os.path.basename(str(files)))
       self.dubFile.set(str(files))
 
     self.generateSpectrum()
@@ -430,6 +431,31 @@ class VideoAudioSync(tk.Toplevel):
     if moveend:
       self.controller.updateSubclipBoundry(svn,otsn,timestamp,'s')
 
+  def timelineMouseMotion(self,e):  
+    if e.y<20:
+      self.timeline_canvas.config(cursor="sb_h_double_arrow")
+      return
+    elif 20+20<e.y<20+20+15:
+      for tx,tidx in self.tickXpos:
+        if tx-6-5-4<e.x<tx+6+5+4:
+          self.timeline_canvas.config(cursor="sb_h_double_arrow")
+          return
+      else:
+        tlw=self.timeline_canvas.winfo_width()
+        if e.x>tlw-6-5-4:
+          self.timeline_canvas.config(cursor="sb_h_double_arrow")
+          return
+    elif 20+5<e.y<20+20:
+      for tx,tidx in self.tickXpos:
+        if tx-6-5-4<e.x<tx:
+          self.timeline_canvas.config(cursor="right_side")
+          return
+        elif tx<e.x<tx+6+5+4:
+          self.timeline_canvas.config(cursor="left_side")
+          return
+    
+    self.timeline_canvas.config(cursor="arrow")
+
   def timelineMousePress(self,e):  
     pressSeconds = self.xCoordToSeconds(e.x)
 
@@ -443,10 +469,7 @@ class VideoAudioSync(tk.Toplevel):
             self.draggingTickOffset=e.x-tx
         else:
           tlw=self.timeline_canvas.winfo_width()
-          if e.x<6+5+4:
-            self.draggingTickIndex=-1
-            self.draggingTickOffset=e.x-0
-          elif e.x>tlw-6-5-4:
+          if e.x>tlw-6-5-4:
             self.draggingTickIndex=len(self.tickXpos)
             self.draggingTickOffset=e.x-tlw
 
@@ -501,17 +524,18 @@ class VideoAudioSync(tk.Toplevel):
           self.master.moveSequencedClipByIndex(tidx+1,-1)
           return
 
-    if self.currentTotalDuration is None:
-      self.player.command('seek','0','absolute-percent','exact')
+    if self.rangeHeaderClickStart is None:
+      if self.currentTotalDuration is None:
+        self.player.command('seek','0','absolute-percent','exact')
+      else:
+        self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
 
-    self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
-
-    if self.draggingTickIndex is None:
-      for st,et,rid in self.ridListing:
-        if st<pressSeconds<et:
-          startoffset = pressSeconds-st
-          self.master.synchroniseCutController(rid,startoffset)
-          break
+      if self.draggingTickIndex is None:
+        for st,et,rid in self.ridListing:
+          if st<pressSeconds<et:
+            startoffset = pressSeconds-st
+            self.master.synchroniseCutController(rid,startoffset)
+            break
 
 
   def handleMpvTimePosChange(self,name,value):
@@ -526,8 +550,11 @@ class VideoAudioSync(tk.Toplevel):
 
         if self.draggingTickIndex is None:
           self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,0,currentPlaybackX,timelineHeight )
+          upperseekx = (self.currentTimePos/self.currentTotalDuration)*timelineWidth
+          self.timeline_canvas.coords(self.canvasUpperSeekPointer, upperseekx-2,0,upperseekx+2,20 )
         else:
-          self.timeline_canvas.coords(self.canvasSeekPointer, -1,0,-1,timelineHeight )
+          self.timeline_canvas.coords(self.canvasSeekPointer,      -1,0,-1,timelineHeight )
+          self.timeline_canvas.coords(self.canvasUpperSeekPointer, -1,0,-1,timelineHeight )
 
 
         for st,et,rid in self.ridListing:
@@ -575,6 +602,7 @@ class VideoAudioSync(tk.Toplevel):
 
     if len(self.sequencedClips)==0:
       self.timeline_canvas.delete('ticks')
+      self.timeline_canvas.delete('upperticks')
       self.player.stop()
       return
 
@@ -602,6 +630,7 @@ class VideoAudioSync(tk.Toplevel):
     if audioFilename is not None and os.path.exists(audioFilename):
       endOffset    = float(self.dubOffsetVar.get())
       startoffset = float(self.dubOffsetVar.get())
+      audioFilename = cleanFilenameForFfmpeg(audioFilename)
       audioFilename = audioFilename.replace('\\','/').replace(':','\\:').replace('\'','\\\\\'')
     else:
       audioFilename=None
@@ -700,7 +729,7 @@ class VideoAudioSync(tk.Toplevel):
                                             tx,    yo+20+2+11,
                                             tx+7,  yo+20+2+5,
 
-                                          fill='grey',tags='ticks')
+                                          fill='white',tags='ticks')
 
       self.timeline_canvas.create_line(tx, yo+0, 
                                        tx, yo+200,
@@ -717,16 +746,6 @@ class VideoAudioSync(tk.Toplevel):
       
       lastTick=tick
 
-    if startpc==0:
-      self.timeline_canvas.create_rectangle(0,     yo+20, 
-                                            6+5+4, yo+20+15,
-                                            outline='grey',tags='ticks')
-
-      self.timeline_canvas.create_polygon(  0,    yo+20+2, 
-                                            0-7,  yo+20+2+5, 
-                                            0,    yo+20+2+11,
-                                            0+7,  yo+20+2+5,
-                                          fill='grey',tags='ticks')
     tx = timelineWidth
 
     if endpc==1:
@@ -739,7 +758,7 @@ class VideoAudioSync(tk.Toplevel):
                                             tx,    yo+20+2+11,
                                             tx+7,  yo+20+2+5,
 
-                                          fill='grey',tags='ticks')
+                                          fill='white',tags='ticks')
 
 
 

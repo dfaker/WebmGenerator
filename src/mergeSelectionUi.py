@@ -1424,8 +1424,10 @@ class MergeSelectionUi(ttk.Frame):
     for col in self.gridColumns[::-1]:
       self.gridColumns.remove(col)
       col['column'].pack_forget()
-    self.sequencedClips=[]
-    self.gridColumns=[]
+    self.sequencedClips.clear()
+    self.gridColumns.clear()
+    if self.syncModal is not None and self.syncModal.isActive:
+      self.syncModal.recalculateEDLTimings()
     for e in self.encoderProgress:
       e.remove()
 

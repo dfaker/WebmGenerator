@@ -25,6 +25,9 @@ class VideoManager:
     self.subClipCounter = data['subClipCounter']
 
   def reset(self):
+    for filename,clips in self.subclips.items():
+      for rid,(s,e) in clips.items():
+        self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
     self.subclips = {}
     self.interestMarks = {}
     self.subClipCounter=0
@@ -37,6 +40,8 @@ class VideoManager:
 
   def clearallSubclipsOnFile(self,filename):
     if filename in self.subclips:
+      for rid,(s,e) in self.subclips.get(filename,{}).items():
+        self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
       self.subclips[filename] = {}
 
   def clearallInterestMarksOnFile(self,filename):
@@ -44,6 +49,9 @@ class VideoManager:
       self.interestMarks[filename]=set()
 
   def clearallSubclips(self):
+    for filename,clips in self.subclips.items():
+      for rid,(s,e) in clips.items():
+        self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
     self.subclips = {}
     
   def getAllClips(self):
@@ -55,6 +63,8 @@ class VideoManager:
 
   def removeVideo(self,filename):
     if filename in self.subclips:
+      for rid,(s,e) in self.subclips.get(filename,{}).items():
+        self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
       del self.subclips[filename]
 
   def registerNewSubclip(self,filename,start,end):

@@ -45,7 +45,7 @@ class VideoAudioSync(tk.Toplevel):
     self.master=master
 
     self.isActive=True
-    
+
     self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
     self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=14)
 
@@ -129,17 +129,17 @@ class VideoAudioSync(tk.Toplevel):
     self.player.observe_property('duration', self.handleMpvDurationChange)
     self.player.observe_property('af-metadata',self.handleMpvafMetdata)
 
-
-    if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()):
-      mp3name = os.path.basename(self.dubFile.get()) 
-
     self.labeldubFile = ttk.Label(self)
     self.labeldubFile.config(anchor='e',  text='Dubbing file:')
     self.labeldubFile.grid(row=3,column=0,sticky='ew')
     self.entrydubFile = ttk.Button(self,text='None',command=self.selectAudioOverride,width=40)
     Tooltip(self.entrydubFile,text='An mp3 audio file to use to replace the original video audio.')
     self.entrydubFile.grid(row=3,column=1,sticky='ew')
- 
+
+
+    if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()):
+      self.entrydubFile.config(text=os.path.basename(self.dubFile.get()))
+
 
     self.labelpostSeekOffset = ttk.Label(self)
     self.labelpostSeekOffset.config(anchor='e',  text='Edit Seek Offset')

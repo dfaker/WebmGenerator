@@ -115,7 +115,7 @@ class VideoAudioSync(tk.Toplevel):
 
     self.player = mpv.MPV(loop='inf',
                           mute=False,
-                          volume=10,
+                          volume=0,
                           autofit_larger='1280', wid=str(self.playerwid))
 
     self.currentTotalDuration=None
@@ -137,9 +137,6 @@ class VideoAudioSync(tk.Toplevel):
     self.entrydubFile.grid(row=3,column=1,sticky='ew')
 
 
-    if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()):
-      self.entrydubFile.config(text=os.path.basename(self.dubFile.get()))
-
 
     self.labelpostSeekOffset = ttk.Label(self)
     self.labelpostSeekOffset.config(anchor='e',  text='Edit Seek Offset')
@@ -158,8 +155,12 @@ class VideoAudioSync(tk.Toplevel):
                                           increment=5)
     Tooltip(self.entrypostAudioVolume,text='Audio Volume.')
     self.entrypostAudioVolume.grid(row=3,column=5,sticky='ew')
-    self.volumeVar.set(0)
     self.volumeVar.trace('w',self.valueChangeVolume)
+    self.volumeVar.set(0)
+
+    if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()):
+      self.entrydubFile.config(text=os.path.basename(self.dubFile.get()))
+      self.volumeVar.set(20)
 
 
     self.labelpostAudioOverrideDelay = ttk.Label(self)
@@ -367,7 +368,7 @@ class VideoAudioSync(tk.Toplevel):
       orig_currentTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
       
 
-      proc = sp.Popen(['ffmpeg', '-y', '-i', self.dubFile.get(), '-filter_complex', "[0:a]atrim={}:{},bass=g=3,showwavespic=s={}x80:colors=5C5CAE".format(orig_startoffset,orig_currentTotalDuration+orig_startoffset,orig_width), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
+      proc = sp.Popen(['ffmpeg', '-y', '-i', cleanFilenameForFfmpeg(self.dubFile.get()), '-filter_complex', "[0:a]atrim={}:{},bass=g=3,showwavespic=s={}x80:colors=5C5CAE".format(orig_startoffset,orig_currentTotalDuration+orig_startoffset,orig_width), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
       outs,errs = proc.communicate()        
 
       startoffset=self.xCoordToSeconds(0)
@@ -409,7 +410,7 @@ class VideoAudioSync(tk.Toplevel):
     else:
       self.entrydubFile.config(text=os.path.basename(str(files)))
       self.dubFile.set(str(files))
-
+    self.recalculateEDLTimings()
     self.generateSpectrum()
 
   def updateRegionsOnDrag(self,index,timestamp):

@@ -418,7 +418,7 @@ class WebmGeneratorController:
         self.lastSaveFile = filename
         self.cutselectionController.loadStateFromSave(saveData)
         self.videoManager.loadStateFromSave(saveData)
-        self.filterSelectionController.loadStateFromSave(saveData)
+        #self.filterSelectionController.loadStateFromSave(saveData)
 
 
   def splitClipIntoNEqualSections(self):
@@ -443,7 +443,7 @@ class WebmGeneratorController:
     saveData = {}
     saveData.update(self.cutselectionController.getStateForSave())
     saveData.update(self.videoManager.getStateForSave())
-    saveData.update(self.filterSelectionController.getStateForSave())
+    #saveData.update(self.filterSelectionController.getStateForSave())
     return saveData  
 
   def saveProject(self,filename):

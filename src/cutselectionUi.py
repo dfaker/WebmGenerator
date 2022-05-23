@@ -389,6 +389,9 @@ class CutselectionUi(ttk.Frame):
         self.labelVideoSummary = ttk.Entry(self.frameVideoPlayerAndControls,takefocus=False,style="subtle.TEntry",textvariable=self.labelVideoSummaryVar,justify=tk.CENTER)
         self.labelVideoSummary.pack(expand="false",fill="both", padx=0, pady=0, side="top")
 
+        self.frameVideoPlannerFrame = ttk.Frame(self.frameVideoPlayerAndControls)
+        self.frameVideoPlannerFrame.pack(expand="false", fill="both", side="bottom")
+
         self.frameVideoPlayerFrame = ttk.Frame(self.frameVideoPlayerAndControls)
         self.frameVideoPlayerFrame.config(
             borderwidth="0", height="200", relief="flat", width="200",
@@ -400,7 +403,7 @@ class CutselectionUi(ttk.Frame):
 
         self.video_canvas_popup_menu.add_command(label="Toggle scaling" ,command=lambda :self.fitoScreen())
 
-                                      
+        
 
 
         try:
@@ -504,6 +507,9 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.daemon = True
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
+
+    def getPlannerFrame(self):
+      return self.frameVideoPlannerFrame
 
     def showSlicePlanner(self):
       pass
@@ -949,6 +955,9 @@ class CutselectionUi(ttk.Frame):
 
     def updateStatus(self, status):
         pass
+
+    def handleMpvFPSChange(self,fps):
+        self.frameTimeLineFrame.updateFrameRate(fps)
 
     def getTotalDuration(self):
         return self.controller.getTotalDuration()

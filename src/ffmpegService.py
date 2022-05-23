@@ -659,6 +659,7 @@ class FFmpegService():
       processed={}
       fileSequence=[]
       clipDimensions = []
+      preciseDurations = {}
       infoOut={}
 
       usNVHWenc = '_Nvenc' in options.get('outputFormat','mp4:x264') 
@@ -751,6 +752,8 @@ class FFmpegService():
 
         outname = '{}_{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber,int(usNVHWenc))
         outname = os.path.join( tempPathname,outname )
+
+        preciseDurations[outname] = end-start
 
         if os.path.exists(outname):
           processed[key]=outname
@@ -928,6 +931,8 @@ class FFmpegService():
         crossfades=[]
         crossfadeOut=''
         
+        minterpolateFlags = self.globalOptions.get('defaultMinterpolateFlags','mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30')
+
         previousXfadeOffset = 0
         for i,dur in enumerate(expectedFadeDurations):
           nexti= 0 if i==(len(expectedFadeDurations)-1) else i+1
@@ -980,7 +985,7 @@ class FFmpegService():
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
             if interpolateSpeedAdjustment:
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor,miflags=minterpolateFlags)
             else:
               crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
@@ -1039,7 +1044,7 @@ class FFmpegService():
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
             if interpolateSpeedAdjustment:
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor,miflags=minterpolateFlags)
             else:
               crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:
@@ -1054,10 +1059,21 @@ class FFmpegService():
         filterPeProcess = ''
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
-          if mode == 'CONCAT' and len(dimensionsSet) > 1:
-            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
+          
+          preciseDur = preciseDurations[v]
+          audioOverride      = options.get('audioOverride',None)
+
+          if audioOverride is None:
+            if mode == 'CONCAT' and len(dimensionsSet) > 1:
+              filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd},setpts=PTS-STARTPTS[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
+            else:            
+              filterPeProcess += '[{i}:v]setpts=PTS-STARTPTS,tpad=stop=100:stop_mode=clone,trim=start=0:end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)
           else:
-            filterPeProcess += '[{i}:v]null[{i}vsc],'.format(i=vi)
+            if mode == 'CONCAT' and len(dimensionsSet) > 1:
+              filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd},setpts=PTS-STARTPTS[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
+            else:            
+              filterPeProcess += '[{i}:v]setpts=PTS-STARTPTS,tpad=stop=100:stop_mode=clone,trim=start=0:end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)
+
 
           filterInputs += '[{i}vsc][{i}:a]'.format(i=vi)
 
@@ -1071,7 +1087,7 @@ class FFmpegService():
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
             if interpolateSpeedAdjustment:
-              filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+              filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor,miflags=minterpolateFlags)
             else:
               filtercommand += ',[outvconcat]setpts={vfactor}*PTS[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
           except Exception as e:

@@ -44,6 +44,12 @@ class MergeSelectionController:
 
     self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
 
+  def broadcastModalFocus(self):
+    self.cutController.playingModalGotFocus()
+
+  def broadcastModalLoseFocus(self):
+    self.cutController.playingModalLostFocus()    
+
   def jumpToFilterByRid(self,rid):
     self.filterController.jumpToFilterByRid(rid)
 

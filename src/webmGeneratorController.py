@@ -76,6 +76,11 @@ class WebmGeneratorController:
       "useNewCrossfade":True,
       "allowableTargetSizeUnderrun":0.15,
       "allowEarlyExitIfUndersized":True,
+
+      "generateTimelineThumbnails":True,
+
+      "clampSeeksToFPS":False,
+
       "initialBr":16777216,
       "maxEncodeAttemptsGif":10,
       "maxEncodeAttempts":6,
@@ -88,9 +93,10 @@ class WebmGeneratorController:
       "filtersTabPlayerBackgroundColour":"#282828",
       "autoLoadLastAutosave":False,
       "deleteDownloadsAtExit":False,
+      "embedSequencePlanner":False,
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
-      
+      "defaultMinterpolateFlags":"mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30",
       "defaultProfile":"None",
       "defaultPostProcessingFilter":"None",
       
@@ -254,7 +260,10 @@ class WebmGeneratorController:
     self.cutselectionUi.showSlicePlanner()
 
   def showSequencePreview(self):
-    self.mergeSelectionUi.previewSequencetimings()
+    if self.globalOptions.get('embedSequencePlanner',False):
+      self.mergeSelectionUi.previewSequencetimings(uiParent=self.cutselectionUi.getPlannerFrame())
+    else:
+      self.mergeSelectionUi.previewSequencetimings(uiParent=None)
 
   def loadDrop(self,drop):
     dropfiles = []
@@ -409,6 +418,7 @@ class WebmGeneratorController:
         self.lastSaveFile = filename
         self.cutselectionController.loadStateFromSave(saveData)
         self.videoManager.loadStateFromSave(saveData)
+        self.filterSelectionController.loadStateFromSave(saveData)
 
 
   def splitClipIntoNEqualSections(self):
@@ -433,6 +443,7 @@ class WebmGeneratorController:
     saveData = {}
     saveData.update(self.cutselectionController.getStateForSave())
     saveData.update(self.videoManager.getStateForSave())
+    saveData.update(self.filterSelectionController.getStateForSave())
     return saveData  
 
   def saveProject(self,filename):

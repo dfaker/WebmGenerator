@@ -32,24 +32,57 @@ os.add_dll_directory(scriptPath_frozen)
 
 import mpv
 
-class VideoAudioSync(tk.Toplevel):
-  def __init__(self, master=None, controller=None, sequencedClips=[], dubFile=None, dubOffsetVar=None, fadeVar=None, mixVar=None, *args):
+class VideoAudioSync(tk.Frame):
+  def __init__(self, uiParent=None, master=None, controller=None, sequencedClips=[], dubFile=None, dubOffsetVar=None, fadeVar=None, mixVar=None, globalOptions={}, *args):
 
-    tk.Toplevel.__init__(self, master)
+    tk.Frame.__init__(self, uiParent)
     
-    self.title('Sequence Preview and Audio Track Sync')
-    self.style = ttk.Style()
-    self.style.theme_use('clam')
-    self.minsize(600,100)
+    self.uiParent = uiParent
+    try:
+      self.uiParent.title('Sequence Preview and Audio Track Sync')
+      self.uiParent.minsize(600,100)
+    except:
+      pass
+
+    self.bind('<Enter>',self.onEnter)
+    self.bind('<Leave>',self.onLeave)
+
     self.controller=controller
     self.master=master
 
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+
     self.isActive=True
 
-    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='200', width='200')
-    self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=14)
+    self.playerFrame = ttk.Frame(self,style='PlayerFrame.TFrame',height='400', width='200')
+    self.playerFrame.grid(row=0,column=0,sticky='nesw',padx=0,pady=(2,0),columnspan=14)
 
-    self.timeline_canvas = tk.Canvas(self,width=200, height=120, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
+
+    self.visStyles={
+      "Spectrum - Lin:Log":"showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+      "Spectrum - Log:Log":"showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+      "Spectrum - Lin:Square root":"showspectrumpic=s={width}x80:legend=0:fscale=lin:scale=sqrt",
+      "Spectrum - Lin:Cube root":"showspectrumpic=s={width}x80:legend=0:fscale=lin:scale=cbrt",
+      "Spectrum - Middle pass filter - Log:Log":"highpass=f=200,lowpass=f=3000,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+      "Spectrum - Compressor - Log:Log":"acompressor=threshold=.5:ratio=5:2:attack=0.01:release=0.01,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+
+      "Waves":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
+      "Waves - Middle pass filter":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]highpass=f=200,lowpass=f=3000,showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
+      "Waves - Compressor":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]acompressor=threshold=.5:ratio=5:2:attack=0.01:release=0.01,showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
+    }
+        
+    self.lastAppliedSpetra=None
+    self.visStylesList= sorted(list(self.visStyles.keys()))
+    self.visStyleVar = tk.StringVar()
+    self.visStyleVar.set(self.visStylesList[0]) 
+    self.visStyle=self.visStyles[self.visStyleVar.get()]
+    self.visStyleVar.trace("w",self.visStyleChanged)
+
+    self.visStyleCombo = ttk.Combobox(self,textvariable=self.visStyleVar,values=self.visStylesList,state='readonly')
+    self.visStyleCombo.grid(row=1,column=0,sticky='nesw',padx=0,pady=(0,0),columnspan=14)
+
+    self.timeline_canvas = tk.Canvas(self,width=200, height=120, bg='black',borderwidth=0,border=0,relief='flat',highlightthickness=0)
     self.timeline_canvas.grid(row=2,column=0,columnspan=14,sticky="nesw")
     
     self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
@@ -59,19 +92,16 @@ class VideoAudioSync(tk.Toplevel):
     self.timeline_canvas.bind("<MouseWheel>", self.timelineMousewheel)
     self.timeline_canvas.bind("<Motion>", self.timelineMouseMotion)
 
+    self.canvasBackground = self.timeline_canvas.create_rectangle(0, 0, self.timeline_canvas.winfo_width(), 20,fill="#1E1E1E")
 
-
-
-    self.canvasZoomBG         = self.timeline_canvas.create_rectangle(-1, 0, -1, 20,fill="#3F3F7F")
-    self.canvasZoomBGRange    = self.timeline_canvas.create_rectangle(-1, 0, -1, 20,fill="#9E9E9E")
-    self.canvasZoomRangeMid   = self.timeline_canvas.create_line(-1, 0, -1, 20,fill="#3F3F7F")
+    self.canvasZoomBG          = self.timeline_canvas.create_rectangle(-1, 0, -1, 20,fill="#3F3F7F")
+    self.canvasZoomBGRange     = self.timeline_canvas.create_rectangle(-1, 0, -1, 20,fill="#9E9E9E")
+    self.canvasZoomRangeMid    = self.timeline_canvas.create_line(-1, 0, -1, 20,fill="#3F3F7F")
 
     self.canvasSeekPointer      = self.timeline_canvas.create_line(-1, 0, -1, self.timeline_canvas.winfo_height(),fill="white")
     self.canvasUpperSeekPointer = self.timeline_canvas.create_rectangle(-1, 0, -1, self.timeline_canvas.winfo_height(),fill="#c5c5d8",outline='white')
 
-
-
-
+    self.draggingblockTargetRect = self.timeline_canvas.create_rectangle(-1, 0, -1, 0,fill="white",outline='white') 
 
     self.playerwid = self.playerFrame.winfo_id()
 
@@ -103,12 +133,7 @@ class VideoAudioSync(tk.Toplevel):
     self.columnconfigure(5, weight=1)
     self.columnconfigure(6, weight=1)
     self.columnconfigure(7, weight=1)
-    self.columnconfigure(8, weight=1)
-    self.columnconfigure(9, weight=1)
-    self.columnconfigure(10, weight=1)
-    self.columnconfigure(11, weight=1)
-    self.columnconfigure(12, weight=1)
-    self.columnconfigure(13, weight=1)
+
 
 
     self.tickColours=["#a9f9b9","#7dc4ed","#f46350","#edc1a6","#dfff91","#0f21e0","#f73dc8","#8392db","#72dbb4","#cc8624","#88ed71","#d639be"]
@@ -116,6 +141,8 @@ class VideoAudioSync(tk.Toplevel):
     self.player = mpv.MPV(loop='inf',
                           mute=False,
                           volume=0,
+                          log_handler=print,
+                          loglevel='debug',
                           autofit_larger='1280', wid=str(self.playerwid))
 
     self.currentTotalDuration=None
@@ -131,8 +158,10 @@ class VideoAudioSync(tk.Toplevel):
 
     self.labeldubFile = ttk.Label(self)
     self.labeldubFile.config(anchor='e',  text='Dubbing file:')
+    self.labeldubFile['padding']=1
     self.labeldubFile.grid(row=3,column=0,sticky='ew')
     self.entrydubFile = ttk.Button(self,text='None',command=self.selectAudioOverride,width=40)
+    self.entrydubFile['padding']=1
     Tooltip(self.entrydubFile,text='An mp3 audio file to use to replace the original video audio.')
     self.entrydubFile.grid(row=3,column=1,sticky='ew')
 
@@ -168,12 +197,12 @@ class VideoAudioSync(tk.Toplevel):
     self.labelpostAudioOverrideDelay.grid(row=3,column=6,sticky='ew')
     self.entrypostAudioOverrideDelay = ttk.Spinbox(self, textvariable=self.dubOffsetVar,from_=float('-inf'), 
                                           to=float('inf'), 
-                                          increment=0.1)
+                                          increment=0.05)
     Tooltip(self.entrypostAudioOverrideDelay,text='Delay before the start of the mp3 dub audio.')
     self.entrypostAudioOverrideDelay.grid(row=3,column=7,sticky='ew')
-
+    self.entrypostAudioOverrideDelay.bind('<MouseWheel>',self.checkCtrl)
     self.dubOffsetVar.trace('w',self.valueChangeCallback)      
-    
+        
     self.labelTransDuration = ttk.Label(self)
     self.labelTransDuration.config(anchor='e', padding='2', text='Transition Duration')
     self.labelTransDuration.grid(row=4,column=0,sticky='ew')
@@ -208,11 +237,23 @@ class VideoAudioSync(tk.Toplevel):
     self.entryMixBias.grid(row=4,column=5,sticky='ew')
     self.mixVar.trace('w',self.valueChangeCallback)
 
-    self.labelMixInfo = ttk.Label(self,textvariable=self.textInfo)
-    self.labelMixInfo.grid(row=4,column=6,sticky='ew',columnspan=2)
+    self.keepDurationCondtantVar = tk.BooleanVar()
+    self.keepDurationCondtantVar.set(True)
+    self.entryKeepDurationConstant = ttk.Checkbutton(self,text='Resize Neighbouring sections',onvalue=True, offvalue=False,variable=self.keepDurationCondtantVar)
+    self.entryKeepDurationConstant.grid(row=4,column=6,sticky='ew',columnspan=1)
 
-    self.attributes('-topmost', True)
-    self.update()
+    self.pauseOnLoseFocusVar = tk.BooleanVar()
+    self.pauseOnLoseFocusVar.set(True)
+    self.entrypauseOnLoseFocus = ttk.Checkbutton(self,text='Pause on Focus switch',onvalue=True, offvalue=False,variable=self.pauseOnLoseFocusVar)
+    self.entrypauseOnLoseFocus.grid(row=4,column=7,sticky='ew',columnspan=1)
+
+
+    try:
+      self.uiParent.attributes('-topmost', True)
+      self.uiParent.update()      
+    except:
+      pass
+
     self.edlBytes=b''
     self.edlStreamFunc=None
 
@@ -226,9 +267,22 @@ class VideoAudioSync(tk.Toplevel):
     self.currentZoomRangeMidpoint=0.5
     self.rangeHeaderClickStart = None
 
+    self.lastAppliedSpetra = None
+
+    self.lastSpectraStart=None
+    self.lastSpectraDubDelay=0
+    self.lastSpectraZoomFactor=1
+    self.canvasSpectraImg=None
+    self.waveAsPicImage=None
+
+    self.spectrumWorkLock = threading.Lock()
 
     self.draggingTickIndex=None
     self.draggingTickOffset=0
+
+    self.draggingBlockIndex = None
+
+    self.valuesChanged=True
 
     def quitFunc(key_state, key_name, key_char):
       self.isActive=False
@@ -257,14 +311,22 @@ class VideoAudioSync(tk.Toplevel):
       self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
       self.playerReaper.start()
       self.isActive=False
-      self.attributes('-topmost', False)
-      self.update()
+
+      try:
+        self.uiParent.attributes('-topmost', False)
+        self.uiParent.update()
+      except:
+        pass
 
     self.player.register_key_binding("CLOSE_WIN", quitFunc)
     self.bind('<Configure>', self.reconfigureWindow)
 
     self.recalculateEDLTimings()
 
+  def visStyleChanged(self,*args):
+    self.visStyle=self.visStyles[self.visStyleVar.get()]
+    self.lastAppliedSpetra=None
+    self.generateSpectrum()
 
   @staticmethod
   def pureGetClampedCenterPosAndRange(totalDuration,zoomFactor,currentMidpoint):
@@ -293,6 +355,26 @@ class VideoAudioSync(tk.Toplevel):
 
     return center,lowerRange,outputDuration
 
+  def onEnter(self,e):
+    if self.pauseOnLoseFocusVar.get():
+      self.controller.broadcastModalFocus()
+      self.player.pause=False
+      try:
+        #self.uiParent.attributes('-alpha',1.0)
+        pass
+      except:
+        pass
+
+  def onLeave(self,e):
+    if self.pauseOnLoseFocusVar.get():
+      self.controller.broadcastModalLoseFocus()
+      self.player.pause=True
+      try:
+        #self.uiParent.attributes('-alpha',0.3)
+        pass
+      except:
+        pass
+
   def secondsToXcoord(self,seconds,update=True,negative=False):
     try:
       center,rangeStart,duration = self.getClampedCenterPosAndRange(update=update,negative=negative)
@@ -309,6 +391,17 @@ class VideoAudioSync(tk.Toplevel):
       logging.error('x coord to seconds Exception',exc_info=e)
       return 0
 
+
+  def checkCtrl(self,e):      
+    ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
+    if ctrl:
+      self.entrypostAudioOverrideDelay.config(increment=1)
+    elif shift:
+      self.entrypostAudioOverrideDelay.config(increment=5)
+    else:
+      self.entrypostAudioOverrideDelay.config(increment=0.05)
+
   def timelineMousewheel(self,e):
       ctrl  = (e.state & 0x4) != 0
       shift = (e.state & 0x1) != 0
@@ -323,10 +416,12 @@ class VideoAudioSync(tk.Toplevel):
         if e.delta>0:
           self.currentZoomRangeMidpoint += factor/self.timelineZoomFactor
           self.recalculateEDLTimings()
+          self.generateSpectrum()
           return
         else:
           self.currentZoomRangeMidpoint -= factor/self.timelineZoomFactor
           self.recalculateEDLTimings()
+          self.generateSpectrum()
           return
       else:
         dirty=False
@@ -338,51 +433,85 @@ class VideoAudioSync(tk.Toplevel):
           newZoomFactor *= 0.666 if ctrl  else 0.99
           dirty=True
         newZoomFactor = min(max(1,newZoomFactor),150)
+
         if newZoomFactor == self.timelineZoomFactor:
           return
         if dirty:
           self.timelineZoomFactor=newZoomFactor
           self.recalculateEDLTimings()
+          self.generateSpectrum()
 
-  def generateSpectrum(self):
-    if (not self.blockSpectrumUpdates) and self.dubFile.get() is not None and os.path.exists(self.dubFile.get()) and self.currentTotalDuration is not None:
-      t = threading.Thread(target=self.generateSpectrum_async,daemon=True)
+  def generateSpectrum(self,force=False):
+    print('generateSpectrum',self.blockSpectrumUpdates)
+    
+    if self.lastSpectraStart is not None and self.canvasSpectraImg is not None and self.lastSpectraZoomFactor == self.timelineZoomFactor:
+      oldx = self.secondsToXcoord(self.lastSpectraStart+( self.lastSpectraDubDelay-float(self.dubOffsetVar.get())) )
+      self.timeline_canvas.coords(self.canvasSpectraImg,oldx,self.timeline_canvas.winfo_height()-80)
+
+    if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()) and self.currentTotalDuration is not None:
+      t = threading.Thread(target=self.generateSpectrum_async,args=(force,),daemon=True)
       t.start()
 
-  def generateSpectrum_async(self):
-    if (not self.blockSpectrumUpdates) and self.dubFile.get() is not None and os.path.exists(self.dubFile.get()) and self.currentTotalDuration is not None:
-      
-      self.timeline_canvas.delete('waveAsPicImage')
+  def generateSpectrum_async(self,force=False):
+    with self.spectrumWorkLock:
+      print('generateSpectrum_async',self.blockSpectrumUpdates)
+      if self.dubFile.get() is not None and os.path.exists(self.dubFile.get()) and self.currentTotalDuration is not None:
+        
+        
 
-      startoffset=self.xCoordToSeconds(0)
-      try:
-        startoffset = float(self.dubOffsetVar.get())+self.xCoordToSeconds(0)
-      except:
-        pass
+        startoffset=self.xCoordToSeconds(0)
+        try:
+          startoffset = float(self.dubOffsetVar.get())+self.xCoordToSeconds(0)
+        except:
+          pass
+
+        orig_height = self.timeline_canvas.winfo_height()
+        orig_width = self.timeline_canvas.winfo_width()
+
+        orig_startoffset = startoffset
+        orig_currentTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
+
+        spectraSpec = orig_height,orig_width,orig_startoffset,orig_currentTotalDuration,self.dubFile.get(),
+
+        if spectraSpec == self.lastAppliedSpetra:
+          return
+
+        print(self.visStyle)
+
+        proc = sp.Popen(['ffmpeg', '-y', '-i', cleanFilenameForFfmpeg(self.dubFile.get()), '-filter_complex', "[0:a]atrim={start}:{end},apad=whole_dur={padto},{visStyle}".format(start=orig_startoffset,end=orig_currentTotalDuration+orig_startoffset,padto=orig_currentTotalDuration,width=orig_width,visStyle=self.visStyle.format(start=orig_startoffset,end=orig_currentTotalDuration+orig_startoffset,padto=orig_currentTotalDuration,width=orig_width,visStyle=self.visStyle)), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
+        
+
+        outs,errs = proc.communicate()        
+
+        print(proc.poll())
+
+        startoffset=self.xCoordToSeconds(0)
+        try:
+          startoffset = float(self.dubOffsetVar.get())+self.xCoordToSeconds(0)
+        except:
+          pass
+        newTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
+        
 
 
-      orig_height = self.timeline_canvas.winfo_height()
-      orig_width = self.timeline_canvas.winfo_width()
+        if force or (orig_startoffset == startoffset and orig_currentTotalDuration == newTotalDuration and orig_width == self.timeline_canvas.winfo_width()):
+        
+          self.lastAppliedSpetra = spectraSpec
+          self.lastSpectraStart = self.xCoordToSeconds(0)
+          self.lastSpectraDubDelay = float(self.dubOffsetVar.get())
+          self.lastSpectraZoomFactor=self.timelineZoomFactor
+        
+          if self.waveAsPicImage is None:
+            self.waveAsPicImage = tk.PhotoImage(data=outs)
+          else:
+            self.waveAsPicImage.config(data=outs)
 
-      orig_startoffset = startoffset
-      orig_currentTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
-      
-
-      proc = sp.Popen(['ffmpeg', '-y', '-i', cleanFilenameForFfmpeg(self.dubFile.get()), '-filter_complex', "[0:a]atrim={}:{},bass=g=3,showwavespic=s={}x80:colors=5C5CAE".format(orig_startoffset,orig_currentTotalDuration+orig_startoffset,orig_width), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
-      outs,errs = proc.communicate()        
-
-      startoffset=self.xCoordToSeconds(0)
-      try:
-        startoffset = float(self.dubOffsetVar.get())+self.xCoordToSeconds(0)
-      except:
-        pass
-      newTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
-
-      if orig_startoffset == startoffset and orig_currentTotalDuration == newTotalDuration and orig_width == self.timeline_canvas.winfo_width():
-        self.waveAsPicImage = tk.PhotoImage(data=outs)
-        self.timeline_canvas.delete('waveAsPicImage')
-        canvasimg = self.timeline_canvas.create_image(0,orig_height-80,image=self.waveAsPicImage,anchor='nw',tags='waveAsPicImage')
-        self.timeline_canvas.lower(canvasimg)
+          if self.canvasSpectraImg is None:
+            self.canvasSpectraImg = self.timeline_canvas.create_image(0,orig_height-80,image=self.waveAsPicImage,anchor='nw',tags='waveAsPicImage')
+          else:
+            self.timeline_canvas.coords(self.canvasSpectraImg,0,orig_height-80)
+            
+          self.timeline_canvas.lower(self.canvasSpectraImg)
 
 
   def speedChange(self,*args):
@@ -403,15 +532,34 @@ class VideoAudioSync(tk.Toplevel):
       self.playerFrame.grid(row=1,column=0,sticky='nesw',padx=0,pady=0,columnspan=9)
 
   def selectAudioOverride(self):
+
+    try:
+      self.uiParent.attributes('-topmost', False)
+      self.uiParent.update()
+    except:
+      pass
+
     files = askopenfilename(multiple=False,filetypes=[('mp3','*.mp3',),('wav','*.wav')])
+  
+    try:
+      self.uiParent.attributes('-topmost', True)
+      self.uiParent.update()
+    except:
+      pass
+
     if files is None or len(files)==0:
       self.dubFile.set('None')
       self.entrydubFile.config(text='None')
+      self.timeline_canvas.delete('waveAsPicImage')
+      self.canvasSpectraImg=None
     else:
       self.entrydubFile.config(text=os.path.basename(str(files)))
       self.dubFile.set(str(files))
+    
+    self.valuesChanged = True
+
     self.recalculateEDLTimings()
-    self.generateSpectrum()
+    self.generateSpectrum(force=True)
 
   def updateRegionsOnDrag(self,index,timestamp):
     movestart=moveend=ots=sv=otsn=svn = False
@@ -421,16 +569,19 @@ class VideoAudioSync(tk.Toplevel):
       ots = self.ticktimestamps[index]
       sv  = self.sequencedClips[index]
 
-    if index+2<=len(self.ticktimestamps):
-      moveend=True
-      otsn = self.ticktimestamps[index+1]
-      svn  = self.sequencedClips[index+1]
+    if self.keepDurationCondtantVar.get():
+      if index+2<=len(self.ticktimestamps):
+        moveend=True
+        otsn = self.ticktimestamps[index+1]
+        svn  = self.sequencedClips[index+1]
 
     self.keepWidth=True
     if movestart:
       self.controller.updateSubclipBoundry(sv,ots,timestamp,'e')
     if moveend:
       self.controller.updateSubclipBoundry(svn,otsn,timestamp,'s')
+
+    self.master.synchroniseCutController(sv.rid,0)
 
   def timelineMouseMotion(self,e):  
     if e.y<20:
@@ -446,6 +597,9 @@ class VideoAudioSync(tk.Toplevel):
         if e.x>tlw-6-5-4:
           self.timeline_canvas.config(cursor="sb_h_double_arrow")
           return
+    elif 20<e.y<20+5:
+      self.timeline_canvas.config(cursor="sb_h_double_arrow")
+      return
     elif 20+5<e.y<20+20:
       for tx,tidx in self.tickXpos:
         if tx-6-5-4<e.x<tx:
@@ -469,20 +623,59 @@ class VideoAudioSync(tk.Toplevel):
             self.draggingTickIndex=tidx
             self.draggingTickOffset=e.x-tx
         else:
-          tlw=self.timeline_canvas.winfo_width()
-          if e.x>tlw-6-5-4:
-            self.draggingTickIndex=len(self.tickXpos)
-            self.draggingTickOffset=e.x-tlw
+          endpc=0
+          try:
+            timelineWidth = self.timeline_canvas.winfo_width()
+            endpc = self.xCoordToSeconds(timelineWidth)/self.currentTotalDuration
+          except Exception as e:
+            print(e)
 
-      if e.y<20:
+          if endpc >= 0.999:
+            tlw=self.timeline_canvas.winfo_width()
+            if e.x>tlw-6-5-4:
+              self.draggingTickIndex=len(self.tickXpos)
+              self.draggingTickOffset=e.x-tlw
+      elif e.y<20:
         self.rangeHeaderClickStart = self.currentZoomRangeMidpoint-(e.x/self.winfo_width())
+      elif 20<e.y<20+5:
+        self.draggingBlockIndex=0
+        for tx,tidx in self.tickXpos[::-1]:
+          if e.x>tx:
+            self.draggingBlockIndex=tidx+1
+            break
+        self.timeline_canvas.itemconfigure(self.draggingblockTargetRect,fill=self.colourMap[self.sequencedClips[self.draggingBlockIndex].rid])    
+
+      print(self.draggingTickIndex)
 
     elif e.type == tk.EventType.Motion:
       if self.rangeHeaderClickStart is not None:
         self.currentZoomRangeMidpoint = (e.x/self.winfo_width())+self.rangeHeaderClickStart
         self.recalculateEDLTimings()
+        self.generateSpectrum()
+
+      if self.draggingBlockIndex is not None:
+        for tx,tidx in self.tickXpos[::-1]:
+          if e.x>tx:
+            self.timeline_canvas.coords(self.draggingblockTargetRect, tx-5,20,tx+5,30)
+            self.timeline_canvas.lift(self.draggingblockTargetRect)
+            break
 
     elif e.type == tk.EventType.ButtonRelease:
+      if self.draggingBlockIndex is not None:
+        tagretId=0
+        for tx,tidx in self.tickXpos[::-1]:
+          print(e.x,tx,tidx)
+          if e.x>tx:
+            tagretId=tidx+1
+            print('tagretId=tidx',e.x,tx,tidx)
+            break
+
+        if tagretId != self.draggingBlockIndex:
+          print('self.draggingBlockIndex',self.draggingBlockIndex,tagretId,tagretId-self.draggingBlockIndex)
+          self.master.moveSequencedClipByIndex(self.draggingBlockIndex,tagretId-self.draggingBlockIndex)
+        self.draggingBlockIndex = None
+        self.timeline_canvas.coords(self.draggingblockTargetRect, -1,20,-1,30)
+
       if self.rangeHeaderClickStart is not None:
         self.rangeHeaderClickStart=None
 
@@ -490,6 +683,7 @@ class VideoAudioSync(tk.Toplevel):
         self.updateRegionsOnDrag(self.draggingTickIndex,pressSeconds)
         self.draggingTickIndex=None
         try:
+          self.blockSpectrumUpdates=False
           self.redrawTimer.cancel()
         except:
           pass
@@ -525,11 +719,22 @@ class VideoAudioSync(tk.Toplevel):
           self.master.moveSequencedClipByIndex(tidx+1,-1)
           return
 
+    seekFailure=False
     if self.rangeHeaderClickStart is None:
       if self.currentTotalDuration is None:
         self.player.command('seek','0','absolute-percent','exact')
       else:
-        self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
+        seekTarget = min(max(0,self.xCoordToSeconds(e.x)),self.currentTotalDuration)
+        try:
+          self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
+        except Exception as e:
+          print(e)
+          try:
+            self.player.command('seek',0,'absolute')
+
+          except Exception as e2:
+            seekFailure=True
+            print(e2)
 
       if self.draggingTickIndex is None:
         for st,et,rid in self.ridListing:
@@ -537,6 +742,11 @@ class VideoAudioSync(tk.Toplevel):
             startoffset = pressSeconds-st
             self.master.synchroniseCutController(rid,startoffset)
             break
+
+    if seekFailure:
+      self.valuesChanged=True
+      self.recalculateEDLTimings()
+      self.player.command('seek',0,'absolute')
 
 
   def handleMpvTimePosChange(self,name,value):
@@ -565,18 +775,27 @@ class VideoAudioSync(tk.Toplevel):
 
   def handleMpvDurationChange(self,name,value):
     if value is not None:
-      self.currentTotalDuration=value
-      self.generateSpectrum()
+      if value != self.currentTotalDuration: 
+        self.currentTotalDuration=value
+        self.recalculateEDLTimings()
+        self.generateSpectrum()
 
   def valueChangeVolume(self,*args):
     self.player.volume = int(self.volumeVar.get())
 
   def valueChangeCallback(self,*args):
     if self.player:
+      self.valuesChanged = True
       self.recalculateEDLTimings()
+      self.generateSpectrum()
+
+  def performReconfigureActions(self):    
+    self.recalculateEDLTimings(seekAfter=self.currentTimePos)
+    self.generateSpectrum()
 
   def reconfigureWindow(self,e):
-    self.recalculateEDLTimings(seekAfter=self.currentTimePos)
+    self.timeline_canvas.coords(self.canvasBackground,0,0,self.timeline_canvas.winfo_width(),20)
+    self.after(1, self.performReconfigureActions)
 
   def restoreKeepWidthAndRecaulate(self):
     if self.draggingTickIndex is not None:
@@ -632,7 +851,8 @@ class VideoAudioSync(tk.Toplevel):
       endOffset    = float(self.dubOffsetVar.get())
       startoffset = float(self.dubOffsetVar.get())
       audioFilename = cleanFilenameForFfmpeg(audioFilename)
-      audioFilename = audioFilename.replace('\\','/').replace(':','\\:').replace('\'','\\\\\'')
+      audioFilename = audioFilename.replace('\\','/').replace(':','\\:').replace("'","'\\\\\\''")
+      print(audioFilename)
     else:
       audioFilename=None
 
@@ -682,6 +902,14 @@ class VideoAudioSync(tk.Toplevel):
 
     if not self.keepWidth:
       self.durationForScale=tickCounter
+
+    fadeDist = 0
+
+    try:
+      fadeDur  = float(self.fadeVar.get())
+      fadeDist = self.secondsToXcoord(fadeDur/2)-self.secondsToXcoord(0) 
+    except:
+      pass
 
     idx=-1
     yo=20
@@ -736,6 +964,15 @@ class VideoAudioSync(tk.Toplevel):
                                        tx, yo+200,
                                        fill='white',tags='ticks')
 
+
+      if fadeDist > 0:
+        self.timeline_canvas.create_line(tx-fadeDist, yo+0, 
+                                         tx-fadeDist, yo+200,
+                                         fill='blue',tags='ticks',dash=(2,1))
+        self.timeline_canvas.create_line(tx+fadeDist, yo+0, 
+                                         tx+fadeDist, yo+200,
+                                         fill='blue',tags='ticks',dash=(2,1))
+
       self.timeline_canvas.create_line(tx-6-5-4, yo+5, 
                                        tx-6-5-4, yo+20,
                                        fill='grey',tags='ticks')
@@ -744,12 +981,13 @@ class VideoAudioSync(tk.Toplevel):
                                        tx+6+5+4, yo+20,
                                        fill='grey',tags='ticks')
 
+      self.tempRangePreviewDurationLabel = self.timeline_canvas.create_text(int((txl+tx)/2), 50, text='{:0.3f}'.format(tick-lastTick),fill="#69bfdb",tags='ticks')
       
       lastTick=tick
 
     tx = timelineWidth
 
-    if endpc==1:
+    if endpc>0.999:
       self.timeline_canvas.create_rectangle(tx-6-5-4, yo+20,
                                             tx+6+5+4, yo+20+15,
                                             outline='grey',tags='ticks')
@@ -767,7 +1005,11 @@ class VideoAudioSync(tk.Toplevel):
                                      timelineWidth, yo+20,
                                      fill='grey',tags='ticks')
 
+    tick = self.xCoordToSeconds(timelineWidth)
     txl = self.secondsToXcoord(lastTick)
+
+    self.tempRangePreviewDurationLabel = self.timeline_canvas.create_text(int((txl+tx)/2), 50, text='{:0.3f}'.format(tick-lastTick),fill="#69bfdb",tags='ticks')
+      
 
     tickrid = self.sequencedClips[idx+1].rid
     tickColour = self.colourMap.get(tickrid)
@@ -782,25 +1024,28 @@ class VideoAudioSync(tk.Toplevel):
 
     self.timeline_canvas.tag_lower('ticks', self.canvasSeekPointer)
 
-    if seekAfter is not None:
-      seekAfter = max(min(seekAfter,endOffset),0)
-      self.player.start=str(seekAfter)
-
-    if seekTarget is not None:
-      seekTarget = max(min(seekTarget,endOffset),0)
-      self.player.start=str(seekTarget) 
-
-    self.player._python_streams = {}
+    
 
     edlBytes = edlstr.encode('utf8')
 
-    @self.player.python_stream('edlStream',len(edlBytes))
-    def edlstream():
-      yield edlBytes
+    if self.valuesChanged or edlBytes != self.edlBytes:
+      self.valuesChanged = False
 
-    self.player.play('python://edlStream')
+      if seekAfter is not None:
+        seekAfter = max(min(seekAfter,endOffset),0)
+        self.player.start=str(seekAfter)
 
-    del edlstream
+      if seekTarget is not None:
+        seekTarget = max(min(seekTarget,endOffset),0)
+        self.player.start=str(seekTarget) 
+
+      self.edlBytes = edlBytes
+      self.player._python_streams = {}
+      @self.player.python_stream('edlStream',len(self.edlBytes))
+      def edlstream():
+        yield self.edlBytes
+
+      self.player.play('python://edlStream')
 
     if audioFilename is not None:
 
@@ -808,10 +1053,15 @@ class VideoAudioSync(tk.Toplevel):
       weightDub    = audioOverrideBias
       weightSource = 1-audioOverrideBias
 
+      origpauseState = self.player.pause
+      self.player.pause = True
       self.player.lavfi_complex="amovie=filename='{fn}',atrim=start={starts}:end={endts},asetpts=PTS-STARTPTS[ao]".format(fn=audioFilename,starts=startoffset,endts=endOffset,wd=weightDub,ws=weightSource)
+      self.player.pause = origpauseState
     else:
+      origpauseState = self.player.pause
+      self.player.pause = True
       self.player.lavfi_complex=''
-
+      self.player.pause = origpauseState
 
 class CutSpecificationPlanner(tk.Toplevel):
 

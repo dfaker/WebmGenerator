@@ -48,6 +48,7 @@ class CutselectionController:
 
     self.ui.after(50, self.loadInitialFiles)
 
+
   def loadInitialFiles(self):
     if self.initialFiles is not None and len(self.initialFiles)>0:
       self.loadFiles(self.initialFiles)
@@ -55,8 +56,15 @@ class CutselectionController:
   def fitoScreen(self):
     self.fit = not self.fit
     self.player.video_unscaled = not self.fit
-    
-    
+  
+  def playingModalGotFocus(self):
+    if self.isActiveTab:
+      self.player.pause = True
+
+  def playingModalLostFocus(self):
+    if self.isActiveTab:
+      self.player.pause = False
+
 
   def takeScreenshotToFile(self,screenshotPath,includes='video'):
     screenshotPath =  os.path.abspath(os.path.join(screenshotPath,'{}.png'.format(time.time())))
@@ -94,16 +102,19 @@ class CutselectionController:
   def addSubclipByTextRange(self):
     self.ui.addSubclipByTextRange(self,self.getTotalDuration())
 
-
   def jumpToRidAndOffset(self,rid,startoffset,forceTabJump=False):
     if self.isActiveTab:
-      filename,s,e = self.videoManager.getDetailsForRangeId(rid)
-      if self.currentlyPlayingFileName != filename:
-        for file in self.files:
-          if file == filename:
-            self.playVideoFile(file,s+startoffset)
-      elif self.currentlyPlayingFileName == filename:
-        self.seekTo(s+startoffset,centerAfter=True)
+      try:
+        filename,s,e = self.videoManager.getDetailsForRangeId(rid)
+        if self.currentlyPlayingFileName != filename:
+          for file in self.files:
+            if file == filename:
+              self.playVideoFile(file,s+startoffset)
+        elif self.currentlyPlayingFileName == filename:
+          self.seekTo(s+startoffset,centerAfter=True)
+          self.ui.setUiDirtyFlag()
+      except Exception as e:
+        print(e)
 
   def splitClipIntoSectionsOfLengthN(self):
     sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be? (Seconds)', initialvalue=30)
@@ -220,9 +231,12 @@ class CutselectionController:
                           audio_file_auto='no',
                           sub_auto='no')
 
-    self.player.observe_property('time-pos', self.handleMpvTimePosChange)
-    self.player.observe_property('duration', self.handleMpvDurationChange)
-    self.player.observe_property('pause',    self.playbackStatusChanged)
+    self.player.observe_property('time-pos',          self.handleMpvTimePosChange)
+    self.player.observe_property('duration',          self.handleMpvDurationChange)
+    self.player.observe_property('pause',             self.playbackStatusChanged)
+    self.player.observe_property('fps',               self.handleMpvFPSChange)
+    self.player.observe_property('container-fps',  self.handleMpvFPSChange)
+
     self.overlay = None
 
   def close_ui(self):
@@ -235,7 +249,17 @@ class CutselectionController:
       self.player.unobserve_property('duration', self.handleMpvDurationChange)
     except Exception as e:
       print(e)
-    
+
+    try:
+      self.player.unobserve_property('fps', self.handleMpvFPSChange)
+    except Exception as e:
+      print(e)
+
+    try:
+      self.player.unobserve_property('container-fps',  self.handleMpvFPSChange)
+    except Exception as e:
+      print(e)
+
     try:
       self.player.unobserve_property('pause', self.playbackStatusChanged)
     except Exception as e:
@@ -260,6 +284,12 @@ class CutselectionController:
       self.checkLoopCycleJump()
       if self.currentTotalDuration is not None:
         self.ui.update(withLock=False)
+
+  def handleMpvFPSChange(self,name,value):
+    clampToFPS = self.globalOptions.get('clampSeeksToFPS',False)
+
+    if clampToFPS and value is not None and value>0:
+      self.ui.handleMpvFPSChange(value)
 
   def handleMpvDurationChange(self,name,value):
     if value is not None:
@@ -413,7 +443,8 @@ class CutselectionController:
     return self.currentlyPlayingFileName
 
   def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
-    self.ffmpegService.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,callback)
+    if self.globalOptions.get('generateTimelineThumbnails',True):
+      self.ffmpegService.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,callback)
     return True
 
   def getRangesForClip(self,filename):
@@ -565,13 +596,11 @@ class CutselectionController:
       cropCoords = (x1,y1,x2-x1,y2-y1)
     self.ffmpegService.findLowerErrorRangeforLoop( filename,start,end,rid,secondsChange,cropCoords,self.lowestErrorLoopCallback )
 
-
   def foundLoopCallback(self,filename,mse,finals,finale):
     self.videoManager.registerNewSubclip(filename,finals,finale)
     self.setLoopPos(finals,finale)
     self.ui.setUiDirtyFlag()
     self.seekTo(finals)
-
 
   def findRangeforLoop(self,secondsCenter,minSeconds,maxSeconds,rect):
     if self.currentlyPlayingFileName is not None:

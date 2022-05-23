@@ -585,12 +585,13 @@ class SelectableVideoEntry(ttk.Frame):
 
 class MergeSelectionUi(ttk.Frame):
 
-  def __init__(self, master=None,defaultProfile='None', *args, **kwargs):
+  def __init__(self, master=None,defaultProfile='None', globalOptions={}, *args, **kwargs):
     ttk.Frame.__init__(self, master)
 
     self.master=master
     self.controller=None
     self.defaultProfile=defaultProfile
+    self.globalOptions = globalOptions
 
     self.outserScrolledFrame = ScrolledFrame(self, scrolltype='vertical')
     self.outserScrolledFrame.pack(expand='true', fill='both', padx='0', pady='0', side='top')
@@ -1361,7 +1362,7 @@ class MergeSelectionUi(ttk.Frame):
   def viewFilterForClip(self,clip):
     self.controller.jumpToFilterByRid(clip.rid)
 
-  def previewSequencetimings(self):
+  def previewSequencetimings(self,uiParent=None):
     
     if self.mergeStyleVar.get() != self.mergeStyles[1]:
       self.mergeStyleVar.set(self.mergeStyles[1])
@@ -1369,14 +1370,29 @@ class MergeSelectionUi(ttk.Frame):
     if self.syncModal is not None:
       self.syncModal.destroy()
     
-    self.syncModal = VideoAudioSync(master=self,
+    
+    print('uiParent',uiParent)
+    if uiParent is None:
+      tlwindow = tk.Toplevel()
+    else:
+      tlwindow = uiParent
+
+
+    self.syncModal = VideoAudioSync(uiParent=tlwindow,master=self,
                              controller=self.controller,
                              sequencedClips=self.sequencedClips,
                              dubFile=self.audioOverrideVar, 
                              dubOffsetVar=self.audiOverrideDelayVar, 
                              fadeVar=self.transDurationVar,
+                             globalOptions=self.globalOptions,
                              mixVar=self.audiOverrideBiasVar)
-    self.syncModal.mainloop()
+    self.syncModal.pack(expand='true', fill='both')
+    
+    if uiParent is None:
+      tlwindow.mainloop()
+    else:
+      uiParent.pack(expand='both')
+    
     return
 
   def deleteProfile(self):
@@ -1427,6 +1443,7 @@ class MergeSelectionUi(ttk.Frame):
     self.sequencedClips.clear()
     self.gridColumns.clear()
     if self.syncModal is not None and self.syncModal.isActive:
+      self.syncModal.valuesChanged=True
       self.syncModal.recalculateEDLTimings()
     for e in self.encoderProgress:
       e.remove()
@@ -1931,6 +1948,7 @@ class MergeSelectionUi(ttk.Frame):
     self.updatedPredictedDuration()
 
     if self.syncModal is not None:
+      self.syncModal.valuesChanged=True
       self.syncModal.recalculateEDLTimings() 
 
 
@@ -1939,6 +1957,7 @@ class MergeSelectionUi(ttk.Frame):
     self.moveSequencedClip(clip,move)
 
     if self.syncModal is not None:
+      self.syncModal.valuesChanged=True
       self.syncModal.recalculateEDLTimings() 
 
   def moveSequencedClip(self,clip,move):
@@ -1957,6 +1976,7 @@ class MergeSelectionUi(ttk.Frame):
     self.scrolledframeSequenceContainer._scrollBothNow()
 
     if self.syncModal is not None:
+      self.syncModal.valuesChanged=True
       self.syncModal.recalculateEDLTimings(rid=clip.rid) 
       
   def synchroniseCutController(self,rid,startoffset,forceTabJump=False):
@@ -1983,6 +2003,7 @@ class MergeSelectionUi(ttk.Frame):
       self.updatedPredictedDuration()
 
     if self.syncModal is not None:
+      self.syncModal.valuesChanged=True
       self.syncModal.recalculateEDLTimings() 
 
   def videoSubclipDurationChangeCallback(self,rid=None,pos=None,action='UPDATE'):
@@ -2007,6 +2028,7 @@ class MergeSelectionUi(ttk.Frame):
 
       try:
         self.syncModal.keepWidth=True
+        self.syncModal.valuesChanged=True
         self.syncModal.recalculateEDLTimings(rid=changedrid,pos=pos)
         self.syncModal.keepWidth=False
       except:

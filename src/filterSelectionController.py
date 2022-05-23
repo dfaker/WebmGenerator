@@ -55,6 +55,23 @@ class FilterSelectionController:
     self.filterApplicationMode = 'lavfi_complex'
     self.overlay = None
 
+  def loadStateFromSave(self,state):
+    self.ui.subClipOrder = state.get('filtersubClipOrder',[])
+    self.ui.currentSubclipIndex = state.get('filtercurrentSubclipIndex',None)
+    for entry in state.get('filteredClips',[]):
+      self.ui.subclips[entry['save_rid']] = entry
+
+  def getStateForSave(self):
+    response=[]
+    for filename,rid,s,e in self.videoManager.getAllClips():
+      result = [filename,rid,s,e,'null','null']
+      filteredVersion = self.ui.subclips.get(rid).copy()
+      filteredVersion['save_rid']= rid
+      print(response.append(filteredVersion))
+
+
+    return {'filteredClips':response,'filtersubClipOrder':self.ui.subClipOrder.copy(),'filtercurrentSubclipIndex':self.ui.currentSubclipIndex}
+
   def jumpToOwnTab(self):
     print('jumpToOwnTab')
     self.controller.jumpToTab(1)
@@ -316,7 +333,6 @@ class FilterSelectionController:
         result[5]=filteredVersion.get('filterexpEncStage','null')
       if result[4] == '':
         result[4]='null'
-
       if result[5] == '':
         result[5]='null'
       response.append( tuple(result) )

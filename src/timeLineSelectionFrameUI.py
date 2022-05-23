@@ -276,6 +276,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.uiUpdateLock = threading.RLock()
     self.clipped=None
 
+    self.frameRate = None
+
   def getCurrentlySelectedRegion(self):
     start = self.tempRangeStart
     pos = self.controller.getCurrentPlaybackPosition()
@@ -431,6 +433,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         selectedRange=rid
         break
     if selectedRange is not None:
+      mid = self.roundToNearestFrame(mid)
       self.controller.updatePointForClip(self.controller.getcurrentFilename(),selectedRange,'e',mid)
       self.controller.addNewSubclip(mid,e,seekAfter=False)
       self.dirtySelectionRanges.add(selectedRange)
@@ -462,7 +465,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if pos is not None:
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5
-      self.controller.addNewSubclip( pos-pre,pos+post,seekAfter=False )
+      a,b = self.roundToNearestFrame(pos-pre),self.roundToNearestFrame(pos+post)
+      self.controller.addNewSubclip( a,b,seekAfter=False )
       
   def startTempSelection(self,startOverride=None):
     if startOverride is not None:
@@ -472,7 +476,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def endTempSelection(self):
       a,b = self.tempRangeStart, self.controller.getCurrentPlaybackPosition()
-
+      a,b = self.roundToNearestFrame(a),self.roundToNearestFrame(b)
       if a != b:
         self.controller.addNewSubclip(a,b,seekAfter=False)
       self.tempRangeStart=None
@@ -555,13 +559,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.resumeplaybackTimer.start()
 
         if pos == 's':
-          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,sts+(increment*0.05))
+          startTarget = self.roundToNearestFrame(sts+(increment*0.05))
+          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,startTarget)
           self.dirtySelectionRanges.add(rid)
-          self.seekto(sts+abs(increment*0.05))
+          self.seekto(startTarget)
         elif pos == 'e':
-          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,ens+(increment*0.05))
+          endTarget = self.roundToNearestFrame(ens+(increment*0.05))
+          self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,endTarget)
           self.dirtySelectionRanges.add(rid)
-          self.seekto(ens-abs(increment*0.05)-0.001)
+          self.seekto(endTarget-0.001)
         break
 
   def setDragPreviewPos(self,value):
@@ -593,8 +599,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.audioToBytesThreadKill=True
     self.audioToBytesThread=None
     self.completedAudioByteDecoded = False
+    self.frameRate = None
 
     self.setUiDirtyFlag()
+
+  def updateFrameRate(self,fps):
+    print('########FPS!!!',fps)
+    self.frameRate = fps
 
   @staticmethod
   def pureGetClampedCenterPosAndRange(totalDuration,zoomFactor,currentMidpoint):
@@ -617,6 +628,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     return center,lowerRange,outputDuration
 
+  def roundToNearestFrame(self,seconds):
+    if self.frameRate is not None:
+      rem = seconds%(1/self.frameRate)
+      return seconds - rem
+    return seconds
+
   def secondsToXcoord(self,seconds,update=True,negative=False):
     try:
       center,rangeStart,duration = self.getClampedCenterPosAndRange(update=update,negative=negative)
@@ -628,7 +645,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def xCoordToSeconds(self,xpos,update=True,negative=False):
     try:
       center,rangeStart,duration = self.getClampedCenterPosAndRange(update=update,negative=negative)
-      return rangeStart+( (xpos/self.winfo_width())*duration )
+      seconds = rangeStart+( (xpos/self.winfo_width())*duration )
+      return self.roundToNearestFrame(seconds)
     except Exception as e:
       logging.error('x coord to seconds Exception',exc_info=e)
       return 0
@@ -671,6 +689,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
               pass
           self.resumeplaybackTimer = threading.Timer(0.8, self.controller.play)
           self.resumeplaybackTimer.start()
+          targetSeconds = self.roundToNearestFrame(targetSeconds)
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,'m',targetSeconds)
           self.dirtySelectionRanges.add(rid)
           if ctrl:
@@ -830,6 +849,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         rid,pos,os,oe = self.clickTarget
 
         targetSeconds = self.xCoordToSeconds(e.x+self.timelineMousePressOffset)
+        targetSeconds = self.roundToNearestFrame(targetSeconds)
         self.dirtySelectionRanges.add(rid)
         self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,targetSeconds)
         self.dirtySelectionRanges.add(rid)
@@ -976,7 +996,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             tm = self.timeline_canvas.create_line(tx, 45+20, tx, 45+22,fill="white",tags='ticks') 
             tm = self.timeline_canvas.create_text(tx, 45+30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}'),fill="white",tags='ticks') 
 
-      currentPlaybackX =  self.secondsToXcoord(self.controller.getCurrentPlaybackPosition())
+      currentPlaybackX =  self.secondsToXcoord(self.roundToNearestFrame(self.controller.getCurrentPlaybackPosition()))
       self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,45+55,currentPlaybackX,timelineHeight )
       self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45+45)
       self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX),2)), '{hours_total}:{minutes2}:{seconds:02.2F}'))
@@ -1191,7 +1211,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if self.timeline_canvas_last_right_click_x is not None:
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5
-      self.controller.addNewSubclip( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)-pre,self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)+post  )
+
+      a = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-pre)
+      b = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+post)
+      a,b = self.roundToNearestFrame(a),self.roundToNearestFrame(b)
+      self.controller.addNewSubclip(a,b)
 
     self.timeline_canvas_last_right_click_x=None
     if setDirtyAfter:

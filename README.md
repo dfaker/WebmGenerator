@@ -6,15 +6,15 @@
 
 A tool for cutting, filtering and joining video clips, supports webm, mp4 and high quality gif outputs, includes realtime effect filtering and transition effects between scenes.
 
-- 🎥 Webm, Mp4 and Gif outputs
-- ⏱️ Interactive clip selection powered by mpv
+- 🎥 [Webm, Mp4 and Gif outputs](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
+- ⏱️ [Interactive clip selection powered by mpv](https://github.com/dfaker/WebmGenerator/wiki/Simple-Clipping-Guide)
 - 📺 Youtube-dlp integration to automatically download video from popular sites, incluidng live streams.  
 - 🌈 Full suite of filters from cropping to tone mapping and VR to 2D projection.
 - 🧲 Keyframed filter adjustment, shift hue to the beat, track objects in frame & reposition text or overlay images.
 - 🤖 Automatic isolation of clips based on scene change or audio levels/silence removal detection.
 - 💾 Automatic bitrate adjustment for file size targeting.
-- ✂️ Save single extracted clips or join multiple clips into custom edits with transition effects.
-- 🍱 Pack multiple videos into dynamically sized grids.
+- ✂️ [Save single extracted clips or join multiple clips into custom edits with transition effects.](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
+- 🍱 [Pack multiple videos into dynamically sized grids.](https://github.com/dfaker/WebmGenerator/wiki/How-to-make-grids)
 
 ### Some examples of the possible outputs are [in the wiki](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
 

@@ -35,6 +35,8 @@ class CutselectionController:
     self.copiedTimeRange = None
     self.fit=True
     self.isActiveTab=True
+    self.frameRate = None
+
 
     """
     if len(initialFiles)>1:
@@ -106,13 +108,17 @@ class CutselectionController:
     if self.isActiveTab:
       try:
         filename,s,e = self.videoManager.getDetailsForRangeId(rid)
+
+        if self.frameRate is None:
+          pass
+
         if self.currentlyPlayingFileName != filename:
           for file in self.files:
             if file == filename:
               self.playVideoFile(file,s+startoffset)
         elif self.currentlyPlayingFileName == filename:
           self.seekTo(s+startoffset,centerAfter=True)
-          self.ui.setUiDirtyFlag()
+          self.ui.setUiDirtyFlag(specificRID=rid)
       except Exception as e:
         print(e)
 
@@ -191,6 +197,7 @@ class CutselectionController:
     if fileRemoved:
       self.ui.updateSummary(None)
       self.ui.updateFileListing(self.files)
+      self.setUiDirtyFlag()
 
   def handleGlobalKeyEvent(self,evt):
     pass
@@ -205,6 +212,7 @@ class CutselectionController:
     self.currentLoop_b=None
     self.currentLoopCycleStart = None
     self.currentLoopCycleEnd   = None
+    self.frameRate = None
     self.ui.updateSummary(None)
     self.ui.updateFileListing(self.files)
     self.ui.restartForNewFile()
@@ -287,8 +295,8 @@ class CutselectionController:
 
   def handleMpvFPSChange(self,name,value):
     clampToFPS = self.globalOptions.get('clampSeeksToFPS',False)
-
     if clampToFPS and value is not None and value>0:
+      self.frameRate = value
       self.ui.handleMpvFPSChange(value)
 
   def handleMpvDurationChange(self,name,value):
@@ -419,7 +427,7 @@ class CutselectionController:
     self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,self.returnYTDLDownlaodedVideo)
 
   def returnImageLoadAsVideo(self,filename):
-    self.loadFiles([filename])
+    self.loadFiles([os.path.abspath(filename)])
 
   def loadImageFile(self,filename,duration):
     self.ffmpegService.loadImageFile(filename,duration,self.returnImageLoadAsVideo)
@@ -521,7 +529,7 @@ class CutselectionController:
     self.updateProgressStatistics()
     if seekAfter:
       self.seekTo(start+((end-start)*0.8))
-    self.ui.setUiDirtyFlag()
+    self.ui.setUiDirtyFlag(specificRID=newRID)
     return newRID
 
   def expandSublcipToInterestMarks(self,point):
@@ -542,7 +550,7 @@ class CutselectionController:
   def pasteSubclip(self):
     if self.copiedTimeRange is not None:
       s,e = self.copiedTimeRange
-      self.addNewSubclip(s,e)
+      return self.addNewSubclip(s,e)
 
 
   def removeSubclip(self,point):

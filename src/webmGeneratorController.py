@@ -96,7 +96,7 @@ class WebmGeneratorController:
       "embedSequencePlanner":False,
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
-      "defaultMinterpolateFlags":"mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30",
+      "defaultMinterpolateFlags":"mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=esa:vsbmc=1:scd=fdiff:fps=30",
       "defaultProfile":"None",
       "defaultPostProcessingFilter":"None",
       
@@ -253,6 +253,8 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
 
+    self.plannerFrameEmebeded=False
+
   def jumpToTab(self,tabInd):
     self.webmMegeneratorUi.switchTab(1)
 
@@ -260,8 +262,15 @@ class WebmGeneratorController:
     self.cutselectionUi.showSlicePlanner()
 
   def showSequencePreview(self):
+    
+    self.cutselectionUi.forgetPlannerFrame()
+
     if self.globalOptions.get('embedSequencePlanner',False):
-      self.mergeSelectionUi.previewSequencetimings(uiParent=self.cutselectionUi.getPlannerFrame())
+      self.plannerFrameEmebeded = not self.plannerFrameEmebeded
+      if self.plannerFrameEmebeded:
+        self.mergeSelectionUi.previewSequencetimings(uiParent=self.cutselectionUi.getPlannerFrame())
+      else:
+        self.mergeSelectionUi.destroyPlannerModal()
     else:
       self.mergeSelectionUi.previewSequencetimings(uiParent=None)
 
@@ -488,6 +497,8 @@ class WebmGeneratorController:
     logging.debug('self.cutselectionController.close_ui()')
     self.filterSelectionController.close_ui()
     logging.debug('self.filterSelectionController.close_ui()')
+    self.mergeSelectionController.close_ui()
+    logging.debug('self.mergeSelectionController.close_ui()')
     self.webmMegeneratorUi.close_ui()
 
     try:

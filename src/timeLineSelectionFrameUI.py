@@ -1218,8 +1218,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5
 
-      a = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-pre)
-      b = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+post)
+      a = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)-pre
+      b = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)+post
       a,b = self.roundToNearestFrame(a),self.roundToNearestFrame(b)
       newRid = self.controller.addNewSubclip(a,b)
 

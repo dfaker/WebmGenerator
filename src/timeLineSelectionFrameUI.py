@@ -1120,8 +1120,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.timeline_canvas.delete(i)
           del self.canvasRegionCache[(rid,name)]
 
-  def setUiDirtyFlag(self):
-    self.uiDirty = min(max(0,self.uiDirty+1),2)
+  def setUiDirtyFlag(self, specificRID=None):
+    if specificRID is None:
+      self.uiDirty = min(max(0,self.uiDirty+1),2)
+    else:
+      self.dirtySelectionRanges.add(specificRID)
 
   def decrementUiDirtyFlag(self):
     self.uiDirty = min(max(0,self.uiDirty-1),2)
@@ -1140,13 +1143,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       for rid,(s,e) in list(ranges):
         if s<mid<e:
           self.controller.expandSublcipToInterestMarks((e+s)/2)
+          if setDirtyAfter:
+            self.setUiDirtyFlag(specificRID=rid)
           break
         if lower<e<upper or lower<s<upper:
           self.controller.expandSublcipToInterestMarks((e+s)/2)
+          if setDirtyAfter:
+            self.setUiDirtyFlag(specificRID=rid)
           break
     self.timeline_canvas_last_right_click_x=None
-    if setDirtyAfter:
-      self.setUiDirtyFlag()
+    
 
 
   def canvasPopupCloneSubClipCallback(self):
@@ -1180,12 +1186,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.copySubclip((e+s)/2)
           break
     self.timeline_canvas_last_right_click_x=None
-    self.setUiDirtyFlag()
+    
 
   def canvasPopupPasteSubClipCallback(self):
-    self.controller.pasteSubclip()
+    newRid = self.controller.pasteSubclip()
     self.timeline_canvas_last_right_click_x=None
-    self.setUiDirtyFlag()
+    self.setUiDirtyFlag(specificRID=newRid)
 
   def canvasPopupRemoveSubClipCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -1215,11 +1221,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       a = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-pre)
       b = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+post)
       a,b = self.roundToNearestFrame(a),self.roundToNearestFrame(b)
-      self.controller.addNewSubclip(a,b)
+      newRid = self.controller.addNewSubclip(a,b)
 
     self.timeline_canvas_last_right_click_x=None
     if setDirtyAfter:
-      self.setUiDirtyFlag()
+      self.setUiDirtyFlag(specificRID=newRid)
 
   def canvasPopupFindLowestError1s(self):
     self.findLowestErrorForBetterLoop( self.globalOptions.get('loopNudgeLimit1',1.0))

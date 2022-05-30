@@ -508,7 +508,13 @@ class CutselectionUi(ttk.Frame):
         self._previewtimer.start()
         self.playingOnLastSwitchAway = True
 
+        self.frameRate = None
+
+    def forgetPlannerFrame(self):
+      self.frameVideoPlannerFrame.pack_forget()
+
     def getPlannerFrame(self):
+      self.frameVideoPlannerFrame.pack(expand="false", fill="both", side="bottom")
       return self.frameVideoPlannerFrame
 
     def showSlicePlanner(self):
@@ -925,6 +931,7 @@ class CutselectionUi(ttk.Frame):
       loopSearchModal.mainloop()
 
     def restartForNewFile(self, filename=None):
+        self.frameRate = None
         self.frameTimeLineFrame.resetForNewFile()
         try:
           self.frameVideoPlayerlabel.pack_forget()
@@ -937,8 +944,8 @@ class CutselectionUi(ttk.Frame):
     def update(self,withLock=True):
         self.frameTimeLineFrame.updateCanvas(withLock=False)
 
-    def setUiDirtyFlag(self,withLock=False):
-      self.frameTimeLineFrame.setUiDirtyFlag()
+    def setUiDirtyFlag(self,withLock=False,specificRID=None):
+      self.frameTimeLineFrame.setUiDirtyFlag(specificRID=specificRID)
       try:
         self.frameTimeLineFrame.updateCanvas(withLock=withLock) 
       except Exception as e:
@@ -957,6 +964,7 @@ class CutselectionUi(ttk.Frame):
         pass
 
     def handleMpvFPSChange(self,fps):
+        self.frameRate = fps
         self.frameTimeLineFrame.updateFrameRate(fps)
 
     def getTotalDuration(self):

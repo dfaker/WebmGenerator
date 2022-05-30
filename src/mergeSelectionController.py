@@ -53,9 +53,27 @@ class MergeSelectionController:
   def jumpToFilterByRid(self,rid):
     self.filterController.jumpToFilterByRid(rid)
 
-  def updateSubclipBoundry(self,subclip,originalts,ts,pos):
+  def updateSubclipBoundry(self,subclip,originalts,ts,pos,towardsMiddle=True):
+
     filename,s,e = self.videoManager.getDetailsForRangeId(subclip.rid)
-    self.videoManager.updatePointForClip(filename,subclip.rid,pos,e-(originalts-ts))
+
+    if pos == 's':
+      newPosSeconds = s-(originalts-ts)
+    else:
+      newPosSeconds = e-(originalts-ts)
+
+    newPosSeconds = max(0,newPosSeconds)
+
+    if towardsMiddle:
+      halfDiff = (originalts-ts)/2
+      if pos == 's':
+        self.videoManager.updatePointForClip(filename,subclip.rid,'s',s-halfDiff)
+        self.videoManager.updatePointForClip(filename,subclip.rid,'e',e+halfDiff)
+      elif pos == 'e':
+        self.videoManager.updatePointForClip(filename,subclip.rid,'s',s+halfDiff)
+        self.videoManager.updatePointForClip(filename,subclip.rid,'e',e-halfDiff)
+    else:  
+      self.videoManager.updatePointForClip(filename,subclip.rid,pos,newPosSeconds)
 
   def synchroniseCutController(self,rid,startoffset,forceTabJump=False):
     self.cutController.jumpToRidAndOffset(rid,startoffset,forceTabJump)
@@ -85,6 +103,12 @@ class MergeSelectionController:
 
   def getProfiles(self):
     return self.stdProfileSpecs + self.customProfileSpecs
+
+  def close_ui(self):
+    try:
+      self.ui.close_ui()
+    except Exception as e:
+      print(e)
 
 if __name__ == '__main__':
   import webmGenerator

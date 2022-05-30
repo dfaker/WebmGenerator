@@ -106,6 +106,8 @@ class VideoManager:
     for rid,(s,e) in self.subclips.get(filename,{}).items():
       if s<point<e:
         clipsToClone.add(rid)
+        break
+    
     for rid in clipsToClone:
       start,end = self.subclips.get(filename,{})[rid]
       self.registerNewSubclip(filename,start,end)

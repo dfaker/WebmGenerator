@@ -32,6 +32,69 @@ os.add_dll_directory(scriptPath_frozen)
 
 import mpv
 
+
+class SliceCreationUtilsModal(tk.Toplevel):
+
+  def __init__(self, master=None, controller=None, *args):
+    tk.Toplevel.__init__(self, master)
+    
+    self.title('Subclip Creation Utilities')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,400)
+
+    self.sliceStyleLabel = ttk.Label(self)
+    self.sliceStyleLabel.config(text='Slice Style')
+    self.sliceStyleLabel.grid(row=0,column=0,sticky='new',padx=5,pady=5)
+    self.sliceStyleVar   = tk.StringVar(self,'By Subclip Duration')
+    self.entrysliceStyle =  ttk.Combobox(self,textvariable=self.sliceStyleVar,state='readonly')
+    self.entrysliceStyle.config(values=['By Subclip Duration', 'By Subclip Count'])
+    self.entrysliceStyle.grid(row=0,column=1,sticky='new',padx=5,pady=5)
+
+    self.sliceDurationLabel = ttk.Label(self)
+    self.sliceDurationLabel.config(text='Subclip Duration (seconds)')
+    self.sliceDurationLabel.grid(row=1,column=0,sticky='new',padx=5,pady=5)
+    self.sliceDurationVar   = tk.StringVar(self,'10.0')
+    self.entrysliceDuration = ttk.Entry(self,textvariable=self.sliceDurationVar)
+    self.entrysliceDuration.grid(row=1,column=1,sticky='new',padx=5,pady=5)
+
+    self.sliceCountLabel = ttk.Label(self)
+    self.sliceCountLabel.config(text='Subclip Count')
+    self.sliceCountLabel.grid(row=2,column=0,sticky='new',padx=5,pady=5)
+    self.sliceCountVar   = tk.StringVar(self,'10')
+    self.entrysliceCount = ttk.Entry(self,textvariable=self.sliceCountVar)
+    self.entrysliceCount.grid(row=2,column=1,sticky='new',padx=5,pady=5)
+
+    self.sliceGapLabel = ttk.Label(self)
+    self.sliceGapLabel.config(text='Seconds gap between subclips')
+    self.sliceGapLabel.grid(row=3,column=0,sticky='new',padx=5,pady=5)
+    self.sliceGapVar   = tk.StringVar(self,'0')
+    self.entrysliceGap = ttk.Entry(self,textvariable=self.sliceGapVar)
+    self.entrysliceGap.grid(row=3,column=1,sticky='new',padx=5,pady=5)
+
+    self.sliceSkipLabel = ttk.Label(self)
+    self.sliceSkipLabel.config(text='Skip every x Subclips')
+    self.sliceSkipLabel.grid(row=4,column=0,sticky='new',padx=5,pady=5)
+    self.sliceSkipVar   = tk.StringVar(self,'0')
+    self.entrysliceSkip = ttk.Entry(self,textvariable=self.sliceSkipVar)
+    self.entrysliceSkip.grid(row=4,column=1,sticky='new',padx=5,pady=5)
+
+    self.sliceSkipOffsetLabel = ttk.Label(self)
+    self.sliceSkipOffsetLabel.config(text='Skip starting at offset')
+    self.sliceSkipOffsetLabel.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+    self.sliceSkipOffsetVar   = tk.StringVar(self,'0')
+    self.entrysliceSkipOffset = ttk.Entry(self,textvariable=self.sliceSkipOffsetVar)
+    self.entrysliceSkipOffset.grid(row=5,column=1,sticky='new',padx=5,pady=5)
+
+    self.sliceMultiplierLabel = ttk.Label(self)
+    self.sliceMultiplierLabel.config(text='Multiplier for duration after each subclip')
+    self.sliceMultiplierLabel.grid(row=6,column=0,sticky='new',padx=5,pady=5)
+    self.sliceMultiplierVar   = tk.StringVar(self,'1')
+    self.entrysliceMultiplier = ttk.Entry(self,textvariable=self.sliceMultiplierVar)
+    self.entrysliceMultiplier.grid(row=6,column=1,sticky='new',padx=5,pady=5)
+
+
+
 class VideoAudioSync(tk.Frame):
   def __init__(self, uiParent=None, master=None, controller=None, sequencedClips=[], dubFile=None, dubOffsetVar=None, fadeVar=None, mixVar=None, globalOptions={}, *args):
 
@@ -66,6 +129,10 @@ class VideoAudioSync(tk.Frame):
       "Spectrum - Lin:Cube root":"showspectrumpic=s={width}x80:legend=0:fscale=lin:scale=cbrt",
       "Spectrum - Middle pass filter - Log:Log":"highpass=f=200,lowpass=f=3000,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
       "Spectrum - Compressor - Log:Log":"acompressor=threshold=.5:ratio=5:2:attack=0.01:release=0.01,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+
+      "Spectrum - Bass Boost Norm - Log:Log":"bass=g=3:f=110:w=0.6,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+
+
 
       "Waves":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
       "Waves - Middle pass filter":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]highpass=f=200,lowpass=f=3000,showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
@@ -199,7 +266,7 @@ class VideoAudioSync(tk.Frame):
                                           to=float('inf'), 
                                           increment=0.05)
     Tooltip(self.entrypostAudioOverrideDelay,text='Delay before the start of the mp3 dub audio.')
-    self.entrypostAudioOverrideDelay.grid(row=3,column=7,sticky='ew')
+    self.entrypostAudioOverrideDelay.grid(row=3,column=7,columnspan=2, sticky='ew')
     self.entrypostAudioOverrideDelay.bind('<MouseWheel>',self.checkCtrl)
     self.dubOffsetVar.trace('w',self.valueChangeCallback)      
         
@@ -242,10 +309,15 @@ class VideoAudioSync(tk.Frame):
     self.entryKeepDurationConstant = ttk.Checkbutton(self,text='Resize Neighbouring sections',onvalue=True, offvalue=False,variable=self.keepDurationCondtantVar)
     self.entryKeepDurationConstant.grid(row=4,column=6,sticky='ew',columnspan=1)
 
+    self.resizeToMiddleVar = tk.BooleanVar()
+    self.resizeToMiddleVar.set(True)
+    self.entryresizeToMiddle = ttk.Checkbutton(self,text='Resize Towards Midpoints',onvalue=True, offvalue=False,variable=self.resizeToMiddleVar)
+    self.entryresizeToMiddle.grid(row=4,column=7,sticky='ew',columnspan=1)
+
     self.pauseOnLoseFocusVar = tk.BooleanVar()
     self.pauseOnLoseFocusVar.set(True)
     self.entrypauseOnLoseFocus = ttk.Checkbutton(self,text='Pause on Focus switch',onvalue=True, offvalue=False,variable=self.pauseOnLoseFocusVar)
-    self.entrypauseOnLoseFocus.grid(row=4,column=7,sticky='ew',columnspan=1)
+    self.entrypauseOnLoseFocus.grid(row=4,column=8,sticky='ew',columnspan=1)
 
 
     try:
@@ -318,10 +390,19 @@ class VideoAudioSync(tk.Frame):
       except:
         pass
 
+
+      self.playerReaper = playerReaper
+
     self.player.register_key_binding("CLOSE_WIN", quitFunc)
     self.bind('<Configure>', self.reconfigureWindow)
 
     self.recalculateEDLTimings()
+
+  def cleanup(self):
+    try:
+      self.playerReaper()
+    except Exception as e:
+      print(e)
 
   def visStyleChanged(self,*args):
     self.visStyle=self.visStyles[self.visStyleVar.get()]
@@ -572,14 +653,13 @@ class VideoAudioSync(tk.Frame):
     if self.keepDurationCondtantVar.get():
       if index+2<=len(self.ticktimestamps):
         moveend=True
-        otsn = self.ticktimestamps[index+1]
         svn  = self.sequencedClips[index+1]
 
     self.keepWidth=True
     if movestart:
-      self.controller.updateSubclipBoundry(sv,ots,timestamp,'e')
+      self.controller.updateSubclipBoundry(sv,ots,timestamp,'e',towardsMiddle=self.resizeToMiddleVar.get())
     if moveend:
-      self.controller.updateSubclipBoundry(svn,otsn,timestamp,'s')
+      self.controller.updateSubclipBoundry(svn,ots,timestamp,'s',towardsMiddle=self.resizeToMiddleVar.get())
 
     self.master.synchroniseCutController(sv.rid,0)
 
@@ -616,6 +696,7 @@ class VideoAudioSync(tk.Frame):
 
     print(e.type)
 
+
     if e.type == tk.EventType.ButtonPress:
       if 20+20<e.y<20+20+15:
         for tx,tidx in self.tickXpos:
@@ -629,7 +710,6 @@ class VideoAudioSync(tk.Frame):
             endpc = self.xCoordToSeconds(timelineWidth)/self.currentTotalDuration
           except Exception as e:
             print(e)
-
           if endpc >= 0.999:
             tlw=self.timeline_canvas.winfo_width()
             if e.x>tlw-6-5-4:
@@ -644,6 +724,16 @@ class VideoAudioSync(tk.Frame):
             self.draggingBlockIndex=tidx+1
             break
         self.timeline_canvas.itemconfigure(self.draggingblockTargetRect,fill=self.colourMap[self.sequencedClips[self.draggingBlockIndex].rid])    
+      elif 20+5<e.y<20+20:
+        for tx,tidx in self.tickXpos:
+          if tx-6-5-4<e.x<tx:
+            print(tidx,'+1')
+            self.master.moveSequencedClipByIndex(tidx,+1)
+            return
+          elif tx<e.x<tx+6+5+4:
+            print(tidx+1,'-1')
+            self.master.moveSequencedClipByIndex(tidx+1,-1)
+            return
 
       print(self.draggingTickIndex)
 
@@ -652,13 +742,42 @@ class VideoAudioSync(tk.Frame):
         self.currentZoomRangeMidpoint = (e.x/self.winfo_width())+self.rangeHeaderClickStart
         self.recalculateEDLTimings()
         self.generateSpectrum()
-
-      if self.draggingBlockIndex is not None:
+      elif self.draggingBlockIndex is not None:
         for tx,tidx in self.tickXpos[::-1]:
           if e.x>tx:
             self.timeline_canvas.coords(self.draggingblockTargetRect, tx-5,20,tx+5,30)
             self.timeline_canvas.lift(self.draggingblockTargetRect)
             break
+      elif self.draggingTickIndex is not None:
+        
+        self.timeline_canvas.delete('dragTick')
+        self.timeline_canvas.delete('ticksLine{}'.format(self.draggingTickIndex))
+        
+
+        self.timeline_canvas.create_polygon(  e.x,    20+20+2, 
+                                              e.x-7,  20+20+2+5, 
+                                              e.x,    20+20+2+11,
+                                              e.x+7,  20+20+2+5,
+                                            fill='white',tags='dragTick')
+
+        self.timeline_canvas.create_line(e.x, 20+0, 
+                                         e.x, 200,fill='white',tags='dragTick')
+        fadeDist = 0
+
+        try:
+          fadeDur  = float(self.fadeVar.get())
+          fadeDist = self.secondsToXcoord(fadeDur/2)-self.secondsToXcoord(0) 
+        except:
+          pass
+
+        if fadeDist > 0:
+          self.timeline_canvas.create_line(e.x-fadeDist, 20+0, 
+                                           e.x-fadeDist, 20+200,
+                                           fill='blue',tags='dragTick')
+          self.timeline_canvas.create_line(e.x+fadeDist, 20+0, 
+                                           e.x+fadeDist, 20+200,
+                                           fill='blue',tags='dragTick')
+
 
     elif e.type == tk.EventType.ButtonRelease:
       if self.draggingBlockIndex is not None:
@@ -692,56 +811,34 @@ class VideoAudioSync(tk.Frame):
       self.timeline_canvas.delete('dragTick')
       return
 
-    if self.draggingTickIndex is not None:
-      
-      self.timeline_canvas.delete('dragTick')
-
-      self.timeline_canvas.create_polygon(  e.x,    20+20+2, 
-                                            e.x-7,  20+20+2+5, 
-                                            e.x,    20+20+2+11,
-                                            e.x+7,  20+20+2+5,
-                                          fill='white',tags='dragTick')
-
-      self.timeline_canvas.create_line(e.x, 20+0, 
-                                       e.x, 200,fill='white',tags='dragTick')
-
 
     self.timeline_canvas.focus_set()
 
-    if 20+5<e.y<20+20:
-      for tx,tidx in self.tickXpos:
-        if tx-6-5-4<e.x<tx:
-          print(tidx,'+1')
-          self.master.moveSequencedClipByIndex(tidx,+1)
-          return
-        elif tx<e.x<tx+6+5+4:
-          print(tidx+1,'-1')
-          self.master.moveSequencedClipByIndex(tidx+1,-1)
-          return
-
     seekFailure=False
-    if self.rangeHeaderClickStart is None:
-      if self.currentTotalDuration is None:
-        self.player.command('seek','0','absolute-percent','exact')
-      else:
-        seekTarget = min(max(0,self.xCoordToSeconds(e.x)),self.currentTotalDuration)
-        try:
-          self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
-        except Exception as e:
-          print(e)
+    
+    if e.type in  (tk.EventType.ButtonPress,tk.EventType.Motion):
+
+      if self.rangeHeaderClickStart is None:
+        if self.currentTotalDuration is None:
+          self.player.command('seek','0','absolute-percent','exact')
+        else:
+          seekTarget = min(max(0,self.xCoordToSeconds(e.x)),self.currentTotalDuration)
           try:
-            self.player.command('seek',0,'absolute')
+            self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
+          except Exception as e:
+            print(e)
+            try:
+              self.player.command('seek',0,'absolute')
+            except Exception as e2:
+              seekFailure=True
+              print(e2)
 
-          except Exception as e2:
-            seekFailure=True
-            print(e2)
-
-      if self.draggingTickIndex is None:
-        for st,et,rid in self.ridListing:
-          if st<pressSeconds<et:
-            startoffset = pressSeconds-st
-            self.master.synchroniseCutController(rid,startoffset)
-            break
+        if self.draggingTickIndex is None:
+          for st,et,rid in self.ridListing:
+            if st<pressSeconds<et:
+              startoffset = pressSeconds-st
+              self.master.synchroniseCutController(rid,startoffset)
+              break
 
     if seekFailure:
       self.valuesChanged=True
@@ -962,16 +1059,16 @@ class VideoAudioSync(tk.Frame):
 
       self.timeline_canvas.create_line(tx, yo+0, 
                                        tx, yo+200,
-                                       fill='white',tags='ticks')
+                                       fill='white',tags=['ticks','ticksLine{}'.format(idx)])
 
 
       if fadeDist > 0:
         self.timeline_canvas.create_line(tx-fadeDist, yo+0, 
                                          tx-fadeDist, yo+200,
-                                         fill='blue',tags='ticks',dash=(2,1))
+                                         fill='blue',tags=['ticks','ticksLine{}'.format(idx)],dash=(2,1))
         self.timeline_canvas.create_line(tx+fadeDist, yo+0, 
                                          tx+fadeDist, yo+200,
-                                         fill='blue',tags='ticks',dash=(2,1))
+                                         fill='blue',tags=['ticks','ticksLine{}'.format(idx)],dash=(2,1))
 
       self.timeline_canvas.create_line(tx-6-5-4, yo+5, 
                                        tx-6-5-4, yo+20,
@@ -2012,7 +2109,10 @@ class OptionsDialog(tk.Toplevel):
     
     self.columnconfigure(0, weight=0)    
     self.columnconfigure(1, weight=1)
-
+    self.columnconfigure(2, weight=0)    
+    self.columnconfigure(3, weight=1)
+    self.columnconfigure(4, weight=0)    
+    self.columnconfigure(5, weight=1)
     i=0
 
     columnHeight=25
@@ -2064,7 +2164,7 @@ class OptionsDialog(tk.Toplevel):
     self.saveChanges.grid(row=i+1,column=0,columnspan=maxcol+2,sticky='nesw')
 
 
-    self.resizable(False, False) 
+    self.resizable(True, False) 
 
   def validateType(self,fieldtype,nextVal):
     if nextVal=='':
@@ -2101,5 +2201,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = CutSpecificationPlanner()
+  app = SliceCreationUtilsModal()
   app.mainloop()

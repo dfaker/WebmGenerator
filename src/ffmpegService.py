@@ -100,6 +100,25 @@ encoderMap = {
 
 class FFmpegService():
 
+  def convertFactorToAtempoSequence(self,target_change):
+
+    atempos = []
+    if target_change < .5:
+        n = target_change
+        while n < .5:
+            atempos.append(.5)
+            n *= 2.
+        atempos.append(n)
+    elif target_change > 100.:
+        n = target_change
+        while n > 100.:
+            atempos.append(100.)
+            n /= 2.
+        atempos.append(n)
+    else:
+        atempos.append(target_change)
+    return ','.join(['atempo={}'.format(i) for i in atempos])
+
   def __init__(self,globalStatusCallback=print,imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1,globalOptions={}):
 
     self.globalOptions=globalOptions
@@ -109,6 +128,8 @@ class FFmpegService():
     self.globalStatusCallback=globalStatusCallback
     self.abortflag=False
     self.scanabortflag=False
+
+
 
     def imageWorker():
       while 1:
@@ -143,21 +164,26 @@ class FFmpegService():
 
     def encodeStreamCopy(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
       
-      assert(len(seqClips)==1)
 
       totalExpectedEncodedSeconds = 0
       for rid,clipfilename,s,e,filterexp,filterexpEnc in seqClips:
         totalExpectedEncodedSeconds += e-s
-
       totalEncodedSeconds=0
 
+      if len(seqClips)>1:
+        totalExpectedEncodedSeconds = totalExpectedEncodedSeconds*2
+
+      ext=''
+
+      fileList=[]
+      
       for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(seqClips):
 
         etime = e-s
         basename = os.path.basename(clipfilename)
         ext = basename.split('.')[-1]
         
-        videoFileName,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext,i)
+        videoFileName,_,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(basename,ext,i)
 
         comvcmd = ['ffmpeg', '-i', cleanFilenameForFfmpeg(clipfilename), '-c', 'copy', '-copyinkf', '-ss', str(s), '-t', str(etime), tempVideoFilePath]
         print(' '.join(comvcmd))
@@ -165,9 +191,9 @@ class FFmpegService():
         
         currentEncodedTotal=0
 
-        statusCallback('Stream copying started', 0.1)
-        self.globalStatusCallback('Stream copying started', 0.1)
-
+        statusCallback('Stream copying started', totalEncodedSeconds/totalExpectedEncodedSeconds)
+        self.globalStatusCallback('Stream copying started', totalEncodedSeconds/totalExpectedEncodedSeconds)
+        
         ln=b''
         while 1:
           c = proc.stderr.read(1)
@@ -197,9 +223,58 @@ class FFmpegService():
           ln+=c
         proc.communicate()
         totalEncodedSeconds+=etime
+        
+        if len(seqClips)==1:
+          shutil.copy(tempVideoFilePath,videoFilePath)
+          statusCallback('Stream copy complete',1,finalFilename=videoFilePath)
+          self.globalStatusCallback('Stream copy complete',1)
+        else:
+          fileList.append(tempVideoFilePath)
+
+      if len(fileList)>0:
+        videoFileName,logPath,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix,ext,requestId)
+
+        with open(logPath,'w') as logDef:
+          for f in fileList:
+            logDef.write("file '{}'\n".format(os.path.abspath(f)))
+
+
+        concatCmd = ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', logPath, '-c', 'copy', tempVideoFilePath]
+        print(' '.join(concatCmd))
+        proc = sp.Popen(concatCmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+
+        ln=b''
+        while 1:
+          c = proc.stderr.read(1)
+          if isRquestCancelled(requestId):
+            proc.kill()
+            outs, errs = proc.communicate()
+            try:
+              os.remove(outname)
+            except:
+              pass
+            return
+          if len(c)==0:
+            break
+          if c == b'\r':
+            print(ln)
+            for p in ln.split(b' '):
+              if b'time=' in p:
+                try:
+                  pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+                  currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                  if currentEncodedTotal>0:
+                    statusCallback('Concatenating copies {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                    self.globalStatusCallback('Concatenating copies clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                except Exception as e:
+                  logging.error("Clip Stream Concatenating exception",exc_info =e)
+            ln=b''
+          ln+=c
+        proc.communicate()
+
         shutil.copy(tempVideoFilePath,videoFilePath)
-        statusCallback('Stream copy complete',1,finalFilename=videoFilePath)
-        self.globalStatusCallback('Stream copy complete',1)
+        statusCallback('Stream copy concatenate complete',1,finalFilename=videoFilePath)
+        self.globalStatusCallback('Stream copy concatenate complete',1)
 
 
     def encodeGrid(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
@@ -263,7 +338,7 @@ class FFmpegService():
       speedAdjustment = 1.0
       try:
         speedAdjustment= float(options.get('speedAdjustment',1.0))
-        speedAdjustment = max(min(speedAdjustment, 100),0.5)
+        speedAdjustment = max(speedAdjustment,0.0001)
       except Exception as e:
         logging.error('invalid speed Adjustment',exc_info=e)
 
@@ -684,7 +759,7 @@ class FFmpegService():
       speedAdjustment = 1.0
       try:
         speedAdjustment= float(options.get('speedAdjustment',1.0))
-        speedAdjustment = max(min(speedAdjustment, 100),0.5)
+        speedAdjustment = max(speedAdjustment,0.0001)
       except Exception as e:
         logging.error("invalid speed Adjustment",exc_info =e)
 
@@ -985,9 +1060,9 @@ class FFmpegService():
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
             if interpolateSpeedAdjustment:
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor,miflags=minterpolateFlags)
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[concatOutA]{afactor}[outapre]'.format(vfactor=vfactor,afactor=self.convertFactorToAtempoSequence(afactor),miflags=minterpolateFlags)
             else:
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]{afactor}[outapre]'.format(vfactor=vfactor,afactor=self.convertFactorToAtempoSequence(afactor))
           except Exception as e:
             logging.error("Crossfade exception",exc_info =e)
             crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
@@ -1017,6 +1092,7 @@ class FFmpegService():
         audioSplits=[]
         crossfades=[]
         crossfadeOut=''
+        minterpolateFlags = self.globalOptions.get('defaultMinterpolateFlags','mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30')
 
 
         for i,dur in enumerate(expectedFadeDurations):
@@ -1044,9 +1120,9 @@ class FFmpegService():
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
             if interpolateSpeedAdjustment:
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor,miflags=minterpolateFlags)
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[concatOutA]{afactor}[outapre]'.format(vfactor=vfactor,afactor=self.convertFactorToAtempoSequence(afactor),miflags=minterpolateFlags)
             else:
-              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+              crossfadeOut += ',[concatOutV]setpts={vfactor}*PTS[outvpre],[concatOutA]{afactor}[outapre]'.format(vfactor=vfactor,afactor=self.convertFactorToAtempoSequence(afactor))
           except Exception as e:
             logging.error("Crossfade exception",exc_info =e)
             crossfadeOut += ',[concatOutV]null[outvpre],[concatOutA]anull[outapre]'
@@ -1057,6 +1133,9 @@ class FFmpegService():
         inputsList   = []
         filterInputs = ''
         filterPeProcess = ''
+        minterpolateFlags = self.globalOptions.get('defaultMinterpolateFlags','mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:fps=30')
+
+
         for vi,v in enumerate(fileSequence):
           inputsList.extend(['-i',v])
           
@@ -1087,9 +1166,9 @@ class FFmpegService():
             vfactor=1/speedAdjustment
             afactor=speedAdjustment
             if interpolateSpeedAdjustment:
-              filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor,miflags=minterpolateFlags)
+              filtercommand += ',[outvconcat]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[outvpre],[outaconcat]{afactor}[outapre]'.format(vfactor=vfactor,afactor=self.convertFactorToAtempoSequence(afactor),miflags=minterpolateFlags)
             else:
-              filtercommand += ',[outvconcat]setpts={vfactor}*PTS[outvpre],[outaconcat]atempo={afactor}[outapre]'.format(vfactor=vfactor,afactor=afactor)
+              filtercommand += ',[outvconcat]setpts={vfactor}*PTS[outvpre],[outaconcat]{afactor}[outapre]'.format(vfactor=vfactor,afactor=self.convertFactorToAtempoSequence(afactor))
           except Exception as e:
             logging.error("Concat progress Exception",exc_info=e)
             filtercommand += ',[outvconcat]null[outvpre],[outaconcat]anull[outapre]'
@@ -1917,13 +1996,14 @@ class FFmpegService():
           logging.error("outputPathName exception",exc_info =e)
 
         outfileName = os.path.join('tempVideoFiles','loadImageAsVideo_{}.mp4'.format(imageasVideoID))
-        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-tune', 'stillimage','-vf', 'scale={}:{}:flags=bicubic,pad=ceil(iw/2)*2:ceil(ih/2)*2'.format(vidInfo.width,vidInfo.height),outfileName],stderr=sp.PIPE)
+        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-tune', 'stillimage','-filter_complex', 'scale={}:{}:flags=bicubic,pad=ceil(iw/2)*2:ceil(ih/2)*2[vid],anullsrc[aud]'.format(vidInfo.width,vidInfo.height),'-map','[vid]','-map','[aud]',outfileName],stderr=sp.PIPE)
         ln=b''
         while 1:
           c=proc.stderr.read(1)
           if len(c)==0:
             break
           if c in b'\r\n':
+            print(ln)
             for p in ln.split(b' '):
               if b'time=' in p:
                 try:
@@ -1938,6 +2018,7 @@ class FFmpegService():
             ln+=c
             
         proc.communicate()
+        
         completioncallback(outfileName)
 
     self.loadImageAsVideoWorkers=[]

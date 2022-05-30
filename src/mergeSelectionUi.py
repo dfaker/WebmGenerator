@@ -607,7 +607,7 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyles   = ['Individual Files - Output each individual subclip as a separate file.',                          
                           'Sequence - Join the subclips into a sequence.',
                           'Grid - Pack videos into variably sized grid layouts.',
-                          'Stream Copy - Ignore all filters and percorm no conversions, just slice the clips.']
+                          'Stream Copy - Ignore all filters and percorm no conversions, just stream cut and join the clips.']
 
     self.mergeStyleVar.set(self.mergeStyles[0])
     
@@ -748,7 +748,8 @@ class MergeSelectionUi(ttk.Frame):
     self.frameSequenceSummary.config(height='10', width='200')
     self.frameSequenceSummary.pack(expand='false', fill='x', side='top', pady='0')
     
-    
+  
+    self.speedAdjustmentValue=1.0    
 
     self.frameEncodeSettings = ttk.Frame(self.labelframeSequenceFrame)
     self.frameSequenceValues = ttk.Frame(self.frameEncodeSettings)
@@ -930,6 +931,7 @@ class MergeSelectionUi(ttk.Frame):
     
     self.transStyleVar.set('fade')
     self.speedAdjustmentVar.set(1.0)
+
 
 
     self.audioChannelsOptions = [
@@ -1226,8 +1228,8 @@ class MergeSelectionUi(ttk.Frame):
     self.speedChangeContainer = ttk.Frame(self.frameSequenceValues)
 
     self.entrySpeedChange = ttk.Spinbox(self.speedChangeContainer, 
-                                         from_=0.5, 
-                                         to=2.0, 
+                                         from_=0.001,
+                                         to=float('inf'), 
                                          increment=0.01,
                                          textvariable=self.speedAdjustmentVar)
     Tooltip(self.entrySpeedChange,text='Speed up or slow down the final video and audio.')
@@ -1362,14 +1364,17 @@ class MergeSelectionUi(ttk.Frame):
   def viewFilterForClip(self,clip):
     self.controller.jumpToFilterByRid(clip.rid)
 
+  def destroyPlannerModal(self):
+    if self.syncModal is not None:
+      self.syncModal.isActive = False
+      self.syncModal.destroy()
+
   def previewSequencetimings(self,uiParent=None):
     
     if self.mergeStyleVar.get() != self.mergeStyles[1]:
       self.mergeStyleVar.set(self.mergeStyles[1])
 
-    if self.syncModal is not None:
-      self.syncModal.destroy()
-    
+    self.destroyPlannerModal()    
     
     print('uiParent',uiParent)
     if uiParent is None:
@@ -1408,6 +1413,9 @@ class MergeSelectionUi(ttk.Frame):
     else:
       self.audioOverrideVar.set(str(files))
 
+  def close_ui(self):
+    if self.syncModal is not None:
+      self.syncModal.cleanup()
 
   def addRow(self):
     column = GridColumn(self.gridColumnContainer,self)
@@ -1549,7 +1557,7 @@ class MergeSelectionUi(ttk.Frame):
       pass
 
     try:
-      self.speedAdjustmentValue = self.speedAdjustmentVar.get()
+      self.speedAdjustmentValue = float(self.speedAdjustmentVar.get())
     except:
       pass
 
@@ -1625,23 +1633,25 @@ class MergeSelectionUi(ttk.Frame):
 
     if self.mergeStyleVar.get().split('-')[0].strip()=='Stream Copy':
      
-      for clip in self.sequencedClips:
-        encodeSequence = []
-        self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp,nullfilter if disableFilters else clip.filterexpEnc)
+      encodeSequence = []
+      self.encodeRequestId+=1
+
+      for clip in self.sequencedClips:  
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter,nullfilter)
         encodeSequence.append(definition)
-        if len(encodeSequence)>0:
-          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self)
-          self.encoderProgress.append(encodeProgressWidget)
-          outputPrefix = self.filenamePrefixValue
-          if self.automaticFileNamingValue:
-            outputPrefix = self.convertFilenameToBaseName(clip.filename)
-          self.controller.encode(self.encodeRequestId,
-                                 'STREAMCOPY',
-                                 encodeSequence,
-                                 {},
-                                 outputPrefix,
-                                 encodeProgressWidget.updateStatus) 
+
+      if len(encodeSequence)>0:
+        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self)
+        self.encoderProgress.append(encodeProgressWidget)
+        outputPrefix = self.filenamePrefixValue
+        if self.automaticFileNamingValue:
+          outputPrefix = self.convertFilenameToBaseName(clip.filename)
+        self.controller.encode(self.encodeRequestId,
+                               'STREAMCOPY',
+                               encodeSequence,
+                               {},
+                               outputPrefix,
+                               encodeProgressWidget.updateStatus) 
 
 
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
@@ -1850,11 +1860,16 @@ class MergeSelectionUi(ttk.Frame):
       totalTime+=(sv.e-sv.s)
       timeTrimmedByFade+=self.transDurationValue 
 
-    self.labelSequenceSummary.config(text='Number of Subclips: {n} Total subclip duration {td:0.2f}s Output Duration {tdext:0.2f}s'.format(
+    totalTime         = totalTime * (1/self.speedAdjustmentValue)
+    timeTrimmedByFade = timeTrimmedByFade * (1/self.speedAdjustmentValue)
+
+    self.labelSequenceSummary.config(text='Number of Subclips: {n} Total duration {td:0.2f}s Output Duration {tdext:0.2f}s ({factor:0.2%} speed)'.format(
                                      n=len(self.sequencedClips),
                                      td=totalTime,
-                                     tdext=totalTime-timeTrimmedByFade
+                                     tdext=totalTime-timeTrimmedByFade,
+                                     factor=self.speedAdjustmentValue
                                     ))
+
     if self.automaticFileNamingVar.get():
       for sv in self.sequencedClips[:1]:        
         self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )

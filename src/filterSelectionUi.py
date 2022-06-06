@@ -296,18 +296,28 @@ class FilterSpecification(ttk.Frame):
 
     @player.message_handler('vrscript')
     def my_handler(cmdType,direction,timepos,value):
-      if cmdType == 'resetRecording':
+
+      cmdTypeStr   = cmdType
+      directionStr = direction
+      
+      try:
+        cmdTypeStr   = cmdType.decode('utf8')
+        directionStr = direction.decode('utf8')
+      except Exception as e:
+        print(e)
+
+      if cmdTypeStr == 'resetRecording':
         self.headmotions=[]
-      elif cmdType=='setValue':
-        self.headmotions.append( (float(timepos),direction,float(value)) )
-      elif cmdType=='setInitValue':
-        self.headmotions.append( (float(abA),direction,float(value)) )
-        self.initivalues[direction]=float(value)
-      elif cmdType == 'exit':
+      elif cmdTypeStr=='setValue':
+        self.headmotions.append( (float(timepos),directionStr,float(value)) )
+      elif cmdTypeStr=='setInitValue':
+        self.headmotions.append( (float(abA),directionStr,float(value)) )
+        self.initivalues[directionStr]=float(value)
+      elif cmdTypeStr=='exit':
         mpv.unregister_message_handler('vrscript')
 
       print(self.headmotions)
-      print('MESSAGE',cmdType,direction,timepos,value)
+      print('MESSAGE',cmdTypeStr,directionStr,timepos,value)
 
     player.start=abA
     player.loop='inf'

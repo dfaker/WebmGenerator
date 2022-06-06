@@ -38,12 +38,11 @@ class CutselectionController:
     self.frameRate = None
 
 
-    """
-    if len(initialFiles)>1:
-      response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
-      if response=='yes':
-        random.shuffle(initialFiles)
-    """
+    if self.globalOptions.get('askToShuffleLoadedFiles',False):
+      if len(initialFiles)>1:
+        response = self.ui.confirmWithMessage('Shuffle files?','Do you want to shuffle the intially loaded files?',icon='warning')
+        if response=='yes':
+          random.shuffle(initialFiles)
     
     self.ui.setinitialFocus()
     self.initialFiles = initialFiles
@@ -55,10 +54,17 @@ class CutselectionController:
     if self.initialFiles is not None and len(self.initialFiles)>0:
       self.loadFiles(self.initialFiles)
 
+  def fitoDim(self,dim):
+    self.fit = False
+    self.player.video_unscaled = not self.fit
+    self.player.vf='lavfi=[scale={}:-1:sws_dither=none:sws_flags=neighbor]'.format(dim)
+
   def fitoScreen(self):
+    self.player.autofit_larger='1280'
     self.fit = not self.fit
     self.player.video_unscaled = not self.fit
-  
+    self.player.vf=''
+
   def playingModalGotFocus(self):
     if self.isActiveTab:
       self.player.pause = True

@@ -402,8 +402,10 @@ class CutselectionUi(ttk.Frame):
 
 
         self.video_canvas_popup_menu.add_command(label="Toggle scaling" ,command=lambda :self.fitoScreen())
+        self.video_canvas_popup_menu.add_command(label="Scale to 720:-1"   ,command=lambda :self.fitoDimension(720))
+        self.video_canvas_popup_menu.add_command(label="Scale to 1080:-1"   ,command=lambda :self.fitoDimension(1080))
 
-        
+
 
 
         try:
@@ -519,6 +521,9 @@ class CutselectionUi(ttk.Frame):
 
     def showSlicePlanner(self):
       pass
+
+    def fitoDimension(self,dim):
+      self.controller.fitoDim(dim)
 
     def fitoScreen(self):
       self.controller.fitoScreen()

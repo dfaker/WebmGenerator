@@ -33,6 +33,7 @@ except Exception as e:
 
 import json
 import mimetypes
+import random
 
 from .cutselectionUi import CutselectionUi
 from .filterSelectionUi import FilterSelectionUi
@@ -94,6 +95,8 @@ class WebmGeneratorController:
       "autoLoadLastAutosave":False,
       "deleteDownloadsAtExit":False,
       "embedSequencePlanner":False,
+
+      'askToShuffleLoadedFiles':False,
 
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       "defaultMinterpolateFlags":"mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:scd=fdiff:fps=30",
@@ -158,7 +161,12 @@ class WebmGeneratorController:
     self.autosaveFilename     = self.globalOptions.get('defaultAutosaveFilename', 'autosave.webgproj') 
     self.lastSaveFile=None
 
+    projectToLoad = None
 
+    if len(initialFiles)==1 and initialFiles[0].upper().strip().endswith('.WEBGPROJ'):
+      projectToLoad = initialFiles[0]
+      initialFiles=[]
+    
     self.initialFiles = self.cleanInitialFiles(initialFiles)
     
     try:
@@ -253,6 +261,9 @@ class WebmGeneratorController:
       except Exception as e:
         logging.error("Load last save Exception",exc_info=e)
 
+    if projectToLoad is not None:
+      self.openProject(projectToLoad)
+
     self.plannerFrameEmebeded=False
 
   def jumpToTab(self,tabInd):
@@ -312,6 +323,13 @@ class WebmGeneratorController:
 
     dropfiles = [x for x in dropfiles if x.strip() != '']
     if len(dropfiles)>0:
+
+      if self.globalOptions.get('askToShuffleLoadedFiles',False):
+        if len(dropfiles)>1:
+          response = self.cutselectionUi.confirmWithMessage('Shuffle files?','Do you want to shuffle the order of the dropped files?',icon='warning')
+          if response=='yes':
+            random.shuffle(dropfiles)
+
       self.cutselectionController.loadFiles(self.cleanInitialFiles(dropfiles))
     self.cutselectionUi.clearVideoMousePress()
 
@@ -417,6 +435,7 @@ class WebmGeneratorController:
     self.lastSaveFile = None
 
   def openProject(self,filename):
+    print('openProject',filename)
     if filename is not None:
       with open(filename,'r') as loadFile:
         saveData = json.loads(loadFile.read())

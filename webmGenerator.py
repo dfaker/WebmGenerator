@@ -6,8 +6,15 @@ try:
   import os
   import traceback
 
-  #os.chdir(os.path.realpath(os.path.dirname(__file__)))
+  print("Initial working directory", os.getcwd())
+
+  if getattr(sys, 'frozen', False):
+    os.chdir(os.path.abspath(os.path.realpath(os.path.dirname(sys.executable))))
+  else:
+    os.chdir(os.path.abspath(os.path.realpath(os.path.dirname(__file__))))
   
+  print("Current working directory", os.getcwd())
+
   logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",

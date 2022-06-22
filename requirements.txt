@@ -1,4 +1,4 @@
-numpy==1.21.0
+numpy==1.22.0
 python-mpv==0.4.6
 pygubu==0.10
 tkinterdnd2==0.3.0

@@ -49,6 +49,8 @@ class CutselectionController:
 
     self.ui.after(50, self.loadInitialFiles)
 
+  def setDragDur(self,dur):
+    self.ui.setDragDur(dur)
 
   def loadInitialFiles(self):
     if self.initialFiles is not None and len(self.initialFiles)>0:
@@ -127,6 +129,19 @@ class CutselectionController:
           self.ui.setUiDirtyFlag(specificRID=rid)
       except Exception as e:
         print(e)
+
+  def fillGapsBetweenSublcips(self):
+    subclipranges = self.videoManager.getRangesForClip(self.currentlyPlayingFileName)
+
+    if len(subclipranges)>0:
+      subclipranges = sorted(subclipranges,key=lambda x:x[1][1])
+
+      lastEnd = None
+      for i,(s,e) in subclipranges:
+        if lastEnd is not None:
+          if lastEnd != s:
+            self.addNewSubclip(lastEnd,s,seekAfter=False)
+        lastEnd = e
 
   def splitClipIntoSectionsOfLengthN(self):
     sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be? (Seconds)', initialvalue=30)

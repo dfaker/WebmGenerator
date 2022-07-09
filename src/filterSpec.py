@@ -28,6 +28,31 @@ fonts = [
 
 selectableFilters = [
 
+
+
+    {
+        "name": "Pallet Reduce",
+        
+        "filter": "split[pal1@{fn}][outvpal@{fn}],[pal1@{fn}]palettegen=stats_mode={stats_mode}:max_colors={max_colors}[plt@{fn}],[outvpal@{fn}][plt@{fn}]paletteuse=dither={dither}:bayer_scale={bayer_scale}:color_search={color_search}",
+
+        "category":['Colour manipulation'],
+        "desc":"Draw a colored box on the input video.",
+        "timelineSupport":True,
+        "params": [
+            {"n": "max_colors", "d": 256, "type": "int","range": [4, 256],"inc": 1},
+            {"n": "stats_mode", "d": "single", "type": "cycle","cycle": [ "full", "diff", "single"]},
+           
+           {"n": "dither", "d": "sierra2_4a", "type": "cycle","cycle": [ "bayer", "heckbert", "floyd_steinberg", "sierra2", "sierra2_4a"]},
+           {"n": "bayer_scale", "d": 2, "type": "int","range": [0, 5],"inc": 1},
+           {"n": "color_search", "d": "nns_iterative", "type": "cycle","cycle": [ "nns_iterative", "nns_recursive", "bruteforce"]},
+
+
+        ],
+    },
+
+
+
+
     {
         "name": "Draw Box",
         "filter": "drawbox@{fn}",

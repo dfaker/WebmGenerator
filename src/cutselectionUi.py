@@ -182,43 +182,42 @@ class CutselectionUi(ttk.Frame):
         self.frameSliceLength = ttk.Frame(self.labelFrameSlice)
         self.labelSiceLength = ttk.Label(self.frameSliceLength)
         self.labelSiceLength.config(text="Slice Length")
-        self.labelSiceLength.pack(anchor="w", side="left")
+        self.labelSiceLength.pack(anchor="w",pady="0", side="left")
         self.entrySiceLength = ttk.Spinbox(
             self.frameSliceLength,
             textvariable=self.sliceLengthVar,
             from_=0,
             to=float("inf"),
-            increment=0.1,
+            increment=0.1
         )
-
         Tooltip(self.entrySiceLength,text='The default initial length of newly added subclips.')
 
-        self.entrySiceLength.pack(anchor="e", side="right")
+        self.entrySiceLength.pack(anchor="e",pady="0", side="right")
         self.frameSliceLength.config(height="200", width="200")
-        self.frameSliceLength.pack(fill="x", pady="2", side="top")
+        self.frameSliceLength.pack(fill="x", pady="0", side="top")
 
         self.frameTargetLength = ttk.Frame(self.labelFrameSlice)
         self.labelTargetLength = ttk.Label(self.frameTargetLength)
         self.labelTargetLength.config(text="Target Length")
-        self.labelTargetLength.pack(side="left")
+        self.labelTargetLength.pack(side="left",pady=0)
         self.entryTargetLength = ttk.Spinbox(
             self.frameTargetLength,
             textvariable=self.targetLengthVar,
             from_=0,
             to=float("inf"),
-            increment=0.1,
+            increment=0.1
         )
 
         Tooltip(self.entryTargetLength,text='The target length of the final clip, useful if you want to hit a certain duration.')
 
-        self.entryTargetLength.pack(side="right")
+        self.entryTargetLength.pack(side="right",pady="0")
         self.frameTargetLength.config(height="200", width="200")
-        self.frameTargetLength.pack(fill="x", pady="2", side="top")
+        self.frameTargetLength.pack(fill="x", pady="0", side="top")
 
         self.frameTargetTrim = ttk.Frame(self.labelFrameSlice)
         self.labelTargetTrim = ttk.Label(self.frameTargetTrim)
         self.labelTargetTrim.config(text="Target Trim")
-        self.labelTargetTrim.pack(side="left")
+        self.labelTargetTrim.pack(side="left",pady="0")
         self.entryTargetTrim = ttk.Spinbox(
             self.frameTargetTrim,
             textvariable=self.targetTrimVar,
@@ -231,12 +230,12 @@ class CutselectionUi(ttk.Frame):
 
         self.entryTargetTrim.pack(side="right")
         self.frameTargetTrim.config(height="200", width="200")
-        self.frameTargetTrim.pack(fill="x", pady="2", side="top")
+        self.frameTargetTrim.pack(fill="x", pady="0", side="top")
 
         self.framePreviewPos = ttk.Frame(self.labelFrameSlice)
         self.labelPreviewPos = ttk.Label(self.framePreviewPos)
         self.labelPreviewPos.config(text="Drag offset")
-        self.labelPreviewPos.pack(side="left")
+        self.labelPreviewPos.pack(side="left",pady="0")
         self.entryPreviewPos = ttk.Spinbox(
             self.framePreviewPos,
             textvariable=self.dragPreviewPosVar,
@@ -250,7 +249,7 @@ class CutselectionUi(ttk.Frame):
 
         self.entryPreviewPos.pack(side="right")
         self.framePreviewPos.config(height="200", width="200")
-        self.framePreviewPos.pack(fill="x", pady="2", side="top")
+        self.framePreviewPos.pack(fill="x", pady="0", side="top")
 
         self.loopModeVar = tk.StringVar()
         
@@ -269,24 +268,23 @@ class CutselectionUi(ttk.Frame):
 
         Tooltip(self.entryLoopMode,text='How to loop between subclips, either just loop the current clip, or jump between clips for a full preview of all subclips.')
 
-
         self.entryLoopMode.config(style="small.TMenubutton")
         self.entryLoopMode.pack(side="right")
         self.frameLoopMode.config(height="200", width="200")
-        self.frameLoopMode.pack(fill="x", pady="2", side="top")
+        self.frameLoopMode.pack(fill="x", pady="0", side="top")
         self.loopModeVar.trace("w", self.updateLoopMode)
 
         self.frameVolume = ttk.Frame(self.labelFrameSlice)
 
         self.labelVolume = ttk.Label(self.frameVolume,text='Volume')
-        self.labelVolume.pack(fill="x", pady="2", side="top")
+        self.labelVolume.pack(fill="x", pady="0", side="top")
 
         self.scaleVolume = ttk.Scale(self.frameVolume,from_=0, to=100)
         self.scaleVolume.config(command=self.setVolume)
-        self.scaleVolume.pack(fill="x", padx="2", side="top")
+        self.scaleVolume.pack(fill="x", padx="0", side="top")
 
         self.frameVolume.config(height="200", width="200")
-        self.frameVolume.pack(fill="x", pady="2", side="top")
+        self.frameVolume.pack(fill="x", pady="0", side="top")
 
         self.frameCurrentSize = ttk.Frame(self.labelFrameSlice)
 
@@ -307,7 +305,7 @@ class CutselectionUi(ttk.Frame):
         self.frameCurrentSize.pack(fill="x", side="top")
 
         self.labelFrameSlice.config(height="200", width="200")
-        self.labelFrameSlice.pack(fill="x", side="top")
+        self.labelFrameSlice.pack(fill="x",pady=0,side="top")
 
         self.labelframeSourceVideos = ttk.Frame(self.frameSliceSettings)
 
@@ -511,6 +509,9 @@ class CutselectionUi(ttk.Frame):
         self.playingOnLastSwitchAway = True
 
         self.frameRate = None
+
+    def setDragDur(self,dur):
+      self.sliceLengthVar.set(str(round(dur,4)))
 
     def forgetPlannerFrame(self):
       self.frameVideoPlannerFrame.pack_forget()

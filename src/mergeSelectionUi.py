@@ -315,11 +315,32 @@ class SequencedVideoEntry(ttk.Frame):
       self.labelSequenceVideoName.pack(side='top')
     self.frameOrderingButtons = ttk.Frame(self.frameSequenceVideoEntry)
 
+    self.entrySpeed = tk.StringVar()
+    self.entrySpeed.set('1.0')
+
+
     self.buttonSequenceEntryFilter = ttk.Button(self.frameSequenceVideoEntry)
     self.buttonSequenceEntryFilter.config(text='View filter')
     self.buttonSequenceEntryFilter.config(command=self.viewFilter)
     self.buttonSequenceEntryFilter.config(style="small.TButton")
     self.buttonSequenceEntryFilter.pack(expand='false', fill='x', side='bottom')
+
+    self.frameEntrySpeed = ttk.Frame(self.frameSequenceVideoEntry)
+
+    self.labelEntrySpeed = ttk.Label(self.frameEntrySpeed,text='Speed factor') 
+
+    self.labelEntrySpeed.pack(expand='false', fill='x', side='left')
+
+    self.spinSequenceEntrySpeed = ttk.Spinbox(self.frameEntrySpeed, 
+                                          from_=0, 
+                                          to=float('inf'), 
+                                          increment=0.1,
+                                          textvariable=self.entrySpeed)
+
+    self.spinSequenceEntrySpeed.pack(expand='false', fill='x', side='right')
+
+    if self.controller.globalOptions.get('perClipSpeedAdjustment',False):
+      self.frameEntrySpeed.pack(expand='false', fill='x', side='bottom')
 
 
     if direction == 'LEFT_RIGHT':
@@ -368,6 +389,12 @@ class SequencedVideoEntry(ttk.Frame):
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
     elif direction == 'UP_DOWN':
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='top')
+
+  def getSpeed(self):
+    try:
+      return float(self.entrySpeed.get())
+    except:
+      return 1
 
   def viewFilter(self):
     self.controller.viewFilterForClip(self)
@@ -1637,7 +1664,7 @@ class MergeSelectionUi(ttk.Frame):
       self.encodeRequestId+=1
 
       for clip in self.sequencedClips:  
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter,nullfilter)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter,nullfilter,clip.getSpeed())
         encodeSequence.append(definition)
 
       if len(encodeSequence)>0:
@@ -1662,7 +1689,7 @@ class MergeSelectionUi(ttk.Frame):
       for i,column in enumerate(self.gridColumns):
         outcol = []
         for clip in column['clips']:
-          definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc)
+          definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc,clip.getSpeed())
           outcol.append(definition)
           if column == self.selectedColumn:
             selectedColumnInd=i
@@ -1719,7 +1746,7 @@ class MergeSelectionUi(ttk.Frame):
       encodeSequence = []
       self.encodeRequestId+=1
       for clip in self.sequencedClips:
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc,clip.getSpeed())
         encodeSequence.append(definition)
       if len(encodeSequence)>0:
         options={
@@ -1767,7 +1794,7 @@ class MergeSelectionUi(ttk.Frame):
       for clip in self.sequencedClips:
         encodeSequence = []
         self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp,nullfilter if disableFilters else clip.filterexpEnc)
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp,nullfilter if disableFilters else clip.filterexpEnc,clip.getSpeed())
         encodeSequence.append(definition)
         if len(encodeSequence)>0:
           options={
@@ -1857,7 +1884,7 @@ class MergeSelectionUi(ttk.Frame):
     totalTime=0
     timeTrimmedByFade=0
     for sv in self.sequencedClips:
-      totalTime+=(sv.e-sv.s)
+      totalTime+=(sv.e-sv.s)*(1/sv.getSpeed())
       timeTrimmedByFade+=self.transDurationValue 
 
     totalTime         = totalTime * (1/self.speedAdjustmentValue)

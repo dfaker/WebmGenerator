@@ -246,12 +246,13 @@ class YTDLService():
                   for seenfilename in seenFiles:
                     if seenfilename not in emittedFiles and len(seenfilename)>0 and seenfilename != finalName:
                       emitName = seenfilename.decode('utf8')
+
                       self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
                       if os.path.exists(emitName):
-                        callback(emitName)
+                        callback(os.path.abspath(emitName))
                         emittedFiles.add(seenfilename)
                       else:
-                        callback(emitName+'.part')
+                        callback(os.path.abspath(emitName+'.part'))
                         emittedFiles.add(seenfilename)
 
                 l=b''
@@ -261,10 +262,10 @@ class YTDLService():
                   emitName = seenfilename.decode('utf8')
                   self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
                   if os.path.exists(emitName):
-                    callback(emitName)
+                    callback(os.path.abspath(emitName))
                     emittedFiles.add(seenfilename)
                   else:
-                    callback(emitName+'.part')
+                    callback(os.path.abspath(emitName+'.part'))
                     emittedFiles.add(seenfilename)
 
           else:

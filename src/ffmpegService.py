@@ -166,7 +166,7 @@ class FFmpegService():
       
 
       totalExpectedEncodedSeconds = 0
-      for rid,clipfilename,s,e,filterexp,filterexpEnc in seqClips:
+      for rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed in seqClips:
         totalExpectedEncodedSeconds += e-s
       totalEncodedSeconds=0
 
@@ -177,7 +177,7 @@ class FFmpegService():
 
       fileList=[]
       
-      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(seqClips):
+      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
 
         etime = e-s
         basename = os.path.basename(clipfilename)
@@ -234,9 +234,9 @@ class FFmpegService():
       if len(fileList)>0:
         videoFileName,logPath,_,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix,ext,requestId)
 
-        with open(logPath,'w') as logDef:
+        with open(logPath,'wb') as logDef:
           for f in fileList:
-            logDef.write("file '{}'\n".format(os.path.abspath(f)))
+            logDef.write("file '{}'\n".format(os.path.abspath(f)).encode('utf8'))
 
 
         concatCmd = ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', logPath, '-c', 'copy', tempVideoFilePath]
@@ -303,7 +303,7 @@ class FFmpegService():
 
         maxColWidth  = 0
         sumcolHeight = 0
-        for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(column):
+        for i,(rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed) in enumerate(column):
           
           videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename),filters=filterexp)
           brick = Brick(brickn,videoInfo.width,videoInfo.height)
@@ -731,23 +731,26 @@ class FFmpegService():
     def encodeConcat(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
 
       expectedTimes = []
+      speedAdjustments = []
       processed={}
       fileSequence=[]
       clipDimensions = []
       preciseDurations = {}
       infoOut={}
 
-      usNVHWenc = '_Nvenc' in options.get('outputFormat','mp4:x264') 
+      usNVHWenc = '_Nvenc' in options.get('outputFormat','mp4:x264') and self.globalOptions.get('nvEncIntermediateFiles',True)
 
       fadeStartToEnd = options.get('fadeStartToEnd',True)
 
       encodeStageFilterList = []
 
-      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc) in enumerate(seqClips):
+
+      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
         if filterexpEnc is not None and len(filterexpEnc)>0 and filterexpEnc != 'null':
           encodeStageFilterList.append(filterexpEnc)
 
         expectedTimes.append(e-s)
+        speedAdjustments.append(clipSpeed)
         videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
         infoOut[rid] = videoInfo
 
@@ -778,7 +781,7 @@ class FFmpegService():
 
 
 
-      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filterexpEnc)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
+      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filterexpEnc,clipSpeed)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
         shortestClipLength = min(shortestClipLength, etime)
         if filterexp=='':
           filterexp='null'  
@@ -794,7 +797,7 @@ class FFmpegService():
 
           subfilename = filterexp.split('subtitles=filename=')[1].split(':force_style=')[0]
           subfilenameStrip = subfilename.replace("'",'')
-          subOutname = os.path.join( tempPathname,'{}_{}_{}_{}_{}_{}.srt'.format(i,basename,start,end,filterHash,runNumber) )
+          subOutname = os.path.join( tempPathname,'{}_{}_{}_{}_{}_{}_{}.srt'.format(i,basename,start,end,filterHash,runNumber,clipSpeed) )
 
           trimSRTfile(subfilenameStrip.replace('\\:',':'),subOutname,start,end)
                     
@@ -809,7 +812,6 @@ class FFmpegService():
 
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
-
 
 
         try:
@@ -847,8 +849,9 @@ class FFmpegService():
             if self.globalOptions.get('passCudaFlags',False):
               cuda_flags = ['-hwaccel', 'cuda']
             slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'losslesshp','-pix_fmt','yuv420p']
-          else:  
-            slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast']
+            filterexp += ',format=yuv420p'
+          else:
+            slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast','-pix_fmt','yuv420p']
 
           if infoOut[rid].hasaudio:
             comvcmd = ['ffmpeg','-y' ]+cuda_flags+[                                
@@ -1153,8 +1156,26 @@ class FFmpegService():
             else:            
               filterPeProcess += '[{i}:v]setpts=PTS-STARTPTS,tpad=stop=100:stop_mode=clone,trim=start=0:end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)
 
+          clipSpeedAdjustment = 1.0
+          try:
+            clipSpeedAdjustment = speedAdjustments[vi]
+          except:
+            pass
 
-          filterInputs += '[{i}vsc][{i}:a]'.format(i=vi)
+          if clipSpeedAdjustment != 1.0:
+
+            clipvFactor=1/clipSpeedAdjustment
+            clipaFactor=clipSpeedAdjustment
+
+            if interpolateSpeedAdjustment:
+              filterPeProcess += '[{i}vsc]setpts={vfactor}*PTS,minterpolate=\'{miflags}\'[{i}vscspd],[{i}:a]{afactor}[{i}aspd],'.format(i=vi,vfactor=clipvFactor,afactor=self.convertFactorToAtempoSequence(clipaFactor),miflags=minterpolateFlags)
+            else:
+              filterPeProcess += '[{i}vsc]setpts={vfactor}*PTS[{i}vscspd],[{i}:a]{afactor}[{i}aspd],'.format(i=vi,vfactor=clipvFactor,afactor=self.convertFactorToAtempoSequence(clipaFactor))
+
+            filterInputs += '[{i}vscspd][{i}aspd]'.format(i=vi)
+
+          else:
+            filterInputs += '[{i}vsc][{i}:a]'.format(i=vi)
 
         filtercommand = filterPeProcess + filterInputs + 'concat=n={}:v=1:a=1[outvconcat][outaconcat]'.format(len(inputsList)//2)
 

@@ -18,17 +18,20 @@ except:
 
 from datetime import datetime
 
+try:
+  scriptPath = os.path.dirname(os.path.abspath(__file__))
+  basescriptPath = os.path.split(scriptPath)[0]
+  scriptPath_frozen = os.path.dirname(os.path.abspath(sys.executable))
+  os.environ["PATH"] = scriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
+  print(scriptPath)
+  print(scriptPath_frozen)
 
-scriptPath = os.path.dirname(os.path.abspath(__file__))
-basescriptPath = os.path.split(scriptPath)[0]
-scriptPath_frozen = os.path.dirname(os.path.abspath(sys.executable))
-os.environ["PATH"] = scriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
-print(scriptPath)
-print(scriptPath_frozen)
+  os.add_dll_directory(basescriptPath)
+  os.add_dll_directory(scriptPath)
+  os.add_dll_directory(scriptPath_frozen)
+except Exception as e:
+  print(e)
 
-os.add_dll_directory(basescriptPath)
-os.add_dll_directory(scriptPath)
-os.add_dll_directory(scriptPath_frozen)
 
 import mpv
 
@@ -131,8 +134,6 @@ class VideoAudioSync(tk.Frame):
       "Spectrum - Compressor - Log:Log":"acompressor=threshold=.5:ratio=5:2:attack=0.01:release=0.01,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
 
       "Spectrum - Bass Boost Norm - Log:Log":"bass=g=3:f=110:w=0.6,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
-
-
 
       "Waves":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
       "Waves - Middle pass filter":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]highpass=f=200,lowpass=f=3000,showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
@@ -354,6 +355,8 @@ class VideoAudioSync(tk.Frame):
 
     self.draggingBlockIndex = None
 
+    self.ctrlDragStartSeconds = None
+
     self.valuesChanged=True
 
     def quitFunc(key_state, key_name, key_char):
@@ -391,7 +394,7 @@ class VideoAudioSync(tk.Frame):
         pass
 
 
-      self.playerReaper = playerReaper
+      self.playerReaperfunc = playerReaper
 
     self.player.register_key_binding("CLOSE_WIN", quitFunc)
     self.bind('<Configure>', self.reconfigureWindow)
@@ -400,7 +403,7 @@ class VideoAudioSync(tk.Frame):
 
   def cleanup(self):
     try:
-      self.playerReaper()
+      self.playerReaperfunc()
     except Exception as e:
       print(e)
 
@@ -691,11 +694,29 @@ class VideoAudioSync(tk.Frame):
     
     self.timeline_canvas.config(cursor="arrow")
 
+  def setDragDur(self,dur):
+    self.controller.setDragDur(dur)
+
   def timelineMousePress(self,e):  
+
+    ctrl  = (e.state & 0x4) != 0
     pressSeconds = self.xCoordToSeconds(e.x)
 
-    print(e.type)
 
+    if ctrl:
+      if e.type == tk.EventType.ButtonPress:
+        self.ctrlDragStartSeconds = pressSeconds
+      elif e.type == tk.EventType.ButtonRelease:
+        if self.ctrlDragStartSeconds is not None:
+          dur = abs(self.ctrlDragStartSeconds-pressSeconds)
+          self.setDragDur(dur)
+        self.ctrlDragStartSeconds = None
+      return
+
+    self.ctrlDragStartSeconds = None
+
+
+    print(e.type)
 
     if e.type == tk.EventType.ButtonPress:
       if 20+20<e.y<20+20+15:

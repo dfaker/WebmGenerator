@@ -19,7 +19,7 @@ import colorsys
 import numpy as np
 
 
-RELEASE_NUMVER = 'v3.24.1'
+RELEASE_NUMVER = 'v3.24.0'
 
 class WebmGeneratorUi:
 
@@ -108,6 +108,10 @@ class WebmGeneratorUi:
     self.style.configure('PSNRPoor.TLabel',foreground='red')
     
     self.style.configure('boringMode.TLabel',foreground='white',background='black',font = 'TkFixedFont' )
+
+    self.style.configure ("verticalPack.TLabel",padding=(2,-2))
+    self.style.configure ("verticalPack.TSpinbox",padding=(2,-8))
+  
 
     if darkMode:
       #self.style.theme_use('black')
@@ -250,6 +254,9 @@ class WebmGeneratorUi:
     self.commandSplitmenu = Menu(self.menubar, tearoff=0)
     self.commandSplitmenu.add_command(label="Split clip into n equal Subclips",      command=self.splitClipIntoNEqualSections)
     self.commandSplitmenu.add_command(label="Split clip into subclips of n seconds", command=self.splitClipIntoSectionsOfLengthN)
+    self.commandSplitmenu.add_separator()
+    self.commandSplitmenu.add_command(label="Fill gaps between subclips", command=self.fillGapsBetweenSublcips)
+
     self.commandmenu.add_cascade(label="Split clip", menu=self.commandSplitmenu)
     
 
@@ -556,6 +563,9 @@ class WebmGeneratorUi:
   def takeScreenshot(self):
     selectedTab = self.notebook.select()
     self.controller.takeScreenshotToFile(selectedTab)
+
+  def fillGapsBetweenSublcips(self):
+    self.controller.fillGapsBetweenSublcips()
 
   def splitClipIntoNEqualSections(self):
     self.controller.splitClipIntoNEqualSections()

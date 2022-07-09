@@ -44,6 +44,9 @@ class MergeSelectionController:
 
     self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
 
+  def setDragDur(self,dur):
+    self.cutController.setDragDur(dur)
+
   def broadcastModalFocus(self):
     self.cutController.playingModalGotFocus()
 

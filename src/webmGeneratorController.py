@@ -78,7 +78,12 @@ class WebmGeneratorController:
       "allowableTargetSizeUnderrun":0.15,
       "allowEarlyExitIfUndersized":True,
 
+      "nvEncIntermediateFiles":True,
+
       "generateTimelineThumbnails":True,
+      "perClipSpeedAdjustment":False,
+
+      
 
       "clampSeeksToFPS":False,
 
@@ -94,7 +99,7 @@ class WebmGeneratorController:
       "filtersTabPlayerBackgroundColour":"#282828",
       "autoLoadLastAutosave":False,
       "deleteDownloadsAtExit":False,
-      "embedSequencePlanner":False,
+      "embedSequencePlanner":True,
 
       'askToShuffleLoadedFiles':False,
 
@@ -444,10 +449,16 @@ class WebmGeneratorController:
 
         self.newProject()
         self.lastSaveFile = filename
-        self.cutselectionController.loadStateFromSave(saveData)
-        self.videoManager.loadStateFromSave(saveData)
-        #self.filterSelectionController.loadStateFromSave(saveData)
+        for loadMethod in [self.cutselectionController.loadStateFromSave,
+                           self.videoManager.loadStateFromSave,
+                           self.filterSelectionController.loadStateFromSave]:
+          try:
+            loadMethod(saveData)
+          except Exception as e:
+            print(e)
 
+  def fillGapsBetweenSublcips(self):
+    self.cutselectionController.fillGapsBetweenSublcips()
 
   def splitClipIntoNEqualSections(self):
     self.cutselectionController.splitClipIntoNEqualSections()
@@ -469,10 +480,14 @@ class WebmGeneratorController:
 
   def getSaveData(self):
     saveData = {}
-    saveData.update(self.cutselectionController.getStateForSave())
-    saveData.update(self.videoManager.getStateForSave())
-    #saveData.update(self.filterSelectionController.getStateForSave())
-    return saveData  
+    for saveMethod in [self.cutselectionController.getStateForSave,
+                       self.videoManager.getStateForSave,
+                       self.filterSelectionController.getStateForSave]:
+      try:
+        saveData.update(saveMethod())
+      except Exception as e:
+        print(e)
+    return saveData
 
   def saveProject(self,filename):
     if filename is not None:

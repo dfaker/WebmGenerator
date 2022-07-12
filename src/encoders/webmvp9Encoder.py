@@ -86,12 +86,20 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if 'Copy' in options.get('audioChannels',''):
       audioCodec = []
 
-    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
+    ffmpegcommand+=["-shortest", "-copyts"
                    ,"-start_at_zero", "-c:v","libvpx-vp9"] + audioCodec + [
                     "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25'
-                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"
-                   ,"-deadline","best",'-slices','8','-psnr','-cpu-used','0'
+                   ,"-auto-alt-ref", "1", "-lag-in-frames", "25"]
+
+
+    if passPhase==1:
+      ffmpegcommand += ['-speed', '4']
+    else:
+      ffmpegcommand += ['-speed', '1']
+
+
+    ffmpegcommand+=["-quality","good",'-psnr', '-row-mt', '1', '-tile-columns', '6'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) 
                    ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
                    ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() )

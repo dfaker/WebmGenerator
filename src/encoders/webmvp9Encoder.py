@@ -94,7 +94,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
 
     if passPhase==1:
-      ffmpegcommand += ['-speed', '4']
+      pass
     else:
       ffmpegcommand += ['-speed', '1']
 
@@ -102,8 +102,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand+=["-quality","good",'-psnr', '-row-mt', '1', '-tile-columns', '6'
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) 
                    ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
-                   ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() )
-                   ]
+                   ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() ) ]
     
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]

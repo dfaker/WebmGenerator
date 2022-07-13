@@ -4,6 +4,7 @@ from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import string 
 import mpv
+from math import floor
 from tkinter.filedialog import askopenfilename
 import subprocess as sp
 import random
@@ -15,6 +16,49 @@ import threading
 from .modalWindows import Tooltip
 from .modalWindows import VideoAudioSync
 import platform
+
+def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
+
+    if hasattr(value, 'seconds'):
+        seconds = value.seconds + value.days * 24 * 3600
+    else:
+        seconds = value
+
+    seconds_total = seconds
+
+    minutes = int(floor(seconds / 60))
+    minutes_total = minutes
+    seconds -= minutes * 60
+
+    seconds = int(seconds)
+
+    hours = int(floor(minutes / 60))
+    hours_total = hours
+    minutes -= hours * 60
+
+    days = int(floor(hours / 24))
+    days_total = days
+    hours -= days * 24
+
+    years = int(floor(days / 365))
+    years_total = years
+    days -= years * 365
+
+    return time_format.format(**{
+        'seconds': seconds,
+        'seconds2': str(seconds).zfill(2),
+        'minutes': minutes,
+        'minutes2': str(minutes).zfill(2),
+        'hours': hours,
+        'hours2': str(hours).zfill(2),
+        'days': days,
+        'years': years,
+        'seconds_total': seconds_total,
+        'minutes_total': minutes_total,
+        'hours_total': hours_total,
+        'days_total': days_total,
+        'years_total': years_total,
+    })
 
 class EncodeProgress(ttk.Frame):
 
@@ -262,9 +306,9 @@ class EncodeProgress(ttk.Frame):
 
         try:
           remaining = (1.0 - currentValue) * (currentKey - oldestKey) / (currentValue - oldestValue)
-          self.labelTimeLeft.config(text=str(round(remaining,2))+'s left ({:.0%})'.format(percent))
-        except:
-          pass
+          self.labelTimeLeft.config(text= format_timedelta(remaining,'{hours_total}:{minutes2}:{seconds2}')+(' left ({:.0%})'.format(percent)))
+        except Exception as e:
+          print(e)
       
       if status is not None:
         self.labelRequestStatus.config(text=status)
@@ -272,7 +316,7 @@ class EncodeProgress(ttk.Frame):
       self.progresspercent = percent*100
 
       if percent >= 1:
-        self.labelTimeLeft.config(text='Complete in {}s'.format( str(round(time.time() - self.encodeStartTime,2)) ))
+        self.labelTimeLeft.config(text='Complete in {}'.format(   format_timedelta(time.time() - self.encodeStartTime,'{hours_total}:{minutes2}:{seconds2}') ))
         self.progressbarEncodeCancelButton.grid_forget()
         if self.finalFilename is not None:
           self.progressbarEncodeProgressLabel.config(style="Green.Horizontal.TProgressbar")
@@ -875,6 +919,8 @@ class MergeSelectionUi(ttk.Frame):
       'mp4:AV1',
       'webm:VP8',
       'webm:VP9',
+      'webm:VP9_No Tile',
+      'webm:VP9_Best Slow',
       'gif',      
       'apng',
     ]

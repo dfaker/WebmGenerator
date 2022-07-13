@@ -90,6 +90,8 @@ def lucas_kanade_np(im1, im2, win=2):
 encoderMap = {
    'webm:VP8':webmvp8Encoder
   ,'webm:VP9':webmvp9Encoder
+  ,'webm:VP9_No Tile':webmvp9Encoder
+  ,'webm:VP9_Best Slow':webmvp9Encoder
   ,'mp4:x264':mp4x264Encoder
   ,'mp4:x264_Nvenc':mp4x264NvencEncoder
   ,'mp4:H265_Nvenc':mp4H265NvencEncoder
@@ -738,7 +740,7 @@ class FFmpegService():
       preciseDurations = {}
       infoOut={}
 
-      usNVHWenc = '_Nvenc' in options.get('outputFormat','mp4:x264') and self.globalOptions.get('nvEncIntermediateFiles',True)
+      usNVHWenc = self.globalOptions.get('alwaysForcenvEncIntermediateFiles',False) or ('_Nvenc' in options.get('outputFormat','mp4:x264') and self.globalOptions.get('nvEncIntermediateFiles',True))
 
       fadeStartToEnd = options.get('fadeStartToEnd',True)
 

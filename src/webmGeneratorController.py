@@ -79,6 +79,7 @@ class WebmGeneratorController:
       "allowEarlyExitIfUndersized":True,
 
       "nvEncIntermediateFiles":True,
+      "alwaysForcenvEncIntermediateFiles":False,
 
       "generateTimelineThumbnails":True,
       "perClipSpeedAdjustment":False,

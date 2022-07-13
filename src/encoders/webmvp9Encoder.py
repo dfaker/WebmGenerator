@@ -61,27 +61,32 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     targetHeight = 0
     
-    widthCmd = ['ffmpeg']+inputsList+['-filter_complex_script',filterFilePath,'-frames:v','1','-f','null','-']
-    proc = sp.Popen(widthCmd,stdout=sp.PIPE,stderr=sp.PIPE)
-    outs,errs = proc.communicate()
-    for errLine in errs.split(b'\n'):
-      for errElem in [x.strip() for x in errLine.split(b',')]:
-        if b'x' in errElem:
-          try:
-            w,h = errElem.split(b' ')[0].split(b'x')
-            w=int(w)
-            h=int(h)
-            targetHeight = max(h,w)
-          except:
-            pass
+    try:
+      widthCmd = ['ffmpeg']+inputsList+['-filter_complex_script',filterFilePath,'-frames:v','1','-f','null','-']
+      proc = sp.Popen(widthCmd,stdout=sp.PIPE,stderr=sp.PIPE)
+      outs,errs = proc.communicate()
+      for errLine in errs.split(b'\n'):
+        for errElem in [x.strip() for x in errLine.split(b',')]:
+          if b'x' in errElem:
+            try:
+              w,h = errElem.split(b' ')[0].split(b'x')
+              w=int(w)
+              h=int(h)
+              targetHeight = max(h,w)
+            except:
+              pass
+    except Exception as e:
+      print(e)
 
     tileColumns  = 0
-    if targetHeight >= 960:
-      tileColumns = 1
-    if targetHeight >= 1920:
-      tileColumns = 2
-    if targetHeight >= 3840:
-      tileColumns = 3
+
+    if 'No Tile' not in  options.get('outputFormat',''):
+      if targetHeight >= 960:
+        tileColumns = 1
+      if targetHeight >= 1920:
+        tileColumns = 2
+      if targetHeight >= 3840:
+        tileColumns = 3
 
     print('VP9 targetHeight:',targetHeight)
     print('VP9 tileColumns:',tileColumns)
@@ -126,17 +131,22 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     else:
       ffmpegcommand += ['-speed', '1']
 
+    if 'BEST' in  options.get('outputFormat','').upper():
+      ffmpegcommand+=["-quality","best"]
+    else:
+      ffmpegcommand+=["-quality","good"]
 
-    ffmpegcommand+=["-quality","good",'-psnr', '-row-mt', '1', '-tile-columns', str(tileColumns)
-                   ,"-aq-mode", "0", "-tune-content", "film", "-enable-tpl", "1"
-                   ,"-metadata", 'title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) 
+    ffmpegcommand+=['-psnr', '-row-mt', '1', '-tile-columns', str(tileColumns), "-tile-rows", "0"
+                   ,"-arnr-maxframes", "7","-arnr-strength", "5"
+                   ,"-aq-mode", "0", "-tune-content", "film", "-enable-tpl", "1", "-frame-parallel", "0"
+                   ,"-metadata", 'Title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) 
                    ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
                    ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() ) ]
     
     if sizeLimitMax == 0.0:
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","50","-crf"  ,'4']
+      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","20","-crf"  ,'4']
     else:
-      ffmpegcommand+=["-b:v",str(br),"-qmin","0","-qmax","50","-crf"  ,'4']
+      ffmpegcommand+=["-b:v",str(br),"-qmin","0","-qmax","20","-crf"  ,'4']
 
     if 'No audio' in options.get('audioChannels','') or passPhase==1:
       ffmpegcommand+=["-an"]    

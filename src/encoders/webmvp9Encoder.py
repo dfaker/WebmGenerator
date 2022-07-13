@@ -144,9 +144,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() ) ]
     
     if sizeLimitMax == 0.0:
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","20","-crf"  ,'4']
+      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10","-crf"  ,'4']
     else:
-      ffmpegcommand+=["-b:v",str(br),"-qmin","0","-qmax","20","-crf"  ,'4']
+      ffmpegcommand+=["-b:v",str(br),"-qmin","0","-qmax","50","-crf"  ,'4']
 
     if 'No audio' in options.get('audioChannels','') or passPhase==1:
       ffmpegcommand+=["-an"]    

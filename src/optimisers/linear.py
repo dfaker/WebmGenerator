@@ -5,7 +5,7 @@ import logging
 
 from ..encodingUtils import isRquestCancelled
 
-def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,allowEarlyExitWhenUndersize=True,twoPassMode=False,dependentValueName='BR',dependentValueMaximum=0,requestId=None,minimumPSNR=0.0,optimiserName=''):
+def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDependentValue,sizeLimitMin,sizeLimitMax,maxAttempts,allowEarlyExitWhenUndersize=True,twoPassMode=False,dependentValueName='BR',dependentValueMaximum=0,requestId=None,minimumPSNR=0.0,optimiserName='',options={},globalOptions={}):
 
   val = initialDependentValue
   targetSizeMedian = (sizeLimitMin+sizeLimitMax)/2
@@ -46,13 +46,18 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       return
 
     adjustval = True
-    print('---- RETURN CODE',returnCode)
-    if lastpsnr is not None and lastpsnr < minimumPSNR and (widthReduction+0.1)<=1.0:
-      widthReduction+=0.1
+
+    widthReductionFactor = globalOptions.get('defaultPSNRWidthReductionFactor',0.5)
+
+    if lastpsnr is not None and lastpsnr < minimumPSNR and (widthReduction+widthReductionFactor)<=1.0:
+      widthReduction+=widthReductionFactor
       maxAttempts += passCount
       adjustval=False
       psnrAdjusted=True
       lastFailReason = 'PSNR under {} ({}), resetting at smaller dimensions'.format(minimumPSNR,lastpsnr)
+      continue
+    elif returnCode == 1:
+      return
     elif sizeLimitMin<finalSize<sizeLimitMax or ( (not psnrAdjusted) and allowEarlyExitWhenUndersize and passCount==1 and finalSize<sizeLimitMax) or passCount>maxAttempts:
       shutil.move(tempFilename,outputFilename)
       return outputFilename
@@ -65,6 +70,8 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
         smallestFailedOverMaximum=val
     logging.debug("Encode complete {}:{} finalSize:{} targetSizeMedian:{}".format(dependentValueName,val,finalSize,targetSizeMedian))
+
+
 
     if adjustval:
       val =  val * (1/(finalSize/targetSizeMedian))

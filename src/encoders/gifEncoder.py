@@ -27,7 +27,12 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
   def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
 
-    giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1,scale=\'max({}\\,min({}\\,iw)):-1\':flags=area,split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width)
+
+    gifFPSLimit=''
+    if options.get('forceGifFPS',True):
+      gifFPSLimit='fps=18,'
+
+    giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1,scale=\'max({}\\,min({}\\,iw)):-1\':flags=area,{}split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width,gifFPSLimit)
 
 
     with open(filterFilePath,'wb') as filterFile:
@@ -50,7 +55,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     finalSize = os.stat(tempVideoFilePath).st_size
@@ -74,7 +79,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       dependentValueName='Width',
                       dependentValueMaximum=options.get('maximumWidth',0),
                       requestId=requestId,
-                      optimiserName=options.get('optimizer'))
+                      optimiserName=options.get('optimizer'),
+                      globalOptions=globalOptions)
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)

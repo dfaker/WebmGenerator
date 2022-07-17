@@ -51,7 +51,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     finalSize = os.stat(tempVideoFilePath).st_size
@@ -75,7 +75,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       dependentValueName='Width',
                       dependentValueMaximum=options.get('maximumWidth',0),
                       requestId=requestId,
-                      optimiserName=options.get('optimizer'))
+                      optimiserName=options.get('optimizer'),
+                      globalOptions=globalOptions)
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)

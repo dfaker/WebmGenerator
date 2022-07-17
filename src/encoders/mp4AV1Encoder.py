@@ -123,7 +123,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     if passPhase==1:
@@ -150,7 +150,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       maxAttempts=globalOptions.get('maxEncodeAttempts',6),
                       dependentValueMaximum=options.get('maximumBitrate',0),
                       requestId=requestId,
-                      optimiserName=options.get('optimizer'))
+                      optimiserName=options.get('optimizer'),
+                      options=options,
+                      globalOptions=globalOptions)
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   

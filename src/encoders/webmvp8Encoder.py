@@ -132,7 +132,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
 
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     if passPhase==1:
@@ -166,7 +166,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       dependentValueMaximum=options.get('maximumBitrate',0),
                       requestId=requestId,
                       minimumPSNR=minimumPSNR,
-                      optimiserName=options.get('optimizer') )
+                      optimiserName=options.get('optimizer'),
+                      options=options,
+                      globalOptions=globalOptions )
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   encoderStatusCallback('Encoding complete '+videoFilePath,1,finalFilename=finalFilenameConfirmed)

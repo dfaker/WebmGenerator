@@ -80,7 +80,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     tileColumns  = 0
 
-    if 'No Tile' not in  options.get('outputFormat',''):
+    if not options.get('disableVP9Tiling',False):
       if targetHeight >= 960:
         tileColumns = 1
       if targetHeight >= 1920:
@@ -131,7 +131,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     else:
       ffmpegcommand += ['-speed', '1']
 
-    if 'BEST' in  options.get('outputFormat','').upper():
+    if options.get('forceBestDeadline',False):
       ffmpegcommand+=["-quality","best"]
     else:
       ffmpegcommand+=["-quality","good"]
@@ -139,9 +139,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand+=['-psnr', '-row-mt', '1', '-tile-columns', str(tileColumns), "-tile-rows", "0"
                    ,"-arnr-maxframes", "7","-arnr-strength", "5"
                    ,"-aq-mode", "0", "-tune-content", "film", "-enable-tpl", "1", "-frame-parallel", "0"
-                   ,"-metadata", 'Title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) 
-                   ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
-                   ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() ) ]
+                   ,"-metadata", 'Title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) ]
     
     if sizeLimitMax == 0.0:
       ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10","-crf"  ,'4']
@@ -173,7 +171,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     if passPhase==1:
@@ -184,6 +182,13 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       return finalSize, psnr, returnCode
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+
+  minimumPSNR = 0.0
+  try:
+    minimumPSNR = float(options.get('minimumPSNR',0.0))
+  except:
+    pass
+
 
   optimiser = encodeTargetingSize_linear
   if  'Nelder-Mead' in options.get('optimizer'):
@@ -200,7 +205,10 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                       maxAttempts=globalOptions.get('maxEncodeAttempts',6),
                       dependentValueMaximum=options.get('maximumBitrate',0),
                       requestId=requestId,
-                      optimiserName=options.get('optimizer'))
+                      minimumPSNR=minimumPSNR,
+                      optimiserName=options.get('optimizer'),
+                      options=options,
+                      globalOptions=globalOptions)
 
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds )
   

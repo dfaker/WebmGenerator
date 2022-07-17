@@ -90,8 +90,6 @@ def lucas_kanade_np(im1, im2, win=2):
 encoderMap = {
    'webm:VP8':webmvp8Encoder
   ,'webm:VP9':webmvp9Encoder
-  ,'webm:VP9_No Tile':webmvp9Encoder
-  ,'webm:VP9_Best Slow':webmvp9Encoder
   ,'mp4:x264':mp4x264Encoder
   ,'mp4:x264_Nvenc':mp4x264NvencEncoder
   ,'mp4:H265_Nvenc':mp4H265NvencEncoder
@@ -363,8 +361,13 @@ class FFmpegService():
         if filterexp=='':
           filterexp='null'  
 
+
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
+
+        if options.get('forceFPS',-1)>0:
+          filterexp += ',fps={}'.format(options.get('forceFPS',-1))
+        
 
         key = (rid,clipfilename,s,e,filterexp,filterexpEnc)
 
@@ -814,7 +817,10 @@ class FFmpegService():
 
         filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
-
+        
+        if options.get('forceFPS',-1)>0:
+          filterexp += ',fps={}'.format(options.get('forceFPS',-1))
+        
 
         try:
           os.path.exists(tempPathname) or os.mkdir(tempPathname)

@@ -197,13 +197,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind('B',       self.keyboardBlockAtTime)
     self.timeline_canvas.bind('D',       self.keyboardRemoveBlockAtTime)
 
-
     self.timeline_canvas.bind("q",        lambda x: self.controller.jumpClips(-1))
     self.timeline_canvas.bind("e",        lambda x: self.controller.jumpClips(1))
     self.timeline_canvas.bind("Q",        lambda x: self.controller.jumpClips(-1))
     self.timeline_canvas.bind("E",        lambda x: self.controller.jumpClips(1))
     self.timeline_canvas.bind("r",        lambda x: self.controller.randomClip())
     self.timeline_canvas.bind("R",        lambda x: self.controller.randomClip())
+
+    self.timeline_canvas.bind("<Control-a>",  lambda x: self.controller.addFullClip()) 
+    self.timeline_canvas.bind("<Control-A>",  lambda x: self.controller.addFullClip()) 
+
 
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1

@@ -5,6 +5,7 @@ import os
 import logging
 from datetime import datetime
 import math
+from collections import deque
 
 filesPlannedForCreation = set()
 fileExistanceLock = threading.Lock()
@@ -62,11 +63,26 @@ def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=1):
 
       fileN+=1
 
-def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None):
+def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None,options={}):
   currentEncodedTotal=0
   psnr = None
   ln=b''
   logging.debug('Encode Start')
+
+  earlyExitOnLowPSNR    = options.get('earlyPSNRWidthReduction',False)
+  
+  minimumPSNR           = -1
+  try:
+    minimumPSNR           = int(float(options.get('minimumPSNR',-1)))
+  except:
+    pass
+
+  earlyPSNRWindowLength = options.get('earlyPSNRWindowLength',5)
+  earlyPSNRSkip         = options.get('earlyPSNRSkipSamples',5)
+  psnrSamplesSkipped    = 0
+
+  psnrQ = deque([],max(2,earlyPSNRWindowLength))
+  psnrAve = None
   while 1:
     try:
       if isRquestCancelled(requestId):
@@ -84,6 +100,23 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
               tpsnr = float(p.split(b':')[-1]) 
               if (not math.isnan(tpsnr)) and tpsnr != float('inf'):
                 psnr = tpsnr
+
+                if psnrSamplesSkipped > earlyPSNRSkip:
+                  psnrQ.append(psnr)
+                
+                psnrSamplesSkipped+=1
+
+                if len(psnrQ) == earlyPSNRWindowLength and earlyExitOnLowPSNR:
+                  psnrAve = sum(psnrQ)/earlyPSNRWindowLength
+                  print('psnrAve',psnrAve,minimumPSNR,psnrQ)
+
+                  if psnrAve is not None and psnrAve < minimumPSNR:
+
+                    proc.kill()
+                    outs, errs = proc.communicate()
+                    statusCallback('Rolling PSNR too Low '+processLabel,0,lastEncodedPSNR=psnr,encodeStage='PSNR Too Low', encodePass='PSNR {} ({} samples)'.format(psnrAve,earlyPSNRWindowLength) )
+                    return psnrAve,1
+
             except Exceptiona as e:
               logging.error("Encode capture psnr Exception",exc_info=e)
           if b'time=' in p:
@@ -97,6 +130,7 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
                   statusCallback('Encoding '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr,encodeStage='Encoding Final', encodePass='Two Pass Mode Pass 1' )
                 elif passNumber == 2:
                   statusCallback('Encoding '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr,encodeStage='Encoding Final', encodePass='Two Pass Mode Pass 2' )
+
             except Exception as e:
               logging.error("Encode progress Exception",exc_info=e)
         ln=b''
@@ -115,4 +149,5 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
     statusCallback('Complete '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr )
   elif passNumber == 2:
     statusCallback('Complete '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr )
+  
   return psnr,proc.returncode

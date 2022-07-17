@@ -269,6 +269,12 @@ class CutselectionController:
     self.overlay = None
 
   def close_ui(self):
+
+    try:
+      self.player.stop()
+    except Exception as e:
+      print(e)
+
     try:
       self.player.unobserve_property('time-pos', self.handleMpvTimePosChange)
     except Exception as e:
@@ -294,9 +300,14 @@ class CutselectionController:
     except Exception as e:
       print(e)
     
-
+    """
     for file in self.files:
-      self.removeVideoFile(file)
+      try:
+        self.removeVideoFile(file)
+      except Exception as e:
+        print(e)
+    """
+    
     try:
       self.ui.destroy()
       del self.ui.master
@@ -454,11 +465,20 @@ class CutselectionController:
     self.ffmpegService.loadImageFile(filename,duration,self.returnImageLoadAsVideo)
 
   def loadFiles(self,fileList):
+
+    if len(fileList) > 100:
+      response = self.ui.confirmWithMessage('Disable video listing?','You\'re loading {} files at once, showing these as widgets will affect performance, do you want to disable the file listing widget and just use the "Prev Clip" and "Next Clip" controls?'.format(len(fileList)),icon='warning')
+      if response=='yes':
+        self.ui.disableFileWidgets=True
+      else:
+        self.ui.disableFileWidgets=False
+
     for file in fileList:
       if file not in self.files:
         self.files.append(file)
         if self.currentlyPlayingFileName is None:
           self.playVideoFile(file,0)
+
     self.ui.updateFileListing(self.files[:])
     self.updateProgressStatistics()
 

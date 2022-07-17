@@ -509,6 +509,7 @@ class CutselectionUi(ttk.Frame):
         self.playingOnLastSwitchAway = True
 
         self.frameRate = None
+        self.disableFileWidgets=False
 
     def setDragDur(self,dur):
       self.sliceLengthVar.set(str(round(dur,4)))
@@ -768,19 +769,23 @@ class CutselectionUi(ttk.Frame):
             self.controller.isActiveTab=False
 
     def updateFileListing(self, files):
-        currentFiles = set([x.filename for x in self.previews])
+        if self.disableFileWidgets:
+          for preview in self.previews:
+              preview.destroy()
+        else:
+          currentFiles = set([x.filename for x in self.previews])
 
-        for filename in files:
-            if filename not in currentFiles:
-                self.previews.append(
-                    VideoFilePreview(self.videoPreviewContainer, self, filename)
-                )
+          for filename in files:
+              if filename not in currentFiles:
+                  self.previews.append(
+                      VideoFilePreview(self.videoPreviewContainer, self, filename)
+                  )
 
-        previewsToRemove = [x for x in self.previews if x.filename not in files]
-        self.previews = [x for x in self.previews if x.filename in files]
+          previewsToRemove = [x for x in self.previews if x.filename not in files]
+          self.previews = [x for x in self.previews if x.filename in files]
 
-        for preview in previewsToRemove:
-            preview.destroy()
+          for preview in previewsToRemove:
+              preview.destroy()
 
     def requestPreviewFrame(self, filename):
         self.controller.requestPreviewFrame(filename, None, (200, -1))

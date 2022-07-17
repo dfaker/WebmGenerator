@@ -111,7 +111,8 @@ class WebmGeneratorUi:
 
     self.style.configure ("verticalPack.TLabel",padding=(2,-2))
     self.style.configure ("verticalPack.TSpinbox",padding=(2,-8))
-  
+    self.style.configure ("disabledListing.TFrame",color='#000',borderwidth=0,foreground='#000',background='#000',bordercolor='#000',highlightbackground='#000')
+
 
     if darkMode:
       #self.style.theme_use('black')
@@ -150,6 +151,8 @@ class WebmGeneratorUi:
 
       self.style.configure ("TLabel",color='white',foreground='white',background='#0f0f0f')
       self.style.configure ("TFrame",color='white',foreground='white',background='#0f0f0f',bordercolor='#1f1f1f',highlightbackground='#0f0f0f')
+
+
 
 
       self.style.configure ("TLabelframe",color='white',foreground='white',background='#0f0f0f',bordercolor='#1f1f1f',highlightbackground='#0f0f0f',relief='flat')

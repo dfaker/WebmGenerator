@@ -15,6 +15,7 @@ import json
 import threading
 from .modalWindows import Tooltip
 from .modalWindows import VideoAudioSync
+from .modalWindows import AdvancedEncodeFlagsModal
 import platform
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -919,8 +920,6 @@ class MergeSelectionUi(ttk.Frame):
       'mp4:AV1',
       'webm:VP8',
       'webm:VP9',
-      'webm:VP9_No Tile',
-      'webm:VP9_Best Slow',
       'gif',      
       'apng',
     ]
@@ -1387,6 +1386,12 @@ class MergeSelectionUi(ttk.Frame):
     self.entrypostProcessingFilter.grid(row=6,column=3,sticky='ew')
 
 
+    self.buttonAdvancedOptions = ttk.Button(self.frameSequenceValues,text='Advanced Encode Options',command=self.selectAdvancedOptions)
+    self.buttonAdvancedOptions.grid(row=7,column=3,sticky='ew')
+    Tooltip(self.buttonAdvancedOptions,text='A custom final filter to apply to all clips.')
+
+
+
     
     self.comboboxTransStyle = ttk.Combobox(self.frameTransStyle,textvariable=self.transStyleVar,values=self.transStyles)
     #self.comboboxTransStyle['padding']=2
@@ -1433,6 +1438,19 @@ class MergeSelectionUi(ttk.Frame):
     self.selectedColumn = None
     self.player=None
     self.syncModal=None
+    self.advancedFlags={'forceGifFPS':True}
+
+  def selectAdvancedOptions(self):
+    
+    modal = AdvancedEncodeFlagsModal(master=self,controller=self)
+    modal.mainloop()
+
+  def getAdvancedFlags(self):
+    return self.advancedFlags
+
+  def setAdvancedFlags(self,flags):
+    self.advancedFlags.update(flags)
+    print(self.advancedFlags)
 
   def viewFilterForClip(self,clip):
     self.controller.jumpToFilterByRid(clip.rid)
@@ -1769,6 +1787,7 @@ class MergeSelectionUi(ttk.Frame):
         'gridPaddingWidth':self.gridPadWidth,
         'gridPadColour':self.gridPadColour
       }
+      options.update(self.advancedFlags)
 
       encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
       self.encoderProgress.append(encodeProgressWidget)
@@ -1817,6 +1836,7 @@ class MergeSelectionUi(ttk.Frame):
           'audioOverrideBias':self.audiOverrideBiasValue,
           'loopStartAndEnd':self.loopStartAndendValue,
         }
+        options.update(self.advancedFlags)
 
         encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
         self.encoderProgress.append(encodeProgressWidget)
@@ -1864,6 +1884,7 @@ class MergeSelectionUi(ttk.Frame):
             'optimizer':self.optimizer,
             'audioOverrideBias':self.audiOverrideBiasValue,
           }
+          options.update(self.advancedFlags)
 
           encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
           self.encoderProgress.append(encodeProgressWidget)

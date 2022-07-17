@@ -83,6 +83,7 @@ class WebmGeneratorController:
 
       "generateTimelineThumbnails":True,
       "perClipSpeedAdjustment":False,
+      "defaultPSNRWidthReductionFactor":0.05,
 
       
 
@@ -524,11 +525,11 @@ class WebmGeneratorController:
           self.saveProject(self.autosaveFilename)
     else:
       self.saveProject(self.autosaveFilename)
-    
+      
+    self.cutselectionController.close_ui()
+    logging.debug('self.cutselectionController.close_ui()')
     logging.debug('self.ffmpegService.cancelAllEncodeRequests()')
     self.ffmpegService.cancelAllEncodeRequests()
-    logging.debug('self.cutselectionController.close_ui()')
-    self.cutselectionController.close_ui()
     logging.debug('self.cutselectionController.close_ui()')
     self.filterSelectionController.close_ui()
     logging.debug('self.filterSelectionController.close_ui()')

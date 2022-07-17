@@ -35,6 +35,151 @@ except Exception as e:
 
 import mpv
 
+class AdvancedEncodeFlagsModal(tk.Toplevel):
+
+  def __init__(self, master=None, controller=None, *args):
+    tk.Toplevel.__init__(self, master)
+    self.controller = controller
+
+    options = {
+                'forceBestDeadline':False,
+                'disableVP9Tiling':False,
+                'forceGifFPS':True,
+                'forceFPS':-1,
+                'earlyPSNRWidthReduction':-1,
+                'earlyPSNRWindowLength':5,
+                'earlyPSNRSkipSamples':5
+              }
+
+    if self.controller is not None:
+      tempOptions = self.controller.getAdvancedFlags()
+      for k,v in options.items():
+        if k in tempOptions:
+          if type(v) == bool:
+            options[k] = bool(tempOptions[k])
+          elif type(v) == int:
+            options[k] = int(tempOptions[k])
+
+    self.title('Advanced Encoding Flags')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,100)
+
+    self.columnconfigure(0, weight=1)
+    self.columnconfigure(1, weight=1)
+
+    self.bestDeadlineLabel = ttk.Label(self)
+    self.bestDeadlineLabel.config(text='Force "best" deadline (Will be slower, can occasionally produce worse output)')
+    self.bestDeadlineLabel.grid(row=0,column=0,sticky='new',padx=0,pady=0)
+    self.bestDeadlineVar   = tk.IntVar(self,0)
+    self.bestDeadlineVar.set(int(options['forceBestDeadline']))
+    self.bestDeadlineCheck =  ttk.Checkbutton(self,text='',var=self.bestDeadlineVar)
+    self.bestDeadlineCheck.grid(row=0,column=1,sticky='new',padx=0,pady=0)
+
+    self.disableTilingLabel = ttk.Label(self)
+    self.disableTilingLabel.config(text='Disable VP9 column tiling (Better quality but no multi-threading can be used)')
+    self.disableTilingLabel.grid(row=1,column=0,sticky='new',padx=0,pady=0)
+    self.disableTilingVar   = tk.IntVar(self,0)
+    self.disableTilingVar.set(int(options['disableVP9Tiling'])) 
+    self.disableTilingCheck =  ttk.Checkbutton(self,text='',var=self.disableTilingVar)
+    self.disableTilingCheck.grid(row=1,column=1,sticky='new',padx=0,pady=0)
+
+    self.forceGifFPSLabel = ttk.Label(self)
+    self.forceGifFPSLabel.config(text='Force 18fps output on gifs (too high fps in gifs can slow down playback)')
+    self.forceGifFPSLabel.grid(row=2,column=0,sticky='new',padx=0,pady=0)
+    self.forceGifFPSVar   = tk.IntVar(self,1)
+    self.forceGifFPSVar.set(int(options['forceGifFPS'])) 
+    self.forceGifFPSCheck =  ttk.Checkbutton(self,text='',var=self.forceGifFPSVar)
+    self.forceGifFPSCheck.grid(row=2,column=1,sticky='new',padx=0,pady=0)
+
+    self.forceFPSLabel = ttk.Label(self)
+    self.forceFPSLabel.config(text='Force final fixed frames per second on all encodes')
+    self.forceFPSLabel.grid(row=3,column=0,sticky='new',padx=0,pady=0)
+    self.forceFPSVar   = tk.StringVar(self,1)
+    self.forceFPSVar.set(str(int(options['forceFPS']))) 
+    self.forceFPSCheck =  ttk.Spinbox(self,text='',textvariable=self.forceFPSVar,from_=float('-1'),to=float('inf'))
+    self.forceFPSCheck.grid(row=3,column=1,sticky='new',padx=0,pady=0)
+
+    self.earlyPSNRLabel = ttk.Label(self)
+    self.earlyPSNRLabel.config(text='Use running average rather than final PSNR (may be innacurate)')
+    self.earlyPSNRLabel.grid(row=4,column=0,sticky='new',padx=0,pady=0)
+    self.earlyPSNRVar   = tk.IntVar(self,0)
+    self.earlyPSNRVar.set(int(options['earlyPSNRWidthReduction']))
+    self.earlyPSNRCheck =  ttk.Checkbutton(self,text='',var=self.earlyPSNRVar)
+    self.earlyPSNRCheck.grid(row=4,column=1,sticky='new',padx=0,pady=0)
+
+    self.earlyPSNRSampleLabel = ttk.Label(self)
+    self.earlyPSNRSampleLabel.config(text='Number of PSNR samples to average')
+    self.earlyPSNRSampleLabel.grid(row=5,column=0,sticky='new',padx=0,pady=0)
+    self.earlyPSNRSampleVar   = tk.StringVar(self,0)
+    self.earlyPSNRSampleVar.set(str(int(options['earlyPSNRWindowLength']))) 
+    self.earlyPSNRSampleCheck =  ttk.Spinbox(self,text='',textvariable=self.earlyPSNRSampleVar,from_=float('1'),to=float('inf'))
+    self.earlyPSNRSampleCheck.grid(row=5,column=1,sticky='new',padx=0,pady=0)
+
+    self.earlyPSNRSampleSkipLabel = ttk.Label(self)
+    self.earlyPSNRSampleSkipLabel.config(text='Number of initial PSNR samples to skip')
+    self.earlyPSNRSampleSkipLabel.grid(row=6,column=0,sticky='new',padx=0,pady=0)
+    self.earlyPSNRSampleSkipVar   = tk.StringVar(self,0)
+    self.earlyPSNRSampleSkipVar.set(str(int(options['earlyPSNRSkipSamples']))) 
+    self.earlyPSNRSampleSkipCheck =  ttk.Spinbox(self,text='',textvariable=self.earlyPSNRSampleSkipVar,from_=float('1'),to=float('inf'))
+    self.earlyPSNRSampleSkipCheck.grid(row=6,column=1,sticky='new',padx=0,pady=0)
+
+
+    self.applyCmd = ttk.Button(self)
+    self.applyCmd.config(text='Apply',command=self.applyOptions)
+    self.applyCmd.grid(row=10,column=0,columnspan=2,sticky='nesw')
+
+  def applyOptions(self):
+    options = {
+                'forceBestDeadline':False,
+                'disableVP9Tiling':False,
+                'forceGifFPS':True,
+                'forceFPS':-1,
+                'earlyPSNRWidthReduction':False,
+                'earlyPSNRWindowLength':5,
+                'earlyPSNRSkipSamples':5
+              }
+
+    try:
+      options['forceBestDeadline'] = int(self.bestDeadlineVar.get()) == 1
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['disableVP9Tiling'] = int(self.disableTilingVar.get()) == 1
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['forceGifFPS'] = int(self.forceGifFPSVar.get()) == 1
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['forceFPS'] = int(self.forceFPSVar.get())
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['earlyPSNRWidthReduction'] = int(self.earlyPSNRVar.get()) == 1
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['earlyPSNRWindowLength'] = int(self.earlyPSNRSampleVar.get())
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['earlyPSNRSkipSamples'] = int(self.earlyPSNRSampleSkipVar.get())
+    except Exception as e: 
+      print(e)
+
+    if self.controller is not None:
+      self.controller.setAdvancedFlags(options)
+
+    self.destroy()
+
 
 class SliceCreationUtilsModal(tk.Toplevel):
 
@@ -2222,5 +2367,5 @@ class OptionsDialog(tk.Toplevel):
     print(valueKey)
 
 if __name__ == "__main__":
-  app = SliceCreationUtilsModal()
+  app = AdvancedEncodeFlagsModal()
   app.mainloop()

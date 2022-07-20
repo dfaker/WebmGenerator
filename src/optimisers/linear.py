@@ -33,14 +33,25 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
     if isRquestCancelled(requestId):
       return
 
+    cqMode = options.get('cqMode',False)
+    try:
+      cqMode = cqMode and encoderFunction.supportsCRQMode
+    except:
+      cqMode=False
+
+    if cqMode and passCount == 1:
+      val=10
+    if cqMode:
+      val = int(min(max(val,4),50))
+
     if twoPassMode:
       passReason='Stats Pass {} {}'.format(passCount+1,lastFailReason)
-      _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId,widthReduction=widthReduction)
+      _         = encoderFunction(val,passCount,passReason,passPhase=1,requestId=requestId,widthReduction=widthReduction,cqMode=cqMode)
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr,returnCode = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction)
+      finalSize,lastpsnr,returnCode = encoderFunction(val,passCount,passReason,passPhase=2,requestId=requestId,widthReduction=widthReduction,cqMode=cqMode)
     else:
       passReason='Encode Pass {} {}'.format(passCount+1,lastFailReason)
-      finalSize,lastpsnr,returnCode = encoderFunction(val,passCount,passReason,requestId=requestId,widthReduction=widthReduction)
+      finalSize,lastpsnr,returnCode = encoderFunction(val,passCount,passReason,requestId=requestId,widthReduction=widthReduction,cqMode=cqMode)
 
     if isRquestCancelled(requestId):
       return
@@ -58,9 +69,23 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       continue
     elif returnCode == 1:
       return
-    elif sizeLimitMin<finalSize<sizeLimitMax or ( (not psnrAdjusted) and allowEarlyExitWhenUndersize and passCount==1 and finalSize<sizeLimitMax) or passCount>maxAttempts:
+    elif sizeLimitMin<finalSize<sizeLimitMax or ( (not psnrAdjusted) and allowEarlyExitWhenUndersize and passCount==1 and finalSize<sizeLimitMax) or (passCount>maxAttempts and finalSize<sizeLimitMax):
       shutil.move(tempFilename,outputFilename)
       return outputFilename
+
+
+    elif cqMode and finalSize<sizeLimitMin:
+      lastFailReason = 'File too small {:.2%}, CRQ decrease'.format(finalSize/sizeLimitMin)
+      if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
+        smallestFailedOverMaximum=val
+
+    elif cqMode and finalSize>sizeLimitMax:
+      lastFailReason = 'File too large {:.2%}, CRQ increase'.format(finalSize/sizeLimitMax)
+      if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
+        largestFailedUnderMinimum=val
+
+
+
     elif finalSize<sizeLimitMin:
       lastFailReason = 'File too small {:.2%}, {} increase'.format(finalSize/sizeLimitMin,dependentValueName)
       if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
@@ -69,12 +94,21 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       lastFailReason = 'File too large {:.2%}, {} decrease'.format(finalSize/sizeLimitMax,dependentValueName)
       if smallestFailedOverMaximum is None or val<smallestFailedOverMaximum:
         smallestFailedOverMaximum=val
+    
     logging.debug("Encode complete {}:{} finalSize:{} targetSizeMedian:{}".format(dependentValueName,val,finalSize,targetSizeMedian))
 
 
 
     if adjustval:
-      val =  val * (1/(finalSize/targetSizeMedian))
+
+      if cqMode:      
+        val =  val * ((finalSize/targetSizeMedian))
+      else:
+        val =  val * (1/(finalSize/targetSizeMedian))
+
       if largestFailedUnderMinimum is not None and smallestFailedOverMaximum is not None:
         val = (largestFailedUnderMinimum+smallestFailedOverMaximum)/2
+
+    if cqMode:
+      val = int(min(max(val,4),50))
 

@@ -38,7 +38,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
+  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None, cqMode=False):
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -134,6 +134,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       encoderStatusCallback(None,None,lastEncodedSize=finalSize)
       return finalSize, psnr, returnCode
 
+  encoderFunction.supportsCRQMode=False
   optimiser = encodeTargetingSize_linear
   if  'Nelder-Mead' in options.get('optimizer'):
     optimiser = encodeTargetingSize_nelder_mead

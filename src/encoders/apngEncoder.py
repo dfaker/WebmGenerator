@@ -25,7 +25,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
+  def encoderFunction(width,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None, cqMode=False):
 
     giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1,scale=\'max({}\\,min({}\\,iw)):-1\':flags=area[outvgif],[outa]anullsink'.format(0,width)
 
@@ -60,6 +60,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
   initialWidth = options.get('maximumWidth',1280)
 
+  encoderFunction.supportsCRQMode=False
   optimiser = encodeTargetingSize_linear
   if  'Nelder-Mead' in options.get('optimizer'):
     optimiser = encodeTargetingSize_nelder_mead

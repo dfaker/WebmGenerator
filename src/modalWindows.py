@@ -35,6 +35,61 @@ except Exception as e:
 
 import mpv
 
+class AdvancedDropModal(tk.Toplevel):
+
+  def __init__(self, master=None, dataDestination=None, *args):
+    tk.Toplevel.__init__(self, master)
+    self.data = dataDestination
+    self.master=master
+
+    self.title('Advanced drop file filtering')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,100)
+
+    self.columnconfigure(0, weight=1)
+    self.columnconfigure(1, weight=1)
+
+    self.labelSort = ttk.Label(self)
+    self.labelSort.config(text='Sort loaded files by')
+    self.labelSort.grid(row=0,column=0,sticky='new',padx=5,pady=5)
+    self.varSort   = tk.StringVar(self,'None')
+    self.varSort.set('None') 
+    self.entrySort =  ttk.Combobox(self,textvariable=self.varSort)
+    self.entrySort.config(values=['None'
+                                 ,'Filename ascending',   'Filename descending'
+                                 ,'Path ascending',       'Path descending'
+                                 ,'File Size ascending',  'File Size descending'
+                          ])
+    self.entrySort.grid(row=0,column=1,sticky='new',padx=5,pady=5)
+
+    self.substringLabel = ttk.Label(self)
+    self.substringLabel.config(text='File name filter')
+    self.substringLabel.grid(row=1,column=0,sticky='new',padx=0,pady=0)
+    self.substringVar   = tk.StringVar(self,0)
+    self.substringVar.set('') 
+    self.substringCheck =  ttk.Entry(self,textvariable=self.substringVar)
+    self.substringCheck.grid(row=1,column=1,sticky='new',padx=0,pady=0)
+
+    self.applyCmd = ttk.Button(self)
+    self.applyCmd.config(text='Apply',command=self.applyOptions)
+    self.applyCmd.grid(row=10,column=0,columnspan=2,sticky='nesw')
+    
+    self.attributes('-topmost', True)
+    self.update()
+
+  def applyOptions(self):
+    
+    self.data['sort']   = self.varSort.get()
+    self.data['filter'] = self.substringVar.get()
+
+    self.attributes('-topmost', False)
+    self.update()
+    self.destroy()
+    self.master.update()
+    print('self.destroy()')
+
+
 class AdvancedEncodeFlagsModal(tk.Toplevel):
 
   def __init__(self, master=None, controller=None, *args):
@@ -48,7 +103,8 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
                 'forceFPS':-1,
                 'earlyPSNRWidthReduction':-1,
                 'earlyPSNRWindowLength':5,
-                'earlyPSNRSkipSamples':5
+                'earlyPSNRSkipSamples':5,
+                'cqMode':False
               }
 
     if self.controller is not None:
@@ -124,6 +180,15 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     self.earlyPSNRSampleSkipCheck =  ttk.Spinbox(self,text='',textvariable=self.earlyPSNRSampleSkipVar,from_=float('1'),to=float('inf'))
     self.earlyPSNRSampleSkipCheck.grid(row=6,column=1,sticky='new',padx=0,pady=0)
 
+    
+    self.forceCQLabel = ttk.Label(self)
+    self.forceCQLabel.config(text='Use Constant Quality Mode where supported')
+    self.forceCQLabel.grid(row=7,column=0,sticky='new',padx=0,pady=0)
+    self.forceCQVar   = tk.IntVar(self,1)
+    self.forceCQVar.set(int(options['cqMode'])) 
+    self.forceCQCheck =  ttk.Checkbutton(self,text='',var=self.forceCQVar)
+    self.forceCQCheck.grid(row=7,column=1,sticky='new',padx=0,pady=0)
+    
 
     self.applyCmd = ttk.Button(self)
     self.applyCmd.config(text='Apply',command=self.applyOptions)
@@ -137,7 +202,8 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
                 'forceFPS':-1,
                 'earlyPSNRWidthReduction':False,
                 'earlyPSNRWindowLength':5,
-                'earlyPSNRSkipSamples':5
+                'earlyPSNRSkipSamples':5,
+                'cqMode':False
               }
 
     try:
@@ -172,6 +238,11 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
 
     try:
       options['earlyPSNRSkipSamples'] = int(self.earlyPSNRSampleSkipVar.get())
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['cqMode'] = int(self.forceCQVar.get()) == 1
     except Exception as e: 
       print(e)
 

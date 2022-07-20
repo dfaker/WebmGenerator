@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+import time
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
@@ -167,6 +168,8 @@ class WebmGeneratorController:
     self.tempDownloadFolder   = self.globalOptions.get('tempDownloadFolder', 'tempDownloadedVideoFiles') 
     self.autosaveFilename     = self.globalOptions.get('defaultAutosaveFilename', 'autosave.webgproj') 
     self.lastSaveFile=None
+    self.shutdown = False
+    self.abortLoad = False
 
     projectToLoad = None
 
@@ -182,6 +185,11 @@ class WebmGeneratorController:
       self.root.drop_target_register(DND_TEXT)
 
       self.root.dnd_bind('<<Drop>>',self.loadDrop)
+
+      self.root.dnd_bind('<<DropEnter>>',self.enterDrop)
+      self.root.dnd_bind('<<DropLeave>>',self.leaveDrop)
+
+
     except Exception as e:
       self.root = Tk()
       print(e)
@@ -292,9 +300,18 @@ class WebmGeneratorController:
     else:
       self.mergeSelectionUi.previewSequencetimings(uiParent=None)
 
+  def enterDrop(self,drop):
+    self.webmMegeneratorUi.showDrop()
+
+  def leaveDrop(self,drop):
+    self.webmMegeneratorUi.hideDrop()
+
+
   def loadDrop(self,drop):
     dropfiles = []
     bopen=0
+
+    
 
     print(drop.type)
     if drop.type in (CF_UNICODETEXT,CF_TEXT):
@@ -329,6 +346,7 @@ class WebmGeneratorController:
       lastchar=c
 
     dropfiles = [x for x in dropfiles if x.strip() != '']
+
     if len(dropfiles)>0:
 
       if self.globalOptions.get('askToShuffleLoadedFiles',False):
@@ -337,8 +355,24 @@ class WebmGeneratorController:
           if response=='yes':
             random.shuffle(dropfiles)
 
-      self.cutselectionController.loadFiles(self.cleanInitialFiles(dropfiles))
-    self.cutselectionUi.clearVideoMousePress()
+      loadOptions={}
+      if 'ctrl' in drop.modifiers:
+        print('getFileLoadOptions enter')
+        loadOptions = self.webmMegeneratorUi.getFileLoadOptions()
+        print('getFileLoadOptions exit')
+
+      self.webmMegeneratorUi.setLoadLabel('Loading files...')
+
+      def doAsyncLoad(dropfiles,loadOptions):
+        self.cutselectionController.loadFiles(self.cleanInitialFiles(dropfiles,loadOptions=loadOptions))
+        self.cutselectionUi.clearVideoMousePress()
+        self.webmMegeneratorUi.hideDrop()
+
+      self.root.after(0,doAsyncLoad,dropfiles,loadOptions)
+    else:
+      self.cutselectionUi.clearVideoMousePress()
+      self.webmMegeneratorUi.hideDrop()
+
 
   def updateGlobalOptions(self,changedOptions):
     print(changedOptions)
@@ -415,25 +449,92 @@ class WebmGeneratorController:
   def scanAndAddLoudSections(self):
     self.cutselectionController.scanAndAddLoudSections()
 
-  def cleanInitialFiles(self,files):
+  def cleanInitialFiles(self,files,loadOptions={}):
     finalFiles = []
+
+    self.abortLoad=False
+
+    sortKey    = loadOptions.get('sort','None')
+    substrings = loadOptions.get('filter','')
+
+    substrings = [x.strip().upper() for x in substrings.split() if len(x.strip())>0]
+
+    print(loadOptions,substrings)
+
+    statsAttrib = None
+    if sortKey in ['File Size ascending','File Size descending']:
+      statsAttrib = 'st_size'
+
+    start = time.time()
+
+    try:
+      self.webmMegeneratorUi.setLoadLabel('Loading files {}\n(Scanning root folder)'.format(len(finalFiles)))
+    except Exception as e:
+      pass
+
     for f in files:
       print('Initial file',f)
       if os.path.isfile(f):
+        if self.shutdown or self.abortLoad:
+          break
         g = mimetypes.guess_type(f)
-        if g is not None and g[0] is not None and 'video' in g[0]:
-          finalFiles.append(f)
+        if g is not None and g[0] is not None and 'video' in g[0] and all([x in f.upper() for x in substrings]):
+          key = None
+          if statsAttrib is not None:
+            key = os.stat(f)
+          finalFiles.append((key,f))
+          try:
+            if abs(start - time.time()) > 0.2:
+              self.webmMegeneratorUi.setLoadLabel('Loading files {}\n{}'.format(len(finalFiles),f))
+              start = time.time()
+          except Exception as e:
+            pass
       elif os.path.isdir(f):
         for r,dl,fl in os.walk(f):
+          if self.shutdown or self.abortLoad:
+            break
           for nf in fl:
             p = os.path.join(r,nf)
             if os.path.isfile(p):
               print('Initial sub file',p)
               g = mimetypes.guess_type(p)
-              if g is not None and g[0] is not None and 'video' in g[0]:
-                finalFiles.append(p)
-    return finalFiles
+              if g is not None and g[0] is not None and 'video' in g[0] and all([x in p.upper() for x in substrings]):
+                key = None
+                if statsAttrib is not None:
+                  key = os.stat(p)
+                finalFiles.append((key,p))
+                try:
+                  if abs(start - time.time()) > 0.2:
+                    self.webmMegeneratorUi.setLoadLabel('Loading files {}\n{}\n(Processing {})'.format(len(finalFiles),p,r))
+                    start = time.time()
+                except Exception as e:
+                  pass
 
+    self.abortLoad=False
+
+    if self.shutdown:
+      return []
+
+    if sortKey == 'Filename ascending':
+      finalFiles = sorted(finalFiles,key=lambda x:os.path.basename(x[1]))
+    elif sortKey == 'Filename descending':
+      finalFiles = sorted(finalFiles,key=lambda x:os.path.basename(x[1]),reverse=True)
+    elif sortKey == 'Path ascending':
+      finalFiles = sorted(finalFiles,key=lambda x:x[1])
+    elif sortKey == 'Path descending':
+      finalFiles = sorted(finalFiles,key=lambda x:x[1],reverse=True)
+    elif sortKey == 'File Size ascending':
+      finalFiles = sorted(finalFiles,key=lambda x:x[0].st_size)
+    elif sortKey == 'File Size descending':
+      finalFiles = sorted(finalFiles,key=lambda x:x[0].st_size,reverse=True)
+
+    if self.shutdown:
+      return []
+    
+    return [x[1] for x in finalFiles]
+
+  def abortCurrentLoad(self):
+    self.abortLoad=True
 
   def newProject(self):
 
@@ -525,7 +626,8 @@ class WebmGeneratorController:
           self.saveProject(self.autosaveFilename)
     else:
       self.saveProject(self.autosaveFilename)
-      
+    
+    self.shutdown = True
     self.cutselectionController.close_ui()
     logging.debug('self.cutselectionController.close_ui()')
     logging.debug('self.ffmpegService.cancelAllEncodeRequests()')

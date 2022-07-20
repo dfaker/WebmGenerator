@@ -41,7 +41,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br, passNumber, passReason, passPhase=0, requestId=None, widthReduction=0.0, bufsize=None):
+  def encoderFunction(br, passNumber, passReason, passPhase=0, requestId=None, widthReduction=0.0, bufsize=None, cqMode=False):
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
@@ -73,9 +73,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     elif passPhase==2:
       ffmpegcommand+=['-pass', '2', '-passlogfile', logFilePath ]
 
+    crf = 4
+    if cqMode:
+      crf = br
+      br = 0
+
     if bufsize is None:
       bufsize = 3000000
-      if sizeLimitMax != 0.0:
+      if sizeLimitMax != 0.0 and not cqMode:
         bufsize = str(min(2000000000.0,br*2))
     threadCount = globalOptions.get('encoderStageThreads',4)
     metadataSuffix = globalOptions.get('titleMetadataSuffix',' WmG')
@@ -88,8 +93,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    
                    ,"-start_at_zero", "-c:v","libvpx"] + audioCodec + [
 
-                    "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
-                   ,"-threads", str(threadCount),"-crf"  ,'4'
+                    "-stats","-pix_fmt","yuv420p"]
+
+    if not cqMode:
+      ffmpegcommand+=["-bufsize", str(bufsize)]
+
+
+
+    ffmpegcommand+=["-threads", str(threadCount),"-crf"  ,str(crf)
                    ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
                    ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
                    ,"-metadata", 'title={}'.format(filenamePrefix + metadataSuffix)
@@ -100,7 +111,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     
     print(ffmpegcommand)
     if sizeLimitMax == 0.0:
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","10"]
+      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax","50"]
     else:
       ffmpegcommand+=["-b:v",str(br)]
 
@@ -130,8 +141,11 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     
-    encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
-
+    if cqMode:
+      encoderStatusCallback(None,None, lastEncodedCRF=crf, lastEncodedSize=None, lastBuff=0, lastWR=widthReduction)
+    else:
+      encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
+      
     psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
@@ -142,6 +156,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       encoderStatusCallback(None,None,lastEncodedSize=finalSize)
       return finalSize, psnr, returnCode
 
+  encoderFunction.supportsCRQMode=True
   encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
   minimumPSNR = 0.0

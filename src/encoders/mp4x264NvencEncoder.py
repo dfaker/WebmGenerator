@@ -38,7 +38,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     statusCallback(text,percentage,**kwargs)
     packageglobalStatusCallback(text,percentage)
 
-  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None):
+  def encoderFunction(br,passNumber,passReason,passPhase=0,requestId=None,widthReduction=0.0,bufsize=None, cqMode=False):
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']

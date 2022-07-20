@@ -464,7 +464,10 @@ class CutselectionController:
   def loadImageFile(self,filename,duration):
     self.ffmpegService.loadImageFile(filename,duration,self.returnImageLoadAsVideo)
 
-  def loadFiles(self,fileList):
+  def loadFiles(self,fileList,asktoSort=False):
+
+    if asktoSort:
+      pass
 
     if len(fileList) > 100:
       response = self.ui.confirmWithMessage('Disable video listing?','You\'re loading {} files at once, showing these as widgets will affect performance, do you want to disable the file listing widget and just use the "Prev Clip" and "Next Clip" controls?'.format(len(fileList)),icon='warning')

@@ -14,7 +14,7 @@ import os
 import psutil
 import random
 from math import sin,cos,floor
-from .modalWindows import SubtitleExtractionModal, OptionsDialog
+from .modalWindows import SubtitleExtractionModal, OptionsDialog, AdvancedDropModal
 import colorsys
 import numpy as np
 
@@ -86,6 +86,13 @@ class WebmGeneratorUi:
 
     self.style.map('smallVideoSub.TButton',background=[('active', '#69bfdb')], foreground=[('active', '#282828')] )
 
+    self.style.configure('abortLoad.TButton', padding=0,background='#195467',activebackground='#195467',activeforeground='#195467',foreground='#69bfdb',highlightcolor='#195467',
+                                                  lightcolor='#195467',darkcolor='#195467',fieldbackground='#195467',highlightbackground='#69bfdb',relief='flat')
+
+    self.style.map('abortLoad.TButton',background=[('active', '#69bfdb')], foreground=[('active', '#195467')] )
+
+
+
     self.style.configure('small.TButton', padding=0)
     self.style.configure('smallSlim.TButton',padding=(-10,0))
     self.style.configure('smallMid.TButton',padding=(-5,0))
@@ -113,6 +120,7 @@ class WebmGeneratorUi:
     self.style.configure ("verticalPack.TSpinbox",padding=(2,-8))
     self.style.configure ("disabledListing.TFrame",color='#000',borderwidth=0,foreground='#000',background='#000',bordercolor='#000',highlightbackground='#000')
 
+    self.style.configure ("dropMessage.TLabel",background='#282828',activebackground='#282828',activeforeground='#282828',foreground='#69bfdb',highlightcolor='#282828')
 
     if darkMode:
       #self.style.theme_use('black')
@@ -411,6 +419,45 @@ class WebmGeneratorUi:
     self.boringMax = 0.0
 
     self.versioncheckResultIndex=None
+
+  def getFileLoadOptions(self):
+    data = {}
+    self.fileModal = AdvancedDropModal(self.master,dataDestination=data)
+
+    self.master.wait_window(self.fileModal)
+    print(data)
+    return data
+
+  def setLoadLabel(self,text):
+    try:
+      self.dropLabel.configure(text=text,font= ("Helvetica 20"))
+      self.master.update()
+      self.master.update_idletasks()
+    except Exception as e:
+      print(e) 
+
+  def showDrop(self):
+    self.dropLabel = ttk.Label(self.master,style="dropMessage.TLabel",text='Drop files to load\nHold CTRL for advanced options.',justify='center',anchor='center',font= ("Helvetica 50"))
+    
+    self.dropLabel.place(bordermode ='inside',relheight=1,relwidth=1,x=0,y=0)
+
+    self.dropAbort = ttk.Button(self.master,text='Cancel Load',command=self.abortLoad,style="abortLoad.TButton")
+    
+    self.dropAbort.place(bordermode ='inside',relheight=0.1,relwidth=1,x=0,rely=0.9)
+    
+  def hideDrop(self):
+    try:
+      self.dropLabel.place_forget()
+    except Exception as e:
+      print(e)
+
+    try:
+      self.dropAbort.place_forget()
+    except Exception as e:
+      print(e)  
+
+  def abortLoad(self):
+    self.controller.abortCurrentLoad()
 
   def showSlicePlanner(self):
     self.controller.showSlicePlanner()

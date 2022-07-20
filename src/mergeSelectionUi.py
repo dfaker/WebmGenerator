@@ -221,7 +221,7 @@ class EncodeProgress(ttk.Frame):
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
-  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None):
+  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedCRF=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None):
 
     if self.cancelled:
       return
@@ -251,6 +251,9 @@ class EncodeProgress(ttk.Frame):
     if lastEncodedBR is not None:
       lastEncodedBRHuman = self.sizeof_fmt(lastEncodedBR,'B')
       self.labelLastEncodedBR.config(text='Bitrate: {}'.format(lastEncodedBRHuman), relief='flat')
+
+    if lastEncodedCRF is not None:
+      self.labelLastEncodedBR.config(text='CRF: {}'.format(lastEncodedCRF), relief='flat')
 
     if lastEncodedPSNR is not None:
       PSNRGrade = 'Terrible'

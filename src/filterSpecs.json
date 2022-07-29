@@ -2511,7 +2511,90 @@
    }
   ],
   "timelineSupport": true
+ },
+
+
+
+
+ {
+  "support": "..C",
+  "category": "Filter Effects",
+  "name": "feedback",
+  "filter": "feedback@{fn}",
+  "kind": "VV->VV",
+  "desc": "Apply feedback video filter.",
+  "params": [
+   {
+    "n": "x",
+    "d": 0,
+    "type": "int",
+    "range": [
+     0,
+     null
+    ],
+    "inc": 1
+   },
+   {
+    "n": "w",
+    "d": 0,
+    "type": "int",
+    "range": [
+     0,
+     null
+    ],
+    "inc": 1
+   }
+  ]
+ },
+
+
+
+ {
+  "support": "TSC",
+  "category": "Filter Effects",
+  "name": "pixelize",
+  "filter": "pixelize@{fn}",
+  "kind": "V->V",
+  "desc": "Pixelize video.",
+  "params": [
+   {
+    "n": "width",
+    "d": 16,
+    "type": "int",
+    "range": [
+     1,
+     1024
+    ],
+    "inc": 1
+   },
+   {
+    "n": "height",
+    "d": 16,
+    "type": "int",
+    "range": [
+     1,
+     1024
+    ],
+    "inc": 1
+   },
+   {
+    "n": "mode",
+    "d": "avg",
+    "type": "cycle",
+    "inc": 1,
+    "cycle": [
+     "avg",
+     "min",
+     "max"
+    ]
+   }
+  ],
+  "timelineSupport": true
  }
+
+
+
+
 
 
 ]

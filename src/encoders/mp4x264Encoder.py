@@ -13,9 +13,12 @@ from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_l
 def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
 
   audoBitrate = 8
-  for abr in ['48','64','96','128','192']:
-    if abr in options.get('audioChannels',''):
-      audoBitrate = int(abr)*1024
+  try:
+    audoBitrate = int(float(options.get('audioRate','8')))
+  except Exception as e:
+    print(e)
+
+  audoBitrate = int(audoBitrate)*1024
 
   audio_mp  = 8
   video_mp  = 1024*1024

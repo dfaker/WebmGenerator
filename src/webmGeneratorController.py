@@ -461,9 +461,12 @@ class WebmGeneratorController:
 
     print(loadOptions,substrings)
 
-    statsAttrib = None
-    if sortKey in ['File Size ascending','File Size descending']:
-      statsAttrib = 'st_size'
+    getStats = False
+    if sortKey in ['File Size ascending','File Size descending','Created date ascending','Created date descending',
+                   'Modified date ascending','Modified date descending','Access date ascending','Access date descending']:
+      getStats = True
+
+
 
     start = time.time()
 
@@ -473,14 +476,14 @@ class WebmGeneratorController:
       pass
 
     for f in files:
-      print('Initial file',f)
+
       if os.path.isfile(f):
         if self.shutdown or self.abortLoad:
           break
         g = mimetypes.guess_type(f)
         if g is not None and g[0] is not None and 'video' in g[0] and all([x in f.upper() for x in substrings]):
           key = None
-          if statsAttrib is not None:
+          if getStats:
             key = os.stat(f)
           finalFiles.append((key,f))
           try:
@@ -496,11 +499,11 @@ class WebmGeneratorController:
           for nf in fl:
             p = os.path.join(r,nf)
             if os.path.isfile(p):
-              print('Initial sub file',p)
+
               g = mimetypes.guess_type(p)
               if g is not None and g[0] is not None and 'video' in g[0] and all([x in p.upper() for x in substrings]):
                 key = None
-                if statsAttrib is not None:
+                if getStats:
                   key = os.stat(p)
                 finalFiles.append((key,p))
                 try:
@@ -515,22 +518,31 @@ class WebmGeneratorController:
     if self.shutdown:
       return []
 
-    if sortKey == 'Filename ascending':
-      finalFiles = sorted(finalFiles,key=lambda x:os.path.basename(x[1]))
-    elif sortKey == 'Filename descending':
-      finalFiles = sorted(finalFiles,key=lambda x:os.path.basename(x[1]),reverse=True)
-    elif sortKey == 'Path ascending':
-      finalFiles = sorted(finalFiles,key=lambda x:x[1])
-    elif sortKey == 'Path descending':
-      finalFiles = sorted(finalFiles,key=lambda x:x[1],reverse=True)
-    elif sortKey == 'File Size ascending':
-      finalFiles = sorted(finalFiles,key=lambda x:x[0].st_size)
-    elif sortKey == 'File Size descending':
-      finalFiles = sorted(finalFiles,key=lambda x:x[0].st_size,reverse=True)
+    keyfunc = None
+
+    sortFuncMap = {
+      'Filename ascending':         (lambda x:os.path.basename(x[1]),False),
+      'Filename descending':        (lambda x:os.path.basename(x[1]),True),
+      'Path ascending':             (lambda x:x[1],False),
+      'Path descending':            (lambda x:x[1],True),
+      'File Size ascending':        (lambda x:x[0].st_size,False),
+      'File Size descending':       (lambda x:x[0].st_size,True),
+      'Created date ascending':     (lambda x:x[0].st_ctime,False),
+      'Created date descending':    (lambda x:x[0].st_ctime,True),
+      'Modified date ascending':    (lambda x:x[0].st_mtime,False),
+      'Modified date descending':   (lambda x:x[0].st_mtime,True),
+      'Access date ascending':      (lambda x:x[0].st_atime,False),
+      'Access date descending':     (lambda x:x[0].st_atime,True)
+    }
+
+    sortFunc,reverseSort = sortFuncMap.get(sortKey,(None,None))
+
+    if sortFunc is not None:
+      finalFiles = sorted(finalFiles,key=sortFunc,reverse=reverseSort)
 
     if self.shutdown:
       return []
-    
+
     return [x[1] for x in finalFiles]
 
   def abortCurrentLoad(self):

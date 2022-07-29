@@ -847,6 +847,7 @@ class MergeSelectionUi(ttk.Frame):
     self.transStyleVar            = tk.StringVar()
     self.speedAdjustmentVar       = tk.StringVar() 
     self.audioChannelsVar         = tk.StringVar()
+    self.audioRateVar             = tk.StringVar()
     self.audioMergeOptionsVar     = tk.StringVar()
     self.gridLoopMergeOptionsVar  = tk.StringVar()
     self.gridPadColourOptionsVar  = tk.StringVar()
@@ -871,6 +872,7 @@ class MergeSelectionUi(ttk.Frame):
     self.transStyleVar.trace('w',self.valueChange)
     self.speedAdjustmentVar.trace('w',self.valueChange)
     self.audioChannelsVar.trace('w',self.valueChange)
+    self.audioRateVar.trace('w',self.valueChange)
     self.audioMergeOptionsVar.trace('w',self.valueChange)
     self.gridLoopMergeOptionsVar.trace('w',self.valueChange)
     self.gridPadColourOptionsVar.trace('w',self.valueChange)
@@ -902,7 +904,8 @@ class MergeSelectionUi(ttk.Frame):
       'speedAdjustment',
       'audioChannels',
       'audioMergeOptions',
-      'gridLoopMergeOptions'
+      'gridLoopMergeOptions',
+      'audioRate',
     ]
 
     self.audioOverrideVar.trace('w',self.valueChange)
@@ -947,7 +950,7 @@ class MergeSelectionUi(ttk.Frame):
     self.maxbitrateVar.set('6000.0')
 
     self.minimumPSNRVar.set('0.0')
-    self.maximumWidthVar.set('1280')
+    self.maximumWidthVar.set('1280 - 720p')
     self.transDurationVar.set('0.0')       
 
     self.transStyles = [
@@ -1009,22 +1012,18 @@ class MergeSelectionUi(ttk.Frame):
 
 
 
+
+
+
     self.audioChannelsOptions = [
-       'Stereo - Low    48 kbps'
-      ,'Stereo - Medium 64 kbps'
-      ,'Stereo - High   96 kbps'
-      ,'Stereo - HD     128 kbps'
-      ,'Stereo - Ultra  192 kbps'
-      ,'Mono - Low    48 kbps'
-      ,'Mono - Medium 64 kbps'
-      ,'Mono - High   96 kbps'
-      ,'Mono - HD     128 kbps'
-      ,'Mono - Ultra  192 kbps'
+       'Stereo'
+      ,'Mono'
       #,'Directly Copy Source'
       ,'No audio'
     ]
 
-    self.audioChannelsVar.set(self.audioChannelsOptions[6])    
+    self.audioChannelsVar.set(self.audioChannelsOptions[1])    
+    self.audioRateVar.set('64')
 
     self.audioMergeOptions = ['Merge Normalize All','Merge Original Volume','Selected Column Only','Largest Cell by Area','Adaptive Loudest Cell']
     self.audioMergeOptionsVar.set(self.audioMergeOptions[0]) 
@@ -1273,7 +1272,19 @@ class MergeSelectionUi(ttk.Frame):
     self.labelMaximumWidth.grid(row=2,column=2,sticky='e')
 
 
-    self.defaultMaxWidthWidthOptions = ['3840', '2560', '2048', '1920', '1600', '1440', '1280', '1024', '960', '854', '720', '640', '480']
+    self.defaultMaxWidthWidthOptions = ['3840 - 4K', 
+                                        '2560 - QHD', 
+                                        '2048 - 2K', 
+                                        '1920 - Full HD', 
+                                        '1600 - HD+', 
+                                        '1440 - Quad HD', 
+                                        '1280 - 720p', 
+                                        '1024 - XGA', 
+                                        '960 - qHD', 
+                                        '854 - 480p',
+                                        '720 - NTSC', 
+                                        '640 - nHD', 
+                                        '480 - SD']
     self.entryMaximumWidth = ttk.Combobox(self.frameSequenceValues)
     self.entryMaximumWidth.config(textvariable=self.maximumWidthVar)
     self.entryMaximumWidth.config(values=self.defaultMaxWidthWidthOptions)
@@ -1282,15 +1293,37 @@ class MergeSelectionUi(ttk.Frame):
 
 
 
+
+
+
     self.labelAudioChannels = ttk.Label(self.frameSequenceValues)
     self.labelAudioChannels.config(anchor='e', padding='2', text='Audio Channels')
     self.labelAudioChannels.grid(row=4,column=0,sticky='e')
-    self.entryAudioChannels = ttk.OptionMenu(self.frameSequenceValues,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
-    Tooltip(self.entryAudioChannels,text='The audio quality of the final video.')
+
+
+    self.frameAudioBlock = tk.Frame(self.frameSequenceValues)
+    self.frameAudioBlock.grid(row=4,column=1,sticky='ew')
+
+    self.frameAudioBlock.columnconfigure(0, weight=0)
+    self.frameAudioBlock.columnconfigure(1, weight=0)
+    self.frameAudioBlock.columnconfigure(2, weight=1)
+
+    self.entryAudioChannels = ttk.OptionMenu(self.frameAudioBlock,self.audioChannelsVar,self.audioChannelsVar.get(),*self.audioChannelsOptions)
+    Tooltip(self.entryAudioChannels,text='The number of channels of the final video audio.')
     self.entryAudioChannels['padding']=2
-    self.entryAudioChannels.grid(row=4,column=1,sticky='ew')
+    self.entryAudioChannels.grid(row=0,column=0,sticky='ew')
 
+    self.labelAudioAt = ttk.Label(self.frameAudioBlock)
+    self.labelAudioAt.config(anchor='e', padding='2', text='@ Bitrate (KB/s)')
+    self.labelAudioAt.grid(row=0,column=1,sticky='e')
 
+    self.entryAudioRate = ttk.Spinbox(self.frameAudioBlock, 
+                                         from_=5, 
+                                         to=510, 
+                                         increment=1,
+                                         textvariable=self.audioRateVar)
+    Tooltip(self.entryAudioRate,text='The audio quality of the final video.')
+    self.entryAudioRate.grid(row=0,column=2,sticky='ew')
 
 
     self.labelSpeedChange = ttk.Label(self.frameSequenceValues)
@@ -1636,7 +1669,9 @@ class MergeSelectionUi(ttk.Frame):
       pass
 
     try:
-      self.maximumWidthValue = int(float(self.maximumWidthVar.get()))
+      widthNum = self.maximumWidthVar.get().split('-')[0].strip()
+      self.maximumWidthValue = int(float(widthNum))
+      print('maximumWidthValue',self.maximumWidthValue)
     except:
       pass
 
@@ -1652,6 +1687,12 @@ class MergeSelectionUi(ttk.Frame):
 
     try:
       self.speedAdjustmentValue = float(self.speedAdjustmentVar.get())
+    except:
+      pass
+
+
+    try:
+      self.audioRate = self.audioRateVar.get()
     except:
       pass
 
@@ -1778,6 +1819,7 @@ class MergeSelectionUi(ttk.Frame):
         'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
         'outputFormat':self.outputFormatValue,
         'audioChannels':self.audioChannels,
+        'audioRate':self.audioRate,
         'audioMerge':self.audioMerge,
         'postProcessingFilter':self.postProcessingFilter,
         'selectedColumn':selectedColumnInd,
@@ -1829,6 +1871,7 @@ class MergeSelectionUi(ttk.Frame):
           'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
           'outputFormat':self.outputFormatValue,
           'audioChannels':self.audioChannels,
+          'audioRate':self.audioRate,
           'audioMerge':self.audioMerge,
           'postProcessingFilter':self.postProcessingFilter,
           'audioOverride':self.audioOverrideValue,
@@ -1878,6 +1921,7 @@ class MergeSelectionUi(ttk.Frame):
             'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
             'outputFormat':self.outputFormatValue,
             'audioChannels':self.audioChannels,
+            'audioRate':self.audioRate,
             'audioMerge':self.audioMerge,
             'postProcessingFilter':self.postProcessingFilter,
             'audioOverride':self.audioOverrideValue,

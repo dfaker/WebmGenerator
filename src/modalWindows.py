@@ -57,9 +57,12 @@ class AdvancedDropModal(tk.Toplevel):
     self.varSort.set('None') 
     self.entrySort =  ttk.Combobox(self,textvariable=self.varSort)
     self.entrySort.config(values=['None'
-                                 ,'Filename ascending',   'Filename descending'
-                                 ,'Path ascending',       'Path descending'
-                                 ,'File Size ascending',  'File Size descending'
+                                 ,'Filename ascending',       'Filename descending'
+                                 ,'Path ascending',           'Path descending'
+                                 ,'File Size ascending',      'File Size descending'
+                                 ,'Created date ascending',   'Created date descending'
+                                 ,'Modified date ascending',  'Modified date descending'
+                                 ,'Access date ascending',    'Access date descending'
                           ])
     self.entrySort.grid(row=0,column=1,sticky='new',padx=5,pady=5)
 
@@ -104,9 +107,10 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
                 'earlyPSNRWidthReduction':-1,
                 'earlyPSNRWindowLength':5,
                 'earlyPSNRSkipSamples':5,
-                'cqMode':False
+                'cqMode':False,
+                'qmaxOverride':-1
               }
-
+    
     if self.controller is not None:
       tempOptions = self.controller.getAdvancedFlags()
       for k,v in options.items():
@@ -188,7 +192,14 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     self.forceCQVar.set(int(options['cqMode'])) 
     self.forceCQCheck =  ttk.Checkbutton(self,text='',var=self.forceCQVar)
     self.forceCQCheck.grid(row=7,column=1,sticky='new',padx=0,pady=0)
-    
+
+    self.qmaxOverrideLabel = ttk.Label(self)
+    self.qmaxOverrideLabel.config(text='Qmax override')
+    self.qmaxOverrideLabel.grid(row=8,column=0,sticky='new',padx=0,pady=0)
+    self.qmaxOverrideVar   = tk.StringVar(self,0)
+    self.qmaxOverrideVar.set(str(int(options['qmaxOverride']))) 
+    self.qmaxOverrideCheck =  ttk.Spinbox(self,text='',textvariable=self.qmaxOverrideVar,from_=float('-1'),to=float('100'))
+    self.qmaxOverrideCheck.grid(row=8,column=1,sticky='new',padx=0,pady=0) 
 
     self.applyCmd = ttk.Button(self)
     self.applyCmd.config(text='Apply',command=self.applyOptions)
@@ -203,7 +214,8 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
                 'earlyPSNRWidthReduction':False,
                 'earlyPSNRWindowLength':5,
                 'earlyPSNRSkipSamples':5,
-                'cqMode':False
+                'cqMode':False,
+                'qmaxOverride':-1
               }
 
     try:
@@ -243,6 +255,11 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
 
     try:
       options['cqMode'] = int(self.forceCQVar.get()) == 1
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['qmaxOverride'] = int(float(self.qmaxOverrideVar.get()))
     except Exception as e: 
       print(e)
 
@@ -1629,7 +1646,7 @@ class V360HeadTrackingModal(tk.Toplevel):
     self.title('Record VR head motions')
     self.style = ttk.Style()
     self.style.theme_use('clam')
-    self.minsize(600,600)    
+    self.minsize(600,600)
 
     self.labelInstructions = ttk.Label(self)
     self.labelInstructions.config(text='Click in video to capture mouse, press Space to start recording motions.',anchor="center")

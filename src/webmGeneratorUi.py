@@ -443,7 +443,7 @@ class WebmGeneratorUi:
 
     self.dropAbort = ttk.Button(self.master,text='Cancel Load',command=self.abortLoad,style="abortLoad.TButton")
     
-    self.dropAbort.place(bordermode ='inside',relheight=0.1,relwidth=1,x=0,rely=0.9)
+    self.dropAbort.place(bordermode ='inside',relheight=0.05,relwidth=1,x=0,rely=0.95)
     
   def hideDrop(self):
     try:
@@ -604,7 +604,8 @@ class WebmGeneratorUi:
       self.filemenu.entryconfigure(self.clearTempMenuIndex, state='disabled')
     else:
       self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files ({} files {})".format(count,self.sizeof_fmt(sz)))
-      self.filemenu.entryconfigure(self.clearTempMenuIndex, state='normal')
+      
+      
 
   def toggleFullscreen(self):
     self.fullscreen = not self.fullscreen

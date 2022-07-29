@@ -105,6 +105,8 @@ def debounce(wait_time,max_gap):
 
 class TimeLineSelectionFrameUI(ttk.Frame):
 
+
+
   def __init__(self, master, controller, globalOptions={}, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     self.controller = controller
@@ -164,7 +166,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.timeline_canvas_popup_menu.add_cascade(label="Loop tools",  menu=self.perfectLoopMenu)
     
+    self.timeline_canvas_popup_menu.add_separator()
+
+    self.timeline_canvas_popup_menu.add_command(label="Edit subclip",command=self.canvasPopupRangeProperties)
+
+    self.rangePropertiesEntry = self.timeline_canvas_popup_menu.index(tk.END) 
+
     self.timeline_canvas_last_right_click_x=None
+    self.timeline_canvas_last_right_click_range=None
 
     self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
     self.timeline_canvas.bind("<ButtonRelease-1>", self.timelineMousePress)
@@ -280,6 +289,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.clipped=None
 
     self.frameRate = None
+
+  def correctMouseXPosition(self,x):
+
+    self.event_generate('<Motion>', warp=True, 
+                                x=int(x),
+                                y=int(self.winfo_height()-3)
+
+                                )
 
   def getCurrentlySelectedRegion(self):
     start = self.tempRangeStart
@@ -699,6 +716,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + self.dragPreviewPos )
           else:
             self.controller.seekTo( ((targetSeconds+((ens-sts)/2))) - self.dragPreviewPos )
+
+          newX=self.secondsToXcoord(targetSeconds)
+          self.correctMouseXPosition(newX)
           break
 
       else:
@@ -871,8 +891,26 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     if e.type == tk.EventType.ButtonPress:
       if e.num==3:      
         self.timeline_canvas_last_right_click_x=e.x
-        self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
+        self.timeline_canvas_last_right_click_range=None
 
+        ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+        mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+        lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+        upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+        for rid,(st,et) in list(ranges):
+          if st<mid<et:
+            self.timeline_canvas_last_right_click_range = rid
+            break
+          if lower<et<upper or lower<st<upper:
+            self.timeline_canvas_last_right_click_range = rid
+            break
+
+        if self.timeline_canvas_last_right_click_range is None:
+          self.timeline_canvas_popup_menu.entryconfigure(self.rangePropertiesEntry, state='disabled')
+        else:
+          self.timeline_canvas_popup_menu.entryconfigure(self.rangePropertiesEntry, state='normal')
+
+        self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
 
   def frameResponseCallback(self,filename,timestamp,frameWidth,frameData):
     previewData = tk.PhotoImage(data=frameData)
@@ -1292,6 +1330,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def setTargetTrim(self,value):
     self.targetTrim=value
 
+  def canvasPopupRangeProperties(self):
+    pass
 
 if __name__ == '__main__':
   import webmGenerator

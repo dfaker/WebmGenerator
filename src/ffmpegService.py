@@ -432,9 +432,6 @@ class FFmpegService():
                       ,'-ac', '1',outname]
 
 
-
-
-
           proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
           
           currentEncodedTotal=0

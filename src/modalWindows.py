@@ -1,10 +1,10 @@
 
-
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 import subprocess as sp
 import string
+import re
 import os
 import logging
 import sys
@@ -108,7 +108,9 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
                 'earlyPSNRWindowLength':5,
                 'earlyPSNRSkipSamples':5,
                 'cqMode':False,
-                'qmaxOverride':-1
+                'qmaxOverride':-1,
+                'svtav1Preset':8,
+                'bitRateControl':'Average'
               }
     
     if self.controller is not None:
@@ -184,7 +186,6 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     self.earlyPSNRSampleSkipCheck =  ttk.Spinbox(self,text='',textvariable=self.earlyPSNRSampleSkipVar,from_=float('1'),to=float('inf'))
     self.earlyPSNRSampleSkipCheck.grid(row=6,column=1,sticky='new',padx=0,pady=0)
 
-    
     self.forceCQLabel = ttk.Label(self)
     self.forceCQLabel.config(text='Use Constant Quality Mode where supported')
     self.forceCQLabel.grid(row=7,column=0,sticky='new',padx=0,pady=0)
@@ -201,9 +202,33 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     self.qmaxOverrideCheck =  ttk.Spinbox(self,text='',textvariable=self.qmaxOverrideVar,from_=float('-1'),to=float('100'))
     self.qmaxOverrideCheck.grid(row=8,column=1,sticky='new',padx=0,pady=0) 
 
+    self.sv1avPresetLabel = ttk.Label(self)
+    self.sv1avPresetLabel.config(text='SVT-AV1 Preset')
+    self.sv1avPresetLabel.grid(row=9,column=0,sticky='new',padx=0,pady=0)
+    self.sv1avPresetVar   = tk.StringVar(self,8)
+    self.sv1avPresetVar.set(str(int(options['svtav1Preset']))) 
+    self.sv1avPresetCheck =  ttk.Spinbox(self,text='',textvariable=self.sv1avPresetVar,from_=float('0'),to=float('12'))
+    self.sv1avPresetCheck.grid(row=9,column=1,sticky='new',padx=0,pady=0) 
+
+
+
+    self.bitrateControlLabel = ttk.Label(self)
+    self.bitrateControlLabel.config(text='Bitrate constraint mode')
+    self.bitrateControlLabel.grid(row=10,column=0,sticky='new',padx=0,pady=0)
+    self.bitrateControlVar   = tk.StringVar(self,8)
+    self.bitrateControlVar.set(options['bitRateControl']) 
+    self.bitrateControlCheck = ttk.Combobox(self,textvariable=self.bitrateControlVar) 
+    self.bitrateControlCheck['state'] = 'readonly'
+    self.bitrateControlCheck.config(values=['Average',
+                                  'Limit Maximum',
+                                  'Constant'])
+
+    self.bitrateControlCheck.grid(row=10,column=1,sticky='new',padx=0,pady=0) 
+
+
     self.applyCmd = ttk.Button(self)
     self.applyCmd.config(text='Apply',command=self.applyOptions)
-    self.applyCmd.grid(row=10,column=0,columnspan=2,sticky='nesw')
+    self.applyCmd.grid(row=20,column=0,columnspan=2,sticky='nesw')
 
   def applyOptions(self):
     options = {
@@ -215,7 +240,9 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
                 'earlyPSNRWindowLength':5,
                 'earlyPSNRSkipSamples':5,
                 'cqMode':False,
-                'qmaxOverride':-1
+                'qmaxOverride':-1,
+                'svtav1Preset':8,
+                'bitRateControl':'Average'
               }
 
     try:
@@ -263,10 +290,31 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     except Exception as e: 
       print(e)
 
+    try:
+      options['sv1avPreset'] = int(float(self.sv1avPresetVar.get()))
+    except Exception as e: 
+      print(e)
+
+    try:
+      options['bitRateControl'] = self.bitrateControlVar.get()
+    except Exception as e: 
+      print(e)
+      
+
     if self.controller is not None:
       self.controller.setAdvancedFlags(options)
 
     self.destroy()
+
+
+class EditSubclipModal(tk.Toplevel):
+  def __init__(self, master=None, videoController=None, rid=None, *args):
+    tk.Toplevel.__init__(self, master)
+
+    self.title('Edit Subclip')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,400)
 
 
 class SliceCreationUtilsModal(tk.Toplevel):
@@ -2193,8 +2241,9 @@ class SubtitleExtractionModal(tk.Toplevel):
     self.rowconfigure(1, weight=0)
     self.rowconfigure(2, weight=0)
     self.rowconfigure(3, weight=0)
-    self.rowconfigure(4, weight=1)
-    self.rowconfigure(5, weight=0)
+    self.rowconfigure(4, weight=0)
+    self.rowconfigure(5, weight=1)
+    self.rowconfigure(6, weight=0)
     
 
     self.labelFilename = ttk.Label(self)
@@ -2219,27 +2268,35 @@ class SubtitleExtractionModal(tk.Toplevel):
     self.entryStream.config(values=[])
     self.entryStream.grid(row=1,column=1,sticky='new',padx=5,pady=5)
 
+    self.stripXmlLabel = ttk.Label(self)
+    self.stripXmlLabel.config(text='Strip hardcoded font and size attributes if present')
+    self.stripXmlLabel.grid(row=2,column=0,sticky='new',padx=0,pady=0)
+    self.stripXmlVar   = tk.IntVar(self,0)
+    self.stripXmlVar.set(1)
+    self.stripXmlCheck =  ttk.Checkbutton(self,text='',var=self.stripXmlVar)
+    self.stripXmlCheck.grid(row=2,column=1,sticky='new',padx=0,pady=0)
+
     self.labelOutputName = ttk.Label(self)
     self.labelOutputName.config(text='Output Name:')
-    self.labelOutputName.grid(row=2,column=0,sticky='new',padx=5,pady=5)
+    self.labelOutputName.grid(row=3,column=0,sticky='new',padx=5,pady=5)
 
     self.labelOutputFileName = ttk.Label(self)
     self.labelOutputFileName.config(text='None')
-    self.labelOutputFileName.grid(row=2,column=1,sticky='new',padx=5,pady=5)
+    self.labelOutputFileName.grid(row=3,column=1,sticky='new',padx=5,pady=5)
 
     self.labelProgress = ttk.Label(self)
     self.labelProgress.config(text='Idle')
-    self.labelProgress.grid(row=3,column=0,columnspan=2,sticky='new',padx=5,pady=5)
+    self.labelProgress.grid(row=4,column=0,columnspan=2,sticky='new',padx=5,pady=5)
 
 
     self.extractCmd = ttk.Button(self)
     self.extractCmd.config(text='Extract',command=self.extract,state='disabled')
-    self.extractCmd.grid(row=4,column=0,columnspan=2,sticky='nesw')
+    self.extractCmd.grid(row=5,column=0,columnspan=2,sticky='nesw')
 
 
     self.statusProgress = ttk.Progressbar(self)
     self.statusProgress['value'] = 0
-    self.statusProgress.grid(row=5,column=0,columnspan=2,sticky='nesw')
+    self.statusProgress.grid(row=6,column=0,columnspan=2,sticky='nesw')
     self.statusProgress.config(style="Green.Horizontal.TProgressbar")
 
 
@@ -2310,21 +2367,39 @@ class SubtitleExtractionModal(tk.Toplevel):
         break
       if c in b'\n\r':
         print(l)
-        if b'Duration: ' in l and expectedLength is None:
-          expectedLength=l.split(b'Duration: ')[1].split(b',')[0]
-          expectedLength = datetime.strptime(expectedLength.decode('utf8'),'%H:%M:%S.%f')
-          expectedLength = expectedLength.microsecond/1000000 + expectedLength.second + expectedLength.minute*60 + expectedLength.hour*3600
-        elif b'time=' in l and expectedLength is not None:
-          currentReadPos=l.split(b'time=')[1].split(b' ')[0]
-          currentReadPos = datetime.strptime(currentReadPos.decode('utf8'),'%H:%M:%S.%f')
-          currentReadPos = currentReadPos.microsecond/1000000 + currentReadPos.second + currentReadPos.minute*60 + currentReadPos.hour*3600
-          if not self.close:
-            self.statusProgress['value']=(currentReadPos/expectedLength)*100
-        self.labelProgress.config(text=l)
+        try:
+          if b'Duration: ' in l and expectedLength is None:
+            expectedLength=l.split(b'Duration: ')[1].split(b',')[0]
+            expectedLength = datetime.strptime(expectedLength.decode('utf8'),'%H:%M:%S.%f')
+            expectedLength = expectedLength.microsecond/1000000 + expectedLength.second + expectedLength.minute*60 + expectedLength.hour*3600
+          elif b'time=' in l and expectedLength is not None:
+            currentReadPos=l.split(b'time=')[1].split(b' ')[0]
+            currentReadPos = datetime.strptime(currentReadPos.decode('utf8'),'%H:%M:%S.%f')
+            currentReadPos = currentReadPos.microsecond/1000000 + currentReadPos.second + currentReadPos.minute*60 + currentReadPos.hour*3600
+            if not self.close:
+              self.statusProgress['value']=(currentReadPos/expectedLength)*100
+          self.labelProgress.config(text=l)
+        except Exception as e:
+          print(e)
         l=b''
       else:
         l+=c
     if not self.close:
+
+      if self.stripXmlVar.get()==1:
+        regex = r"size=\"[^\"]*\"|face=\"[^\"]*\""
+
+        try:
+          subtext = open(self.outputFilename,'r').read()
+          subtext = re.sub(
+             regex, 
+             "", 
+             subtext
+          )
+          open(self.outputFilename,'w').write(subtext)
+        except Exception as e:
+          print(e)
+
       self.statusProgress['value']=100
       self.entryStream.config(state='normal')     
       self.entryFilename.config(state='normal')

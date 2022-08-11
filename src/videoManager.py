@@ -30,7 +30,7 @@ class VideoManager:
         self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
     self.subclips = {}
     self.interestMarks = {}
-    self.subClipCounter=0
+    
     
   def addNewInterestMark(self,filename,point,kind='manual'):
     self.interestMarks.setdefault(filename,set()).add((point,kind))

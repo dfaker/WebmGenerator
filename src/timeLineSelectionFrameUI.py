@@ -116,10 +116,23 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.seekSpeedFast   = self.globalOptions.get("seekSpeedFast",2)
     self.seekSpeedSlow   = self.globalOptions.get("seekSpeedSlow",0.1)
 
-    self.timeline_canvas = tk.Canvas(self,width=200, height=150, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
-    self.timeline_canvas.grid(row=1,column=0,sticky="nesw")
+    self.grid_rowconfigure(0, weight=1)
     self.grid_rowconfigure(1, weight=1)
     self.grid_columnconfigure(0, weight=1)
+
+    self.timeline_canvas = tk.Canvas(self,width=200, height=150, bg='#1E1E1E',borderwidth=0,border=0,relief='flat',highlightthickness=0)
+    self.timeline_canvas.grid(row=0,column=0,sticky="nesw")
+
+    """
+    self.controlsFrame = ttk.Frame(self)
+    self.controlsFrame.grid(row=1,column=0,sticky="nesw")
+
+    self.startLabel = ttk.Label(self.controlsFrame,text='Start:')
+    self.startLabel.grid(row=0,column=0,sticky="nesw")
+    
+    self.startSpin = ttk.Spinbox(self.controlsFrame)
+    self.startSpin.grid(row=0,column=1,sticky="nesw")
+    """
 
     self.timeline_canvas_popup_menu = tk.Menu(self, tearoff=0)
 
@@ -241,6 +254,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.tickmarks=[]
     self.uiDirty=1
     self.clickTarget=None
+    self.lastClickedRange=None
 
     self.rangeHeaderBG = self.timeline_canvas.create_rectangle(0,0,20,0,fill="#3F3F7F")
     self.rangeHeaderActiveRange = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#9E9E9E")
@@ -441,7 +455,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.removeSubclip((s+e)/2)
         self.tempRangeStart=None
         self.controller.updatePointForClip(self.controller.getcurrentFilename(),overlappingRanges[0][2],'e',finalend)
-        self.dirtySelectionRanges.add(overlappingRanges[0][2])
+        self.setUiDirtyFlag(specificRID=overlappingRanges[0][2])
 
 
   def keyboardCutatTime(self,e):
@@ -456,7 +470,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       mid = self.roundToNearestFrame(mid)
       self.controller.updatePointForClip(self.controller.getcurrentFilename(),selectedRange,'e',mid)
       self.controller.addNewSubclip(mid,e,seekAfter=False)
-      self.dirtySelectionRanges.add(selectedRange)
+      self.setUiDirtyFlag(specificRID=selectedRange)
       self.updateCanvas(withLock=False)
 
   def keyboardRemoveBlockAtTime(self,e):
@@ -466,7 +480,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       for rid,(s,e) in list(ranges):
         if a<=s<=b and a<=e<=b:
           self.controller.removeSubclip((s+e)/2)
-          self.dirtySelectionRanges.add(rid)
+          self.setUiDirtyFlag(specificRID=rid)
       self.tempRangeStart=None
 
       #self.updateCanvas()
@@ -581,12 +595,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if pos == 's':
           startTarget = self.roundToNearestFrame(sts+(increment*0.05))
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,startTarget)
-          self.dirtySelectionRanges.add(rid)
+          self.setUiDirtyFlag(specificRID=rid)
           self.seekto(startTarget)
         elif pos == 'e':
           endTarget = self.roundToNearestFrame(ens+(increment*0.05))
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,endTarget)
-          self.dirtySelectionRanges.add(rid)
+          self.setUiDirtyFlag(specificRID=rid)
           self.seekto(endTarget-0.001)
         break
 
@@ -711,7 +725,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.resumeplaybackTimer.start()
           targetSeconds = self.roundToNearestFrame(targetSeconds)
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,'m',targetSeconds)
-          self.dirtySelectionRanges.add(rid)
+          self.setUiDirtyFlag(specificRID=rid)
           if ctrl:
             self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + self.dragPreviewPos )
           else:
@@ -790,6 +804,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         ctrl_seconds = self.xCoordToSeconds(e.x)
         self.startTempSelection(startOverride=ctrl_seconds)
 
+
+
     if e.type in (tk.EventType.ButtonPress,tk.EventType.ButtonRelease):
       self.timeline_mousedownstate[e.num] = e.type == tk.EventType.ButtonPress
 
@@ -797,6 +813,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.rangeHeaderClickStart= self.currentZoomRangeMidpoint-(e.x/self.winfo_width())
 
       elif e.num==1 and e.y>self.winfo_height()-self.handleHeight:
+        targetFound=None
 
         for rid,(sts,ens) in ranges:
           st=self.secondsToXcoord(sts)
@@ -805,26 +822,37 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           if (st<e.x<en and e.y>self.winfo_height()-self.midrangeHeight) or (st-self.handleWidth<e.x<en+self.handleWidth and e.y>self.winfo_height()-self.miniMidrangeHeight):
             self.tempRangeStart=None
             self.clickTarget = (rid,'m',sts,ens)
-            self.dirtySelectionRanges.add(rid)
+            self.setUiDirtyFlag(specificRID=rid)
             self.timelineMousePressOffset = ((st+en)/2)-e.x
             self.controller.pause()
+            targetFound=rid
             break
           elif st-self.handleWidth<e.x<st+2:
             self.tempRangeStart=None
             self.clickTarget = (rid,'s',sts,ens)
-            self.dirtySelectionRanges.add(rid)
+            self.setUiDirtyFlag(specificRID=rid)
             self.lastClickedEndpoint=(rid,'s')
             self.timelineMousePressOffset = st-e.x
             self.controller.pause()
+            targetFound=rid
             break
           elif en-2<e.x<en+self.handleWidth:
             self.tempRangeStart=None
             self.clickTarget = (rid,'e',sts,ens)
-            self.dirtySelectionRanges.add(rid)
+            self.setUiDirtyFlag(specificRID=rid)
             self.lastClickedEndpoint=(rid,'e')
             self.timelineMousePressOffset = en-e.x
             self.controller.pause()
+            targetFound=rid
             break
+
+        if targetFound is None and self.lastClickedRange is not None:
+          self.setUiDirtyFlag(specificRID=self.lastClickedRange)
+          self.lastClickedRange=None
+        elif targetFound is not None and self.lastClickedRange != targetFound:
+          self.setUiDirtyFlag(specificRID=self.lastClickedRange)
+          self.lastClickedRange=targetFound
+          self.setUiDirtyFlag(specificRID=targetFound)
 
 
     if e.type in (tk.EventType.ButtonRelease,) and e.num in (1,2):
@@ -873,9 +901,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         targetSeconds = self.xCoordToSeconds(e.x+self.timelineMousePressOffset)
         targetSeconds = self.roundToNearestFrame(targetSeconds)
-        self.dirtySelectionRanges.add(rid)
+        self.setUiDirtyFlag(specificRID=rid,withLock=False)
         self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,pos,targetSeconds)
-        self.dirtySelectionRanges.add(rid)
+        self.setUiDirtyFlag(specificRID=rid,withLock=False)
         if pos == 's':
           self.controller.seekTo( targetSeconds )
         elif pos == 'e':
@@ -1086,6 +1114,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             else:
               self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'main')],fill="#69dbbe")
 
+            if self.lastClickedRange == rid:
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'miniDrag')],fill="white")
+            else:
+              self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'miniDrag')],fill="#2bb390")
+
             if self.lastClickedEndpoint is None:
               self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'startHandle')],width=0)
               self.timeline_canvas.itemconfigure(self.canvasRegionCache[(rid,'endHandle')],width=0)
@@ -1161,7 +1194,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.timeline_canvas.delete(i)
           del self.canvasRegionCache[(rid,name)]
 
-  def setUiDirtyFlag(self, specificRID=None):
+  def setUiDirtyFlag(self, specificRID=None, withLock=True):
     if specificRID is None:
       self.uiDirty = min(max(0,self.uiDirty+1),2)
     else:

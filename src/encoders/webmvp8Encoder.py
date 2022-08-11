@@ -128,6 +128,15 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=["-b:v",str(br)]
 
 
+    bitRateControl = options.get('bitRateControl','Average')
+
+    if sizeLimitMax > 0.0:
+      if bitRateControl == 'Limit Maximum':
+        ffmpegcommand+=['-maxrate' ,str(br)]
+      elif bitRateControl == 'Constant':
+        ffmpegcommand+=['-minrate', str(br), '-maxrate' ,str(br)]
+
+
     if 'No audio' in options.get('audioChannels','') or passPhase==1:
       ffmpegcommand+=["-an"]    
     elif 'Stereo' in options.get('audioChannels',''):

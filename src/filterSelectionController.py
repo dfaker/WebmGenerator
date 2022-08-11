@@ -44,6 +44,9 @@ class FilterSelectionController:
                           audio_file_auto='no',
                           sub_auto='no')
 
+    if self.globalOptions.get('disableSubtitlesInPlayers',True):
+      self.player.subtitles=False
+
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.player.observe_property('time-pos', self.handleMpvTimePosChange)
 

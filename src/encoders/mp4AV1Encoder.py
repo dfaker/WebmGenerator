@@ -90,11 +90,18 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if 'Copy' in options.get('audioChannels',''):
       audioCodec = []
 
+    presetNum = 8
+    try:
+      presetNum = options.get('svtav1Preset',8)
+    except Exception as e:
+      print(e)
+
+
     ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
                    ,"-start_at_zero", "-c:v","libsvtav1"] + audioCodec + [
                     "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25','-g', '300'
-                   ,'-psnr','-cpu-used','0','-row-mt', '1',  '-preset', '8'
+                   ,'-psnr','-cpu-used','0','-row-mt', '1',  '-preset', str(presetNum)
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
     
     if sizeLimitMax == 0.0:
@@ -127,7 +134,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,options=options)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,tempVideoPath=tempVideoFilePath,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     if passPhase==1:

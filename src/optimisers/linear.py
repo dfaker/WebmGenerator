@@ -19,6 +19,9 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
   widthReduction = 0.0
 
   print('------')
+  print('sizeLimitMax',sizeLimitMax)
+  print('targetSizeMedian',targetSizeMedian)
+  print('sizeLimitMin',sizeLimitMin)
   print('dependentValueMaximum',dependentValueMaximum)
   print('val',val)
   print('------')
@@ -83,8 +86,6 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
       lastFailReason = 'File too large {:.2%}, CRQ increase'.format(finalSize/sizeLimitMax)
       if largestFailedUnderMinimum is None or val>largestFailedUnderMinimum:
         largestFailedUnderMinimum=val
-
-
 
     elif finalSize<sizeLimitMin:
       lastFailReason = 'File too small {:.2%}, {} increase'.format(finalSize/sizeLimitMin,dependentValueName)

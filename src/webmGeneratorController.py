@@ -73,6 +73,7 @@ class WebmGeneratorController:
       "titleMetadataSuffix":' WmG',
       "startFullscreen":False,
       "darkMode":False,
+      "disableSubtitlesInPlayers":True,
       "quickFilters":"",
 
       "useNewCrossfade":True,

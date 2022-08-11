@@ -162,6 +162,7 @@ class EncodeProgress(ttk.Frame):
     self.finalFilename    = None
     self.player = None
     self.lastProgress=0
+    self.lastEncodedSize=None
 
     self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
 
@@ -221,10 +222,16 @@ class EncodeProgress(ttk.Frame):
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
-  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedCRF=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None):
+  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedCRF=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None, currentSize=None):
 
     if self.cancelled:
       return
+
+    if lastEncodedSize is not None:
+      self.lastEncodedSize = lastEncodedSize
+
+    if lastEncodedSize is None and self.lastEncodedSize is not None:
+      lastEncodedSize = self.lastEncodedSize
 
     if requestStatus is not None:
       self.labelRequestStatus.config(text=str(requestStatus))
@@ -243,11 +250,20 @@ class EncodeProgress(ttk.Frame):
 
     if encodePass is not None:
       self.labelEncodePass.config(text='Pass: {}'.format(encodePass), relief='flat')
-    
-    if lastEncodedSize is not None:
-      lastEncodedSizeHuman = self.sizeof_fmt(lastEncodedSize,'B')  
+
+
+    if lastEncodedSize is not None and currentSize is not None:
+      lastEncodedSizeHuman = self.sizeof_fmt(lastEncodedSize,'B')
+      currentSizeHuman = self.sizeof_fmt(currentSize,'B')
+      self.labelLastEncodedSize.config(text='Size: {} ~{}'.format(lastEncodedSizeHuman,currentSizeHuman), relief='flat')
+    elif currentSize is not None:
+      currentSizeHuman = self.sizeof_fmt(currentSize,'B')
+      self.labelLastEncodedSize.config(text='Size: ~{}'.format(currentSizeHuman), relief='flat')
+    elif lastEncodedSize is not None:
+      lastEncodedSizeHuman = self.sizeof_fmt(lastEncodedSize,'B')
       self.labelLastEncodedSize.config(text='Size: {}'.format(lastEncodedSizeHuman), relief='flat')
-    
+
+
     if lastEncodedBR is not None:
       lastEncodedBRHuman = self.sizeof_fmt(lastEncodedBR,'B')
       self.labelLastEncodedBR.config(text='Bitrate: {}'.format(lastEncodedBRHuman), relief='flat')
@@ -1759,6 +1775,8 @@ class MergeSelectionUi(ttk.Frame):
       epw.cancelEncodeRequest()
 
   def encodeCurrent(self):
+
+    minSize = self.maximumSizeValue * (1-self.globalOptions.get('allowableTargetSizeUnderrun',0))
 
     nullfilter = ''
     disableFilters = self.postProcessingFilterVar.get() == 'Disable all filters'

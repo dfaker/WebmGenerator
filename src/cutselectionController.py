@@ -260,6 +260,9 @@ class CutselectionController:
                           audio_file_auto='no',
                           sub_auto='no')
 
+    if self.globalOptions.get('disableSubtitlesInPlayers',True):
+      self.player.subtitles=False
+
     self.player.observe_property('time-pos',          self.handleMpvTimePosChange)
     self.player.observe_property('duration',          self.handleMpvDurationChange)
     self.player.observe_property('pause',             self.playbackStatusChanged)

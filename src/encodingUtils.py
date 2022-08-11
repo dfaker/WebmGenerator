@@ -63,7 +63,7 @@ def getFreeNameForFileAndLog(filenamePrefix,extension,initialFileN=1):
 
       fileN+=1
 
-def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None,options={}):
+def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpectedEncodedSeconds,statusCallback,passNumber=0,requestId=None,tempVideoPath=None,options={}):
   currentEncodedTotal=0
   psnr = None
   ln=b''
@@ -117,7 +117,7 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
                     statusCallback('Rolling PSNR too Low '+processLabel,0,lastEncodedPSNR=psnr,encodeStage='PSNR Too Low', encodePass='PSNR {} ({} samples)'.format(psnrAve,earlyPSNRWindowLength) )
                     return psnrAve,1
 
-            except Exceptiona as e:
+            except Exception as e:
               logging.error("Encode capture psnr Exception",exc_info=e)
           if b'time=' in p:
             try:
@@ -129,7 +129,17 @@ def logffmpegEncodeProgress(proc,processLabel,initialEncodedSeconds,totalExpecte
                 elif passNumber == 1:
                   statusCallback('Encoding '+processLabel,((currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr,encodeStage='Encoding Final', encodePass='Two Pass Mode Pass 1' )
                 elif passNumber == 2:
-                  statusCallback('Encoding '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr,encodeStage='Encoding Final', encodePass='Two Pass Mode Pass 2' )
+
+                  sizeNow = None
+
+                  print(tempVideoPath)
+                  try:
+                    if tempVideoPath is not None:
+                      sizeNow = os.stat(tempVideoPath).st_size
+                  except Exception as sze:
+                    print(sze)
+
+                  statusCallback('Encoding '+processLabel,( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds,lastEncodedPSNR=psnr,encodeStage='Encoding Final',currentSize=sizeNow, encodePass='Two Pass Mode Pass 2' )
 
             except Exception as e:
               logging.error("Encode progress Exception",exc_info=e)

@@ -108,6 +108,10 @@ class WebmGeneratorUi:
     self.style.configure('smallextra.TButton', padding=-20)
     self.style.configure('Horizontal.TProgressbar', thickness=20)
 
+    self.style.configure('CurrentVer.TLabel',foreground='green')
+    self.style.configure('OldVer.TLabel',foreground='red')
+    
+
     self.style.configure('PSNRTerrible.TLabel',foreground='red')
     self.style.configure('PSNRExcellent.TLabel',foreground='green')
     self.style.configure('PSNRGood.TLabel',foreground='green')
@@ -187,7 +191,7 @@ class WebmGeneratorUi:
     self.panes=[]
     self.master=master
 
-    self.master.title('WebmGenerator')
+    self.master.title('WebmGenerator - '+RELEASE_NUMVER)
     self.master.minsize(1024,720)
 
     self.iconLookup = {}
@@ -307,7 +311,7 @@ class WebmGeneratorUi:
     self.menubar.add_cascade(label="Commands", menu=self.commandmenu)
 
     self.helpmenu = Menu(self.menubar, tearoff=0)
-    self.helpmenu.add_command(label="Open Check for new version", command=self.versioncheck)
+    self.helpmenu.add_command(label=RELEASE_NUMVER+" - Check for new version", command=self.versioncheck)
     self.helpmenu.add_command(label="Open Documentation", command=self.openDocs)
     self.menubar.add_cascade(label="Help", menu=self.helpmenu)
 
@@ -587,6 +591,7 @@ class WebmGeneratorUi:
         data = json.loads(f.read())
         leadTag = data[0]['tag_name']
         if leadTag != RELEASE_NUMVER:
+          
           self.menubar.add_command(label="New Version {} avaliable!".format(leadTag), command=self.gotoReleasesPage, background='red',activeforeground='red', foreground='red')
           self.versioncheckResultIndex = self.menubar.index(END) 
         else:
@@ -710,7 +715,7 @@ class WebmGeneratorUi:
     sys.exit()
 
   def openDocs(self):
-    webbrowser.open('https://github.com/dfaker/WebmGenerator/blob/master/README.md', new=2)
+    webbrowser.open('https://github.com/dfaker/WebmGenerator/wiki', new=2)
 
   def cancelAction(self):
     self.controller.cancelCurrentYoutubeDl()

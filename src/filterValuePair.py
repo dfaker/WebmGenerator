@@ -476,6 +476,8 @@ class FilterValuePair(ttk.Frame):
       self.stringValueVarSubstitutions()
       val = self.valueVar.get()
 
+      val = val.replace('\\n','\n')
+
       if forFilter:
         outval  = []
         for c in val:         

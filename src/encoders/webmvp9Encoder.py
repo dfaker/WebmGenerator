@@ -39,6 +39,10 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     targetSize_guide =  (sizeLimitMin+sizeLimitMax)/2
     initialBr        = ( ((targetSize_guide)/dur) - ((audoBitrate / 1024 / audio_mp)/dur) )*8
 
+  print('allowableTargetSizeUnderrun',globalOptions.get('allowableTargetSizeUnderrun'))
+  print('sizeLimitMax',sizeLimitMax)
+  print('sizeLimitMin',sizeLimitMin)
+
   videoFileName,logFilePath,filterFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'webm', requestId)
 
   def encoderStatusCallback(text,percentage,**kwargs):
@@ -62,6 +66,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     with open(filterFilePath,'wb') as filterFile:
       filterFile.write(encodefiltercommand.encode('utf8'))
 
+    targetWidth = 0
     targetHeight = 0
     
     try:
@@ -75,7 +80,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
               w,h = errElem.split(b' ')[0].split(b'x')
               w=int(w)
               h=int(h)
-              targetHeight = max(h,w)
+              targetWidth = w
+              targetHeight = h
             except:
               pass
     except Exception as e:
@@ -84,14 +90,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     tileColumns  = 0
 
     if not options.get('disableVP9Tiling',False):
-      if targetHeight >= 960:
+      if targetWidth >= 960:
         tileColumns = 1
-      if targetHeight >= 1920:
+      if targetWidth >= 1920:
         tileColumns = 2
-      if targetHeight >= 3840:
+      if targetWidth >= 3840:
         tileColumns = 3
 
-    print('VP9 targetHeight:',targetHeight)
+    print('VP9 targetWidth:',targetWidth)
     print('VP9 tileColumns:',tileColumns)
       
     if options.get('audioChannels') == 'No audio':
@@ -133,8 +139,8 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-auto-alt-ref", "6", "-lag-in-frames", "25"]
 
     if not cqMode:
-      ffmpegcommand += ["-bufsize", str(bufsize)]
-
+      #ffmpegcommand += ["-bufsize", str(bufsize)]
+      pass
 
     if passPhase==1:
       pass
@@ -152,30 +158,39 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-metadata", 'Title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) ]
     
 
+    qmaxOverride = 50
+    useQmax=False
+    try:
+      temp = options.get('qmaxOverride',-1)
+      if temp >= 0:
+        qmaxOverride = temp
+        useQmax=True
+    except Exception as e:
+      print(e)
 
 
     if sizeLimitMax == 0.0:
-      qmaxOverride = 10
-      
-      try:
-        temp = options.get('qmaxOverride',-1)
-        if temp >= 0:
-          qmaxOverride = temp
-      except Exception as e:
-        print(e)
+      if useQmax:
+        ffmpegcommand+=["-b:v","0","-qmin","0","-qmax",str(qmaxOverride),"-crf"  ,str(crf)]
+      else:
+        ffmpegcommand+=["-b:v","0","-crf"  ,str(crf)]
 
-      ffmpegcommand+=["-b:v","0","-qmin","0","-qmax",str(qmaxOverride),"-crf"  ,str(crf)]
     else:
-      qmaxOverride = 50
+      if useQmax:
+        ffmpegcommand+=["-b:v",str(br),"-qmin","0","-qmax",str(qmaxOverride)]
+      else:
+        ffmpegcommand+=["-b:v",str(br)]
 
-      try:
-        temp = options.get('qmaxOverride',-1)
-        if temp >= 0:
-          qmaxOverride = temp
-      except Exception as e:
-        print(e)
+      if cqMode:
+        ffmpegcommand+=["-crf", str(crf)]
 
-      ffmpegcommand+=["-b:v",str(br),"-qmin","0","-qmax",str(qmaxOverride),"-crf",  str(crf)]
+    bitRateControl = options.get('bitRateControl','Average')
+
+    if not useQmax and sizeLimitMax > 0.0:
+      if bitRateControl == 'Limit Maximum':
+        ffmpegcommand+=['-maxrate' ,str(br)]
+      elif bitRateControl == 'Constant':
+        ffmpegcommand+=['-minrate', str(br), '-maxrate' ,str(br)]
 
     if 'No audio' in options.get('audioChannels','') or passPhase==1:
       ffmpegcommand+=["-an"]    
@@ -211,7 +226,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)
       
 
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,options=options)
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,tempVideoFilePath),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=passPhase,requestId=requestId,tempVideoPath=tempVideoFilePath,options=options)
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
     if passPhase==1:

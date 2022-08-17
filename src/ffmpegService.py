@@ -826,6 +826,7 @@ class FFmpegService():
 
         m = hashlib.md5()
         m.update(filterexp.encode('utf8'))
+        m.update(options.get('audioChannels','').encode('utf8'))
         filterHash = m.hexdigest()[:10]
 
         key = (rid,clipfilename,start,end,filterexp,filterexpEnc)
@@ -850,6 +851,10 @@ class FFmpegService():
           
           cuda_flags = []
 
+          audioChannels = '1'
+          if 'Stereo' in options.get('audioChannels',''):
+            audioChannels = '2'
+
           if usNVHWenc:
             if self.globalOptions.get('passCudaFlags',False):
               cuda_flags = ['-hwaccel', 'cuda']
@@ -865,7 +870,7 @@ class FFmpegService():
                       ,'-t', str(end-start)
                       ,'-filter_complex', filterexp ] + slice_encoder_preset + [
                        '-crf', '0'
-                      ,'-ac', '1',outname]
+                      ,'-ac', audioChannels,outname]
           else:
             comvcmd = ['ffmpeg','-y'  ]+cuda_flags+[
                        '-f', 'lavfi', '-i', 'anullsrc'                                
@@ -876,7 +881,7 @@ class FFmpegService():
                        '-crf', '0'
                       ,'-map', '0:a', '-map', '1:v' 
                       ,'-shortest'
-                      ,'-ac', '1',outname]
+                      ,'-ac', audioChannels,outname]
 
           proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
           

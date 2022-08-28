@@ -220,7 +220,10 @@ class FilterSelectionController:
       if self.fileHasAudio():
         self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo],[aid1] '+filterAudioExpStr+' [ao]'
       else:
-        self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
+        if filterAudioExpStr == 'anull':
+          self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
+        else:
+          self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo],anullsrc,'+filterAudioExpStr+' [ao]'
 
     else:
       self.player.command('async','vf', 'add',    '@filterStack:lavfi="{}"'.format(filterExpStr))

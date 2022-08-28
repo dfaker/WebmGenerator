@@ -6,7 +6,7 @@
   "category": "N->A",
   "isAudioFilter":true,
   "category": "Audio Mixing Filters",
-  "name": "amix",
+  "name": "Mix",
   "filter": "anull[amixin{fn}],amovie@{fn}='{source}',atrim=start={startTrim}[adubin{fn}],[amixin{fn}][adubin{fn}]amix@{fn}=inputs=2:duration={duration}:weights='{gainsource} {gainaudio}'",
   "kind": "N->A",
   "desc": "Mix together the source audio and an external mp3.",
@@ -63,7 +63,7 @@
   "category": "N->A",
   "isAudioFilter":true,
   "category": "Audio Mixing Filters",
-  "name": "amix scc external",
+  "name": "Mix Sidechain Compress",
   "filter": "anull[amixin{fn}],amovie@{fn}='{source}',atrim=start={startTrim}[adubin{fn}],[amixin{fn}]asplit=2[amixina{fn}][amixinb{fn}],[adubin{fn}][amixina{fn}]sidechaincompress[adubinducked{fn}],[amixinb{fn}]aformat=sample_fmts=u8|s16:channel_layouts=stereo[amixinbfmt{fn}],[adubinducked{fn}]aformat=sample_fmts=u8|s16:channel_layouts=stereo[adubinduckedfmt{fn}],[amixinbfmt{fn}][adubinduckedfmt{fn}]amerge@{fn}",
   "kind": "N->A",
   "desc": "Mix together the source audio and an external mp3 with side chain compression of external audio.",
@@ -90,7 +90,7 @@
   "category": "Audio Filters",
   "name": "apulsator",
   "isAudioFilter":true,
-  "filter": "apulsator",
+  "filter": "Pulsator",
   "kind": "A->A",
   "desc": "Audio pulsator.",
   "params": [
@@ -216,7 +216,7 @@
  {
   "support": "..C",
   "category": "Audio Filters",
-  "name": "acompressor",
+  "name": "Compressor",
   "filter": "acompressor@{fn}",
   "isAudioFilter":true,
   "kind": "A->A",
@@ -347,7 +347,7 @@
  {
   "support": "...",
   "category": "Audio Filters",
-  "name": "acontrast",
+  "name": "Contrast",
   "isAudioFilter":true,
   "filter": "acontrast",
   "kind": "A->A",
@@ -365,63 +365,14 @@
    }
   ]
  },
- {
-  "support": "...",
-  "category": "Audio Filters",
-  "isAudioFilter":true,
-  "name": "acopy",
-  "filter": "acopy",
-  "kind": "A->A",
-  "desc": "Copy the input audio unchanged to the output.",
-  "params": []
- },
- {
-  "support": "...",
-  "category": "Audio Filters",
-  "name": "acue",
-  "filter": "acue",
-  "kind": "A->A",
-  "desc": "Delay filtering to match a cue.",
-  "params": [
-   {
-    "n": "cue",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     0.0,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "preroll",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "buffer",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   }
-  ]
- },
+
 
 
  {
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "acrusher",
+  "name": "Crusher",
   "filter": "acrusher@{fn}",
   "kind": "A->A",
   "desc": "Reduce audio bit resolution.",
@@ -547,7 +498,7 @@
   "support": "TS.",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "adeclick",
+  "name": "De-click",
   "filter": "adeclick",
   "kind": "A->A",
   "desc": "Remove impulsive noise from input audio.",
@@ -609,18 +560,7 @@
     "inc": 1,
     "cycle": [
      "add",
-     "a",
-     "save",
-     "s"
-    ]
-   },
-   {
-    "type": "cycle",
-    "cycle": [
-     "add",
-     "a",
-     "save",
-     "s"
+     "save"
     ]
    }
   ],
@@ -630,7 +570,7 @@
   "support": "TS.",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "adeclip",
+  "name": "De-clip",
   "filter": "adeclip",
   "kind": "A->A",
   "desc": "Remove clipping from input audio.",
@@ -692,60 +632,18 @@
     "inc": 1,
     "cycle": [
      "add",
-     "a",
-     "save",
-     "s"
-    ]
-   },
-   {
-    "type": "cycle",
-    "cycle": [
-     "add",
-     "a",
-     "save",
-     "s"
+     "save"
     ]
    }
   ],
   "timelineSupport": true
  },
- {
-  "support": "TS.",
-  "category": "Audio Filters",
-  "isAudioFilter":true,
-  "name": "adecorrelate",
-  "filter": "adecorrelate",
-  "kind": "A->A",
-  "desc": "Apply decorrelation to input audio.",
-  "params": [
-   {
-    "n": "stages",
-    "d": 6,
-    "type": "int",
-    "range": [
-     1,
-     16
-    ],
-    "inc": 1
-   },
-   {
-    "n": "seed",
-    "d": -1.0,
-    "type": "float",
-    "range": [
-     -1.0,
-     null
-    ],
-    "inc": 1
-   }
-  ],
-  "timelineSupport": true
- },
+
  {
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "adelay",
+  "name": "Delay",
   "filter": "adelay@{fn}",
   "kind": "A->A",
   "desc": "Delay one or more audio channels.",
@@ -777,54 +675,13 @@
   ],
   "timelineSupport": true
  },
- {
-  "support": "TSC",
-  "category": "Audio Filters",
-  "name": "adenorm",
-  "filter": "adenorm@{fn}",
-  "kind": "A->A",
-  "desc": "Remedy denormals by adding extremely low-level noise.",
-  "params": [
-   {
-    "n": "level",
-    "d": -351.0,
-    "type": "float",
-    "range": [
-     -451.0,
-     -90.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "type",
-    "d": "dc",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "dc",
-     "ac",
-     "square",
-     "pulse"
-    ]
-   }
-  ],
-  "timelineSupport": true
- },
- {
-  "support": "T..",
-  "category": "Audio Filters",
-  "name": "aderivative",
-  "filter": "aderivative",
-  "kind": "A->A",
-  "desc": "Compute derivative of input audio.",
-  "params": [],
-  "timelineSupport": true
- },
+
+
  {
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "adynamicequalizer",
+  "name": "Dynamic Equalizer",
   "filter": "adynamicequalizer@{fn}",
   "kind": "A->A",
   "desc": "Apply Dynamic Equalization of input audio.",
@@ -978,7 +835,7 @@
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "adynamicsmooth",
+  "name": "Dynamic Smooth",
   "filter": "adynamicsmooth@{fn}",
   "kind": "A->A",
   "desc": "Apply Dynamic Smoothing of input audio.",
@@ -1011,7 +868,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "asoftclip",
+  "name": "Soft Clip",
   "filter": "asoftclip@{fn}",
   "kind": "A->A",
   "desc": "Audio Soft Clipper.",
@@ -1061,7 +918,7 @@
      0.01,
      3.0
     ],
-    "inc": 1
+    "inc": 0.01
    },
    {
     "n": "oversample",
@@ -1080,7 +937,7 @@
   {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "asubboost",
+  "name": "Sub boost",
   "isAudioFilter":true,
   "filter": "asubboost@{fn}",
   "kind": "A->A",
@@ -1094,7 +951,7 @@
      0.0,
      1.0
     ],
-    "inc": 1
+    "inc": 0.01
    },
    {
     "n": "wet",
@@ -1104,7 +961,7 @@
      0.0,
      1.0
     ],
-    "inc": 1
+    "inc": 0.01
    },
    {
     "n": "boost",
@@ -1124,7 +981,7 @@
      0.0,
      1.0
     ],
-    "inc": 1
+    "inc": 0.01
    },
    {
     "n": "feedback",
@@ -1134,7 +991,7 @@
      0.0,
      1.0
     ],
-    "inc": 1
+    "inc": 0.01
    },
    {
     "n": "cutoff",
@@ -1154,7 +1011,7 @@
      0.0001,
      1.0
     ],
-    "inc": 1
+    "inc": 0.01
    },
    {
     "n": "delay",
@@ -1183,7 +1040,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "asubcut",
+  "name": "Sub Cut",
   "filter": "asubcut@{fn}",
   "kind": "A->A",
   "desc": "Cut subwoofer frequencies.",
@@ -1225,7 +1082,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "asupercut",
+  "name": "Super Cut",
   "filter": "asupercut@{fn}",
   "kind": "A->A",
   "desc": "Cut super frequencies.",
@@ -1266,7 +1123,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "asuperpass",
+  "name": "Super Pass",
   "isAudioFilter":true,
   "filter": "asuperpass@{fn}",
   "kind": "A->A",
@@ -1319,7 +1176,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "asuperstop",
+  "name": "Super Stop",
   "filter": "asuperstop@{fn}",
   "kind": "A->A",
   "desc": "Apply high order Butterworth band-stop filter.",
@@ -1373,7 +1230,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "atilt",
+  "name": "Spectral Tilt",
   "filter": "atilt@{fn}",
   "kind": "A->A",
   "desc": "Apply spectral tilt to audio.",
@@ -1435,7 +1292,7 @@
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "atrim",
+  "name": "Audio Trim",
   "filter": "atrim",
   "kind": "A->A",
   "desc": "Pick one continuous section from the input, drop the rest.",
@@ -1517,7 +1374,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "bandpass",
+  "name": "Bandpass",
   "filter": "bandpass@{fn}",
   "kind": "A->A",
   "desc": "Apply a two-pole Butterworth band-pass filter.",
@@ -1680,7 +1537,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "bandreject",
+  "name": "Bandreject",
   "filter": "bandreject@{fn}",
   "kind": "A->A",
   "desc": "Apply a two-pole Butterworth band-reject filter.",
@@ -1829,7 +1686,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "bass",
+  "name": "Bass",
   "filter": "bass@{fn}",
   "kind": "A->A",
   "desc": "Boost or cut lower frequencies.",
@@ -1962,137 +1819,12 @@
   ],
   "timelineSupport": true
  },
- {
-  "support": "TSC",
-  "category": "Audio Filters",
-  "name": "biquad",
-  "isAudioFilter":true,
-  "filter": "biquad@{fn}",
-  "kind": "A->A",
-  "desc": "Apply a biquad IIR filter with the given coefficients.",
-  "params": [
-   {
-    "n": "a0",
-    "d": 1.0,
-    "type": "float",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "a1",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "mix",
-    "d": 1.0,
-    "type": "float",
-    "range": [
-     0.0,
-     1.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "channels",
-    "d": "all",
-    "type": "string",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "normalize",
-    "d": "false",
-    "type": "cycle",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1,
-    "cycle": [
-     "true",
-     "false"
-    ]
-   },
-   {
-    "n": "transform",
-    "d": "di",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
-   {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
-   {
-    "n": "precision",
-    "d": "auto",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
-   {
-    "type": "cycle",
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
-   {
-    "n": "blocksize",
-    "d": 0,
-    "type": "int",
-    "range": [
-     0,
-     32768
-    ],
-    "inc": 1
-   }
-  ],
-  "timelineSupport": true
- },
+
  {
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "bs2b",
+  "name": "Bs2b",
   "filter": "bs2b",
   "kind": "A->A",
   "desc": "Bauer stereo-to-binaural filter.",
@@ -2130,42 +1862,12 @@
    }
   ]
  },
- {
-  "support": "...",
-  "category": "Audio Filters",
-  "isAudioFilter":true,
-  "name": "channelmap",
-  "filter": "channelmap",
-  "kind": "A->A",
-  "desc": "Remap audio channels.",
-  "params": [
-   {
-    "n": "map",
-    "d": 0,
-    "type": "string",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "channel_layout",
-    "d": 0,
-    "type": "string",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   }
-  ]
- },
+
 
  {
   "support": "...",
   "category": "Audio Filters",
-  "name": "chorus",
+  "name": "Chorus",
   "filter": "chorus",
   "isAudioFilter":true,
   "kind": "A->A",
@@ -2237,7 +1939,7 @@
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "compand",
+  "name": "Compand",
   "filter": "compand",
   "kind": "A->A",
   "desc": "Compress or expand audio dynamic range.",
@@ -2314,82 +2016,11 @@
    }
   ]
  },
+
  {
   "support": "T.C",
   "category": "Audio Filters",
-  "name": "compensationdelay",
-  "isAudioFilter":true,
-  "filter": "compensationdelay@{fn}",
-  "kind": "A->A",
-  "desc": "Audio Compensation Delay Line.",
-  "params": [
-   {
-    "n": "mm",
-    "d": 0,
-    "type": "int",
-    "range": [
-     0,
-     10
-    ],
-    "inc": 1
-   },
-   {
-    "n": "cm",
-    "d": 0,
-    "type": "int",
-    "range": [
-     0,
-     100
-    ],
-    "inc": 1
-   },
-   {
-    "n": "m",
-    "d": 0,
-    "type": "int",
-    "range": [
-     0,
-     100
-    ],
-    "inc": 1
-   },
-   {
-    "n": "dry",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     0.0,
-     1.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "wet",
-    "d": 1.0,
-    "type": "float",
-    "range": [
-     0.0,
-     1.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "temp",
-    "d": 20,
-    "type": "int",
-    "range": [
-     -50,
-     50
-    ],
-    "inc": 1
-   }
-  ],
-  "timelineSupport": true
- },
- {
-  "support": "T.C",
-  "category": "Audio Filters",
-  "name": "crossfeed",
+  "name": "Crossfeed",
   "isAudioFilter":true,
   "filter": "crossfeed@{fn}",
   "kind": "A->A",
@@ -2462,7 +2093,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "crystalizer",
+  "name": "Crystalizer",
   "filter": "crystalizer@{fn}",
   "kind": "A->A",
   "desc": "Simple audio noise sharpening filter.",
@@ -2494,42 +2125,12 @@
   ],
   "timelineSupport": true
  },
- {
-  "support": "T..",
-  "category": "Audio Filters",
-  "name": "dcshift",
-  "filter": "dcshift",
-  "kind": "A->A",
-  "desc": "Apply a DC shift to the audio.",
-  "params": [
-   {
-    "n": "shift",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     -1.0,
-     1.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "limitergain",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     0.0,
-     1.0
-    ],
-    "inc": 1
-   }
-  ],
-  "timelineSupport": true
- },
+
  {
   "support": "T..",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "deesser",
+  "name": "De-esser",
   "filter": "deesser",
   "kind": "A->A",
   "desc": "Apply de-essing to the audio.",
@@ -2581,7 +2182,7 @@
  {
   "support": "T.C",
   "category": "Audio Filters",
-  "name": "dialoguenhance",
+  "name": "Dialogu Enhance",
   "isAudioFilter":true,
   "filter": "dialoguenhance@{fn}",
   "kind": "A->A",
@@ -2625,7 +2226,7 @@
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "dynaudnorm",
+  "name": "Dynaudnorm",
   "filter": "dynaudnorm@{fn}",
   "kind": "A->A",
   "desc": "Dynamic Audio Normalizer.",
@@ -2768,7 +2369,7 @@
  {
   "support": "...",
   "category": "Audio Filters",
-  "name": "earwax",
+  "name": "Ear Wax",
   "filter": "earwax",
   "kind": "A->A",
   "desc": "Widen the stereo image.",
@@ -2780,7 +2381,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "equalizer",
+  "name": "Equalizer",
   "filter": "equalizer@{fn}",
   "kind": "A->A",
   "desc": "Apply two-pole peaking equalization (EQ) filter.",
@@ -2808,16 +2409,7 @@
      "k"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "h",
-     "q",
-     "o",
-     "s",
-     "k"
-    ]
-   },
+
    {
     "n": "width",
     "d": 1.0,
@@ -2888,32 +2480,10 @@
     ]
    },
    {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
-   {
     "n": "precision",
     "d": "auto",
     "type": "cycle",
     "inc": 1,
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
-   {
-    "type": "cycle",
     "cycle": [
      "auto",
      "s16",
@@ -2938,7 +2508,7 @@
  {
   "support": "T.C",
   "category": "Audio Filters",
-  "name": "extrastereo",
+  "name": "Extra Stereo",
   "isAudioFilter":true,
   "filter": "extrastereo@{fn}",
   "kind": "A->A",
@@ -2974,7 +2544,7 @@
  {
   "support": "..C",
   "category": "Audio Filters",
-  "name": "firequalizer",
+  "name": "FIR Equalizer",
   "isAudioFilter":true,
   "filter": "firequalizer@{fn}",
   "kind": "A->A",
@@ -3092,16 +2662,7 @@
      "loglog"
     ]
    },
-   {
-    "n": "dumpfile",
-    "d": 0,
-    "type": "string",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
+
    {
     "n": "dumpscale",
     "d": "linlog",
@@ -3148,7 +2709,7 @@
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "flanger",
+  "name": "Flanger",
   "filter": "flanger",
   "kind": "A->A",
   "desc": "Apply a flanging effect to the audio.",
@@ -3242,7 +2803,7 @@
   "category": "Audio Filters",
   "isAudioFilter":true,
   "name": "haas",
-  "filter": "haas",
+  "filter": "Haas",
   "kind": "A->A",
   "desc": "Apply Haas Stereo Enhancer.",
   "params": [
@@ -3392,169 +2953,12 @@
    }
   ]
  },
- {
-  "support": "...",
-  "category": "Audio Filters",
-  "isAudioFilter":true,
-  "name": "hdcd",
-  "filter": "hdcd",
-  "kind": "A->A",
-  "desc": "Apply High Definition Compatible Digital (HDCD) decoding.",
-  "params": [
-   {
-    "n": "disable_autoconvert",
-    "d": "true",
-    "type": "cycle",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1,
-    "cycle": [
-     "true",
-     "false"
-    ]
-   },
-   {
-    "n": "process_stereo",
-    "d": "true",
-    "type": "cycle",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1,
-    "cycle": [
-     "true",
-     "false"
-    ]
-   },
-   {
-    "n": "cdt_ms",
-    "d": 2000,
-    "type": "int",
-    "range": [
-     100,
-     60000
-    ],
-    "inc": 1
-   },
-   {
-    "n": "force_pe",
-    "d": "false",
-    "type": "cycle",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1,
-    "cycle": [
-     "true",
-     "false"
-    ]
-   },
-   {
-    "n": "analyze_mode",
-    "d": "off",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "off",
-     "lle",
-     "pe",
-     "cdt",
-     "tgm"
-    ]
-   },
-   {
-    "n": "bits_per_sample",
-    "d": 16,
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "16",
-     "20",
-     "24"
-    ]
-   }
-  ]
- },
- {
-  "support": ".S.",
-  "category": "N->A",
-  "name": "headphone",
-  "isAudioFilter":true,
-  "filter": "headphone",
-  "kind": "N->A",
-  "desc": "Apply headphone binaural spatialization with HRTFs in additional streams.",
-  "params": [
-   {
-    "n": "map",
-    "d": 0,
-    "type": "string",
-    "range": [
-     null,
-     null
-    ],
-    "inc": 1
-   },
-   {
-    "n": "gain",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     -20.0,
-     40.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "lfe",
-    "d": 0.0,
-    "type": "float",
-    "range": [
-     -20.0,
-     40.0
-    ],
-    "inc": 1
-   },
-   {
-    "n": "type",
-    "d": "freq",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "time",
-     "freq"
-    ]
-   },
-   {
-    "n": "size",
-    "d": 1024,
-    "type": "int",
-    "range": [
-     1024,
-     96000
-    ],
-    "inc": 1
-   },
-   {
-    "n": "hrir",
-    "d": "stereo",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "stereo",
-     "multich"
-    ]
-   }
-  ]
- },
+
  {
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "highpass",
+  "name": "Highpass",
   "filter": "highpass@{fn}",
   "kind": "A->A",
   "desc": "Apply a high-pass filter with 3dB point frequency.",
@@ -3661,18 +3065,7 @@
      "zdf"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
+
    {
     "n": "precision",
     "d": "auto",
@@ -3686,16 +3079,7 @@
      "f64"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
+
    {
     "n": "blocksize",
     "d": 0,
@@ -3712,7 +3096,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "highshelf",
+  "name": "Highshelf",
   "isAudioFilter":true,
   "filter": "highshelf@{fn}",
   "kind": "A->A",
@@ -3830,18 +3214,7 @@
      "zdf"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
+
    {
     "n": "precision",
     "d": "auto",
@@ -3855,16 +3228,7 @@
      "f64"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
+
    {
     "n": "blocksize",
     "d": 0,
@@ -3886,7 +3250,7 @@
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "loudnorm",
+  "name": "Loudnorm",
   "filter": "loudnorm",
   "kind": "A->A",
   "desc": "EBU R128 loudness normalization",
@@ -3998,17 +3362,6 @@
      "true",
      "false"
     ]
-   },
-   {
-    "n": "print_format",
-    "d": "none",
-    "type": "cycle",
-    "inc": 1,
-    "cycle": [
-     "none",
-     "json",
-     "summary"
-    ]
    }
   ]
  },
@@ -4016,7 +3369,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "lowpass",
+  "name": "Lowpass",
   "filter": "lowpass@{fn}",
   "kind": "A->A",
   "desc": "Apply a low-pass filter with 3dB point frequency.",
@@ -4036,16 +3389,6 @@
     "d": "q",
     "type": "cycle",
     "inc": 1,
-    "cycle": [
-     "h",
-     "q",
-     "o",
-     "s",
-     "k"
-    ]
-   },
-   {
-    "type": "cycle",
     "cycle": [
      "h",
      "q",
@@ -4124,18 +3467,6 @@
     ]
    },
    {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
-   {
     "n": "precision",
     "d": "auto",
     "type": "cycle",
@@ -4148,16 +3479,7 @@
      "f64"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
+
    {
     "n": "blocksize",
     "d": 0,
@@ -4175,7 +3497,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "lowshelf",
+  "name": "Lowshelf",
   "filter": "lowshelf@{fn}",
   "kind": "A->A",
   "desc": "Apply a low shelf filter.",
@@ -4203,16 +3525,7 @@
      "k"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "h",
-     "q",
-     "o",
-     "s",
-     "k"
-    ]
-   },
+
    {
     "n": "width",
     "d": 0.5,
@@ -4292,18 +3605,7 @@
      "zdf"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
+
    {
     "n": "precision",
     "d": "auto",
@@ -4317,16 +3619,7 @@
      "f64"
     ]
    },
-   {
-    "type": "cycle",
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
+
    {
     "n": "blocksize",
     "d": 0,
@@ -4343,7 +3636,7 @@
  {
   "support": "...",
   "category": "Audio Filters",
-  "name": "mcompand",
+  "name": "M-Compand",
   "isAudioFilter":true,
   "filter": "mcompand",
   "kind": "A->A",
@@ -4365,7 +3658,7 @@
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "pan",
+  "name": "Pan",
   "filter": "pan",
   "kind": "A->A",
   "desc": "Remix channels with coefficients (panning).",
@@ -4382,20 +3675,12 @@
    }
   ]
  },
- {
-  "support": "...",
-  "category": "Audio Filters",
-  "name": "replaygain",
-  "filter": "replaygain",
-  "kind": "A->A",
-  "desc": "ReplayGain scanner.",
-  "params": []
- },
+
  {
   "support": "..C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "rubberband",
+  "name": "Rubberband",
   "filter": "rubberband@{fn}",
   "kind": "A->A",
   "desc": "Apply time-stretching and pitch-shifting.",
@@ -4513,7 +3798,7 @@
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "speechnorm",
+  "name": "Speech Norm",
   "filter": "speechnorm@{fn}",
   "kind": "A->A",
   "desc": "Speech Normalizer.",
@@ -4623,7 +3908,7 @@
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "stereotools",
+  "name": "Stereo Tools",
   "filter": "stereotools@{fn}",
   "kind": "A->A",
   "desc": "Apply various stereo tools.",
@@ -4866,7 +4151,7 @@
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "stereowiden",
+  "name": "Stereo Widen",
   "filter": "stereowiden@{fn}",
   "kind": "A->A",
   "desc": "Apply stereo widening effect.",
@@ -4918,7 +4203,7 @@
   "support": "...",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "superequalizer",
+  "name": "Super Equalizer",
   "filter": "superequalizer",
   "kind": "A->A",
   "desc": "Apply 18 band equalization filter.",
@@ -5109,7 +4394,7 @@
   "support": ".S.",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "surround",
+  "name": "Surround",
   "filter": "surround",
   "kind": "A->A",
   "desc": "Apply audio surround upmix filter.",
@@ -5623,7 +4908,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "tiltshelf",
+  "name": "Tilt Shelf",
   "filter": "tiltshelf@{fn}",
   "kind": "A->A",
   "desc": "Apply a tilt shelf filter.",
@@ -5792,7 +5077,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "treble",
+  "name": "Treble",
   "filter": "treble@{fn}",
   "kind": "A->A",
   "desc": "Boost or cut upper frequencies.",
@@ -5961,7 +5246,7 @@
   "support": "T..",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "tremolo",
+  "name": "Tremolo",
   "filter": "tremolo",
   "kind": "A->A",
   "desc": "Apply tremolo effect.",
@@ -5993,7 +5278,7 @@
   "support": "T..",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "vibrato",
+  "name": "Vibrato",
   "filter": "vibrato",
   "kind": "A->A",
   "desc": "Apply vibrato effect.",
@@ -6024,7 +5309,7 @@
  {
   "support": "T.C",
   "category": "Audio Filters",
-  "name": "virtualbass",
+  "name": "Virtual Bass",
   "isAudioFilter":true,
   "filter": "virtualbass@{fn}",
   "kind": "A->A",
@@ -6058,7 +5343,7 @@
  {
   "support": "...",
   "category": "Audio Filters",
-  "name": "aphaser",
+  "name": "Phaser",
   "filter": "aphaser",
   "isAudioFilter":true,
   "kind": "A->A",
@@ -6131,7 +5416,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "aphaseshift",
+  "name": "Phase Shift",
   "isAudioFilter":true,
   "filter": "aphaseshift@{fn}",
   "kind": "A->A",
@@ -6173,7 +5458,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "apsyclip",
+  "name": "Psy Clip",
   "filter": "apsyclip@{fn}",
   "kind": "A->A",
   "desc": "Audio Psychoacoustic Clipper.",
@@ -6265,7 +5550,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "anlmdn",
+  "name": "NLM Denoiser",
   "filter": "anlmdn@{fn}",
   "isAudioFilter":true,
   "kind": "A->A",
@@ -6340,7 +5625,7 @@
 {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "allpass",
+  "name": "Allpass",
   "filter": "allpass@{fn}",
   "isAudioFilter":true,
   "kind": "A->A",
@@ -6361,16 +5646,6 @@
     "d": "q",
     "type": "cycle",
     "inc": 1,
-    "cycle": [
-     "h",
-     "q",
-     "o",
-     "s",
-     "k"
-    ]
-   },
-   {
-    "type": "cycle",
     "cycle": [
      "h",
      "q",
@@ -6449,32 +5724,10 @@
     ]
    },
    {
-    "type": "cycle",
-    "cycle": [
-     "di",
-     "dii",
-     "tdi",
-     "tdii",
-     "latt",
-     "svf",
-     "zdf"
-    ]
-   },
-   {
     "n": "precision",
     "d": "auto",
     "type": "cycle",
     "inc": 1,
-    "cycle": [
-     "auto",
-     "s16",
-     "s32",
-     "f32",
-     "f64"
-    ]
-   },
-   {
-    "type": "cycle",
     "cycle": [
      "auto",
      "s16",
@@ -6492,7 +5745,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "afwtdn",
+  "name": "Wavelet Denoise",
   "filter": "afwtdn@{fn}",
   "isAudioFilter":true,
   "kind": "A->A",
@@ -6598,7 +5851,7 @@
   "support": "T.C",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "agate",
+  "name": "Gate",
   "filter": "agate@{fn}",
   "kind": "A->A",
   "desc": "Audio gate.",
@@ -6727,23 +5980,13 @@
   "timelineSupport": true
  },
  
- {
-  "support": "T..",
-  "category": "Audio Filters",
-  "isAudioFilter":true,
-  "name": "aintegral",
-  "filter": "aintegral",
-  "kind": "A->A",
-  "desc": "Compute integral of input audio.",
-  "params": [],
-  "timelineSupport": true
- },
+ 
 
 
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "aemphasis",
+  "name": "Emphasis",
   "isAudioFilter":true,
   "filter": "aemphasis@{fn}",
   "kind": "A->A",
@@ -6805,7 +6048,7 @@
   {
   "support": "T.C",
   "category": "Audio Filters",
-  "name": "aexciter",
+  "name": "Exciter",
   "isAudioFilter":true,
   "filter": "aexciter@{fn}",
   "kind": "A->A",
@@ -6904,7 +6147,7 @@
   "support": "TSC",
   "category": "Audio Filters",
   "isAudioFilter":true,
-  "name": "afftdn",
+  "name": "FFT Denoise",
   "filter": "afftdn@{fn}",
   "kind": "A->A",
   "desc": "Denoise audio samples using FFT.",
@@ -7122,7 +6365,7 @@
  {
   "support": "TSC",
   "category": "Audio Filters",
-  "name": "afreqshift",
+  "name": "Freq Shift",
   "isAudioFilter":true,
   "filter": "afreqshift@{fn}",
   "kind": "A->A",

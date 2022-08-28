@@ -55,7 +55,7 @@ buildOptions = dict(packages = ["os"],
                     ,'yt-dlp.exe'
                     ,'ffmpeg.exe'
                     ,'ffprobe.exe'  
-                    ,'mpv-1.dll'
+                    ,'mpv-2.dll'
                     ,os.path.join(PYTHON_INSTALL_DIR, 'DLLs', 'tk86t.dll')
                     ,os.path.join(PYTHON_INSTALL_DIR, 'DLLs', 'tcl86t.dll')  
                     ],

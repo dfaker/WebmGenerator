@@ -121,6 +121,9 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
             options[k] = bool(tempOptions[k])
           elif type(v) == int:
             options[k] = int(tempOptions[k])
+          elif type(v) == str:
+            options[k] = str(tempOptions[k])
+
 
     self.title('Advanced Encoding Flags')
     self.style = ttk.Style()
@@ -205,24 +208,26 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     self.sv1avPresetLabel = ttk.Label(self)
     self.sv1avPresetLabel.config(text='SVT-AV1 Preset')
     self.sv1avPresetLabel.grid(row=9,column=0,sticky='new',padx=0,pady=0)
-    self.sv1avPresetVar   = tk.StringVar(self,8)
+    self.sv1avPresetVar   = tk.StringVar(self)
     self.sv1avPresetVar.set(str(int(options['svtav1Preset']))) 
     self.sv1avPresetCheck =  ttk.Spinbox(self,text='',textvariable=self.sv1avPresetVar,from_=float('0'),to=float('12'))
     self.sv1avPresetCheck.grid(row=9,column=1,sticky='new',padx=0,pady=0) 
 
 
-
     self.bitrateControlLabel = ttk.Label(self)
     self.bitrateControlLabel.config(text='Bitrate constraint mode')
     self.bitrateControlLabel.grid(row=10,column=0,sticky='new',padx=0,pady=0)
-    self.bitrateControlVar   = tk.StringVar(self,8)
+    self.bitrateControlVar   = tk.StringVar(self)
+
     self.bitrateControlVar.set(options['bitRateControl']) 
+
     self.bitrateControlCheck = ttk.Combobox(self,textvariable=self.bitrateControlVar) 
     self.bitrateControlCheck['state'] = 'readonly'
     self.bitrateControlCheck.config(values=['Average',
-                                  'Limit Maximum',
-                                  'Constant'])
-
+                                            'Limit Maximum',
+                                            'Constant'])
+    self.bitrateControlVar.set(options['bitRateControl']) 
+    
     self.bitrateControlCheck.grid(row=10,column=1,sticky='new',padx=0,pady=0) 
 
 
@@ -291,7 +296,7 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
       print(e)
 
     try:
-      options['sv1avPreset'] = int(float(self.sv1avPresetVar.get()))
+      options['svtav1Preset'] = int(float(self.sv1avPresetVar.get()))
     except Exception as e: 
       print(e)
 

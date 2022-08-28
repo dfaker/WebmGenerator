@@ -193,16 +193,35 @@ class FilterSelectionController:
   def getAllSubclips(self):
     return self.videoManager.getAllClips()
 
+  def fileHasAudio(self):
+    for elem in self.player.track_list:
+      if elem.get('type','video') == 'audio':
+        return True
+    return False
+
   def clearFilter(self):
+
     if self.filterApplicationMode == 'lavfi_complex':
-      self.player.lavfi_complex='[vid1]null[vo]'
+      if self.fileHasAudio():
+        self.player.lavfi_complex='[vid1]null[vo],[aid1]anull[ao]'
+      else:
+        self.player.lavfi_complex='[vid1]null[vo]'
     else:
       self.player.command('async','vf', 'del',    "@filterStack")
 
-  def setFilter(self,filterExpStr):
-    print(filterExpStr)
+  def setFilter(self,filterExpStr='null',filterAudioExpStr='anull'):
+    
+    if filterExpStr is None or filterExpStr.strip() == '':
+      filterExpStr='null'
+    if filterAudioExpStr is None or filterAudioExpStr.strip() == '':
+      filterAudioExpStr='anull'
+
     if self.filterApplicationMode == 'lavfi_complex':
-      self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
+      if self.fileHasAudio():
+        self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo],[aid1] '+filterAudioExpStr+' [ao]'
+      else:
+        self.player.lavfi_complex='[vid1] '+filterExpStr+' [vo]'
+
     else:
       self.player.command('async','vf', 'add',    '@filterStack:lavfi="{}"'.format(filterExpStr))
 
@@ -329,15 +348,18 @@ class FilterSelectionController:
   def getClipsWithFilters(self):
     response=[]
     for filename,rid,s,e in self.videoManager.getAllClips():
-      result = [filename,rid,s,e,'null','null']
+      result = [filename,rid,s,e,'null','anull','null']
       filteredVersion = self.ui.subclips.get(rid)
       if filteredVersion is not None:
         result[4]=filteredVersion.get('filterexp','null')
-        result[5]=filteredVersion.get('filterexpEncStage','null')
+        result[5]=filteredVersion.get('filterexpaudio','anull')
+        result[6]=filteredVersion.get('filterexpEncStage','null')
       if result[4] == '':
         result[4]='null'
       if result[5] == '':
-        result[5]='null'
+        result[5]='anull'
+      if result[6] == '':
+        result[6]='null'
       response.append( tuple(result) )
     return response
 

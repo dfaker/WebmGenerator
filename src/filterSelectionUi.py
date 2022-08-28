@@ -35,9 +35,12 @@ class FilterSpecification(ttk.Frame):
     ttk.Frame.__init__(self, master)
     self.filterId=filterId
     self.enabled=spec.get('enabled',True)
+    self.isAudioFilter=spec.get('isAudioFilter',False)
     self.spec=spec
     self.controller=controller
     self.frameFilterDetailsWidget = self
+
+    print('self.isAudioFilter DONE')
 
     self.autoNumber = getSpecificationNumber()
 
@@ -95,9 +98,6 @@ class FilterSpecification(ttk.Frame):
     self.timelineEnd   = tk.StringVar()
 
     self.presets = spec.get('presets',[])
-
-
-
 
     if self.timelineSupport:
 
@@ -518,15 +518,19 @@ class FilterSpecification(ttk.Frame):
     self.controller.recaculateFilters('toggleEnabled')
 
   def getFilterExpression(self,preview=False,encodingStage=False):
+    nullfilter='null'
+    if self.isAudioFilter:
+      nullfilter='anull'
+
     if not self.enabled:
-      return 'null'
+      return nullfilter
 
     if preview:
-      filterExp= self.spec.get("filterPreview",self.spec.get("filter",'null'))
+      filterExp= self.spec.get("filterPreview",self.spec.get("filter",nullfilter))
     elif self.encodingStageFilter and encodingStage==False:
-      return 'null'
+      return nullfilter
     else:
-      filterExp= self.spec.get("filter",'null')
+      filterExp= self.spec.get("filter",nullfilter)
     
 
     filerExprams=[]
@@ -576,7 +580,7 @@ class FilterSpecification(ttk.Frame):
       else:
         filterExp+= e
 
-    if self.timelineSupport and filterExp != 'null' and not self.encodingStageFilter:
+    if self.timelineSupport and filterExp != nullfilter and not self.encodingStageFilter:
       tsStart = None
       tsEnd   = None
 
@@ -1779,9 +1783,14 @@ class FilterSelectionUi(ttk.Frame):
 
 
   def recaculateFilters(self,caller):
+    filteraudioexpPreview=[]
+    filteraudioexpReal=[]
+
+
     filterexpPreview=[]
     filterExpReal=[]
     filterExpEncodingStage=[]
+    
     print('recaculateFilters',caller)
     commandSet = {}
 
@@ -1789,10 +1798,17 @@ class FilterSelectionUi(ttk.Frame):
 
       commandSet.update(filter.getTimeLimeCommandValues())
 
-      filterexpPreview.append(filter.getFilterExpression(preview=True)) 
-      filterExpReal.append(filter.getFilterExpression(preview=False))
-      if filter.encodingStageFilter:
-        filterExpEncodingStage.append(filter.getFilterExpression(preview=False,encodingStage=True))
+      if filter.isAudioFilter:
+        filteraudioexpPreview.append(filter.getFilterExpression(preview=True)) 
+        filteraudioexpReal.append(filter.getFilterExpression(preview=False))
+      else:
+        filterexpPreview.append(filter.getFilterExpression(preview=True)) 
+        filterExpReal.append(filter.getFilterExpression(preview=False))
+        if filter.encodingStageFilter:
+          filterExpEncodingStage.append(filter.getFilterExpression(preview=False,encodingStage=True))
+
+    audioCommandStr_preview = ""
+    audioCommandStr_real = ""
 
     commandStr_preview = ""
     commandStr_real = ""
@@ -1839,9 +1855,11 @@ class FilterSelectionUi(ttk.Frame):
 
           lastCommandValues[(cmdTarget,cmdProperty)] = (k,cmdValue,interpolationMode)
 
+    filterAudioExpStrPreview = ','.join(filteraudioexpPreview)
+    filterAudioExpStrReal    = ','.join(filteraudioexpReal)
 
-    filterExpStrPreview = ','.join(filterexpPreview)
-    filterExpStrReal = ','.join(filterExpReal)
+    filterExpStrPreview    = ','.join(filterexpPreview)
+    filterExpStrReal       = ','.join(filterExpReal)
     filterExpEncodingStage = ','.join(filterExpEncodingStage)
 
     currentClip=0
@@ -1868,7 +1886,6 @@ class FilterSelectionUi(ttk.Frame):
             cmdf.write(commandStr_real)
           commandFilename_real_clean  = cleanFilenameForFfmpeg(os.path.abspath(commandFilename_real)).replace('\\','/').replace(':','\\:')
             
-
           sndCmdFilter_preview = "sendcmd=f='{}',".format(commandFilename_preview_clean)
           sndCmdFilter_real    = "sendcmd=f='{}',".format(commandFilename_real_clean)
 
@@ -1879,14 +1896,12 @@ class FilterSelectionUi(ttk.Frame):
 
         filterExpStrPreview = sndCmdFilter_preview+filterExpStrPreview
         filterExpStrReal    = sndCmdFilter_real+filterExpStrReal
-      
-
       postLockClip = self.getCurrentClip()
 
-      if preLockClip != postLockClip or len(filterexpPreview)==0:
+      if preLockClip != postLockClip or (len(filterexpPreview)==0 and len(filterAudioExpStrPreview) == 0):
         self.controller.clearFilter()
       else:
-        self.controller.setFilter(filterExpStrPreview)
+        self.controller.setFilter(filterExpStrPreview,filterAudioExpStrPreview)
       self.filterFailed=False
 
     if self.currentSubclipIndex is not None and preLockClip == postLockClip:
@@ -1894,6 +1909,7 @@ class FilterSelectionUi(ttk.Frame):
       if currentClip is not None:
         currentClip['filters'] = self.convertFilterstoSpecDefaults()
         currentClip['filterexp'] =filterExpStrReal
+        currentClip['filterexpaudio'] =filterAudioExpStrReal
         currentClip['filterexpEncStage'] =filterExpEncodingStage
 
   def convertFilterstoSpecDefaults(self):

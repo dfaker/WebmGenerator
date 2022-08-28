@@ -476,7 +476,7 @@ class WebmGeneratorController:
     except Exception as e:
       pass
 
-    for f in files:
+    for f in map(os.path.normpath,files):
 
       if os.path.isfile(f):
         if self.shutdown or self.abortLoad:

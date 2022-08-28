@@ -166,7 +166,7 @@ class FFmpegService():
       
 
       totalExpectedEncodedSeconds = 0
-      for rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed in seqClips:
+      for rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed in seqClips:
         totalExpectedEncodedSeconds += e-s
       totalEncodedSeconds=0
 
@@ -177,7 +177,7 @@ class FFmpegService():
 
       fileList=[]
       
-      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
+      for i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
 
         etime = e-s
         basename = os.path.basename(clipfilename)
@@ -303,7 +303,7 @@ class FFmpegService():
 
         maxColWidth  = 0
         sumcolHeight = 0
-        for i,(rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed) in enumerate(column):
+        for i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed) in enumerate(column):
           
           videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename),filters=filterexp)
           brick = Brick(brickn,videoInfo.width,videoInfo.height)
@@ -318,7 +318,7 @@ class FFmpegService():
           if e-s > maxLength:
             maxLength = e-s
 
-          brickClips[brickn] = (i,(rid,clipfilename,s,e,filterexp,filterexpEnc))
+          brickClips[brickn] = (i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc))
           brickVideoInfo[brickn] = videoInfo
 
           if options.get('selectedColumn',0) == icol:
@@ -355,7 +355,7 @@ class FFmpegService():
       audioMergeMode = options.get('audioMerge','Merge Normalize All')
 
       for brickn in brickClips.keys():
-        (i,(rid,clipfilename,s,e,filterexp,filterexpEnc)) = brickClips[brickn]
+        (i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc)) = brickClips[brickn]
         videoInfo = brickVideoInfo[brickn]
         etime = e-s
         if filterexp=='':
@@ -369,7 +369,7 @@ class FFmpegService():
           filterexp += ',fps={}'.format(options.get('forceFPS',-1))
         
 
-        key = (rid,clipfilename,s,e,filterexp,filterexpEnc)
+        key = (rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc)
 
         basename = os.path.basename(clipfilename)
 
@@ -389,7 +389,7 @@ class FFmpegService():
         outname = '{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,s,e,filterHash,runNumber)
         outname = os.path.join( tempPathname,outname )
 
-        print('BRICKN',brickn,(i,(rid,clipfilename,s,e,filterexp,filterexpEnc)))
+        print('BRICKN',brickn,(i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc)))
         print('key',key,outname)
 
 
@@ -422,10 +422,8 @@ class FFmpegService():
           else:
             comvcmd = ['ffmpeg','-y'                                
                       ,'-ss', str(s)
-
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(e-s)
-                      
                       ,'-filter_complex', filterexp
                       ,'-c:v', 'libx264'
                       ,'-crf', '0'
@@ -502,7 +500,7 @@ class FFmpegService():
 
       for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
         streropos[k] = (((xo+w/2)/vow)-0.5)
-        vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
+        vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilteraudioexp,vfilterexpEnc) = brickClips[k]
         if w*h > largestBrickArea:
           largestBrickArea=w*h
           largestBrickInd=k
@@ -526,7 +524,7 @@ class FFmpegService():
         klookup={}
         for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
           videoInfo = brickVideoInfo[k]
-          vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
+          vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilteraudioexp,vfilterexpEnc) = brickClips[k]
           klookup[k]=snum
           file = brickTofileLookup[k]
 
@@ -632,7 +630,7 @@ class FFmpegService():
       overlays = []
 
       for snum,(k,(xo,yo,w,h,ar,ow,oh)) in enumerate(sorted(logger.items(),key=lambda x:int(x[0]))):
-        vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilterexpEnc) = brickClips[k]
+        vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilteraudioexp,vfilterexpEnc) = brickClips[k]
 
         vetime = ve-vs
         loopCount=0
@@ -747,7 +745,7 @@ class FFmpegService():
       encodeStageFilterList = []
 
 
-      for i,(rid,clipfilename,s,e,filterexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
+      for i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
         if filterexpEnc is not None and len(filterexpEnc)>0 and filterexpEnc != 'null':
           encodeStageFilterList.append(filterexpEnc)
 
@@ -783,7 +781,7 @@ class FFmpegService():
 
 
 
-      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filterexpEnc,clipSpeed)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
+      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filteraudioexp,filterexpEnc,clipSpeed)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
         shortestClipLength = min(shortestClipLength, etime)
         if filterexp=='':
           filterexp='null'  
@@ -829,7 +827,7 @@ class FFmpegService():
         m.update(options.get('audioChannels','').encode('utf8'))
         filterHash = m.hexdigest()[:10]
 
-        key = (rid,clipfilename,start,end,filterexp,filterexpEnc)
+        key = (rid,clipfilename,start,end,filterexp,filteraudioexp,filterexpEnc)
         basename = os.path.basename(clipfilename)
         basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
@@ -868,8 +866,9 @@ class FFmpegService():
                        '-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp ] + slice_encoder_preset + [
+                      ,'-filter_complex', filterexp+'[vo],'+filteraudioexp+'[ao]' ] + slice_encoder_preset + [
                        '-crf', '0'
+                      ,'-map', '[vo]', '-map', '[ao]'
                       ,'-ac', audioChannels,outname]
           else:
             comvcmd = ['ffmpeg','-y'  ]+cuda_flags+[
@@ -877,11 +876,17 @@ class FFmpegService():
                       ,'-ss', str(start)
                       ,'-i', cleanFilenameForFfmpeg(clipfilename)
                       ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp ] + slice_encoder_preset + [
+                      ,'-filter_complex', filterexp+'[vo],'+filteraudioexp+'[ao]' ] + slice_encoder_preset + [
                        '-crf', '0'
-                      ,'-map', '0:a', '-map', '1:v' 
+                      ,'-map', '[vo]', '-map', '[ao]' 
                       ,'-shortest'
                       ,'-ac', audioChannels,outname]
+
+          print('')
+          print(filterexp)
+          print(filteraudioexp)
+          print(comvcmd)
+          print('')
 
           proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
           

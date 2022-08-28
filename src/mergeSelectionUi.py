@@ -365,10 +365,12 @@ class SequencedVideoEntry(ttk.Frame):
     self.e=sourceClip.e
     self.controller=controller
     self.player = None
+    self.muted=False
     
     self.filename=sourceClip.filename
     self.filterexp=sourceClip.filterexp
     self.filterexpEnc=sourceClip.filterexpEnc
+    self.filteraudioexp=sourceClip.filteraudioexp
     self.basename = sourceClip.basename
     self.previewImage=sourceClip.previewImage
 
@@ -425,21 +427,33 @@ class SequencedVideoEntry(ttk.Frame):
     
     self.frameOrderingButtons.config(height='200', width='200')
     self.frameOrderingButtons.pack(side='top')
+
     self.buttonSequenceEntryPreview = ttk.Button(self.frameSequenceVideoEntry)
     self.buttonSequenceEntryPreview.config(text='Preview ⯈')
     self.buttonSequenceEntryPreview.config(command=self.preview)
     self.buttonSequenceEntryPreview.config(style="small.TButton")
+
     if direction == 'LEFT_RIGHT':
       self.buttonSequenceEntryPreview.pack(expand='true', fill='both', side='left')
     else:
       self.buttonSequenceEntryPreview.pack(expand='true', fill='x', side='left')
 
+    """
+    self.buttonSequenceEntryMute = ttk.Button(self.frameSequenceVideoEntry)
+    self.buttonSequenceEntryMute.config(text='🔊', width='2')
+    self.buttonSequenceEntryMute.config(command=self.muteToggle)
+    self.buttonSequenceEntryMute.config(style="small.TButton")
+
+    if direction == 'LEFT_RIGHT':
+      self.buttonSequenceEntryMute.pack(expand='true', fill='both', side='left')
+    else:
+      self.buttonSequenceEntryMute.pack(expand='true', fill='x', side='left')
+    """
 
     self.buttonSequenceEntryREmove = ttk.Button(self.frameSequenceVideoEntry)
     self.buttonSequenceEntryREmove.config(text='Remove ✖')
     self.buttonSequenceEntryREmove.config(command=self.remove)
     self.buttonSequenceEntryREmove.config(style="small.TButton")
-
 
     if direction == 'LEFT_RIGHT':
       self.buttonSequenceEntryREmove.pack(expand='true', fill='both', side='left')
@@ -453,6 +467,13 @@ class SequencedVideoEntry(ttk.Frame):
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
     elif direction == 'UP_DOWN':
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='top')
+
+  def muteToggle(self):
+    self.muted = not self.muted
+    if self.muted:
+      self.buttonSequenceEntryMute.config(text='🔈')
+    else:
+      self.buttonSequenceEntryMute.config(text='🔊')
 
   def getSpeed(self):
     try:
@@ -509,10 +530,11 @@ class SequencedVideoEntry(ttk.Frame):
     self.previewImage=photoImage
     self.canvasSequencePreview.config(image=self.previewImage)
 
-  def update(self,s,e,filterexp,filterexpEnc):
+  def update(self,s,e,filterexp,filteraudioexp,filterexpEnc):
     self.s=s
     self.e=e
     self.filterexp=filterexp
+    self.filteraudioexp=filteraudioexp
     self.filterexpEnc = filterexpEnc
     self.labelSequenceVideoName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
@@ -579,7 +601,7 @@ class GridColumn(ttk.Labelframe):
 
 
 class SelectableVideoEntry(ttk.Frame):
-  def __init__(self, master,controller,filename,rid,s,e,filterexp,filterexpEnc, *args, **kwargs):
+  def __init__(self, master,controller,filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc, *args, **kwargs):
     ttk.Frame.__init__(self, master)
     self.master=master
     self.rid=rid
@@ -588,6 +610,7 @@ class SelectableVideoEntry(ttk.Frame):
     self.controller=controller
     self.filename=filename
     self.filterexp=filterexp
+    self.filteraudioexp=filteraudioexp
     self.filterexpEnc = filterexpEnc
 
     self.basename = os.path.basename(filename)[:14]
@@ -630,10 +653,11 @@ class SelectableVideoEntry(ttk.Frame):
     self.previewImage=photoImage
     self.canvasInputCutPreview.config(image=self.previewImage)
 
-  def update(self,s,e,filterexp,filterexpEnc):
+  def update(self,s,e,filterexp,filteraudioexp,filterexpEnc):
     self.s=s
     self.e=e
     self.filterexp=filterexp
+    self.filteraudioexp=filteraudioexp
     self.filterexpEnc = filterexpEnc
     self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
     self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
@@ -1790,7 +1814,7 @@ class MergeSelectionUi(ttk.Frame):
       self.encodeRequestId+=1
 
       for clip in self.sequencedClips:  
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter,nullfilter,clip.getSpeed())
+        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter,nullfilter,nullfilter,clip.getSpeed())
         encodeSequence.append(definition)
 
       if len(encodeSequence)>0:
@@ -1815,7 +1839,11 @@ class MergeSelectionUi(ttk.Frame):
       for i,column in enumerate(self.gridColumns):
         outcol = []
         for clip in column['clips']:
-          definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc,clip.getSpeed())
+          definition = (clip.rid,clip.filename,clip.s,clip.e,
+                        nullfilter if disableFilters else clip.filterexp,
+                        nullfilter if disableFilters else clip.filteraudioexp, 
+                        nullfilter if disableFilters else clip.filterexpEnc,
+                        clip.getSpeed())
           outcol.append(definition)
           if column == self.selectedColumn:
             selectedColumnInd=i
@@ -1874,7 +1902,11 @@ class MergeSelectionUi(ttk.Frame):
       encodeSequence = []
       self.encodeRequestId+=1
       for clip in self.sequencedClips:
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp, nullfilter if disableFilters else clip.filterexpEnc,clip.getSpeed())
+        definition = (clip.rid,clip.filename,clip.s,clip.e,
+                      nullfilter if disableFilters else clip.filterexp, 
+                      nullfilter if disableFilters else clip.filteraudioexp,
+                      nullfilter if disableFilters else clip.filterexpEnc,
+                      clip.getSpeed())
         encodeSequence.append(definition)
       if len(encodeSequence)>0:
         options={
@@ -1924,7 +1956,11 @@ class MergeSelectionUi(ttk.Frame):
       for clip in self.sequencedClips:
         encodeSequence = []
         self.encodeRequestId+=1
-        definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter if disableFilters else clip.filterexp,nullfilter if disableFilters else clip.filterexpEnc,clip.getSpeed())
+        definition = (clip.rid,clip.filename,clip.s,clip.e,
+                      nullfilter if disableFilters else clip.filterexp,
+                      nullfilter if disableFilters else clip.filteraudioexp,
+                      nullfilter if disableFilters else clip.filterexpEnc,
+                      clip.getSpeed())
         encodeSequence.append(definition)
         if len(encodeSequence)>0:
           options={
@@ -2195,10 +2231,10 @@ class MergeSelectionUi(ttk.Frame):
             self.removeSequencedClip(clip)
 
       changedrid=rid
-      for filename,rid,s,e,filterexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
+      for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
         for sv in self.sequencedClips:
           if sv.rid==rid and (changedrid is None or changedrid==rid):
-            sv.update(s,e,filterexp,filterexpEnc)
+            sv.update(s,e,filterexp,filteraudioexp,filterexpEnc)
 
       try:
         self.syncModal.keepWidth=True
@@ -2210,17 +2246,17 @@ class MergeSelectionUi(ttk.Frame):
 
   def updateSelectableVideos(self):
       unusedRids=set(self.selectableVideos.keys())
-      for filename,rid,s,e,filterexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
+      for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
         if rid in self.selectableVideos:
           unusedRids.remove(rid)
         if rid not in self.selectableVideos:
-          self.selectableVideos[rid] = SelectableVideoEntry(self.selectableVideosContainer,self,filename,rid,s,e,filterexp,filterexpEnc)
-        elif self.selectableVideos[rid].s != s or self.selectableVideos[rid].e != e or self.selectableVideos[rid].filterexp != filterexp:
-           self.selectableVideos[rid].update(s,e,filterexp,filterexpEnc)
+          self.selectableVideos[rid] = SelectableVideoEntry(self.selectableVideosContainer,self,filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc)
+        elif self.selectableVideos[rid].s != s or self.selectableVideos[rid].e != e or self.selectableVideos[rid].filterexp != filterexp or self.selectableVideos[rid].filteraudioexp != filteraudioexp:
+           self.selectableVideos[rid].update(s,e,filterexp,filteraudioexp,filterexpEnc)
 
         for sv in self.sequencedClips:
           if sv.rid==rid:
-            sv.update(s,e,filterexp,filterexpEnc)
+            sv.update(s,e,filterexp,filteraudioexp,filterexpEnc)
 
       for rid in unusedRids:
         self.selectableVideos[rid].destroy()

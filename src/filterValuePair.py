@@ -428,7 +428,9 @@ class FilterValuePair(ttk.Frame):
       initialdir=self.controller.getGlobalOptions().get('defaultImageFolder','.')
     elif self.fileCategory=='video':
       initialdir=self.controller.getGlobalOptions().get('defaultVideoFolder','.')
-    
+    elif self.fileCategory=='audio':
+      initialdir=self.controller.getGlobalOptions().get('defaultAudioFolder','.')
+
     print(initialdir,filetypes)
     fn = askopenfilename(initialdir=initialdir,filetypes=filetypes)
     if fn is None or len(fn)==0:
@@ -445,7 +447,9 @@ class FilterValuePair(ttk.Frame):
         self.controller.getGlobalOptions()['defaultImageFolder'] = writeBackPath
       elif self.fileCategory=='video':
         self.controller.getGlobalOptions()['defaultVideoFolder'] = writeBackPath
-
+      elif self.fileCategory=='audio':
+        self.controller.getGlobalOptions()['defaultAudioFolder'] = writeBackPath
+      
       self.valueVar.set(cleanPath)
       print(self.valueVar.get())
       self.entryFilterValueValue.config(text='File: {}'.format(self.valueVar.get()[-20:]))

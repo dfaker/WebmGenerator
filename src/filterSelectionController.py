@@ -33,7 +33,7 @@ class FilterSelectionController:
     self.player = mpv.MPV(wid=str(int(playerFrameWid)),
                           osc=False,
                           log_handler=self.errorHandler,
-                          loglevel='debug',
+                          loglevel='info',
                           loop='inf',
                           mute=True,
                           background=globalOptions.get('filtersTabPlayerBackgroundColour','#282828'),
@@ -96,7 +96,6 @@ class FilterSelectionController:
     else:
       return 'UNKNOWN'
 
-
   def faceDetectEnabled(self):
     return self.faceDetectService.faceDetectEnabled()
 
@@ -111,6 +110,7 @@ class FilterSelectionController:
 
   def errorHandler(self,kind,module,err):
 
+    print(self,kind,module,err)
     if kind=='error' and 'Disabling filter filterStack' in err:
       self.clearFilter()
       self.ui.filterFailure()

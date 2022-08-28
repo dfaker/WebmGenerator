@@ -2,6 +2,90 @@
 
 
  {
+  "support": "..C",
+  "category": "N->A",
+  "isAudioFilter":true,
+  "category": "Audio Mixing Filters",
+  "name": "amix",
+  "filter": "anull[amixin{fn}],amovie@{fn}='{source}',atrim=start={startTrim}[adubin{fn}],[amixin{fn}][adubin{fn}]amix@{fn}=inputs=2:duration={duration}:weights='{gainsource} {gainaudio}'",
+  "kind": "N->A",
+  "desc": "Mix together the source audio and an external mp3.",
+  "params": [
+   {"n": "source", "d": "", "type": "file", "fileCategory":"audio"},
+
+   {
+    "n": "duration",
+    "d": "shortest",
+    "type": "cycle",
+    "inc": 1,
+    "cycle": [
+     "longest",
+     "shortest",
+     "first"
+    ]
+   },
+   {
+    "n": "startTrim",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     null
+    ],
+    "inc": 0.1
+   },
+   {
+    "n": "gainsource",
+    "d": 0.5,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 0.1
+   },
+   {
+    "n": "gainaudio",
+    "d": 0.5,
+    "type": "float",
+    "range": [
+     0.0,
+     1.0
+    ],
+    "inc": 0.1
+   }
+  ]
+ },
+
+
+ {
+  "support": "..C",
+  "category": "N->A",
+  "isAudioFilter":true,
+  "category": "Audio Mixing Filters",
+  "name": "amix scc external",
+  "filter": "anull[amixin{fn}],amovie@{fn}='{source}',atrim=start={startTrim}[adubin{fn}],[amixin{fn}]asplit=2[amixina{fn}][amixinb{fn}],[adubin{fn}][amixina{fn}]sidechaincompress[adubinducked{fn}],[amixinb{fn}]aformat=sample_fmts=u8|s16:channel_layouts=stereo[amixinbfmt{fn}],[adubinducked{fn}]aformat=sample_fmts=u8|s16:channel_layouts=stereo[adubinduckedfmt{fn}],[amixinbfmt{fn}][adubinduckedfmt{fn}]amerge@{fn}",
+  "kind": "N->A",
+  "desc": "Mix together the source audio and an external mp3 with side chain compression of external audio.",
+  "params": [
+   {"n": "source", "d": "", "type": "file", "fileCategory":"audio"},
+
+   {
+    "n": "startTrim",
+    "d": 0.0,
+    "type": "float",
+    "range": [
+     0.0,
+     null
+    ],
+    "inc": 0.1
+   }
+  ]
+ },
+
+
+
+ {
   "support": "...",
   "category": "Audio Filters",
   "name": "apulsator",

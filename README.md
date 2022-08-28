@@ -19,7 +19,7 @@ A tool for cutting, filtering and joining video clips, supports webm (VP8, VP9),
 ### Some examples of the possible outputs are [in the wiki](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
 
 ## External dependencies:
-- mpv-1.dll - https://mpv.io/installation/
+- mpv-2.dll - https://mpv.io/installation/
 - ffmpeg - https://www.ffmpeg.org/download.html
 - youtube-dlp - https://github.com/yt-dlp/yt-dlp (optional)
 

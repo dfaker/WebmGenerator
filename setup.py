@@ -34,6 +34,12 @@ buildOptions = dict(packages = ["os"],
                     ,('resources\\RankImages\\Rank-D.png','resources\\RankImages\\Rank-D.png')
                     ,('resources\\RankImages\\Rank-E.png','resources\\RankImages\\Rank-E.png')
                     ,('resources\\RankImages\\Rank-F.png','resources\\RankImages\\Rank-F.png')
+
+                    ,('resources\\slider_right_light.gif','resources\\slider_right_light.gif')
+                    ,('resources\\RankImages\\slider_left_light.gif','resources\\RankImages\\slider_left_light.gif')
+                      
+                    ,('resources\\slider_right_light.gif','resources\\slider_right_base.gif')
+                    ,('resources\\RankImages\\slider_left_light.gif','resources\\RankImages\\slider_left_base.gif')
                       
                     ,('resources\\cutPreview.png','resources\\cutPreview.png')
                     ,('resources\\loadingPreview.png','resources\\loadingPreview.png')

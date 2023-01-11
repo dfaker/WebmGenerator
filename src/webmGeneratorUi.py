@@ -288,7 +288,6 @@ class WebmGeneratorUi:
     
     self.commandmenu.add_cascade(label="Content detectors", menu=self.commandDetectormenu)
 
-
     self.commandspectramenu = Menu(self.menubar, tearoff=0)
 
     self.commandspectramenu.add_command(label="Generate general audio spectra", command=self.generateSoundWaveBackgrounds)

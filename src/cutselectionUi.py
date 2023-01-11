@@ -9,6 +9,7 @@ import os
 import threading
 import signal
 from math import floor
+import random
 import logging
 import time
 import subprocess as sp
@@ -503,6 +504,8 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("r",        lambda s=self: s.randomClip())
         self.frameVideoPlayerFrame.bind("R",        lambda s=self: s.randomClip())
 
+        self.frameVideoPlayerFrame.bind("f",        lambda s=self: s.fastSeek())
+
         self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
         self._previewtimer.daemon = True
         self._previewtimer.start()
@@ -510,6 +513,8 @@ class CutselectionUi(ttk.Frame):
 
         self.frameRate = None
         self.disableFileWidgets=False
+
+        self.seekpoints = [i/100 for i in range(100)]
 
     def setDragDur(self,dur):
       self.sliceLengthVar.set(str(round(dur,4)))
@@ -623,6 +628,20 @@ class CutselectionUi(ttk.Frame):
 
     def updateLoopMode(self,*args):
       self.controller.updateLoopMode(self.loopModeVar.get())
+
+    def fastSeek(self):
+      potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
+
+      if len(potential_seekpoints) == 0:
+        self.seekpoints = [i/100 for i in range(100)]
+        print('RESET SEEKPOINTS')
+        
+      potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
+
+      point = random.choice(potential_seekpoints)
+
+      self.seekpoints.remove(point)
+      self.seekTo(point*self.getTotalDuration())
 
     def videoMousewheel(self,evt):
       ctrl  = evt and ((evt.state & 0x4) != 0)
@@ -944,10 +963,12 @@ class CutselectionUi(ttk.Frame):
     def restartForNewFile(self, filename=None):
         self.frameRate = None
         self.frameTimeLineFrame.resetForNewFile()
+        self.seekpoints = [i/100 for i in range(100)]
         try:
           self.frameVideoPlayerlabel.pack_forget()
         except:
           pass
+
 
     def getIsPlaybackStarted(self):
         return self.controller.getIsPlaybackStarted()

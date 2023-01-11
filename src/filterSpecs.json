@@ -88,7 +88,7 @@
  {
   "support": "...",
   "category": "Audio Filters",
-  "name": "apulsator",
+  "name": "Pulsator",
   "isAudioFilter":true,
   "filter": "Pulsator",
   "kind": "A->A",
@@ -2182,7 +2182,7 @@
  {
   "support": "T.C",
   "category": "Audio Filters",
-  "name": "Dialogu Enhance",
+  "name": "Dialogue Enhance",
   "isAudioFilter":true,
   "filter": "dialoguenhance@{fn}",
   "kind": "A->A",

@@ -1638,9 +1638,7 @@ class MergeSelectionUi(ttk.Frame):
           if k in self.editableProfileVars:
             attrName = k+'Var'
             if hasattr(self, attrName) and hasattr(getattr(self, attrName),'set'):
-               print(attrName,getattr(self, attrName).get())
                getattr(self, attrName).set(v)
-               print(attrName,getattr(self, attrName).get())
 
   def valueChange(self,*args):
     try:
@@ -1711,7 +1709,6 @@ class MergeSelectionUi(ttk.Frame):
     try:
       widthNum = self.maximumWidthVar.get().split('-')[0].strip()
       self.maximumWidthValue = int(float(widthNum))
-      print('maximumWidthValue',self.maximumWidthValue)
     except:
       pass
 
@@ -2114,8 +2111,6 @@ class MergeSelectionUi(ttk.Frame):
     menu.delete(0, "end")
     for string in self.profiles:
       menu.add_command(label=string,command=lambda value=string: self.profileVar.set(value))
-
-    print(self.profiles)
 
     if self.defaultProfile in self.profiles:
       self.profileVar.set(self.defaultProfile)

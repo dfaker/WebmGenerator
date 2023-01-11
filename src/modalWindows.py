@@ -1860,7 +1860,7 @@ class TimestampModal(tk.Toplevel):
     self.entryTimestamps.grid(row=1,column=0,sticky='new',padx=5,pady=5)
     self.varTimestamps.trace('w',self.valueUpdated)
 
-    self.varnegativeTS = tk.IntVar(0)
+    self.varnegativeTS = tk.IntVar(self,0)
     self.checknegativeTS =  ttk.Checkbutton(self,text='Interpret as negative timestamps from end of clip.',var=self.varnegativeTS)
     self.checknegativeTS.grid(row=2,column=0,sticky='new',padx=5,pady=5)
     self.varnegativeTS.trace('w',self.valueUpdated)

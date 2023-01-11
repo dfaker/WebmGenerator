@@ -21,7 +21,6 @@ class FilterSelectionController:
           name = fn.rpartition('.')[0]
           value = json.loads(open(os.path.join('filterTemplates',fn),'r').read())
           self.templates[name]=value
-          print('filter template load:',name)
         except Exception as e:
           print(e)
 

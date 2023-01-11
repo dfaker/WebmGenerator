@@ -380,6 +380,8 @@ class FFmpegService():
 
         m = hashlib.md5()
         m.update(filterexp.encode('utf8'))
+        m.update(filteraudioexp.encode('utf8'))
+        m.update(filterexpEnc.encode('utf8'))
         filterHash = m.hexdigest()[:10]
 
         basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
@@ -793,6 +795,8 @@ class FFmpegService():
 
           m = hashlib.md5()
           m.update(filterexp.encode('utf8'))
+          m.update(filteraudioexp.encode('utf8'))
+          m.update(filterexpEnc.encode('utf8'))
           filterHash = m.hexdigest()[:10]
 
           subfilename = filterexp.split('subtitles=filename=')[1].split(':force_style=')[0]
@@ -824,6 +828,8 @@ class FFmpegService():
 
         m = hashlib.md5()
         m.update(filterexp.encode('utf8'))
+        m.update(filteraudioexp.encode('utf8'))
+        m.update(filterexpEnc.encode('utf8'))
         m.update(options.get('audioChannels','').encode('utf8'))
         filterHash = m.hexdigest()[:10]
 

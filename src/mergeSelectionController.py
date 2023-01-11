@@ -26,7 +26,6 @@ class MergeSelectionController:
 
     if os.path.exists(self.profileSpecPath):
       for profileFile in os.listdir(self.profileSpecPath):
-        print('Custom profile load',profileFile)
         profileFilename = os.path.join(self.profileSpecPath,profileFile)
         if os.path.exists(profileFilename) and os.path.isfile(profileFilename):
           try:
@@ -35,13 +34,11 @@ class MergeSelectionController:
             profile['editable'] = True
             profileName = profile['name']
             profile['name'] = profileName 
-            print('Custom profile load:',profileName)
             self.customProfileSpecs.append( profile )
           except Exception as e:
             print('Custom profile load error',profileFilename,e)
 
     self.ui.setController(self)
-
     self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
 
   def setDragDur(self,dur):

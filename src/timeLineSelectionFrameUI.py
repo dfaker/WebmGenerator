@@ -332,9 +332,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     import subprocess as sp
     sampleRate = 4000
     if self.generateWaveStyle == 'SPEECH':
-      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/speechModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/speechModel/model.rnnn,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     elif self.generateWaveStyle == 'VOICE':
-      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/voiceModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/voiceModel/model.rnnn,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     else:
       proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,highpass=f=200,lowpass=f=3000,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     
@@ -391,15 +391,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       indEn = int(math.floor(len(tempsamples)*(endTS   / totalDuration )))
 
       indDistance = indEn-indSt
-
+ 
       for x in range(0,outputWidth):
         xPc = x/outputWidth
         xnPc = min((x+1)/outputWidth,1.0)
         samp0 = int(indSt+(xPc*indDistance))
         samp1 = int(indSt+(xnPc*indDistance))
         try:
-          
-          
           sampleszMax = tempsamples[samp0:samp1].max()
           sampleszMax = int((sampleszMax/255)*40)
 
@@ -409,7 +407,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           background[sampleszMin:sampleszMax,x,0]=250
 
         except Exception as e:
-          print(e)
+          print('Audio spectra norm Exception',e)
         if args != self.lastWavePicSectionsRequested:
           return
 

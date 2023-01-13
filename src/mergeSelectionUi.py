@@ -748,6 +748,7 @@ class MergeSelectionUi(ttk.Frame):
       {'name':'Sub 100M max quality mp4','editable':False,'outputFormat':'mp4:x264','maximumSize':'100.0'}
     ]
 
+
     self.profileVar = tk.StringVar()
     self.profiles   = [x.get('name') for x in self.profileSpecs if x.get('name') is not None ]
 
@@ -965,10 +966,19 @@ class MergeSelectionUi(ttk.Frame):
       'mp4:H265_Nvenc',
       'mp4:AV1',
       'webm:VP8',
-      'webm:VP9',
+      'webm:VP9']
+
+    customEncoderDir = 'customEnoderSpecs'
+    for fn in os.listdir(customEncoderDir):
+      p = os.path.join(customEncoderDir,fn)
+      spec = json.load(open(p))
+      self.outputFormats.append(spec['extension']+':'+spec['name'])
+
+    self.outputFormats += [
       'gif',      
       'apng',
     ]
+
     self.outputFormatVar.set(self.outputFormats[0])
 
 

@@ -13,6 +13,7 @@ import string
 import subprocess as sp
 import threading
 import time
+import json
 
 import numpy as np
 
@@ -24,6 +25,8 @@ from .encoders.webmvp9Encoder import encoder as webmvp9Encoder
 from .encoders.mp4x264NvencEncoder import encoder as mp4x264NvencEncoder
 from .encoders.mp4H265NvencEncoder import encoder as mp4H265NvencEncoder
 from .encoders.mp4AV1Encoder       import encoder as mp4AV1Encoder
+
+from .encoders.specVideoEncoder import SpecVideoEncoder as SpecVideoEncoder
 
 from .encodingUtils import cleanFilenameForFfmpeg
 from .encodingUtils import getFreeNameForFileAndLog
@@ -97,6 +100,14 @@ encoderMap = {
   ,'gif':gifEncoder
   ,'apng':apngEncoder
 }
+
+customEncoderDir = 'customEnoderSpecs'
+
+for fn in os.listdir(customEncoderDir):
+    p = os.path.join(customEncoderDir,fn)
+    spec = json.load(open(p))
+    encoderMap[spec['extension']+':'+spec['name']] = SpecVideoEncoder(p)
+
 
 class FFmpegService():
 

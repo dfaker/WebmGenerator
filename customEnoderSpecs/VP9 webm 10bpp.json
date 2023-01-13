@@ -1,0 +1,40 @@
+{
+	"name":"VP9 10bpp",
+	"baseEncoder":"",
+	"extension":"webm",
+	"multi-pass-encode":true,
+	"commandBlocks":[
+		{"cmds":["-shortest", "-copyts", "-start_at_zero", "-c:v","libvpx-vp9"]},
+		{"conditions":[["audioChannels","contains","Copy"]],
+	     "cmds":["-c:a","libopus"],
+		 "altCmds":[]
+		},
+		{"cmds":["-stats","-pix_fmt","yuv420p","-threads","{encoderStageThreads}","-auto-alt-ref", "6", "-lag-in-frames", "25"]},
+		{"conditions":[["passPhase","equals","1"]],
+	     "cmds":[],
+		 "altCmds":["-speed", "1"]
+		},
+		{"conditions":[["forceBestDeadline"]],
+	     "cmds":["-quality","best"],
+		 "altCmds":["-quality","good"]
+		},
+		{"cmds":["-psnr", "-row-mt", "1", "-tile-columns", "{tileColumns}", "-tile-rows", "0"
+                ,"-arnr-maxframes", "7","-arnr-strength", "5", "-aq-mode", "0"
+                ,"-tune-content", "film", "-enable-tpl", "1", "-frame-parallel", "0"
+                ,"-metadata", "Title={metadata_title}","-b:v","{br}"]
+		},
+		{"conditions":[["audioChannels","contains","No audio"]],
+	     "cmds":["-an"]
+		},
+		{"conditions":[["audioChannels","contains","Stereo"]],
+	     "cmds":["-ac","2","-ar","48k", "-b:a","{audoBitrate}"]
+		},
+		{"conditions":[["audioChannels","contains","Mono"]],
+	     "cmds":["-ac","1","-ar","48k", "-b:a","{audoBitrate}"]
+		},
+		{"conditions":[["audioChannels","contains","Copy"]],
+	     "cmds":["-c:a","copy"]
+		},
+		{"cmds":["-sn"]}
+	]
+}

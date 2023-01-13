@@ -9,7 +9,7 @@
 	     "cmds":["-c:a","libopus"],
 		 "altCmds":[]
 		},
-		{"cmds":["-stats","-pix_fmt","yuv420p","-threads","{encoderStageThreads}","-auto-alt-ref", "6", "-lag-in-frames", "25"]},
+		{"cmds":["-stats","-threads","{encoderStageThreads}","-auto-alt-ref", "6", "-lag-in-frames", "25"]},
 		{"conditions":[["passPhase","equals","1"]],
 	     "cmds":[],
 		 "altCmds":["-speed", "1"]

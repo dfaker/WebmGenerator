@@ -49,12 +49,11 @@ buildOptions = dict(packages = ["os"],
                     ,('resources\\voiceModel\\','resources\\voiceModel\\')
                       
                     ,('postFilters\\','postFilters\\')
-                    
                     ,('customEncodeprofiles\\','customEncodeprofiles\\')
+                    ,('customEnoderSpecs\\','customEnoderSpecs\\')
                     
                     ,('src\\screenspacetools.lua','src\\screenspacetools.lua')
                     ,('src\\vrscript.lua','src\\vrscript.lua')
-                      
                       
                     ,('src\\filterSpecs.json','src\\filterSpecs.json')
                     

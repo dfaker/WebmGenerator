@@ -75,6 +75,8 @@ class SpecVideoEncoder:
 
         specOptions['passPhase'] = passPhase
 
+
+
         if widthReduction>0.0:
           encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(encodeStageFilter=encodeStageFilter,widthReduction=widthReduction)
         else:
@@ -151,28 +153,57 @@ class SpecVideoEncoder:
         specOptions['br'] = br
         specOptions['bufsize'] = bufsize
 
-        
-
+        print(specOptions)
 
         for commandBlock in spec.get('commandBlocks',[]):
             conditionPassed = True
-            conditions = commandBlock.get('conditions',[])
-            for condition in conditions:
-                if len(condition) == 1:
-                    conditionPassed = conditionPassed & bool(specOptions.get(condition[0], False))
-                else:
-                    reference,comparison,value = condition
-                    if comparison.upper() == 'CONTAINS':
-                        conditionPassed = conditionPassed and bool(value.upper() in str(specOptions.get('reference')).upper())
-                    if comparison.upper() == 'EQUALS':
-                        conditionPassed = conditionPassed and bool(value.upper() == str(specOptions.get('reference')).upper())
 
-            if conditionPassed:
+            if 'conditions' in commandBlock:
+                conditions = commandBlock.get('conditions',[])
+                for condition in conditions:
+                    if len(condition) == 1:
+                        conditionPassed = conditionPassed & bool(specOptions.get(condition[0], False))
+                    else:
+                        reference,comparison,value = condition
+                        if comparison.upper() == 'CONTAINS':
+                            conditionPassed = conditionPassed and bool(value.upper() in str(specOptions.get('reference')).upper())
+                        if comparison.upper() == 'EQUALS':
+                            conditionPassed = conditionPassed and bool(value.upper() == str(specOptions.get('reference')).upper())
+
+                if conditionPassed:
+                    for cmd in commandBlock.get('cmds',[]):
+                        ffmpegcommand.append(cmd.format(**specOptions))
+                else:
+                    for cmd in commandBlock.get('altCmds',[]):
+                        ffmpegcommand.append(cmd.format(**specOptions))
+
+            elif 'selection' in commandBlock:
+                selection = commandBlock.get('selection',{})
+
+                if 'options' in selection:
+                    default_selection = None
+                    matching_selection = None
+                    for option in selection.get('options',[]):
+                        if option.get('name','') == selection.get('default'):
+                            default_selection = option.get('cmds',[])
+                        if option.get('name','') == specOptions.get('encoder-option-'+selection.get('name','')):
+                            matching_selection = option.get('cmds',[])
+
+                    final_commands = []
+                    if matching_selection is not None:
+                        final_commands = matching_selection
+                    elif default_selection is not None:
+                        final_commands = default_selection
+
+                    for cmd in final_commands:
+                        ffmpegcommand.append(cmd.format(**specOptions))
+                elif 'type' in selection:
+                    for cmd in selection.get('cmds',[]):
+                        cmd = cmd.format(value=selection.get('default',''))
+                        ffmpegcommand.append(cmd.format(**specOptions))
+            else:
                 for cmd in commandBlock.get('cmds',[]):
                     ffmpegcommand.append(cmd.format(**specOptions))
-            else:
-                for cmd in commandBlock.get('altCmds',[]):
-                    ffmpegcommand.append(cmd.format(**specOptions))  
 
         if passPhase==1:
           ffmpegcommand += ['-f', 'null', os.devnull]

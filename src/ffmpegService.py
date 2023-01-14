@@ -870,13 +870,15 @@ class FFmpegService():
           if 'Stereo' in options.get('audioChannels',''):
             audioChannels = '2'
 
+          intermediatePixelFormat = self.globalOptions.get('intermediatePixelFormat',"yuv420p10le")
+
           if usNVHWenc:
             if self.globalOptions.get('passCudaFlags',False):
               cuda_flags = ['-hwaccel', 'cuda']
-            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'losslesshp','-pix_fmt','yuv420p']
-            filterexp += ',format=yuv420p'
+            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'losslesshp','-pix_fmt',intermediatePixelFormat]
+            filterexp += ',format='+intermediatePixelFormat
           else:
-            slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast','-pix_fmt','yuv420p']
+            slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast','-pix_fmt',intermediatePixelFormat]
 
           if infoOut[rid].hasaudio:
             comvcmd = ['ffmpeg','-y' ]+cuda_flags+[                                
@@ -2048,8 +2050,10 @@ class FFmpegService():
         except Exception as e:
           logging.error("outputPathName exception",exc_info =e)
 
+        intermediatePixelFormat = self.globalOptions.get('intermediatePixelFormat',"yuv420p10le")
+
         outfileName = os.path.join('tempVideoFiles','loadImageAsVideo_{}.mp4'.format(imageasVideoID))
-        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt','yuv420p','-tune', 'stillimage','-filter_complex', 'scale={}:{}:flags=bicubic,pad=ceil(iw/2)*2:ceil(ih/2)*2[vid],anullsrc[aud]'.format(vidInfo.width,vidInfo.height),'-map','[vid]','-map','[aud]',outfileName],stderr=sp.PIPE)
+        proc = sp.Popen(['ffmpeg','-y','-loop','1','-i',filename,'-c:v','libx264','-t',str(duration),'-pix_fmt',intermediatePixelFormat,'-tune', 'stillimage','-filter_complex', 'scale={}:{}:flags=bicubic,pad=ceil(iw/2)*2:ceil(ih/2)*2[vid],anullsrc[aud]'.format(vidInfo.width,vidInfo.height),'-map','[vid]','-map','[aud]',outfileName],stderr=sp.PIPE)
         ln=b''
         while 1:
           c=proc.stderr.read(1)

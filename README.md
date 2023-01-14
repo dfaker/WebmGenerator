@@ -15,6 +15,7 @@ A tool for cutting, filtering and joining video clips, supports webm (VP8, VP9),
 - 💾 Automatic bitrate adjustment for file size targeting.
 - ✂️ [Save single extracted clips or join multiple clips into custom edits with transition effects.](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
 - 🍱 [Pack multiple videos into dynamically sized grids.](https://github.com/dfaker/WebmGenerator/wiki/How-to-make-grids)
+- 🤓 [User extensible output formats and encoder parameters.](https://github.com/dfaker/WebmGenerator/wiki/Custom-Encoder-Specifications)
 
 ### Some examples of the possible outputs are [in the wiki](https://github.com/dfaker/WebmGenerator/wiki/Output-Examples)
 

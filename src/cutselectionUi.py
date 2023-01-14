@@ -865,7 +865,7 @@ class CutselectionUi(ttk.Frame):
     def runVoiceActivityDetection(self,sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr):
       self.controller.runVoiceActivityDetection(sampleLength,aggresiveness,windowLength,minimimDuration,bridgeDistance,condidenceStart,condidenceEnd,minZcr,maxZcr)
 
-    def startScreencap(self):
+    def startScreencap(self,captureType='gdigrab'):
       windowRef=self
       windowRef.cliprunScreencap=True
       windowRef.completedScreenCapName=None
@@ -873,7 +873,12 @@ class CutselectionUi(ttk.Frame):
       def screenCapWorker(windowRef):
 
         capturefilename = 'DesktopCapture_'+str(time.time())+'.mkv'
-        cmd = ['ffmpeg','-f','gdigrab','-framerate','30','-i','desktop','-c:v','h264_nvenc','-qp','0', capturefilename]
+        if captureType == 'ddagrab':
+            cmd = ['ffmpeg','-f', 'lavfi', '-i', 'ddagrab', '-c:v', 'h264_nvenc', '-cq', '18', capturefilename]
+        elif captureType=='gdigrab_nvenc':
+            cmd = ['ffmpeg','-f','gdigrab','-framerate','30','-i','desktop','-c:v','h264_nvenc','-qp','0', capturefilename]
+        else:
+            cmd = ['ffmpeg','-f','gdigrab','-framerate','30','-i','desktop', capturefilename]
 
         if hasattr(os.sys, 'winver'):
           proc = sp.Popen(cmd,creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.DEVNULL,stdout=sp.DEVNULL,bufsize=10 ** 5)
@@ -881,7 +886,10 @@ class CutselectionUi(ttk.Frame):
           proc = sp.Popen(cmd,stderr=sp.DEVNULL,stdout=sp.DEVNULL,bufsize=10 ** 5)
 
         while windowRef.cliprunScreencap:
-          print('Recording',proc.poll())
+          pollresult = proc.poll()
+          print('Recording',pollresult)
+          if pollresult == 1:
+            break
         
         if hasattr(os.sys, 'winver'):
           os.kill(proc.pid, signal.CTRL_BREAK_EVENT)

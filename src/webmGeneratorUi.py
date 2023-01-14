@@ -19,7 +19,7 @@ import colorsys
 import numpy as np
 
 
-RELEASE_NUMVER = 'v3.33.0'
+RELEASE_NUMVER = 'v3.32.0'
 
 class WebmGeneratorUi:
 
@@ -236,10 +236,12 @@ class WebmGeneratorUi:
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
     self.filemenu.add_separator()
     
-    if hasattr(os.sys, 'winver'):
-      self.filemenu.add_command(label="Start screen capture", command=self.startScreencap)
-    else:
-      self.filemenu.add_command(label="Start screen capture", command=self.startScreencap, state='disabled')
+    self.captureSplitmenu = Menu(self.menubar, tearoff=0)
+
+    self.captureSplitmenu.add_command(label="Start GDI screengrabber + cpu screen capture", command=self.startScreencap_gdigrab)
+    self.captureSplitmenu.add_command(label="Start GDI screengrabber + nvenc screen capture", command=self.startScreencap_gdigrab_nvenc)
+    self.captureSplitmenu.add_command(label="Start Desktop Duplication API + nvenc screen capture", command=self.startScreencap_ddagrab)
+    self.filemenu.add_cascade(label="Screen capture", menu=self.captureSplitmenu)
 
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Extract .srt subtitles from video file", command=self.extractSubs)
@@ -668,8 +670,14 @@ class WebmGeneratorUi:
   def loadVideoYTdl(self):
     self.controller.cutselectionUi.loadVideoYTdl()
 
-  def startScreencap(self):
-    self.controller.cutselectionUi.startScreencap()
+  def startScreencap_gdigrab_nvenc(self):
+    self.controller.cutselectionUi.startScreencap(captureType='gdigrab_nvenc')
+
+  def startScreencap_gdigrab(self):
+    self.controller.cutselectionUi.startScreencap(captureType='gdigrab')
+
+  def startScreencap_ddagrab(self):
+    self.controller.cutselectionUi.startScreencap(captureType='ddagrab')
 
   def loadImageFile(self):
     self.controller.cutselectionUi.loadImageFile()

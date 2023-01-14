@@ -5,25 +5,59 @@
 	"multi-pass-encode":true,
 	"commandBlocks":[
 		{"cmds":["-shortest", "-copyts", "-start_at_zero", "-c:v","libvpx-vp9"]},
+		
+
 		{"conditions":[["audioChannels","contains","Copy"]],
 	     "cmds":["-c:a","libopus"],
 		 "altCmds":[]
 		},
+		
 		{"cmds":["-stats","-threads","{encoderStageThreads}","-auto-alt-ref", "6", "-lag-in-frames", "25"]},
+		
 		{"conditions":[["passPhase","equals","1"]],
 	     "cmds":[],
 		 "altCmds":["-speed", "1"]
 		},
+		
 		{"conditions":[["forceBestDeadline"]],
 	     "cmds":["-quality","best"],
 		 "altCmds":["-quality","good"]
 		},
+
 		{"cmds":["-psnr", "-row-mt", "1", "-tile-columns", "{tileColumns}", "-tile-rows", "0"
-                ,"-arnr-maxframes", "15","-arnr-strength", "0", "-aq-mode", "0", "-profile:v", "2"
-                ,"-pix_fmt", "yuv420p10le", "-quality", "good"
+                ,"-aq-mode", "0"]
+		},
+
+
+		{"selection":{	
+			"name":"arnr-maxframes",
+			"default":"15",
+			"type":"int",
+			"cmds":["-arnr-maxframes", "{value}"]
+		}},
+
+		{"selection":{	
+			"name":"arnr-strength",
+			"default":"0",
+			"type":"int",
+			"cmds":["-arnr-strength", "{value}"]
+		}},
+
+		{"selection":{	
+			"name":"Bitrate",
+			"default":"yuv420p10le profile:2",
+			"options":[
+				{"name":"yuv420p10le profile:2","cmds":["-profile:v", "2", "-pix_fmt", "yuv420p10le"]},
+				{"name":"yuv420p profile:0","cmds":["-profile:v", "0", "-pix_fmt", "yuv420p"]}
+			]
+		}},
+
+
+		{"cmds":["-quality", "good"
                 ,"-tune-content", "default", "-enable-tpl", "1", "-frame-parallel", "0"
                 ,"-metadata", "Title={metadata_title}","-b:v","{br}"]
 		},
+
 		{"conditions":[["audioChannels","contains","No audio"]],
 	     "cmds":["-an"]
 		},

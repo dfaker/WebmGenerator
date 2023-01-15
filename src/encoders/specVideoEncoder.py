@@ -19,6 +19,34 @@ class SpecVideoEncoder:
 
     def __init__(self,specFilename):
         self.specFilename = specFilename
+        json.load(open(self.specFilename))
+
+    def getExtraEncoderParams(self):
+        extraParams = []
+        spec = json.load(open(self.specFilename))
+        for commandBlock in spec.get('commandBlocks', []):
+            if 'selection' in commandBlock:
+                selection = commandBlock.get('selection', {})
+                paramsSpec = {'name': selection.get('name'), 'label':selection.get('label',selection.get('name'))}
+                if 'options' in selection:
+                    paramsSpec['type'] = 'choice'
+                    paramsSpec['default'] = selection.get('default', 'None')
+                    for option in selection.get('options', []):
+                        paramsSpec.setdefault('options', []).append(option.get('name'))
+                elif 'type' in selection:
+                    paramsSpec['default'] = selection.get('default', 0)
+                    paramsSpec['type'] = selection.get('type', 'int')
+
+                extraParams.append(paramsSpec)
+        return extraParams
+
+    def validate(self):
+        spec = json.load(open(self.specFilename))
+        return True 
+
+    def getDisplayName(self):
+        spec = json.load(open(self.specFilename))
+        return spec['extension']+':'+spec['name']
 
     def __call__(self, inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
       
@@ -74,8 +102,6 @@ class SpecVideoEncoder:
         ffmpegcommand+=inputsList
 
         specOptions['passPhase'] = passPhase
-
-
 
         if widthReduction>0.0:
           encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(encodeStageFilter=encodeStageFilter,widthReduction=widthReduction)

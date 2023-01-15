@@ -12,16 +12,28 @@
 		 "altCmds":[]
 		},
 		
-		{"cmds":["-stats","-threads","{encoderStageThreads}","-auto-alt-ref", "6", "-lag-in-frames", "25"]},
-		
+		{"cmds":["-stats","-threads","{encoderStageThreads}"]},
+
+
+		{"selection":{	
+			"name":"auto-alt-ref",
+			"label":"VP9 auto-alt-ref",
+			"default":"6",
+			"type":"int",
+			"cmds":["-auto-alt-ref", "{value}"]
+		}},
+
+		{"selection":{	
+			"name":"lag-in-frames",
+			"label":"VP9 lag-in-frames",
+			"default":"25",
+			"type":"int",
+			"cmds":["-lag-in-frames", "{value}"]
+		}},
+
 		{"conditions":[["passPhase","equals","1"]],
 	     "cmds":[],
 		 "altCmds":["-speed", "1"]
-		},
-		
-		{"conditions":[["forceBestDeadline"]],
-	     "cmds":["-quality","best"],
-		 "altCmds":["-quality","good"]
 		},
 
 		{"cmds":["-psnr", "-row-mt", "1", "-tile-columns", "{tileColumns}", "-tile-rows", "0"
@@ -31,6 +43,7 @@
 
 		{"selection":{	
 			"name":"arnr-maxframes",
+			"label":"VP9 ARNR maximum frames",
 			"default":"15",
 			"type":"int",
 			"cmds":["-arnr-maxframes", "{value}"]
@@ -38,13 +51,15 @@
 
 		{"selection":{	
 			"name":"arnr-strength",
+			"label":"VP9 ARNR noise filter strength",
 			"default":"0",
 			"type":"int",
 			"cmds":["-arnr-strength", "{value}"]
 		}},
 
 		{"selection":{	
-			"name":"Bitrate",
+			"name":"pixfmt",
+			"label":"Output Pixel Format",
 			"default":"yuv420p10le profile:2",
 			"options":[
 				{"name":"yuv420p10le profile:2","cmds":["-profile:v", "2", "-pix_fmt", "yuv420p10le"]},
@@ -52,9 +67,19 @@
 			]
 		}},
 
+		{"selection":{	
+			"name":"quality",
+			"label":"Deadline / Quality",
+			"default":"good",
+			"options":[
+				{"name":"Good","cmds":["-quality", "good"]},
+				{"name":"Best","cmds":["-quality", "best"]},
+				{"name":"Realtime","cmds":["-quality", "realtime"]}
+			]
+		}},
 
-		{"cmds":["-quality", "good"
-                ,"-tune-content", "default", "-enable-tpl", "1", "-frame-parallel", "0"
+
+		{"cmds":["-tune-content", "default", "-enable-tpl", "1", "-frame-parallel", "0"
                 ,"-metadata", "Title={metadata_title}","-b:v","{br}"]
 		},
 

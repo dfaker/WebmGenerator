@@ -332,9 +332,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     import subprocess as sp
     sampleRate = 4000
     if self.generateWaveStyle == 'SPEECH':
-      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/speechModel/model.rnnn,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/speechModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     elif self.generateWaveStyle == 'VOICE':
-      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/voiceModel/model.rnnn,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
+      proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/voiceModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     else:
       proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,highpass=f=200,lowpass=f=3000,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     
@@ -400,12 +400,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         try:
           sampleszMax = tempsamples[samp0:samp1].max()
           sampleszMax = int((sampleszMax/255)*40)
-
           sampleszMin = tempsamples[samp0:samp1].min()-1
           sampleszMin = int((sampleszMin/255)*40)
-          
           background[sampleszMin:sampleszMax,x,0]=250
-
         except Exception as e:
           print('Audio spectra norm Exception',e)
         if args != self.lastWavePicSectionsRequested:

@@ -26,7 +26,7 @@ from .encoders.mp4x264NvencEncoder import encoder as mp4x264NvencEncoder
 from .encoders.mp4H265NvencEncoder import encoder as mp4H265NvencEncoder
 from .encoders.mp4AV1Encoder       import encoder as mp4AV1Encoder
 
-from .encoders.specVideoEncoder import SpecVideoEncoder as SpecVideoEncoder
+from .encoders.specVideoEncoder import SpecVideoEncoder
 
 from .encodingUtils import cleanFilenameForFfmpeg
 from .encodingUtils import getFreeNameForFileAndLog
@@ -104,10 +104,13 @@ encoderMap = {
 customEncoderDir = 'customEnoderSpecs'
 
 for fn in os.listdir(customEncoderDir):
-    p = os.path.join(customEncoderDir,fn)
-    spec = json.load(open(p))
-    encoderMap[spec['extension']+':'+spec['name']] = SpecVideoEncoder(p)
-
+    try:
+        p = os.path.join(customEncoderDir,fn)
+        spec = SpecVideoEncoder(p)
+        if spec.validate():
+            encoderMap[spec.getDisplayName()] = SpecVideoEncoder(p)
+    except Exception as e:
+        print('Custom Encode Spec Exception',fn,e)
 
 class FFmpegService():
 

@@ -123,6 +123,9 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
             options[k] = int(tempOptions[k])
           elif type(v) == str:
             options[k] = str(tempOptions[k])
+      for k in tempOptions:
+        if k.startswith('encoder-option-'):
+          options[k] = str(tempOptions[k])
 
 
     self.title('Advanced Encoding Flags')
@@ -213,7 +216,6 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     self.sv1avPresetCheck =  ttk.Spinbox(self,text='',textvariable=self.sv1avPresetVar,from_=float('0'),to=float('12'))
     self.sv1avPresetCheck.grid(row=9,column=1,sticky='new',padx=0,pady=0) 
 
-
     self.bitrateControlLabel = ttk.Label(self)
     self.bitrateControlLabel.config(text='Bitrate constraint mode')
     self.bitrateControlLabel.grid(row=10,column=0,sticky='new',padx=0,pady=0)
@@ -230,10 +232,51 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
     
     self.bitrateControlCheck.grid(row=10,column=1,sticky='new',padx=0,pady=0) 
 
+    row=10+1
+
+    spec = self.controller.customEncoderspecs.get(self.controller.outputFormatValue)
+    print('SPEC INIT',self.controller.outputFormatValue)
+    self.specLookup = {}
+    if spec is not None:
+        if len(spec.getExtraEncoderParams()) > 0:
+            self.encoderOptsLabel = ttk.Label(self)
+            self.encoderOptsLabel.config(text='Encoder Options for '+self.controller.outputFormatValue+'')
+            self.encoderOptsLabel.grid(row=row,column=0,sticky='new',columnspan=2,padx=0,pady=0)
+            row+=1
+
+        for param in spec.getExtraEncoderParams():
+            print(param)
+            if param['type'] == 'choice':
+                customVarLabel = ttk.Label(self)
+                customVarLabel.config(text=param['label'])
+                customVarLabel.grid(row=row,column=0,sticky='new',padx=0,pady=0)
+                customVar   = tk.StringVar(self)
+                customVal = ttk.Combobox(self,textvariable=customVar) 
+                customVal['state'] = 'readonly'
+                customVal.config(values=param.get('options',[]))
+                customVar.set( options.get( 'encoder-option-'+param['name'],   param.get('default','None')))
+                customVal.grid(row=row,column=1,sticky='new',padx=0,pady=0) 
+                self.specLookup[param['name']] = (customVarLabel,customVar,customVal)
+            elif param['type'] == 'int':
+                customVarLabel = ttk.Label(self)
+                customVarLabel.config(text=param['label'])
+                customVarLabel.grid(row=row,column=0,sticky='new',padx=0,pady=0)
+                customVar   = tk.StringVar(self)
+                customVar.set(str(int(options.get('encoder-option-'+param['name'],   param.get('default','None')))))
+                customVal =  ttk.Spinbox(self,text='',textvariable=customVar)
+                customVal.grid(row=row,column=1,sticky='new',padx=0,pady=0) 
+                self.specLookup[param['name']] = (customVarLabel,customVar,customVal)
+            row+=1
 
     self.applyCmd = ttk.Button(self)
     self.applyCmd.config(text='Apply',command=self.applyOptions)
-    self.applyCmd.grid(row=20,column=0,columnspan=2,sticky='nesw')
+    self.applyCmd.grid(row=row,column=0,columnspan=2,sticky='nesw')
+
+    try:
+      self.attributes('-topmost', True)
+      self.update()      
+    except:
+      pass
 
   def applyOptions(self):
     options = {
@@ -304,7 +347,11 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
       options['bitRateControl'] = self.bitrateControlVar.get()
     except Exception as e: 
       print(e)
-      
+
+    for name,(label,var,val) in self.specLookup.items():
+        options['encoder-option-'+name] = var.get()
+        label.grid_forget()
+        val.grid_forget()
 
     if self.controller is not None:
       self.controller.setAdvancedFlags(options)

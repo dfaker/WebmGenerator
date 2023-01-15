@@ -18,6 +18,8 @@ from .modalWindows import VideoAudioSync
 from .modalWindows import AdvancedEncodeFlagsModal
 import platform
 
+from .encoders.specVideoEncoder import SpecVideoEncoder
+
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
 
     if hasattr(value, 'seconds'):
@@ -876,6 +878,7 @@ class MergeSelectionUi(ttk.Frame):
 
     self.filenamePrefixVar        = tk.StringVar()
     self.outputFormatVar          = tk.StringVar()
+    self.outputFormatValue        = ''
     self.frameSizeStrategyVar     = tk.StringVar()
     self.maximumSizeVar           = tk.StringVar()
     self.initialbitrateVar        = tk.StringVar()
@@ -968,11 +971,18 @@ class MergeSelectionUi(ttk.Frame):
       'webm:VP8',
       'webm:VP9']
 
+    self.customEncoderspecs = {}
+
     customEncoderDir = 'customEnoderSpecs'
     for fn in os.listdir(customEncoderDir):
-      p = os.path.join(customEncoderDir,fn)
-      spec = json.load(open(p))
-      self.outputFormats.append(spec['extension']+':'+spec['name'])
+      try:
+        p = os.path.join(customEncoderDir,fn)
+        spec = SpecVideoEncoder(p)
+        if spec.validate():
+            self.outputFormats.append(spec.getDisplayName())
+            self.customEncoderspecs[spec.getDisplayName()] = spec
+      except Exception as e:
+        print(e)
 
     self.outputFormats += [
       'gif',      
@@ -1527,7 +1537,6 @@ class MergeSelectionUi(ttk.Frame):
     self.advancedFlags={'forceGifFPS':True}
 
   def selectAdvancedOptions(self):
-    
     modal = AdvancedEncodeFlagsModal(master=self,controller=self)
     modal.mainloop()
 
@@ -1690,8 +1699,18 @@ class MergeSelectionUi(ttk.Frame):
       self.filenamePrefixValue = self.filenamePrefixVar.get()
     except:
       pass
+    
     try:
-      self.outputFormatValue = self.outputFormatVar.get()
+      tempoutputFormatValue = self.outputFormatVar.get()
+      try:
+          if tempoutputFormatValue != self.outputFormatValue:
+            for k in list(self.advancedFlags.keys()):
+                if k.startswith('encoder-option-'):
+                    del self.advancedFlags[k]
+      except Exception as e:
+        print(e)
+      self.outputFormatValue = tempoutputFormatValue
+
     except:
       pass
     

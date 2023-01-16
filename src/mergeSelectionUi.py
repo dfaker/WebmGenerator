@@ -18,6 +18,12 @@ from .modalWindows import VideoAudioSync
 from .modalWindows import AdvancedEncodeFlagsModal
 import platform
 
+try:
+    from tkinterdnd2 import Tk as TkinterDnDTk
+    from tkinterdnd2 import COPY, DND_FILES
+except Exception as e:
+    print(e)
+
 from .encoders.specVideoEncoder import SpecVideoEncoder
 
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
@@ -67,7 +73,9 @@ class EncodeProgress(ttk.Frame):
 
   def __init__(self, master=None, *args, encodeRequestId=None,controller=None, targetSize=0.0, **kwargs):
     ttk.Frame.__init__(self, master)
+
     self.frameEncodeProgressWidget = self
+
     self.encodeRequestId = encodeRequestId
     self.cancelled = False
     self.controller = controller
@@ -92,6 +100,14 @@ class EncodeProgress(ttk.Frame):
     self.labelRequestStatus = ttk.Label(self.frameEncodeProgressWidget)
     self.labelRequestStatus.config(text='Idle', relief='flat')
     self.labelRequestStatus.grid(row=0,column=1,sticky='nesw',columnspan=9)
+
+    try:
+      self.drag_source_register("*")
+      self.dnd_bind('<<DragInitCmd>>',self.dragInit)
+      self.labelRequestStatus.drag_source_register("*")
+      self.labelRequestStatus.dnd_bind('<<DragInitCmd>>',self.dragInit)
+    except Exception as e:
+        print(e)
 
     self.labelEncodeStage = ttk.Label(self.frameEncodeProgressWidget)
     self.labelEncodeStage.config(text='Stage: Submitted Idle', relief='flat')
@@ -149,11 +165,16 @@ class EncodeProgress(ttk.Frame):
     self.progressbarPlayButton.config(command=self.playFinal)
     self.progressbarPlayButton.config(style="small.TButton")
 
+    try:
+      self.progressbarPlayButton.drag_source_register("*")
+      self.progressbarPlayButton.dnd_bind('<<DragInitCmd>>',self.dragInit)
+    except Exception as e:
+        print(e)
+
     self.progressbarOpenContainingFolderButton = ttk.Button(self.frameEncodeProgressWidget)
     self.progressbarOpenContainingFolderButton.config(text='Open folder')
     self.progressbarOpenContainingFolderButton.config(command=self.openFolder)
     self.progressbarOpenContainingFolderButton.config(style="small.TButton")
-
 
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=0,pady=5, fill='x', side='top')
     
@@ -177,6 +198,11 @@ class EncodeProgress(ttk.Frame):
           sp.Popen(["open", path])
       else:
           sp.Popen(["xdg-open", path])
+
+  def dragInit(self,e):
+    if self.finalFilename is not None:
+      fbin = '{{{}}}'.format(os.path.abspath(self.finalFilename))
+      return (COPY, DND_FILES, fbin)
 
   def playFinal(self):
     if self.finalFilename is not None:

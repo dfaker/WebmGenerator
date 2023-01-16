@@ -226,6 +226,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind("r",        lambda x: self.controller.randomClip())
     self.timeline_canvas.bind("R",        lambda x: self.controller.randomClip())
     self.timeline_canvas.bind("f",        lambda x: self.controller.fastSeek())
+    self.timeline_canvas.bind("<Control-f>",  lambda x:self.controller.search(0))
     self.timeline_canvas.bind("<Control-a>",  lambda x: self.controller.addFullClip())
     self.timeline_canvas.bind("<Control-A>",  lambda x: self.controller.addFullClip())
 

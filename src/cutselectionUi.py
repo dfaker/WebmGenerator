@@ -338,14 +338,21 @@ class CutselectionUi(ttk.Frame):
 
         Tooltip(self.buttonClearSubclips,text='Remove all subclips to start a fresh with the same videos loaded.')
 
-
         self.labelframeButtons.pack(expand='false', fill="x", side="top")
 
+        self.searchframeButtons = ttk.Frame(self.labelframeSourceVideos,style="frameButtons.TFrame")
+        self.searchStringVar = tk.StringVar(self,'')
+        self.entrySearch = ttk.Entry(self.searchframeButtons,textvariable=self.searchStringVar)
+        self.entrySearch.pack(expand='true', fill="x", side="left")
+        self.entrySearch.bind('<Return>',self.search)
 
+        self.buttonSearch = ttk.Button(self.searchframeButtons)
+        self.buttonSearch.config(text="🔎")
+        self.buttonSearch.config(style="smallIcon.TButton")
+        self.buttonSearch.config(command=lambda:self.search(0))
+        self.buttonSearch.pack(expand='false', side="right")
 
-
-
-
+        self.searchframeButtons.pack(expand='false', fill="x", side="top")
 
         self.scrolledframeVideoPreviewContainer = ScrolledFrame(
             self.labelframeSourceVideos, scrolltype="vertical"
@@ -505,6 +512,7 @@ class CutselectionUi(ttk.Frame):
         self.frameVideoPlayerFrame.bind("R",        lambda s=self: s.randomClip())
 
         self.frameVideoPlayerFrame.bind("f",        lambda s=self: s.fastSeek())
+        self.frameVideoPlayerFrame.bind("Ctrl-f",   lambda s=self: s.search())
 
         self._previewtimer = threading.Timer(0.5, self.updateVideoPreviews)
         self._previewtimer.daemon = True
@@ -515,6 +523,10 @@ class CutselectionUi(ttk.Frame):
         self.disableFileWidgets=False
 
         self.seekpoints = [i/100 for i in range(100)]
+
+    def search(self,e):
+        searchStr = self.searchStringVar.get()
+        self.controller.jumpToSearch(searchStr)
 
     def setDragDur(self,dur):
       self.sliceLengthVar.set(str(round(dur,4)))

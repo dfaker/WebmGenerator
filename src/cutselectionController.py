@@ -112,6 +112,28 @@ class CutselectionController:
   def addSubclipByTextRange(self):
     self.ui.addSubclipByTextRange(self,self.getTotalDuration())
 
+  def jumpToSearch(self,searchStr):
+    searchParts = [x.upper() for x in searchStr.split(' ') if len(x)>0]
+    nextClipInd = self.files.index(self.currentlyPlayingFileName)+1
+    foundfile = None
+
+    for e in self.files[nextClipInd:]:
+        if all([x in e.upper() for x in searchParts]):
+            foundfile = e
+            break
+
+    if foundfile is None:
+        for e in self.files[:nextClipInd-1]:
+            if all([x in e.upper() for x in searchParts]):
+                foundfile = e
+                break
+
+    if foundfile is not None:
+        nextFile = foundfile
+        self.playVideoFile(nextFile,0)
+        self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
+        self.randomlyPlayedFiles.add(nextFile)
+
   def jumpToRidAndOffset(self,rid,startoffset,forceTabJump=False):
     if self.isActiveTab:
       try:

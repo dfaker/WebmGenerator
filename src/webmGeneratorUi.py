@@ -95,6 +95,7 @@ class WebmGeneratorUi:
 
     self.style.configure('small.TButton', padding=0)
     self.style.configure('smallSlim.TButton',padding=(-10,0))
+    self.style.configure('smallIcon.TButton',padding=(-20,0))
     self.style.configure('smallMid.TButton',padding=(-5,0))
     self.style.configure('smallOnechar.TButton', padding=(-28,0))
     self.style.configure('smallOnecharenabled.TButton', padding=(-28,0),background='green',foreground='white',lightcolor='green',darkcolor='green')

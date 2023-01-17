@@ -186,6 +186,7 @@ class EncodeProgress(ttk.Frame):
     self.player = None
     self.lastProgress=0
     self.lastEncodedSize=None
+    self.pix_fmt = 8
 
     self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
 
@@ -250,10 +251,13 @@ class EncodeProgress(ttk.Frame):
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
 
-  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedCRF=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None, currentSize=None):
+  def updateStatus(self,status,percent,finalFilename=None,requestStatus=None, encodeStage=None, pix_fmt=None, encodePass=None, lastEncodedBR=None, lastEncodedCRF=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None, currentSize=None):
 
     if self.cancelled:
       return
+
+    if pix_fmt is not None:
+        self.pix_fmt = pix_fmt
 
     if lastEncodedSize is not None:
       self.lastEncodedSize = lastEncodedSize

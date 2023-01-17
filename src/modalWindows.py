@@ -29,9 +29,10 @@ try:
   os.add_dll_directory(basescriptPath)
   os.add_dll_directory(scriptPath)
   os.add_dll_directory(scriptPath_frozen)
-except Exception as e:
+except AttributeError as e:
   print(e)
-
+except Exception as e:
+  logging.error("scriptPath Exception",exc_info=e)
 
 import mpv
 

@@ -322,7 +322,6 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Show sequence editor",command=self.showSequencePreview)
     self.commandmenu.add_command(label="Show audio slice planner",command=self.showSlicePlanner,state='disabled')
 
-
     self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
 

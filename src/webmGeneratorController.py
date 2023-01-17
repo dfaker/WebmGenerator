@@ -88,7 +88,7 @@ class WebmGeneratorController:
       "defaultPSNRWidthReductionFactor":0.05,
 
       
-
+      "loadRelativeCopyOnFileNotExists":False,
       "clampSeeksToFPS":False,
 
       "initialBr":16777216,

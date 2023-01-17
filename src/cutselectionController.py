@@ -494,18 +494,25 @@ class CutselectionController:
     if asktoSort:
       pass
 
+    self.ui.disableFileWidgets=False
     if len(fileList) > 100:
       response = self.ui.confirmWithMessage('Disable video listing?','You\'re loading {} files at once, showing these as widgets will affect performance, do you want to disable the file listing widget and just use the "Prev Clip" and "Next Clip" controls?'.format(len(fileList)),icon='warning')
       if response=='yes':
         self.ui.disableFileWidgets=True
-      else:
-        self.ui.disableFileWidgets=False
 
     for file in fileList:
       if file not in self.files:
-        self.files.append(file)
+
+        file_for_load = file
+
+        if self.globalOptions.get('loadRelativeCopyOnFileNotExists',False) and not os.path.exists(file_for_load):
+            relative_file = os.path.basename(file_for_load)
+            if os.path.exists(relative_file):
+                file_for_load = relative_file
+
+        self.files.append(file_for_load)
         if self.currentlyPlayingFileName is None:
-          self.playVideoFile(file,0)
+          self.playVideoFile(file_for_load,0)
 
     self.ui.updateFileListing(self.files[:])
     self.updateProgressStatistics()

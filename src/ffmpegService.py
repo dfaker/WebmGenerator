@@ -158,7 +158,7 @@ class FFmpegService():
             videoInfo = getVideoInfo(cleanFilenameForFfmpeg(filename))
             timestamp = videoInfo.duration*pc
           
-          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}:flags=area,thumbnail'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
+          cmd=['ffmpeg','-y',"-loglevel", "quiet","-noaccurate_seek",'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), '-filter_complex',filters+',scale={w}:{h}:force_original_aspect_ratio=decrease:flags=area'.format(w=w,h=h),"-pix_fmt", "rgb24",'-vframes', '1', '-an', '-c:v', 'ppm', '-f', 'rawvideo', '-']
           
           logging.debug("Ffmpeg command: {}".format(' '.join(cmd)))
           proc = sp.Popen(cmd,stdout=sp.PIPE)

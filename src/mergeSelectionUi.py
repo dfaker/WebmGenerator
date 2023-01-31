@@ -177,7 +177,7 @@ class EncodeProgress(ttk.Frame):
     self.progressbarOpenContainingFolderButton.config(style="small.TButton")
 
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=0,pady=5, fill='x', side='top')
-    
+
     self.progresspercent = 0
     self.encodeStartTime = None
     self.progressQueue    = deque([],10)
@@ -194,7 +194,11 @@ class EncodeProgress(ttk.Frame):
     if self.finalFilename is not None:
       path,_ = os.path.split(self.finalFilename)
       if platform.system() == "Windows":
-          os.startfile(path)
+          try:
+            os.system('explorer.exe /select,"{}"'.format(self.finalFilename))
+          except Exception as e:
+            print(e)
+            os.startfile(path)
       elif platform.system() == "Darwin":
           sp.Popen(["open", path])
       else:
@@ -203,6 +207,7 @@ class EncodeProgress(ttk.Frame):
   def dragInit(self,e):
     if self.finalFilename is not None:
       fbin = '{{{}}}'.format(os.path.abspath(self.finalFilename))
+      #self.controller.setIgnoreDrop(fbin)
       return (COPY, DND_FILES, fbin)
 
   def playFinal(self):
@@ -1133,9 +1138,7 @@ class MergeSelectionUi(ttk.Frame):
     if os.path.exists('postFilters'):
       for f in os.listdir('postFilters'):
         if f.upper().endswith('TXT') and f.upper().startswith('POSTFILTER-'):
-          self.postProcessingFilterOptions.append(f)
-
-    
+          self.postProcessingFilterOptions.append(f)   
 
     for filterElem in self.postProcessingFilterOptions:
       if 'DEFAULT' in filterElem.upper():
@@ -1566,6 +1569,9 @@ class MergeSelectionUi(ttk.Frame):
     self.syncModal=None
     self.advancedFlags={'forceGifFPS':True}
 
+  def setIgnoreDrop(self,path):
+    self.controller.setIgnoreDrop(path)
+
   def selectAdvancedOptions(self):
     modal = AdvancedEncodeFlagsModal(master=self,controller=self)
     modal.mainloop()
@@ -1658,7 +1664,7 @@ class MergeSelectionUi(ttk.Frame):
       self.selectedColumn = None
 
 
-  def clearSequence(self):
+  def clearSequence(self,includeProgress=True):
     for sv in self.sequencedClips:
       sv.destroy()
     for col in self.gridColumns[::-1]:
@@ -1669,8 +1675,9 @@ class MergeSelectionUi(ttk.Frame):
     if self.syncModal is not None and self.syncModal.isActive:
       self.syncModal.valuesChanged=True
       self.syncModal.recalculateEDLTimings()
-    for e in self.encoderProgress:
-      e.remove()
+    if includeProgress:
+        for e in self.encoderProgress:
+          e.remove()
 
   def profileChanged(self,*args):
     profileName = self.profileVar.get()
@@ -2404,19 +2411,23 @@ class MergeSelectionUi(ttk.Frame):
         removedClip.pack_forget()
         removedClip.destroy()    
 
-  def addAllClipsInTimelineOrder(self):
+  def addAllClipsInTimelineOrder(self,minrid=-1,clearProgress=True):
+    finalrid = minrid
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       self.clearAllColumns()
       for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s))):
-        self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
-          SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
-        )
-
+        finalrid = max(finalrid,clip.rid)
+        if clip.rid > minrid:
+            self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
+              SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
+            )
     else:
-      self.clearSequence()
+      self.clearSequence(includeProgress=clearProgress)
       for clip in sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s)):
-        self.addClipToSequence(clip)
-
+        finalrid = max(finalrid,clip.rid)
+        if clip.rid > minrid:
+            self.addClipToSequence(clip)
+    return finalrid
 
 
 if __name__ == '__main__':

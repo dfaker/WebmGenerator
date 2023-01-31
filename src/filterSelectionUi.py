@@ -1990,16 +1990,16 @@ class FilterSelectionUi(ttk.Frame):
       else:
         self.subclips[rid] = dict(start=s,end=e,filename=filename,filters=[])
         clipsChanged.add(rid)
-    
-    for k in unusedRids:
-      del self.subclips[k]
 
     tempSeclectedRid=None
     if self.currentSubclipIndex is not None:
       try:
         tempSeclectedRid = self.subClipOrder[self.currentSubclipIndex]
       except Exception as e:
-        return
+        print('recauclateSubclips Exception',e) 
+
+    for k in unusedRids:
+      del self.subclips[k]
 
     self.subClipOrder = [k for k,v in sorted( self.subclips.items(), key=lambda x:(x[1]['filename'],x[1]['start']) ) ]
 
@@ -2008,8 +2008,7 @@ class FilterSelectionUi(ttk.Frame):
 
     if tempSeclectedRid in self.subClipOrder:
       self.setSubclipIndex(self.subClipOrder.index(tempSeclectedRid))
-      if tempSeclectedRid in clipsChanged:
-        self.updateFilterDisplay()
+      self.updateFilterDisplay()
     elif len(self.subClipOrder)>0:      
       self.setSubclipIndex(0)
       self.updateFilterDisplay()

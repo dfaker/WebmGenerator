@@ -9,7 +9,7 @@ import time
 
 class CutselectionController:
 
-  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,globalOptions={}):
+  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,controller,globalOptions={}):
     self.globalOptions=globalOptions
     self.randomlyPlayedFiles = set()
     self.ui = ui
@@ -19,6 +19,7 @@ class CutselectionController:
     self.ytdlService   = ytdlService
     self.voiceActivityService = voiceActivityService
     self.loopMode='Loop current'
+    self.controller = controller
 
     self.initialisePlayer()
     self.files=[]
@@ -395,6 +396,7 @@ class CutselectionController:
     self.player.play(filename)
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.currentlyPlayingFileName=filename
+    self.controller.logPlayback(filename)
     self.ui.restartForNewFile(self.currentlyPlayingFileName)
 
   def setVideoRect(self,x,y,w,h,desc=''):

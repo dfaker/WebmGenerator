@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk,Menu,END,LEFT,PhotoImage,CENTER,BOTTOM
+from tkinter import Tk,Menu,END,LEFT,PhotoImage,CENTER,BOTTOM,StringVar
 import tkinter.ttk as ttk
 import webbrowser
 from tkinter.filedialog import askopenfilename,asksaveasfilename
@@ -48,6 +48,9 @@ class WebmGeneratorUi:
 
 
     self.style.configure ("warning.TLabel", font = ('Sans','10','bold'),color='red')
+
+    self.style.configure ("previewImg.TLabel", background='#282828',color='white',foreground='white')
+    self.style.configure ("previewImg.TFrame", background='#282828')
 
     
     self.style.configure("frameButtons.TFrame", 
@@ -233,6 +236,10 @@ class WebmGeneratorUi:
 
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
+
+    self.recentlyPlayed = Menu(self.menubar, tearoff=0)
+    self.filemenu.add_cascade(label="Recently Played", menu=self.recentlyPlayed)
+
     self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
     self.filemenu.add_separator()
@@ -259,6 +266,11 @@ class WebmGeneratorUi:
     self.filemenu.entryconfigure(self.clearTempMenuIndex, label="Delete all downloaded files")
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Preferences", command=self.updatePreferences)
+
+
+    self.filemenu.add_command(label="Enable Always On Top", command=self.toggleAlwaysOntop)
+    self.alwaysOnTopId = self.filemenu.index(END) 
+
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Exit", command=self.exitProject)
     self.menubar.add_cascade(label="File",  menu=self.filemenu)
@@ -310,6 +322,7 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Screenshot to {}".format(self.controller.tempFolder), command=self.takeScreenshot)
     self.commandmenu.add_separator()
     self.commandmenu.add_command(label="Add subclip by text range", command=self.addSubclipByTextRange)
+
     self.menubar.add_cascade(label="Commands", menu=self.commandmenu)
 
     self.helpmenu = Menu(self.menubar, tearoff=0)
@@ -321,6 +334,10 @@ class WebmGeneratorUi:
 
     self.commandmenu.add_command(label="Show sequence editor",command=self.showSequencePreview)
     self.commandmenu.add_command(label="Show audio slice planner",command=self.showSlicePlanner,state='disabled')
+
+    self.commandmenu.add_separator()
+    self.autoconvertVar=StringVar(self.master,False)
+    self.commandmenu.add_checkbutton(label="Auto encode on video switch", command=self.toggleAutoconvert, variable=self.autoconvertVar)
 
     self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
@@ -370,8 +387,6 @@ class WebmGeneratorUi:
       print('root -fullscreen attribute set Exception',e)
 
     self.statusFrame.pack(expand=0, fill='x',side='bottom')
-
-
 
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
@@ -424,6 +439,27 @@ class WebmGeneratorUi:
     self.boringMax = 0.0
 
     self.versioncheckResultIndex=None
+    self.alwaysOnTop = False
+
+  def toggleAutoconvert(self):
+    self.controller.setAutoConvert(self.autoconvertVar.get() == '1')
+
+  def updateRecentlyPlayed(self):
+    self.recentlyPlayed.delete( 0, END)
+    for fn in self.controller.getRecentlyPlayed():
+        self.recentlyPlayed.add_command(label=fn, command= lambda f=fn:self.controller.cutselectionController.loadFiles([f]) )
+
+  def toggleAlwaysOntop(self):
+    self.alwaysOnTop = not self.alwaysOnTop
+    if self.alwaysOnTop:
+      self.filemenu.entryconfigure(self.alwaysOnTopId, label="Disable Always On Top")
+    else:
+      self.filemenu.entryconfigure(self.alwaysOnTopId, label="Enable Always On Top")
+
+    self.master.wm_attributes("-topmost", 1 if self.alwaysOnTop else 0)
+
+  def setIgnoreDrop(self,path):
+    self.ui.setIgnoreDrop(path)
 
   def getFileLoadOptions(self):
     data = {}
@@ -441,8 +477,12 @@ class WebmGeneratorUi:
     except Exception as e:
       print(e) 
 
-  def showDrop(self):
-    self.dropLabel = ttk.Label(self.master,style="dropMessage.TLabel",text='Drop files to load\nHold CTRL for advanced options.',justify='center',anchor='center',font= ("Helvetica 50"))
+  def showDrop(self,n=None):
+
+    if n is None:
+        self.dropLabel = ttk.Label(self.master,style="dropMessage.TLabel",text='Drop to load\nHold CTRL for advanced options.',justify='center',anchor='center',font= ("Helvetica 50"))
+    else:
+        self.dropLabel = ttk.Label(self.master,style="dropMessage.TLabel",text='Drop to load {} paths\nHold CTRL for advanced options.'.format(n),justify='center',anchor='center',font= ("Helvetica 50"))
     
     self.dropLabel.place(bordermode ='inside',relheight=1,relwidth=1,x=0,y=0)
 
@@ -719,6 +759,7 @@ class WebmGeneratorUi:
     self.controller.updateYoutubeDl()
 
   def exitProject(self):
+    self.controller.close_ui()
     sys.exit()
 
   def openDocs(self):

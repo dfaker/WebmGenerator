@@ -4,7 +4,7 @@ import json
 
 class MergeSelectionController:
 
-  def __init__(self,ui,videoManager,ffmpegService,filterController,cutController,globalOptions={}):
+  def __init__(self,ui,videoManager,ffmpegService,filterController,cutController,controller,globalOptions={}):
     self.ui=ui
     self.globalOptions=globalOptions
     self.videoManager=videoManager
@@ -12,6 +12,8 @@ class MergeSelectionController:
     self.filterController=filterController
     self.cutController=cutController
     self.profileSpecPath = 'customEncodeProfiles'
+    self.controller = controller
+    self.maxAutoconvert = -1
 
     self.stdProfileSpecs = [ 
       {'name':'None','editable':False},
@@ -40,6 +42,16 @@ class MergeSelectionController:
 
     self.ui.setController(self)
     self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
+
+  def autoConvert(self):
+    self.ui.updateSelectableVideos()
+    self.ui.clearSequence(includeProgress=False)
+    self.maxAutoconvert = self.ui.addAllClipsInTimelineOrder(minrid=self.maxAutoconvert,clearProgress=False)
+    self.ui.encodeCurrent()
+    self.ui.clearSequence(includeProgress=False)
+
+  def setIgnoreDrop(self,path):
+    self.controller.setIgnoreDrop(path)
 
   def setDragDur(self,dur):
     self.cutController.setDragDur(dur)

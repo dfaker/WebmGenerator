@@ -69,12 +69,13 @@ class VideoFilePreview(ttk.Frame):
         self.cutsSelected = 0
 
         self.frameVideoFileWidget = self
+        self.configure(style="previewImg.TFrame")
 
-        self.labelVideoFileTitle = ttk.Label(self.frameVideoFileWidget)
+        self.labelVideoFileTitle = ttk.Label(self.frameVideoFileWidget, style="previewImg.TLabel", justify='center')
         self.labelVideoFileTitle.config(text=self.basename,width=30)
-        self.labelVideoFileTitle.pack(anchor="n", side="top")
+        self.labelVideoFileTitle.pack(anchor="n", side="top", expand='false')
 
-        self.labelVideoPreviewLabel = ttk.Label(self.frameVideoFileWidget)
+        self.labelVideoPreviewLabel = ttk.Label(self.frameVideoFileWidget, justify='center', style="previewImg.TLabel")
         self.labelVideoPreviewLabel.config(text="No Preview Loaded")
 
         self.previewData = "P5\n200 117\n255\n" + ("0" * 200 * 117)
@@ -87,7 +88,7 @@ class VideoFilePreview(ttk.Frame):
 
         self.labelVideoPreviewLabel.configure(image=self.labelVideoPreviewImage)
 
-        self.labelVideoPreviewLabel.pack(side="top", expand="false", fill="y")
+        self.labelVideoPreviewLabel.pack(side="top", expand="true", fill="y")
 
         self.labelVideoFilecountCutsSelected = ttk.Label(self.frameVideoFileWidget)
         self.labelVideoFilecountCutsSelected.config(
@@ -819,7 +820,7 @@ class CutselectionUi(ttk.Frame):
               preview.destroy()
 
     def requestPreviewFrame(self, filename):
-        self.controller.requestPreviewFrame(filename, None, (200, -1))
+        self.controller.requestPreviewFrame(filename, None, (200, 200))
 
     def updateViewPreviewFrame(self, filename, imageData):
         for preview in self.previews:

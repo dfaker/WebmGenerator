@@ -237,6 +237,7 @@ class WebmGeneratorController:
                                                          self.ffmpegService,
                                                          self.ytdlService,
                                                          self.voiceActivityService,
+                                                         self,
                                                          self.globalOptions)
     print('cutselectionController loaded')
 
@@ -262,10 +263,21 @@ class WebmGeneratorController:
                                                              self.ffmpegService,
                                                              self.filterSelectionController,
                                                              self.cutselectionController,
+                                                             self,
                                                              self.globalOptions
                                                              )
     print('mergeSelectionController loaded')
 
+    self.recentlyPlayed = []
+    self.autoConvert = False
+
+    try:
+        for line in open('recentlyPlayed.pl','r').readlines():
+            self.recentlyPlayed.append(line.strip())
+    except Exception as e:
+        print(e)
+    
+    self.webmMegeneratorUi.updateRecentlyPlayed()
 
     if os.path.exists(self.autosaveFilename) and len(self.initialFiles)==0:
       lastSaveData = newSaveData = None
@@ -281,12 +293,30 @@ class WebmGeneratorController:
       self.openProject(projectToLoad)
 
     self.plannerFrameEmebeded=False
+    self.dropsToIgnore = set()
 
   def jumpToTab(self,tabInd):
     self.webmMegeneratorUi.switchTab(1)
 
   def showSlicePlanner(self):
     self.cutselectionUi.showSlicePlanner()
+
+  def logPlayback(self, fn):
+    try:
+        self.recentlyPlayed.remove(fn)
+    except Exception as e:
+        pass
+    self.recentlyPlayed.insert(0,fn)
+    self.recentlyPlayed = self.recentlyPlayed[:20]
+
+    self.webmMegeneratorUi.updateRecentlyPlayed()
+
+    if self.autoConvert:
+        self.mergeSelectionController.autoConvert()
+        #self.mergeSelectionController.clearallSubclips()
+
+  def getRecentlyPlayed(self):
+    return self.recentlyPlayed
 
   def showSequencePreview(self):
     
@@ -301,27 +331,16 @@ class WebmGeneratorController:
     else:
       self.mergeSelectionUi.previewSequencetimings(uiParent=None)
 
-  def enterDrop(self,drop):
-    self.webmMegeneratorUi.showDrop()
-
-  def leaveDrop(self,drop):
-    self.webmMegeneratorUi.hideDrop()
+  def setIgnoreDrop(self,path):
+    self.dropsToIgnore.add(path)
 
 
-  def loadDrop(self,drop):
+
+  def listdropFiles(self,strdropfiles):
     dropfiles = []
-    bopen=0
-
-    
-
-    print(drop.type)
-    if drop.type in (CF_UNICODETEXT,CF_TEXT):
-      self.cutselectionController.loadVideoYTdlFromClipboard(drop.data)
-      return
-
-    print(drop.data)
+    bopen = 0
     lastchar = ' '
-    for c in drop.data:
+    for c in strdropfiles:
       
       if c == '{' and lastchar != '\\' and bopen == 0:
         bopen=1
@@ -346,8 +365,31 @@ class WebmGeneratorController:
           dropfiles[-1] = dropfiles[-1]+c
       lastchar=c
 
-    dropfiles = [x for x in dropfiles if x.strip() != '']
+    return [x for x in dropfiles if x.strip() != '']
 
+  def enterDrop(self,drop):
+    dropfiles = self.listdropFiles(drop.data)
+    if len(dropfiles) > 1 or (len(dropfiles) ==1 and os.path.isdir(dropfiles[0]) ):
+        self.webmMegeneratorUi.showDrop(len(dropfiles))
+
+  def leaveDrop(self,drop):
+    self.webmMegeneratorUi.hideDrop()
+
+  def setAutoConvert(self,state):
+    self.autoConvert = state
+
+  def loadDrop(self,drop):
+    print(drop.type)
+    if drop.type in (CF_UNICODETEXT,CF_TEXT):
+      self.cutselectionController.loadVideoYTdlFromClipboard(drop.data)
+      return
+
+    if drop.data in self.dropsToIgnore:
+        return
+
+    print(drop.data)
+    dropfiles = self.listdropFiles(drop.data)
+   
     if len(dropfiles)>0:
 
       if self.globalOptions.get('askToShuffleLoadedFiles',False):
@@ -639,7 +681,15 @@ class WebmGeneratorController:
           self.saveProject(self.autosaveFilename)
     else:
       self.saveProject(self.autosaveFilename)
-    
+
+    try:
+        if len(self.recentlyPlayed) >0:
+            with open('recentlyPlayed.pl','w') as rp:
+                for line in self.recentlyPlayed:
+                    rp.write(line+'\n')
+    except Exception as e:
+        print(e)
+
     self.shutdown = True
     self.cutselectionController.close_ui()
     logging.debug('self.cutselectionController.close_ui()')

@@ -20,9 +20,14 @@ from datetime import datetime
 
 try:
   scriptPath = os.path.dirname(os.path.abspath(__file__))
+  
+  parentScriptPath = os.path.split( os.path.dirname(os.path.abspath(__file__)))
+
   basescriptPath = os.path.split(scriptPath)[0]
   scriptPath_frozen = os.path.dirname(os.path.abspath(sys.executable))
-  os.environ["PATH"] = scriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
+
+
+  os.environ["PATH"] = scriptPath + os.pathsep + parentScriptPath + os.pathsep + scriptPath_frozen + os.pathsep + os.environ["PATH"]
   print(scriptPath)
   print(scriptPath_frozen)
 

@@ -231,6 +231,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind("<Control-A>",  lambda x: self.controller.addFullClip())
 
 
+    self.timeline_canvas.bind(",",        self.stepBackwards)
+    self.timeline_canvas.bind(".",        self.stepForwards)
+
+    self.timeline_canvas.bind("y",        self.acceptAndRandomJump)
+    self.timeline_canvas.bind("u",        self.rejectAndRandomJump)
+
+
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
     self.currentZoomRangeMidpoint=0.5
@@ -311,6 +318,22 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.image_handle_left_light = tk.PhotoImage(file = os.path.join("resources",'slider_left_light.gif'))
     self.image_handle_right_light = tk.PhotoImage(file = os.path.join("resources",'slider_right_light.gif'))
+
+
+  def stepBackwards(self,e):
+    self.controller.stepBackwards()
+
+  def stepForwards(self,e):
+    self.controller.stepForwards()
+
+  def acceptAndRandomJump(self,e):
+    target = self.controller.fastSeek(centerAfter=True)
+    self.keyboardBlockAtTime(e,pos=target)
+
+  def rejectAndRandomJump(self,e):
+    self.keyboardRemoveBlockAtTime(e)
+    target = self.controller.fastSeek(centerAfter=True)
+    self.keyboardBlockAtTime(e,pos=target)
 
   def correctMouseXPosition(self,x):
 
@@ -492,13 +515,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.removeSubclip(mid)
       #self.updateCanvas()
 
-  def keyboardBlockAtTime(self,e):
+  def keyboardBlockAtTime(self,e,pos=None):
     
     ctrl  = (e.state & 0x4) != 0
     if ctrl:
       return
 
-    pos = self.controller.getCurrentPlaybackPosition()
+    if pos is None:
+        pos = self.controller.getCurrentPlaybackPosition()
+
     if pos is not None:
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5
@@ -529,8 +554,17 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def keyboardSpace(self,e):
     self.controller.playPauseToggle()
 
+  def recenterZoomView(self):
+    pospc = self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
+    timelineWidth = self.winfo_width()
+    startpc = self.xCoordToSeconds(0)/self.controller.getTotalDuration()
+    endpc   = self.xCoordToSeconds(timelineWidth)/self.controller.getTotalDuration()
+
+    if pospc <= startpc or pospc >= endpc:
+        self.currentZoomRangeMidpoint = pospc
+        self.centerTimelineOnCurrentPosition()
+
   def keyboardRight(self,e):
-    
     pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
@@ -554,6 +588,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.seekRelative(self.seekSpeedNormal)
       else:
         self.controller.seekRelative(self.seekSpeedNormal)
+    self.recenterZoomView()
 
 
   def keyboardLeft(self,e):
@@ -580,6 +615,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.controller.seekRelative(-self.seekSpeedNormal)
       else:
         self.controller.seekRelative(-self.seekSpeedNormal)
+    self.recenterZoomView()
+
 
   def incrementEndpointPosition(self,increment,markerrid,pos):
     ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())

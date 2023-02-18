@@ -523,7 +523,7 @@ class CutselectionUi(ttk.Frame):
         self.frameRate = None
         self.disableFileWidgets=False
 
-        self.seekpoints = [i/100 for i in range(100)]
+        self.seekpoints = [i/1000 for i in range(1000)]
 
     def search(self,e):
         searchStr = self.searchStringVar.get()
@@ -642,19 +642,36 @@ class CutselectionUi(ttk.Frame):
     def updateLoopMode(self,*args):
       self.controller.updateLoopMode(self.loopModeVar.get())
 
-    def fastSeek(self):
+    def stepBackwards(self):
+      self.controller.stepBackwards()
+
+    def stepForwards(self):
+      self.controller.stepForwards()
+
+    def fastSeek(self,centerAfter=False):
       potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
 
       if len(potential_seekpoints) == 0:
-        self.seekpoints = [i/100 for i in range(100)]
+        self.seekpoints = [i/1000 for i in range(1000)]
         print('RESET SEEKPOINTS')
         
       potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
+      fn = self.getcurrentFilename()
+      ranges = self.getRangesForClip(fn)
+      while 1:
+        point = random.choice(potential_seekpoints)
+        self.seekpoints.remove(point)
+        clear = True
+        for s,e in ranges:
+            if s<=point<=e:
+                clear = False
+                break
+        if clear:
+            break
 
-      point = random.choice(potential_seekpoints)
-
-      self.seekpoints.remove(point)
-      self.seekTo(point*self.getTotalDuration())
+      self.seekTo(point*self.getTotalDuration(),centerAfter=centerAfter)
+      
+      return point*self.getTotalDuration()
 
     def videoMousewheel(self,evt):
       ctrl  = evt and ((evt.state & 0x4) != 0)
@@ -1010,8 +1027,8 @@ class CutselectionUi(ttk.Frame):
     def pause(self):
         self.controller.pause()
 
-    def seekTo(self, seconds):
-        self.controller.seekTo(seconds)
+    def seekTo(self, seconds, centerAfter=False):
+        self.controller.seekTo(seconds,centerAfter=centerAfter)
 
     def updateStatus(self, status):
         pass

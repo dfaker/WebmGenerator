@@ -93,7 +93,9 @@ class CutselectionController:
       
       print(useRange,a,b)
 
-      self.clearAllSubclipsOnCurrentClip()
+      if not useRange:
+        self.clearAllSubclipsOnCurrentClip()
+      
       endPoint = self.getTotalDuration()
       sectionLength = self.getTotalDuration()/n
       start = 0
@@ -171,7 +173,10 @@ class CutselectionController:
     if sectionLength is not None and sectionLength >= 0:
       useRange,a,b = self.askToUseRangeIfSet()
 
-      self.clearAllSubclipsOnCurrentClip()
+
+      if not useRange:
+        self.clearAllSubclipsOnCurrentClip()
+      
       start = 0
       endPoint = self.getTotalDuration()
       if useRange:
@@ -423,6 +428,12 @@ class CutselectionController:
     vy1 = math.floor((vy1 - off_y) / scale)
     return vx1,vy1
 
+  def stepBackwards(self):
+    self.player.command('frame-back-step')
+
+  def stepForwards(self):
+    self.player.command('frame-step')
+
   def seekRelative(self,amount):
     print(amount)
     if self.currentTotalDuration is not None:
@@ -453,6 +464,7 @@ class CutselectionController:
     self.player.command('seek',str(seconds),'absolute','exact')
     if centerAfter:
       self.ui.centerTimelineOnCurrentPosition()
+      
 
   def getTotalDuration(self):
     if self.currentTotalDuration is None:

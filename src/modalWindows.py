@@ -32,6 +32,7 @@ try:
 except AttributeError as e:
   print(e)
 except Exception as e:
+  print(e)
   logging.error("scriptPath Exception",exc_info=e)
 
 import mpv

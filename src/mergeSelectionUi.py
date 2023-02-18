@@ -2416,7 +2416,7 @@ class MergeSelectionUi(ttk.Frame):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       self.clearAllColumns()
       for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s))):
-        finalrid = max(finalrid,clip.rid)
+        finalrid = max(int(finalrid),int(clip.rid))
         if clip.rid > minrid:
             self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
               SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),

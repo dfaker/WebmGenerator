@@ -115,7 +115,7 @@ class VideoManager:
   def removeSubclip(self,filename,point):
     clipsToRemove=set()
     for rid,(s,e) in self.subclips.get(filename,{}).items():
-      if s<point<e:
+      if s<=point<=e:
         clipsToRemove.add(rid)
     for rid in clipsToRemove:
       del self.subclips.get(filename,{})[rid]

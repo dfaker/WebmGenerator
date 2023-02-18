@@ -107,6 +107,8 @@ class WebmGeneratorController:
 
       'askToShuffleLoadedFiles':False,
 
+      'autoResumeAfterSeek':True,
+
       "downloadNameFormat":'%(title)s-%(id)s.%(uploader,creator,channel)s.{passNumber}.%(ext)s',
       "defaultMinterpolateFlags":"mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1:scd=fdiff:fps=30",
       "defaultProfile":"None",

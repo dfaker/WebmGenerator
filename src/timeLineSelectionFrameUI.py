@@ -26,7 +26,6 @@ class AbstractContextManager:
   def __exit__(self ,type, value, traceback):
     pass
 
-
 @contextmanager
 def acquire_timeout(lock, timeout):
   result = lock.acquire(timeout=timeout)
@@ -318,7 +317,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.image_handle_left_light = tk.PhotoImage(file = os.path.join("resources",'slider_left_light.gif'))
     self.image_handle_right_light = tk.PhotoImage(file = os.path.join("resources",'slider_right_light.gif'))
-
+    self.lastRandomSubclipPos = -1
 
   def stepBackwards(self,e):
     self.controller.stepBackwards()
@@ -329,11 +328,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def acceptAndRandomJump(self,e):
     target = self.controller.fastSeek(centerAfter=True)
     self.keyboardBlockAtTime(e,pos=target)
+    self.lastRandomSubclipPos = target
+    self.setUiDirtyFlag()
 
   def rejectAndRandomJump(self,e):
+    self.keyboardRemoveBlockAtTime(e,pos=self.lastRandomSubclipPos)
     self.keyboardRemoveBlockAtTime(e)
     target = self.controller.fastSeek(centerAfter=True)
+    self.lastRandomSubclipPos = target
     self.keyboardBlockAtTime(e,pos=target)
+    self.setUiDirtyFlag()
 
   def correctMouseXPosition(self,x):
 
@@ -499,9 +503,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.setUiDirtyFlag(specificRID=selectedRange)
       self.updateCanvas(withLock=False)
 
-  def keyboardRemoveBlockAtTime(self,e):
+  def keyboardRemoveBlockAtTime(self,e,pos=None):
     if self.tempRangeStart is not None:
-      a,b = sorted([self.tempRangeStart,self.controller.getCurrentPlaybackPosition()])
+      if pos is None:
+        pos = self.controller.getCurrentPlaybackPosition()
+
+      a,b = sorted([self.tempRangeStart,pos])
+
       ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
       for rid,(s,e) in list(ranges):
         if a<=s<=b and a<=e<=b:
@@ -629,8 +637,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.resumeplaybackTimer.cancel()
         except(AttributeError):
             pass
-        self.resumeplaybackTimer = threading.Timer(0.8, self.controller.play)
-        self.resumeplaybackTimer.start()
+        if self.globalOptions.get('autoResumeAfterSeek',True):
+            self.resumeplaybackTimer = threading.Timer(0.8, self.controller.play)
+            self.resumeplaybackTimer.start()
 
         if pos == 's':
           startTarget = self.roundToNearestFrame(sts+(increment*0.05))
@@ -761,8 +770,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
               self.resumeplaybackTimer.cancel()
           except(AttributeError):
               pass
-          self.resumeplaybackTimer = threading.Timer(0.8, self.controller.play)
-          self.resumeplaybackTimer.start()
+          if self.globalOptions.get('autoResumeAfterSeek',True):
+              self.resumeplaybackTimer = threading.Timer(0.8, self.controller.play)
+              self.resumeplaybackTimer.start()
           targetSeconds = self.roundToNearestFrame(targetSeconds)
           self.clipped=self.controller.updatePointForClip(self.controller.getcurrentFilename(),rid,'m',targetSeconds)
           self.setUiDirtyFlag(specificRID=rid)
@@ -930,7 +940,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
       self.clickTarget = None
       self.rangeHeaderClickStart=None
-      self.controller.play()
+      if self.globalOptions.get('autoResumeAfterSeek',True):
+        self.controller.play()
 
 
     if self.timeline_mousedownstate.get(2,False):
@@ -1330,10 +1341,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
       upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
       for rid,(s,e) in list(ranges):
-        if s<mid<e:
+        if s<=mid<=e:
           self.controller.removeSubclip((e+s)/2)
           break
-        if lower<e<upper or lower<s<upper:
+        if lower<=e<=upper or lower<=s<=upper:
           self.controller.removeSubclip((e+s)/2)
           break
     self.timeline_canvas_last_right_click_x=None

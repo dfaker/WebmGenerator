@@ -16,6 +16,8 @@ import subprocess as sp
 from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal,Tooltip,CutSpecificationPlanner
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
+fastSeekLock = threading.RLock()
+
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds2}"):
 
     if hasattr(value, 'seconds'):
@@ -649,29 +651,30 @@ class CutselectionUi(ttk.Frame):
       self.controller.stepForwards()
 
     def fastSeek(self,centerAfter=False):
-      potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
+      with fastSeekLock:
+          potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
 
-      if len(potential_seekpoints) == 0:
-        self.seekpoints = [i/1000 for i in range(1000)]
-        print('RESET SEEKPOINTS')
-        
-      potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
-      fn = self.getcurrentFilename()
-      ranges = self.getRangesForClip(fn)
-      while 1:
-        point = random.choice(potential_seekpoints)
-        self.seekpoints.remove(point)
-        clear = True
-        for s,e in ranges:
-            if s<=point<=e:
-                clear = False
+          if len(potential_seekpoints) == 0:
+            self.seekpoints = [i/1000 for i in range(1000)]
+            print('RESET SEEKPOINTS')
+            
+          potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
+          fn = self.getcurrentFilename()
+          ranges = self.getRangesForClip(fn)
+          while 1:
+            point = random.choice(potential_seekpoints)
+            self.seekpoints.remove(point)
+            clear = True
+            for s,e in ranges:
+                if s<=point<=e:
+                    clear = False
+                    break
+            if clear:
                 break
-        if clear:
-            break
 
-      self.seekTo(point*self.getTotalDuration(),centerAfter=centerAfter)
-      
-      return point*self.getTotalDuration()
+          self.seekTo(point*self.getTotalDuration(),centerAfter=centerAfter)
+          
+          return point*self.getTotalDuration()
 
     def videoMousewheel(self,evt):
       ctrl  = evt and ((evt.state & 0x4) != 0)

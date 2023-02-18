@@ -461,10 +461,10 @@ class CutselectionController:
     if self.currentTotalDuration is not None:
       self.ui.updateSummary( self.player.filename,self.player.duration,self.player.video_params,self.player.container_fps,self.player.estimated_vf_fps)
     
-    self.player.command('seek',str(seconds),'absolute','exact')
+    self.player.command('async', 'seek',str(seconds),'absolute','exact')
     if centerAfter:
       self.ui.centerTimelineOnCurrentPosition()
-      
+
 
   def getTotalDuration(self):
     if self.currentTotalDuration is None:

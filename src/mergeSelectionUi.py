@@ -195,7 +195,7 @@ class EncodeProgress(ttk.Frame):
       path,_ = os.path.split(self.finalFilename)
       if platform.system() == "Windows":
           try:
-            os.system('explorer.exe /select,"{}"'.format(self.finalFilename))
+            sp.call('explorer.exe /select,"{}"'.format(self.finalFilename))
           except Exception as e:
             print(e)
             os.startfile(path)

@@ -4,3 +4,4 @@ pygubu>=0.10
 tkinterdnd2>=0.3.0
 pywin32
 psutil
+pathvalidate

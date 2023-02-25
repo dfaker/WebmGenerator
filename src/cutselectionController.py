@@ -85,6 +85,7 @@ class CutselectionController:
   def getGlobalOptions(self):
     return self.globalOptions
 
+
   def splitClipIntoNEqualSections(self):
     n = self.ui.askInteger('How Many sections would you like to split into?','How Many sections would you like to split into?',initialvalue=10)
 
@@ -532,9 +533,11 @@ class CutselectionController:
     self.updateProgressStatistics()
 
   def returnPreviewFrame(self,requestId,timestamp,size,responseImage):
+    print('returnPreviewFrame',requestId,timestamp,size)
     self.ui.updateViewPreviewFrame(requestId,responseImage)
 
   def requestPreviewFrame(self,filename,timestamp,size):
+    print('requestPreviewFrame',filename,timestamp,size)
     self.ffmpegService.requestPreviewFrame(filename,filename,'10%','',size,self.returnPreviewFrame)
 
   def getcurrentFilename(self):

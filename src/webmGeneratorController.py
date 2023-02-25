@@ -370,12 +370,29 @@ class WebmGeneratorController:
     return [x for x in dropfiles if x.strip() != '']
 
   def enterDrop(self,drop):
-    dropfiles = self.listdropFiles(drop.data)
-    if len(dropfiles) > 1 or (len(dropfiles) ==1 and os.path.isdir(dropfiles[0]) ):
-        self.webmMegeneratorUi.showDrop(len(dropfiles))
+    try:
+        dropfiles = self.listdropFiles(drop.data)
+        if len(dropfiles) > 1 or (len(dropfiles) ==1 and os.path.isdir(dropfiles[0]) ):
+            self.webmMegeneratorUi.showDrop(len(dropfiles))
+    except Exception as e:
+        print(e)
+        self.webmMegeneratorUi.hideDrop()
+
+  def registerComplete(self,filename,clip=None):
+
+    label = os.path.basename(filename)
+    filename = os.path.abspath(filename)
+    img=None
+    if clip is not None:
+        img = clip.getpreviewImg()
+
+    self.webmMegeneratorUi.registerComplete(label,filename,img=img)
 
   def leaveDrop(self,drop):
     self.webmMegeneratorUi.hideDrop()
+
+  def toggleCompletedFrame(self):
+    self.cutselectionUi.toggleCompletedFrame()
 
   def setAutoConvert(self,state):
     self.autoConvert = state
@@ -391,7 +408,9 @@ class WebmGeneratorController:
 
     print(drop.data)
     dropfiles = self.listdropFiles(drop.data)
-   
+    
+    print(dropfiles)
+
     if len(dropfiles)>0:
 
       if self.globalOptions.get('askToShuffleLoadedFiles',False):

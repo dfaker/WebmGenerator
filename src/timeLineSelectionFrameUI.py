@@ -33,6 +33,8 @@ def acquire_timeout(lock, timeout):
   if result:
     lock.release()
 
+jumpRemovelock = Lock()
+
 def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{seconds:02.2F}"):
 
     if hasattr(value, 'seconds'):
@@ -330,14 +332,24 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.keyboardBlockAtTime(e,pos=target)
     self.lastRandomSubclipPos = target
     self.setUiDirtyFlag()
+    print('Exit acceptAndRandomJump')
 
   def rejectAndRandomJump(self,e):
-    self.keyboardRemoveBlockAtTime(e,pos=self.lastRandomSubclipPos)
-    self.keyboardRemoveBlockAtTime(e)
-    target = self.controller.fastSeek(centerAfter=True)
-    self.lastRandomSubclipPos = target
-    self.keyboardBlockAtTime(e,pos=target)
-    self.setUiDirtyFlag()
+    if jumpRemovelock.acquire(blocking=False):
+        try:
+            print('Entry rejectAndRandomJump')
+            tempPos = self.lastRandomSubclipPos
+            self.keyboardRemoveBlockAtTime(e,pos=tempPos)
+            self.keyboardRemoveBlockAtTime(e)
+            target = self.controller.fastSeek(centerAfter=True)
+            self.lastRandomSubclipPos = target
+            self.keyboardBlockAtTime(e,pos=target)
+
+            print('Exit rejectAndRandomJump')
+            jumpRemovelock.release()
+            
+        except Exception as e:
+            jumpRemovelock.release()
 
   def correctMouseXPosition(self,x):
 

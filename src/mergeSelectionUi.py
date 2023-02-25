@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from pathvalidate import sanitize_filepath
 from pygubu.widgets.scrolledframe import ScrolledFrame
 import os
 import string 
@@ -17,6 +18,9 @@ from .modalWindows import Tooltip
 from .modalWindows import VideoAudioSync
 from .modalWindows import AdvancedEncodeFlagsModal
 import platform
+
+
+
 
 try:
     from tkinterdnd2 import Tk as TkinterDnDTk
@@ -71,7 +75,7 @@ def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{secon
 
 class EncodeProgress(ttk.Frame):
 
-  def __init__(self, master=None, *args, encodeRequestId=None,controller=None, targetSize=0.0, **kwargs):
+  def __init__(self, master=None, *args, encodeRequestId=None,controller=None, targetSize=0.0, clip=None, **kwargs):
     ttk.Frame.__init__(self, master)
 
     self.frameEncodeProgressWidget = self
@@ -80,6 +84,7 @@ class EncodeProgress(ttk.Frame):
     self.cancelled = False
     self.controller = controller
     self.config(padding='2', relief='raised')
+    self.clip = clip
 
     self.frameEncodeProgressWidget.columnconfigure(0, weight=1)
     self.frameEncodeProgressWidget.columnconfigure(1, weight=1)
@@ -339,6 +344,7 @@ class EncodeProgress(ttk.Frame):
     
     if finalFilename is not None:
       self.finalFilename = finalFilename
+      self.controller.registerComplete(self.finalFilename,clip=self.clip)
 
     if percent is not None:
       if percent<self.lastProgress:
@@ -397,6 +403,7 @@ class SequencedVideoEntry(ttk.Frame):
   def __init__(self, master,controller,sourceClip, *args,direction='LEFT_RIGHT',**kwargs):
     ttk.Frame.__init__(self, master)
 
+    self.sourceClip = sourceClip
     self.rid=sourceClip.rid
     self.s=sourceClip.s
     self.e=sourceClip.e
@@ -505,6 +512,9 @@ class SequencedVideoEntry(ttk.Frame):
     elif direction == 'UP_DOWN':
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='top')
 
+  def getpreviewImg(self):
+    return self.sourceClip.previewImage
+
   def muteToggle(self):
     self.muted = not self.muted
     if self.muted:
@@ -564,6 +574,7 @@ class SequencedVideoEntry(ttk.Frame):
     self.controller.removeSequencedClip(self)
 
   def setPreviewImage(self,photoImage):
+    print('setPreviewImage',self.rid)
     self.previewImage=photoImage
     self.canvasSequencePreview.config(image=self.previewImage)
 
@@ -687,6 +698,7 @@ class SelectableVideoEntry(ttk.Frame):
     self.frameInputCutWidget.pack(anchor='nw', expand='false', fill='y', side='left')
 
   def setPreviewImage(self,photoImage):
+    print('setPreviewImage',self.rid)
     self.previewImage=photoImage
     self.canvasInputCutPreview.config(image=self.previewImage)
 
@@ -1734,8 +1746,21 @@ class MergeSelectionUi(ttk.Frame):
 
     try:
       self.filenamePrefixValue = self.filenamePrefixVar.get()
-    except:
-      pass
+      testpath = self.filenamePrefixValue+'.bin'
+      sanitisedPath = sanitize_filepath(testpath)
+
+      pre,post = os.path.split(testpath)
+
+      if testpath != sanitisedPath or pre != '':
+        self.entryFilenamePrefix.config(style='error.TEntry')
+      else:
+        self.entryFilenamePrefix.config(style='')
+    except Exception as e:
+        try:
+            self.entryFilenamePrefix.config(style='error.TEntry')
+        except Exception as ie:
+            pass
+
     
     try:
       tempoutputFormatValue = self.outputFormatVar.get()
@@ -1848,6 +1873,8 @@ class MergeSelectionUi(ttk.Frame):
 
     self.updatedPredictedDuration()
   
+  def registerComplete(self,filename,clip=None):
+    self.controller.registerComplete(filename,clip=clip)
 
   def toggleBoringMode(self,boringMode):
     if self.syncModal is not None and self.syncModal.isActive:
@@ -1862,7 +1889,7 @@ class MergeSelectionUi(ttk.Frame):
       epw.cancelEncodeRequest()
 
   def encodeCurrent(self):
-
+    clip=None
     minSize = self.maximumSizeValue * (1-self.globalOptions.get('allowableTargetSizeUnderrun',0))
 
     nullfilter = ''
@@ -1876,12 +1903,12 @@ class MergeSelectionUi(ttk.Frame):
       encodeSequence = []
       self.encodeRequestId+=1
 
-      for clip in self.sequencedClips:  
+      for clip in self.sequencedClips:
         definition = (clip.rid,clip.filename,clip.s,clip.e,nullfilter,nullfilter,nullfilter,clip.getSpeed())
         encodeSequence.append(definition)
 
       if len(encodeSequence)>0:
-        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self)
+        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,clip=clip)
         self.encoderProgress.append(encodeProgressWidget)
         outputPrefix = self.filenamePrefixValue
         if self.automaticFileNamingValue:
@@ -1943,7 +1970,7 @@ class MergeSelectionUi(ttk.Frame):
       }
       options.update(self.advancedFlags)
 
-      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
+      encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=clip)
       self.encoderProgress.append(encodeProgressWidget)
       outputPrefix = self.filenamePrefixValue
       if self.automaticFileNamingValue:
@@ -1997,7 +2024,7 @@ class MergeSelectionUi(ttk.Frame):
         }
         options.update(self.advancedFlags)
 
-        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
+        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=clip)
         self.encoderProgress.append(encodeProgressWidget)
 
         outputPrefix = self.filenamePrefixValue
@@ -2050,7 +2077,7 @@ class MergeSelectionUi(ttk.Frame):
           }
           options.update(self.advancedFlags)
 
-          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue)
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=clip)
           self.encoderProgress.append(encodeProgressWidget)
           outputPrefix = self.filenamePrefixValue
           if self.automaticFileNamingValue:
@@ -2185,6 +2212,7 @@ class MergeSelectionUi(ttk.Frame):
 
 
   def previewFrameCallback(self,requestId,timestamp,size,imageData):
+    print('previewFrameCallback',requestId)
     photoImage = tk.PhotoImage(data=imageData)
     for sv in self.selectableVideos.values():
       if sv.rid==requestId:
@@ -2412,7 +2440,7 @@ class MergeSelectionUi(ttk.Frame):
         removedClip.destroy()    
 
   def addAllClipsInTimelineOrder(self,minrid=-1,clearProgress=True):
-    finalrid = minrid
+    finalrid = int(minrid)
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       self.clearAllColumns()
       for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s))):
@@ -2424,8 +2452,8 @@ class MergeSelectionUi(ttk.Frame):
     else:
       self.clearSequence(includeProgress=clearProgress)
       for clip in sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s)):
-        finalrid = max(finalrid,clip.rid)
-        if clip.rid > minrid:
+        finalrid = max(int(finalrid),int(clip.rid))
+        if int(clip.rid) > int(minrid):
             self.addClipToSequence(clip)
     return finalrid
 

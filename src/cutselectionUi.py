@@ -4,7 +4,7 @@ import tkinter.ttk as ttk
 from tkinter.filedialog import askopenfilenames,askopenfilename
 from tkinter import messagebox
 from tkinter import simpledialog
-from pygubu.widgets.scrolledframe import ScrolledFrame
+
 import os
 import threading
 import signal
@@ -15,6 +15,10 @@ import time
 import subprocess as sp
 from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal,Tooltip,CutSpecificationPlanner
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
+
+from pygubu.widgets.scrolledframe import ScrolledFrame
+
+
 
 fastSeekLock = threading.RLock()
 
@@ -467,10 +471,18 @@ class CutselectionUi(ttk.Frame):
 
         self.frameVideoControls.pack(expand="false", fill="x", side="top")
 
+
+
+
         self.frameVideoPlayerAndControls.pack(expand="true", fill="both", side="right")
+
+
+
 
         self.frameUpperFrame.config(height="200", width="200")
         self.frameUpperFrame.pack(expand="true", fill="both", side="top")
+
+
 
         self.frameTimeLineFrame = TimeLineSelectionFrameUI(self.frameCutSelection, self, globalOptions=self.globalOptions)
 

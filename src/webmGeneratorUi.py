@@ -18,6 +18,12 @@ from .modalWindows import SubtitleExtractionModal, OptionsDialog, AdvancedDropMo
 import colorsys
 import numpy as np
 
+from pygubu.widgets.scrolledframe import ScrolledFrame
+try:
+    from tkinterdnd2 import Tk as TkinterDnDTk
+    from tkinterdnd2 import COPY, DND_FILES
+except Exception as e:
+    print(e)
 
 RELEASE_NUMVER = 'v3.35.0'
 
@@ -82,6 +88,8 @@ class WebmGeneratorUi:
                                           background='#282828',foreground='white',lightcolor='#282828',darkcolor='#282828',fieldbackground='#282828',relief='flat')
     
     self.style.map('subtle.TEntry',bordercolor=[('active', '#282828')])
+
+    self.style.configure('error.TEntry',bordercolor='#ff0000',foreground='#ff0000')
 
 
     self.style.configure('smallVideoSub.TButton', padding=0,background='#282828',activebackground='#282828',activeforeground='#282828',foreground='#69bfdb',highlightcolor='#282828',
@@ -190,7 +198,9 @@ class WebmGeneratorUi:
       self.style.configure ("TEntry",color='white',foreground='white',fieldbackground='#1f1f1f',background='#0f0f0f',bordercolor='darkgrey')
       self.style.configure ("TCombobox",color='white',foreground='white',fieldbackground='#0f0f0f',background='#0f0f0f',bordercolor='#0f0f0f')
 
-
+    self.completed = []
+    self.completedimgs = []
+    self.completeFrame=False
 
     self.panes=[]
     self.master=master
@@ -338,10 +348,14 @@ class WebmGeneratorUi:
     self.commandmenu.add_separator()
     self.autoconvertVar=StringVar(self.master,False)
     self.commandmenu.add_checkbutton(label="Auto encode on video switch", command=self.toggleAutoconvert, variable=self.autoconvertVar)
+    self.commandmenu.add_checkbutton(label="Toggled completed frame", command=self.toggleCompletedFrame)
+
 
     self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
 
+    def toggleCompletedFrame(self):
+        pass
 
     def checkFreeSpaceWorker():
       try:
@@ -361,6 +375,25 @@ class WebmGeneratorUi:
     
     self.notebook = ttk.Notebook(self.master)
     
+    """BLERG"""
+
+    self.frameConverted = ttk.Frame(self.master)
+    self.frameConverted.config(height="200", width="0" )
+
+    self.frameConverted.pack(expand="false", fill="y", side="right")
+
+    self.scrolledConverted = ScrolledFrame(
+        self.frameConverted, scrolltype="vertical", width="50"
+    )
+    self.scrolledConverted.configure(usemousewheel=True)
+
+    self.scrolledConvertedInner = self.scrolledConverted.innerframe
+
+    self.completedLabel = ttk.Label(self.scrolledConvertedInner,text='Completed Encodes')
+    self.completedLabel.pack(expand="false", fill='x', side="top")
+
+    """BLERG"""
+
     self.statusFrame = ttk.Frame(self.master,height='20')
 
     self.statusCancel = ttk.Button(self.statusFrame,text='Stop',state='disabled',style='smallextra.TButton',command=self.cancelAction)
@@ -390,6 +423,10 @@ class WebmGeneratorUi:
 
     self.notebook.pack(expand=1, fill='both')
     self.notebook.bind('<<NotebookTabChanged>>',self._notebokSwitched)
+
+
+
+
 
     self.boringw=1000
     self.boringh=600
@@ -440,6 +477,43 @@ class WebmGeneratorUi:
 
     self.versioncheckResultIndex=None
     self.alwaysOnTop = False
+    self.dropLabel = None
+
+  def toggleCompletedFrame(self):
+    self.completeFrame = not self.completeFrame
+
+    self.frameConverted.rowconfigure(0, weight=1)
+    self.frameConverted.columnconfigure(0, weight=1)
+    if self.completeFrame:
+        self.frameConverted.config(height="200", width="100")
+        self.scrolledConverted.grid(column=0,row=0,sticky='nsew')
+    else:
+        self.frameConverted.config(height="200", width="0")
+        self.scrolledConverted.grid_forget()
+
+  def registerComplete(self,label,filename,img=None):
+    try:
+        print(label,filename)
+        completed =  ttk.Label(self.scrolledConvertedInner,text=label, relief='groove', width=25, cursor="fleur", compound="top")
+        completed.pack(expand="false", fill='x', side="top", padx=25)
+
+        try:
+            if img is not None:
+                self.completedimgs.append(img)
+                completed.config(image=img)
+        except Exception as imgE:
+            print(imgE)
+
+        fbin = '{{{}}}'.format(filename)
+        try:
+          completed.drag_source_register("*")
+          completed.dnd_bind('<<DragInitCmd>>',lambda x:(COPY, DND_FILES, fbin))
+        except Exception as e:
+            print(e)
+        completed.bind('<Button-3>',lambda x,c=completed,img=img:c.pack_forget(),self.completedimgs.remove(img))
+        self.completed.append(completed)
+    except Exception as oe:
+        print(oe)
 
   def toggleAutoconvert(self):
     self.controller.setAutoConvert(self.autoconvertVar.get() == '1')
@@ -484,7 +558,10 @@ class WebmGeneratorUi:
     else:
         self.dropLabel = ttk.Label(self.master,style="dropMessage.TLabel",text='Drop to load {} paths\nHold CTRL for advanced options.'.format(n),justify='center',anchor='center',font= ("Helvetica 50"))
     
-    self.dropLabel.place(bordermode ='inside',relheight=1,relwidth=1,x=0,y=0)
+    try:
+        self.dropLabel.place(bordermode ='inside',relheight=1,relwidth=1,x=0,y=0)
+    except Exception as e:
+        print(e)
 
     self.dropAbort = ttk.Button(self.master,text='Cancel Load',command=self.abortLoad,style="abortLoad.TButton")
     

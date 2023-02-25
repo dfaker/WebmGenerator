@@ -97,6 +97,7 @@ class MergeSelectionController:
     return self.filterController.getClipsWithFilters()
 
   def requestPreviewFrame(self,rid,filename,timestamp,filterexp,size,callback):
+    print('requestPreviewFrame',rid,filename,timestamp)
     self.ffmpegService.requestPreviewFrame(rid,filename,timestamp,filterexp,size,callback)
 
   def encode(self,requestId,mode,seq,options,filenamePrefix,statusCallback):
@@ -105,6 +106,9 @@ class MergeSelectionController:
 
   def cancelEncodeRequest(self,requestId):
     self.ffmpegService.cancelEncodeRequest(requestId)
+
+  def registerComplete(self,filename,clip=None):
+    self.controller.registerComplete(filename,clip=clip)
 
   def deleteCustomProfile(self,profileName):
     return ''

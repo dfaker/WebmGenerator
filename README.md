@@ -33,6 +33,8 @@ To run with python 3 directly these packages are used:
 - python-mpv
 - pygubu
 - numpy
+- pathvalidate
+- tkinterdnd2
 
 pip can install them all for you with a single command:
 

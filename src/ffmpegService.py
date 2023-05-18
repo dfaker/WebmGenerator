@@ -360,6 +360,8 @@ class FFmpegService():
       if 'Loop shorter' in gridLoopMergeOption:
         minLength = maxLength
 
+      print('### minLength #######', minLength, '######')
+
       totalExpectedEncodedSeconds = cutLengths+(minLength*(1/speedAdjustment))
       totalEncodedSeconds = 0
 
@@ -649,13 +651,13 @@ class FFmpegService():
         vi,(vrid,vclipfilename,vs,ve,vfilterexp,vfilteraudioexp,vfilterexpEnc) = brickClips[k]
 
         vetime = ve-vs
-        loopCount=0
+        loopCount=1
         if 'Loop shorter' in gridLoopMergeOption:
           print('loop',vclipfilename,maxLength,vetime,maxLength/vetime,math.ceil(maxLength/vetime))
           loopCount =  math.ceil(maxLength/vetime)
 
-
         inputsList.extend(['-stream_loop', str(loopCount),'-i',brickTofileLookup[k]])
+
         inputScales.append('[{k}:v]setpts=PTS-STARTPTS+{st},trim=duration={maxlen},scale={w}:{h}:flags=bicubic[vid{k}]'.format(k=snum,w=int(w),h=int(h),st=0,maxlen=maxLength))
 
         srcLayer='[tmp{k}]'.format(k=snum)

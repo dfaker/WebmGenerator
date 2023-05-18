@@ -392,7 +392,7 @@ class CutselectionController:
         self.randomlyPlayedFiles.add(nextFile)
       except ValueError as e:
         logging.error('Exception jumpClips',exc_info=e)
-    clipsleft = len(set(self.files).difference(self.randomlyPlayedFiles))
+
     self.updateProgressStatistics()
 
   def playVideoFile(self,filename,startTimestamp):

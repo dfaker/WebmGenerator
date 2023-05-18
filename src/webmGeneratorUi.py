@@ -346,8 +346,6 @@ class WebmGeneratorUi:
     self.commandmenu.add_command(label="Show audio slice planner",command=self.showSlicePlanner,state='disabled')
 
     self.commandmenu.add_separator()
-    self.autoconvertVar=StringVar(self.master,False)
-    self.commandmenu.add_checkbutton(label="Auto encode on video switch", command=self.toggleAutoconvert, variable=self.autoconvertVar)
     self.commandmenu.add_checkbutton(label="Toggled completed frame", command=self.toggleCompletedFrame)
 
 
@@ -374,8 +372,6 @@ class WebmGeneratorUi:
     self.master.config(menu=self.menubar)
     
     self.notebook = ttk.Notebook(self.master)
-    
-    """BLERG"""
 
     self.frameConverted = ttk.Frame(self.master)
     self.frameConverted.config(height="200", width="0" )
@@ -392,7 +388,10 @@ class WebmGeneratorUi:
     self.completedLabel = ttk.Label(self.scrolledConvertedInner,text='Completed Encodes')
     self.completedLabel.pack(expand="false", fill='x', side="top")
 
-    """BLERG"""
+    self.autoconvertVar=StringVar(self.master,False)
+
+    self.autoConvertCheck = ttk.Checkbutton(self.scrolledConvertedInner,text='Auto convert',command=self.toggleAutoconvert, variable=self.autoconvertVar)
+    self.autoConvertCheck.pack(expand="false", fill='x', side="top")
 
     self.statusFrame = ttk.Frame(self.master,height='20')
 
@@ -495,7 +494,7 @@ class WebmGeneratorUi:
     try:
         print(label,filename)
         completed =  ttk.Label(self.scrolledConvertedInner,text=label, relief='groove', width=25, cursor="fleur", compound="top")
-        completed.pack(expand="false", fill='x', side="top", padx=25)
+        completed.pack(expand="false", fill='x', side="top", padx=10)
 
         try:
             if img is not None:

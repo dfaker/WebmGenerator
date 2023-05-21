@@ -1,0 +1,30 @@
+{
+	"name":"H265 mp4",
+	"baseEncoder":"",
+	"extension":"mp4",
+	"multi-pass-encode":true,
+	"commandBlocks":[
+		{"cmds":["-shortest", "-copyts", "-start_at_zero", "-c:v","libx265"]},
+		
+		{"conditions":[["audioChannels","contains","Copy"]],
+	     "cmds":["-c:a","libopus"],
+		 "altCmds":[]
+		},
+		
+		{"cmds":["-stats","-threads","{encoderStageThreads}"]},
+
+		{"conditions":[["audioChannels","contains","No audio"]],
+	     "cmds":["-an"]
+		},
+		{"conditions":[["audioChannels","contains","Stereo"]],
+	     "cmds":["-ac","2","-ar","48k", "-b:a","{audoBitrate}"]
+		},
+		{"conditions":[["audioChannels","contains","Mono"]],
+	     "cmds":["-ac","1","-ar","48k", "-b:a","{audoBitrate}"]
+		},
+		{"conditions":[["audioChannels","contains","Copy"]],
+	     "cmds":["-c:a","copy"]
+		},
+		{"cmds":["-sn"]}
+	]
+}

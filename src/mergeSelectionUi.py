@@ -771,7 +771,9 @@ class MergeSelectionUi(ttk.Frame):
     self.mergeStyles   = ['Individual Files - Output each individual subclip as a separate file.',                          
                           'Sequence - Join the subclips into a sequence.',
                           'Grid - Pack videos into variably sized grid layouts.',
-                          'Stream Copy - Ignore all filters and percorm no conversions, just stream cut and join the clips.']
+                          'Stream Copy - Ignore all filters and percorm no conversions, just stream cut and join the clips.',
+                          #'Full Source Reencode - Ignore all filters, timestamps, make no temporary files, just re-encode the full source.',
+                          ]
 
     self.mergeStyleVar.set(self.mergeStyles[0])
     
@@ -1912,7 +1914,10 @@ class MergeSelectionUi(ttk.Frame):
         self.encoderProgress.append(encodeProgressWidget)
         outputPrefix = self.filenamePrefixValue
         if self.automaticFileNamingValue:
-          outputPrefix = self.convertFilenameToBaseName(clip.filename)
+          if len(self.controller.getLabelForRid(clip.rid)):
+            outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(clip.rid),getBasename=False)
+          else:  
+            outputPrefix = self.convertFilenameToBaseName(clip.filename)
         self.controller.encode(self.encodeRequestId,
                                'STREAMCOPY',
                                encodeSequence,
@@ -1976,7 +1981,10 @@ class MergeSelectionUi(ttk.Frame):
       if self.automaticFileNamingValue:
         try:
           print(encodeSequence)
-          outputPrefix = self.convertFilenameToBaseName(encodeSequence[0][0][1])
+          if len(self.controller.getLabelForRid(encodeSequence[0][0][0])):
+            outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(encodeSequence[0][0][0]),getBasename=False)
+          else:  
+            outputPrefix = self.convertFilenameToBaseName(encodeSequence[0][0][1])
         except Exception as e:
           print(e)
 
@@ -2030,7 +2038,10 @@ class MergeSelectionUi(ttk.Frame):
         outputPrefix = self.filenamePrefixValue
         if self.automaticFileNamingValue:
           try:
-            outputPrefix = self.convertFilenameToBaseName(self.sequencedClips[0].filename)
+            if len(self.controller.getLabelForRid(self.sequencedClips[0].rid)):
+              outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(self.sequencedClips[0].rid),getBasename=False)
+            else:  
+              outputPrefix = self.convertFilenameToBaseName(self.sequencedClips[0].filename)
           except:
             pass
 
@@ -2081,7 +2092,10 @@ class MergeSelectionUi(ttk.Frame):
           self.encoderProgress.append(encodeProgressWidget)
           outputPrefix = self.filenamePrefixValue
           if self.automaticFileNamingValue:
-            outputPrefix = self.convertFilenameToBaseName(clip.filename)
+            if len(self.controller.getLabelForRid(clip.rid)):
+              outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(clip.rid),getBasename=False)
+            else:  
+              outputPrefix = self.convertFilenameToBaseName(clip.filename)
 
           self.controller.encode(self.encodeRequestId,
                                  'CONCAT',
@@ -2156,14 +2170,20 @@ class MergeSelectionUi(ttk.Frame):
                                     ))
 
     if self.automaticFileNamingVar.get():
-      for sv in self.sequencedClips[:1]:        
-        self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+      for sv in self.sequencedClips[:1]:       
+        if len(self.controller.getLabelForRid(sv.rid)):
+            self.filenamePrefixVar.set( self.convertFilenameToBaseName(self.controller.getLabelForRid(sv.rid),getBasename=False))
+        else: 
+            self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
       else:
         namefound=False
         for col in self.gridColumns:
           for sv in col['clips']:
             try:
-              self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+              if len(self.controller.getLabelForRid(sv.rid)):
+                self.filenamePrefixVar.set( self.convertFilenameToBaseName(self.controller.getLabelForRid(sv.rid),getBasename=False))
+              else: 
+                self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
               namefound = True
               break
             except Exception as e:
@@ -2171,10 +2191,15 @@ class MergeSelectionUi(ttk.Frame):
           if namefound:
             break 
 
-  def convertFilenameToBaseName(self,filename):
+  def convertFilenameToBaseName(self,filename, getBasename=True):
+
     whitespaceChars = '-_. '
     usableChars = string.ascii_letters+string.digits+whitespaceChars
-    basenameList = ''.join(x for x in os.path.basename(filename).rpartition('.')[0] if x in usableChars)
+    if getBasename:
+        basenameList = ''.join(x for x in os.path.basename(filename).rpartition('.')[0] if x in usableChars)
+    else:
+        basenameList = ''.join(x for x in filename if x in usableChars)
+
     for c in whitespaceChars:
       basenameList = basenameList.replace(c,'-')
     basename = ''

@@ -1443,7 +1443,22 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.targetTrim=value
 
   def canvasPopupRangeProperties(self):
-    pass
+    if self.timeline_canvas_last_right_click_x is not None:
+      selectedRange = None
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+      upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+      for rid,(s,e) in list(ranges):
+        if s<mid<e:
+          selectedRange=rid
+          break
+        if lower<e<upper or lower<s<upper:
+          selectedRange=rid
+          break
+      if selectedRange is not None:
+        self.controller.canvasPopupRangeProperties(rid)
+    self.timeline_canvas_last_right_click_x=None
 
 if __name__ == '__main__':
   import webmGenerator

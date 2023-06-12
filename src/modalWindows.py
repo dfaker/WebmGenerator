@@ -367,13 +367,104 @@ class AdvancedEncodeFlagsModal(tk.Toplevel):
 
 
 class EditSubclipModal(tk.Toplevel):
-  def __init__(self, master=None, videoController=None, rid=None, *args):
+  def __init__(self, master=None, controller=None, rid=None, *args):
     tk.Toplevel.__init__(self, master)
 
     self.title('Edit Subclip')
     self.style = ttk.Style()
     self.style.theme_use('clam')
-    self.minsize(600,400)
+    self.minsize(600,100)
+
+    self.controller = controller
+    self.rid = rid
+
+    self.columnconfigure(0, weight=0)
+    self.columnconfigure(1, weight=1)
+
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=0)
+    self.rowconfigure(2, weight=0)
+    self.rowconfigure(3, weight=0)
+
+    self.grab_set()
+    self.title('Edit Subclip {}'.format(rid))
+    self.s, self.e = self.controller.getRangeDetails(rid)
+
+
+    self.nameLabel = ttk.Label(self)
+    self.nameLabel.config(text='Quick Label')
+    self.nameLabel.grid(row=0,column=0,sticky='new',padx=5,pady=5)
+
+    self.nameVar   = tk.StringVar(self,self.controller.getLabelForRid(self.rid))
+    self.entryname = ttk.Entry(self,textvariable=self.nameVar)
+    self.entryname.grid(row=0,column=1,sticky='new',padx=5,pady=5)
+
+    self.startTsLabel = ttk.Label(self)
+    self.startTsLabel.config(text='Start')
+    self.startTsLabel.grid(row=1,column=0,sticky='new',padx=5,pady=5)
+
+    self.startTsVar   = tk.StringVar(self,str(self.s))
+    self.entrystartTs = ttk.Spinbox(self,text='',textvariable=self.startTsVar,from_=float('-1'),to=float('inf'))
+    self.entrystartTs.grid(row=1,column=1,sticky='new',padx=5,pady=5)
+
+    self.endTsLabel = ttk.Label(self)
+    self.endTsLabel.config(text='End')
+    self.endTsLabel.grid(row=2,column=0,sticky='new',padx=5,pady=5)
+
+    self.endtTsVar   = tk.StringVar(self,str(self.e))
+    self.entryendTs = ttk.Spinbox(self,text='',textvariable=self.endtTsVar,from_=float('-1'),to=float('inf'))
+    self.entryendTs.grid(row=2,column=1,sticky='new',padx=5,pady=5)
+
+    self.anchorLabel = ttk.Label(self)
+    self.anchorLabel.config(text='Anchor')
+    self.anchorLabel.grid(row=3,column=0,sticky='new',padx=5,pady=5)
+    self.anchorOptions = ['Start','Middle','End']
+    self.anchorVar   = tk.StringVar(self,'Middle')
+    self.entryanchor = ttk.Spinbox(self,text='',textvariable=self.endtTsVar,from_=float('-1'),to=float('inf'))
+    self.entryanchor = ttk.Combobox(self,textvariable=self.anchorVar,values=self.anchorOptions,state='readonly')
+    self.entryanchor.grid(row=3,column=1,sticky='new',padx=5,pady=5)
+
+    self.durTsLabel = ttk.Label(self)
+    self.durTsLabel.config(text='Duration')
+    self.durTsLabel.grid(row=4,column=0,sticky='new',padx=5,pady=5)
+
+    self.durTsVar   = tk.StringVar(self,str(self.e-self.s))
+    self.entrydurTs = ttk.Spinbox(self,text='',textvariable=self.durTsVar,from_=float('-1'),to=float('inf'))
+    self.entrydurTs.grid(row=4,column=1,sticky='new',padx=5,pady=5)
+
+    self.startTsVar.trace('w',self.startChange)
+    self.endtTsVar.trace('w',self.endChange)
+    self.durTsVar.trace('w',self.durChange)
+    self.nameVar.trace('w',self.nameChange)
+    self.blockUpdate = False
+
+  def nameChange(self,*args):
+    self.controller.updateLabelForRid(self.rid, self.nameVar.get())
+
+  def startChange(self,*args):
+    self.controller.updatePointForRid(self.rid,'s',float(self.startTsVar.get()))
+    self.durTsVar.set((float(self.endtTsVar.get()) - float(self.startTsVar.get())))
+
+  def endChange(self,*args):
+    self.controller.updatePointForRid(self.rid,'e',float(self.endtTsVar.get()))
+    self.durTsVar.set((float(self.endtTsVar.get()) - float(self.startTsVar.get())))
+
+  def durChange(self,*args):
+    if self.anchorVar.get() == 'Start':
+        self.endtTsVar.set( float(self.startTsVar.get()) + float(self.durTsVar.get()) )
+    elif self.anchorVar.get() == 'End':
+        self.startTsVar.set( float(self.endtTsVar.get()) - float(self.durTsVar.get()) )
+    else:
+        mid = (float(self.endtTsVar.get()) + float(self.startTsVar.get()))/2
+        half = float(self.durTsVar.get())/2
+        self.startTsVar.set( mid-half )
+        self.endtTsVar.set( mid+half )
+
+  def updateValue(self):
+    pass
+
+  def applyOptions(self):
+    pass
 
 
 class SliceCreationUtilsModal(tk.Toplevel):

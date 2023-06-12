@@ -3,10 +3,20 @@ class VideoManager:
 
   def __init__(self,globalOptions={}):
     self.subclips = {}
+    self.labels = {}
     self.interestMarks = {}
     self.subClipCounter=0
     self.globalOptions=globalOptions
     self.subclipChangeCallbacks=[]
+
+  def updateLabelForClip(self,filename,rid,label):
+    self.labels[rid] = label
+    print(self.labels)
+
+  def getLabelForClip(self,filename,rid):
+    print(self.labels)
+    return self.labels.get(rid,'')
+
 
   def addSubclipChangeCallback(self,callback):
     if callback not in self.subclipChangeCallbacks:
@@ -17,20 +27,25 @@ class VideoManager:
       callback(rid=rid,pos=pos,action=action)
 
   def getStateForSave(self):
-    return {'subclips':self.subclips.copy(),'interestMarks':{},'subClipCounter':self.subClipCounter}
+    return {'subclips':self.subclips.copy(),
+            'interestMarks':{},
+            'subClipCounter':self.subClipCounter,
+            'labels':self.labels,
+            }
 
   def loadStateFromSave(self,data):
-    self.subclips       = data['subclips']
-    self.interestMarks  = {}
+    self.subclips       = data.get('subclips',{})
+    self.interestMarks.clear()
     self.subClipCounter = data['subClipCounter']
+    self.labels         = data.get('labels',{})
 
   def reset(self):
     for filename,clips in self.subclips.items():
       for rid,(s,e) in clips.items():
         self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
-    self.subclips = {}
-    self.interestMarks = {}
-    
+    self.subclips.clear()
+    self.interestMarks.clear()
+    self.labels.clear()
     
   def addNewInterestMark(self,filename,point,kind='manual'):
     self.interestMarks.setdefault(filename,set()).add((point,kind))
@@ -42,7 +57,7 @@ class VideoManager:
     if filename in self.subclips:
       for rid,(s,e) in self.subclips.get(filename,{}).items():
         self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
-      self.subclips[filename] = {}
+      self.subclips[filename].clear()
 
   def clearallInterestMarksOnFile(self,filename):
     if filename in self.subclips:
@@ -52,7 +67,7 @@ class VideoManager:
     for filename,clips in self.subclips.items():
       for rid,(s,e) in clips.items():
         self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
-    self.subclips = {}
+    self.subclips.clear()
     
   def getAllClips(self):
     result=[]
@@ -120,6 +135,9 @@ class VideoManager:
     for rid in clipsToRemove:
       del self.subclips.get(filename,{})[rid]
       self.updateCallbacks(rid=rid,pos='s',action='REMOVE')
+
+  def getRangeDetailsForClip(self,filename,rid):
+    return self.subclips.get(filename,{}).get(rid)
 
   def getRangesForClip(self,filename):
     return self.subclips.get(filename,{}).items()

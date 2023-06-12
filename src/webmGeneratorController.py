@@ -695,10 +695,13 @@ class WebmGeneratorController:
       lastSaveData = json.loads(open(self.lastSaveFile,'r').read())
       newSaveData  = self.getSaveData()
       if newSaveData != lastSaveData:
-        response = self.cutselectionUi.confirmWithMessage('Changes since last save','You have made changes since your last save, do you want to save current project to \'{}\'?'.format(self.lastSaveFile),icon='warning')
+        response = self.cutselectionUi.confirmWithMessage('Changes since last save','You have made changes since your last save, do you want to save current project to \'{}\'?'.format(self.lastSaveFile),icon='warning',allowCancel=True)
+        print(response)
         if response == 'yes':
           self.saveProject(self.lastSaveFile)
           self.saveProject(self.autosaveFilename)
+        if response is None:
+            return
     else:
       self.saveProject(self.autosaveFilename)
 
@@ -708,7 +711,7 @@ class WebmGeneratorController:
                 for line in self.recentlyPlayed:
                     rp.write(line+'\n')
     except Exception as e:
-        print(e)
+        logging.error("RecentlyPlayed.pl Played load Exception",exc_info=e)
 
     self.shutdown = True
     self.cutselectionController.close_ui()
@@ -733,7 +736,7 @@ class WebmGeneratorController:
         try:
           os.remove(os.path.join(self.tempFolder,f))
         except Exception as e:
-          print(e)
+          logging.error("Temp clean up Exception",exc_info=e)
     print('temp clean up end')
 
     print('download clean up start')
@@ -743,7 +746,7 @@ class WebmGeneratorController:
           try: 
             os.remove(os.path.join(self.tempDownloadFolder,f))
           except Exception as e:
-            print(e)
+            logging.error("Download clean up Exception",exc_info=e)
     print('download clean up end')
 
     

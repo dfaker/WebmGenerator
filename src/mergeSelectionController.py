@@ -43,6 +43,9 @@ class MergeSelectionController:
     self.ui.setController(self)
     self.videoManager.addSubclipChangeCallback(self.ui.videoSubclipDurationChangeCallback)
 
+  def getLabelForRid(self, rid):
+    return self.videoManager.getLabelForClip('',rid)
+
   def autoConvert(self):
     self.ui.updateSelectableVideos()
     self.ui.clearSequence(includeProgress=False)

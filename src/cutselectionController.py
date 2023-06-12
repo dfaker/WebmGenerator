@@ -50,6 +50,11 @@ class CutselectionController:
 
     self.ui.after(50, self.loadInitialFiles)
 
+  def getRangeDetails(self,rid):
+    fn = self.getcurrentFilename()
+    rangeDetails = self.videoManager.getRangeDetailsForClip(fn,rid)
+    return rangeDetails 
+
   def setDragDur(self,dur):
     self.ui.setDragDur(dur)
 
@@ -247,7 +252,7 @@ class CutselectionController:
     if fileRemoved:
       self.ui.updateSummary(None)
       self.ui.updateFileListing(self.files)
-      self.setUiDirtyFlag()
+      self.ui.setUiDirtyFlag()
 
   def handleGlobalKeyEvent(self,evt):
     pass
@@ -299,6 +304,9 @@ class CutselectionController:
     self.player.observe_property('container-fps',  self.handleMpvFPSChange)
 
     self.overlay = None
+  
+  def setPlaybackSpeed(self,speed):
+    self.player.speed = speed
 
   def close_ui(self):
 
@@ -553,6 +561,19 @@ class CutselectionController:
 
   def getCurrentPlaybackPosition(self):
     return self.currentTimePos
+
+  def updateLabelForRid(self,rid,label):
+    filename = self.getcurrentFilename()
+    self.videoManager.updateLabelForClip(filename,rid,label)
+
+  def getLabelForRid(self,rid):
+    filename = self.getcurrentFilename()
+    return self.videoManager.getLabelForClip(filename,rid)
+
+  def updatePointForRid(self,rid,pos,seconds):
+    filename = self.getcurrentFilename()
+    self.updatePointForClip(filename,rid,pos,seconds)
+    self.ui.setUiDirtyFlag(specificRID=rid)
 
   def updatePointForClip(self,filename,rid,pos,seconds):
     clipped = False

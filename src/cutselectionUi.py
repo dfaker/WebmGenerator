@@ -13,12 +13,12 @@ import random
 import logging
 import time
 import subprocess as sp
-from .modalWindows import PerfectLoopScanModal,YoutubeDLModal,TimestampModal,VoiceActivityDetectorModal,Tooltip,CutSpecificationPlanner
+
+from .modalWindows import PerfectLoopScanModal, YoutubeDLModal, TimestampModal, VoiceActivityDetectorModal, Tooltip, CutSpecificationPlanner, EditSubclipModal
+
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
 from pygubu.widgets.scrolledframe import ScrolledFrame
-
-
 
 fastSeekLock = threading.RLock()
 
@@ -187,6 +187,10 @@ class CutselectionUi(ttk.Frame):
         self.dragPreviewPosVar = tk.StringVar()
         self.dragPreviewPosVar.trace("w", self.dragPreviewPosCallback)
 
+        self.playbackSpeed = globalOptions.get('defaultPlaybackSpeed',0.1)
+        self.playbackSpeedVar = tk.StringVar(self,'1')
+        self.playbackSpeedVar.trace("w", self.playbackSpeedCallback)
+
         self.frameSliceLength = ttk.Frame(self.labelFrameSlice)
         self.labelSiceLength = ttk.Label(self.frameSliceLength)
         self.labelSiceLength.config(text="Slice Length")
@@ -258,6 +262,43 @@ class CutselectionUi(ttk.Frame):
         self.entryPreviewPos.pack(side="right")
         self.framePreviewPos.config(height="200", width="200")
         self.framePreviewPos.pack(fill="x", pady="0", side="top")
+
+
+
+
+
+
+
+        self.framePlaybackSpeed = ttk.Frame(self.labelFrameSlice)
+        self.labelPlaybackSpeed = ttk.Label(self.framePlaybackSpeed)
+        self.labelPlaybackSpeed.config(text="Play Speed")
+        self.labelPlaybackSpeed.pack(side="left",pady="0")
+        self.entryPlaybackSpeed = ttk.Spinbox(
+            self.framePlaybackSpeed,
+            textvariable=self.playbackSpeedVar,
+            from_=0.0,
+            to=20.0,
+            increment=0.01,
+        )
+
+        Tooltip(self.entryPlaybackSpeed,text='Playback speed multiplier.')
+
+
+        self.entryPlaybackSpeed.pack(side="right")
+        self.framePlaybackSpeed.config(height="200", width="200")
+        self.framePlaybackSpeed.pack(fill="x", pady="0", side="top")
+
+
+
+
+
+
+
+
+
+
+
+
 
         self.loopModeVar = tk.StringVar()
         
@@ -574,6 +615,10 @@ class CutselectionUi(ttk.Frame):
     def jumpClips(self,dir):
       self.controller.jumpClips(dir)
 
+    def canvasPopupRangeProperties(self, rid):
+        scm = EditSubclipModal(master=self,controller=self.controller, rid=rid)
+        scm.mainloop()
+
     def addSubclipByTextRange(self,controller,totalDuration):
       initial=''
       try:
@@ -739,7 +784,9 @@ class CutselectionUi(ttk.Frame):
     def clearCurrentlySelectedRegion(self):
       return self.frameTimeLineFrame.clearCurrentlySelectedRegion()
 
-    def confirmWithMessage(self,messageTitle,message,icon='warning'):
+    def confirmWithMessage(self,messageTitle,message,icon='warning',allowCancel=False):
+      if allowCancel:
+        return messagebox.askyesnocancel(messageTitle,message,icon=icon)
       return messagebox.askquestion(messageTitle,message,icon=icon)
 
     def jumpBack(self):
@@ -792,6 +839,14 @@ class CutselectionUi(ttk.Frame):
             logging.error('Exception targetTrimChangeCallback',exc_info=e)
         if self.controller is not None:
           self.controller.updateProgressStatistics()
+
+
+    def playbackSpeedCallback(self, *args):
+      try:
+        value = float(self.playbackSpeedVar.get())
+        self.controller.setPlaybackSpeed(value)
+      except Exception as e:
+        logging.error('Exception playbackSpeedCallback',exc_info=e)
 
     def dragPreviewPosCallback(self, *args):
       try:
@@ -1001,7 +1056,7 @@ class CutselectionUi(ttk.Frame):
       fileList = askopenfilenames(initialdir=initialdir,filetypes=filetypes)
       duration=None
       if len(fileList)>0:
-         duration = simpledialog.askfloat("Create video from still images", "What should the durtation of the new video clips be?",parent=self,minvalue=0.0, maxvalue=100000.0)
+         duration = simpledialog.askfloat("Create video from still images", "What should the durtation of the new video clips be in seconds?",parent=self, minvalue=0.0, maxvalue=100000.0)
       for filename in fileList:
         if filename is not None and len(filename)>0:
           writeBackPath = os.path.abspath(os.path.dirname(filename))

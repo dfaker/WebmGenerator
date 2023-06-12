@@ -199,6 +199,8 @@ def logffmpegEncodeProgress(proc, processLabel, initialEncodedSeconds, totalExpe
 
                   statusCallback('Encoding '+processLabel, ( ((totalExpectedEncodedSeconds-initialEncodedSeconds)/2) + (currentEncodedTotal/2)+initialEncodedSeconds)/totalExpectedEncodedSeconds, lastEncodedPSNR=psnr, encodeStage='Encoding Final', currentSize=sizeNow,  encodePass='Two Pass Mode Pass 2' )
 
+            except ValueError as ve:
+              logging.error("Awaiting timestamp in encode progress")
             except Exception as e:
               logging.error("Encode progress Exception", exc_info=e)
         ln=b''

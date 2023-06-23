@@ -850,8 +850,14 @@ class CutselectionUi(ttk.Frame):
 
     def dragPreviewPosCallback(self, *args):
       try:
-        value = float(self.dragPreviewPosVar.get())
-        self.frameTimeLineFrame.setDragPreviewPos(value)
+        value = self.dragPreviewPosVar.get()
+        mode = 'abs'
+        if '%' in value:
+            value = value.strip().replace('%','')
+            mode  = 'percent'
+        value = float(value)
+
+        self.frameTimeLineFrame.setDragPreviewPos(value,mode)
       except Exception as e:
         logging.error('Exception dragPreviewPosCallback',exc_info=e)
 

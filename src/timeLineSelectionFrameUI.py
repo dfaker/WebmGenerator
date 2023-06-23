@@ -241,6 +241,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.timelineZoomFactor=1.0
     self.dragPreviewPos=0.1
+    self.dragPreviewMode='abs'
     self.currentZoomRangeMidpoint=0.5
 
     self.tempRangePreviewDurationLabel = self.timeline_canvas.create_text(0, 0, text='',fill="#69bfdb")
@@ -665,8 +666,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           self.seekto(endTarget-0.001)
         break
 
-  def setDragPreviewPos(self,value):
+  def setDragPreviewPos(self,value,mode):
     self.dragPreviewPos = value
+    self.dragPreviewMode = mode
 
   def reconfigure(self,e):
     self.setUiDirtyFlag()
@@ -799,17 +801,22 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           if ((st+en)/2) > e.x:
             # Closer to End
             newX-=qw
-            if ctrl:
-              self.controller.seekTo( ((targetSeconds+((ens-sts)/2))) - self.dragPreviewPos )
+            if self.dragPreviewMode == 'abs':
+                dragoffset = self.dragPreviewPos
             else:
-              self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + self.dragPreviewPos )
+                dragoffset = (ens-sts)*(self.dragPreviewPos/100)
+
+            if ctrl:
+              self.controller.seekTo( ((targetSeconds+((ens-sts)/2))) - dragoffset )
+            else:
+              self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + dragoffset )
           else:
             # Closer to Start
             newX+=qw
             if ctrl:
-              self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + self.dragPreviewPos )
+              self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + dragoffset )
             else:
-              self.controller.seekTo( ((targetSeconds+((ens-sts)/2))) - self.dragPreviewPos )
+              self.controller.seekTo( ((targetSeconds+((ens-sts)/2))) - dragoffset )
 
           
           self.correctMouseXPosition(newX)
@@ -996,20 +1003,26 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         elif pos == 'e':
           self.controller.seekTo( targetSeconds-0.001 )
         elif pos == 'm':
+
+          if self.dragPreviewMode == 'abs':
+            dragoffset = self.dragPreviewPos
+          else:
+            dragoffset = (oe-os)*(self.dragPreviewPos/100)
+
           if self.initialShiftStart == 'End':
             if ctrl:
               targetSeconds = targetSeconds+((oe-os)/2)
-              self.controller.seekTo( targetSeconds-self.dragPreviewPos )
+              self.controller.seekTo( targetSeconds-dragoffset )
             else:
               targetSeconds = targetSeconds-((oe-os)/2)
-              self.controller.seekTo( targetSeconds+self.dragPreviewPos )
+              self.controller.seekTo( targetSeconds+dragoffset )
           else:
             if ctrl:
               targetSeconds = targetSeconds-((oe-os)/2)
-              self.controller.seekTo( targetSeconds+self.dragPreviewPos )
+              self.controller.seekTo( targetSeconds+dragoffset )
             else:
               targetSeconds = targetSeconds+((oe-os)/2)
-              self.controller.seekTo( targetSeconds-self.dragPreviewPos )
+              self.controller.seekTo( targetSeconds-dragoffset )
 
     if e.type == tk.EventType.ButtonPress:
       if e.num==3:      

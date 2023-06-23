@@ -42,6 +42,27 @@ except Exception as e:
 
 import mpv
 
+import numpy as np
+
+import re
+
+
+def read_pgm(inbuffer, byteorder='>'):
+    buffer = inbuffer[::]
+    try:
+        header, width, height, maxval = re.search(
+            b"(^P6\s(?:\s*#.*[\r\n])*"
+            b"(\d+)\s(?:\s*#.*[\r\n])*"
+            b"(\d+)\s(?:\s*#.*[\r\n])*"
+            b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
+    except AttributeError:
+        raise ValueError("Not a raw PGM file: '%s'" % filename)
+    return np.frombuffer(buffer,
+                            dtype='u1' if int(maxval) < 256 else byteorder+'u2',
+                            count=int(width)*int(height)*3,
+                            offset=len(header)
+                            ).reshape((int(height), int(width), 3))
+
 class AdvancedDropModal(tk.Toplevel):
 
   def __init__(self, master=None, dataDestination=None, *args):
@@ -566,6 +587,9 @@ class VideoAudioSync(tk.Frame):
 
       "Spectrum - Bass Boost Norm - Log:Log":"bass=g=3:f=110:w=0.6,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
 
+      "Spectrum - Bass Isolate - Log:Log":"acompressor=threshold=.5:ratio=5:2:attack=0.01:release=0.01,showspectrumpic=s={width}x80:legend=0:fscale=log:scale=log",
+
+
       "Waves":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
       "Waves - Middle pass filter":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]highpass=f=200,lowpass=f=3000,showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
       "Waves - Compressor":"asplit[sa][sb],[sa]showwavespic=s={width}x80:colors=5C5CAE:filter=peak[pa],[sb]acompressor=threshold=.5:ratio=5:2:attack=0.01:release=0.01,showwavespic=s={width}x80:colors=b8b8dc:filter=average[pb],[pa][pb]overlay=0:0",
@@ -633,6 +657,8 @@ class VideoAudioSync(tk.Frame):
     self.columnconfigure(6, weight=1)
     self.columnconfigure(7, weight=1)
 
+    self.columnconfigure(8, weight=1)
+
 
 
     self.tickColours=["#a9f9b9","#7dc4ed","#f46350","#edc1a6","#dfff91","#0f21e0","#f73dc8","#8392db","#72dbb4","#cc8624","#88ed71","#d639be"]
@@ -640,7 +666,6 @@ class VideoAudioSync(tk.Frame):
     self.player = mpv.MPV(loop='inf',
                           mute=False,
                           volume=0,
-                          log_handler=print,
                           loglevel='debug',
                           autofit_larger='1280', wid=str(self.playerwid))
 
@@ -701,7 +726,13 @@ class VideoAudioSync(tk.Frame):
     self.entrypostAudioOverrideDelay.grid(row=3,column=7,columnspan=2, sticky='ew')
     self.entrypostAudioOverrideDelay.bind('<MouseWheel>',self.checkCtrl)
     self.dubOffsetVar.trace('w',self.valueChangeCallback)      
-        
+
+
+    self.entryalign = ttk.Button(self,text='Auto-Align',command=self.alignToBeats,width=40)
+    self.entryalign['padding']=1
+    Tooltip(self.entryalign,text='Snap all visible markers to the closest beat.')
+    self.entryalign.grid(row=3,column=9,sticky='ew')
+
     self.labelTransDuration = ttk.Label(self)
     self.labelTransDuration.config(anchor='e', padding='2', text='Transition Duration')
     self.labelTransDuration.grid(row=4,column=0,sticky='ew')
@@ -751,6 +782,11 @@ class VideoAudioSync(tk.Frame):
     self.entrypauseOnLoseFocus = ttk.Checkbutton(self,text='Pause on Focus switch',onvalue=True, offvalue=False,variable=self.pauseOnLoseFocusVar)
     self.entrypauseOnLoseFocus.grid(row=4,column=8,sticky='ew',columnspan=1)
 
+    self.dynamicSublipDurVar = tk.BooleanVar()
+    self.dynamicSublipDurVar.set(True)
+    self.dynamicSublipDur = ttk.Checkbutton(self,text='Dynamic Subclip Dur',onvalue=True, offvalue=False,variable=self.dynamicSublipDurVar)
+    self.dynamicSublipDur.grid(row=4,column=9,sticky='ew',columnspan=1)
+
 
     try:
       self.uiParent.attributes('-topmost', True)
@@ -777,8 +813,10 @@ class VideoAudioSync(tk.Frame):
     self.lastSpectraDubDelay=0
     self.lastSpectraZoomFactor=1
     self.canvasSpectraImg=None
+    self.canvasSpectraData=None
     self.waveAsPicImage=None
 
+    self.imgo = None 
     self.spectrumWorkLock = threading.Lock()
 
     self.draggingTickIndex=None
@@ -1006,8 +1044,6 @@ class VideoAudioSync(tk.Frame):
         except:
           pass
         newTotalDuration = (self.xCoordToSeconds(orig_width)-self.xCoordToSeconds(0))
-        
-
 
         if force or (orig_startoffset == startoffset and orig_currentTotalDuration == newTotalDuration and orig_width == self.timeline_canvas.winfo_width()):
         
@@ -1016,6 +1052,9 @@ class VideoAudioSync(tk.Frame):
           self.lastSpectraDubDelay = float(self.dubOffsetVar.get())
           self.lastSpectraZoomFactor=self.timelineZoomFactor
         
+          self.canvasSpectraData = outs
+          self.imgo = None
+
           if self.waveAsPicImage is None:
             self.waveAsPicImage = tk.PhotoImage(data=outs)
           else:
@@ -1027,6 +1066,51 @@ class VideoAudioSync(tk.Frame):
             self.timeline_canvas.coords(self.canvasSpectraImg,0,orig_height-80)
             
           self.timeline_canvas.lower(self.canvasSpectraImg)
+  
+  def alignToBeats(self):
+    if self.imgo is None:
+        self.imgo = np.mean(read_pgm(self.canvasSpectraData )[:,:,:],axis=(0,2))**2
+    
+    n= 30
+    for tx,tidx in self.tickXpos[::-1]:
+        tx = int(tx)
+        xl  = [float(x) for x in self.imgo[tx-n:tx+n]]
+        xl  = [x* (len(xl)-abs((i-len(xl)/2)) )   for i,x in enumerate(xl)]
+
+        am = np.argmax(xl)
+        xpos = int(tx-n+am)
+        timestamp = self.xCoordToSeconds(xpos)
+        self.updateRegionsOnDrag(tidx,timestamp)
+
+
+        self.timeline_canvas.delete('dragTick')
+        self.timeline_canvas.delete('ticksLine{}'.format(tidx))
+        
+
+        self.timeline_canvas.create_polygon(  xpos,    20+20+2, 
+                                              xpos-7,  20+20+2+5, 
+                                              xpos,    20+20+2+11,
+                                              xpos+7,  20+20+2+5,
+                                            fill='white',tags='dragTick')
+
+        self.timeline_canvas.create_line(xpos, 20+0, 
+                                         xpos, 200,fill='white',tags='dragTick')
+        fadeDist = 0
+
+        try:
+          fadeDur  = float(self.fadeVar.get())
+          fadeDist = self.secondsToXcoord(fadeDur/2)-self.secondsToXcoord(0) 
+        except:
+          pass
+
+        if fadeDist > 0:
+          self.timeline_canvas.create_line(xpos-fadeDist, 20+0, 
+                                           xpos-fadeDist, 20+200,
+                                           fill='blue',tags='dragTick')
+          self.timeline_canvas.create_line(xpos+fadeDist, 20+0, 
+                                           xpos+fadeDist, 20+200,
+                                           fill='blue',tags='dragTick')
+    self.recalculateEDLTimings()
 
 
   def speedChange(self,*args):
@@ -1131,7 +1215,28 @@ class VideoAudioSync(tk.Frame):
   def timelineMousePress(self,e):  
 
     ctrl  = (e.state & 0x4) != 0
-    pressSeconds = self.xCoordToSeconds(e.x)
+    shift = (e.state & 0x1) != 0
+
+    xpos = e.x
+
+    if not shift:
+        n= 20
+        try:
+            if self.imgo is None:
+                self.imgo = np.mean(read_pgm(self.canvasSpectraData )[:,:,:],axis=(0,2))**2
+
+            
+            xl  = [float(x) for x in self.imgo[e.x-n:e.x+n]]
+            xl  = [x* (len(xl)-abs((i-len(xl)/2)) )   for i,x in enumerate(xl)]
+
+            am = np.argmax(xl)
+
+            xpos = int(e.x-n+am)
+            print(e.x,am,xpos)
+        except Exception as imgoe:
+            print(imgoe)
+
+    pressSeconds = self.xCoordToSeconds(xpos)
 
 
     if ctrl:
@@ -1202,18 +1307,20 @@ class VideoAudioSync(tk.Frame):
             break
       elif self.draggingTickIndex is not None:
         
+
+
         self.timeline_canvas.delete('dragTick')
         self.timeline_canvas.delete('ticksLine{}'.format(self.draggingTickIndex))
         
 
-        self.timeline_canvas.create_polygon(  e.x,    20+20+2, 
-                                              e.x-7,  20+20+2+5, 
-                                              e.x,    20+20+2+11,
-                                              e.x+7,  20+20+2+5,
+        self.timeline_canvas.create_polygon(  xpos,    20+20+2, 
+                                              xpos-7,  20+20+2+5, 
+                                              xpos,    20+20+2+11,
+                                              xpos+7,  20+20+2+5,
                                             fill='white',tags='dragTick')
 
-        self.timeline_canvas.create_line(e.x, 20+0, 
-                                         e.x, 200,fill='white',tags='dragTick')
+        self.timeline_canvas.create_line(xpos, 20+0, 
+                                         xpos, 200,fill='white',tags='dragTick')
         fadeDist = 0
 
         try:
@@ -1223,11 +1330,11 @@ class VideoAudioSync(tk.Frame):
           pass
 
         if fadeDist > 0:
-          self.timeline_canvas.create_line(e.x-fadeDist, 20+0, 
-                                           e.x-fadeDist, 20+200,
+          self.timeline_canvas.create_line(xpos-fadeDist, 20+0, 
+                                           xpos-fadeDist, 20+200,
                                            fill='blue',tags='dragTick')
-          self.timeline_canvas.create_line(e.x+fadeDist, 20+0, 
-                                           e.x+fadeDist, 20+200,
+          self.timeline_canvas.create_line(xpos+fadeDist, 20+0, 
+                                           xpos+fadeDist, 20+200,
                                            fill='blue',tags='dragTick')
 
 
@@ -1235,10 +1342,10 @@ class VideoAudioSync(tk.Frame):
       if self.draggingBlockIndex is not None:
         tagretId=0
         for tx,tidx in self.tickXpos[::-1]:
-          print(e.x,tx,tidx)
-          if e.x>tx:
+
+          if xpos>tx:
             tagretId=tidx+1
-            print('tagretId=tidx',e.x,tx,tidx)
+            print('tagretId=tidx',xpos,tx,tidx)
             break
 
         if tagretId != self.draggingBlockIndex:
@@ -1274,9 +1381,9 @@ class VideoAudioSync(tk.Frame):
         if self.currentTotalDuration is None:
           self.player.command('seek','0','absolute-percent','exact')
         else:
-          seekTarget = min(max(0,self.xCoordToSeconds(e.x)),self.currentTotalDuration)
+          seekTarget = min(max(0,self.xCoordToSeconds(xpos)),self.currentTotalDuration)
           try:
-            self.player.command('seek',self.xCoordToSeconds(e.x),'absolute','exact')
+            self.player.command('seek',self.xCoordToSeconds(xpos),'absolute','exact')
           except Exception as e:
             print(e)
             try:
@@ -1406,10 +1513,16 @@ class VideoAudioSync(tk.Frame):
       audioFilename=None
 
     tickCounter=0
+
+    entries=0
+    totaldur=0
+
     for sv in self.sequencedClips:
       fn = sv.filename
       start = sv.s
       end = sv.e
+      entries+=1
+      totaldur+=end-start
 
       if rid is not None and rid==sv.rid:
         print(rid,sv.rid)
@@ -1430,6 +1543,8 @@ class VideoAudioSync(tk.Frame):
 
       edlstr += '%{}%{},{},{}\n'.format(len(fn.encode('utf8')),fn,start,end-start)
     
+    if self.dynamicSublipDurVar.get() and entries>0:
+        self.setDragDur(totaldur/entries)
 
     timelineWidth = self.timeline_canvas.winfo_width()
 

@@ -121,15 +121,25 @@ class CutselectionController:
   def addSubclipByTextRange(self):
     self.ui.addSubclipByTextRange(self,self.getTotalDuration())
 
-  def jumpToSearch(self,searchStr):
+  def jumpToSearch(self,searchStr,randomjump=False):
     searchParts = [x.upper() for x in searchStr.split(' ') if len(x)>0]
     nextClipInd = self.files.index(self.currentlyPlayingFileName)+1
     foundfile = None
+    possibles = []
+    if randomjump:
+        nextClipInd = 0
 
     for e in self.files[nextClipInd:]:
         if all([x in e.upper() for x in searchParts]):
-            foundfile = e
-            break
+            if randomjump:
+                possibles.append(e)
+                foundfile = e
+            else:
+                foundfile = e
+                break
+
+    if len(possibles) > 0  and randomjump:
+        foundfile = random.choice(possibles)
 
     if foundfile is None:
         for e in self.files[:nextClipInd-1]:
@@ -387,17 +397,27 @@ class CutselectionController:
       if len(unplayed)==0:
         self.randomlyPlayedFiles=set()
         unplayed = set(files)
-      nextRandomFile = random.choice(list(unplayed))
-      self.playVideoFile(nextRandomFile,0)
-      self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
-      self.randomlyPlayedFiles.add(nextRandomFile)
+      for _ in range(10):
+          nextRandomFile = random.choice(list(unplayed))
+          exists = os.path.isfile(nextRandomFile)
+          if exists:
+            self.playVideoFile(nextRandomFile,0)
+          self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
+          self.randomlyPlayedFiles.add(nextRandomFile)
+          if exists:
+            break
     else:
       try:
-        nextClipInd = self.files.index(self.currentlyPlayingFileName)+offset      
-        nextFile = self.files[nextClipInd%len(self.files)]
-        self.playVideoFile(nextFile,0)
-        self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
-        self.randomlyPlayedFiles.add(nextFile)
+        for imult in range(1,10):
+            nextClipInd = self.files.index(self.currentlyPlayingFileName)+(offset*imult)      
+            nextFile = self.files[nextClipInd%len(self.files)]
+            exists = os.path.isfile(nextFile)
+            if exists:
+                self.playVideoFile(nextFile,0)
+            self.randomlyPlayedFiles.add(self.currentlyPlayingFileName)
+            self.randomlyPlayedFiles.add(nextFile)
+            if exists:
+                break
       except ValueError as e:
         logging.error('Exception jumpClips',exc_info=e)
 
@@ -517,15 +537,16 @@ class CutselectionController:
     if asktoSort:
       pass
 
-    self.ui.disableFileWidgets=False
-    if len(fileList) > 100:
+    self.ui.disableFileWidgets = False or self.ui.disableFileWidgets
+    if len(fileList) > 1000:    
+        self.ui.disableFileWidgets=True
+    elif len(fileList) > 100:
       response = self.ui.confirmWithMessage('Disable video listing?','You\'re loading {} files at once, showing these as widgets will affect performance, do you want to disable the file listing widget and just use the "Prev Clip" and "Next Clip" controls?'.format(len(fileList)),icon='warning')
       if response=='yes':
         self.ui.disableFileWidgets=True
 
     for file in fileList:
       if file not in self.files:
-
         file_for_load = file
 
         if self.globalOptions.get('loadRelativeCopyOnFileNotExists',False) and not os.path.exists(file_for_load):
@@ -627,6 +648,22 @@ class CutselectionController:
     self.videoManager.clearallSubclipsOnFile(self.currentlyPlayingFileName)
     self.videoManager.registerNewSubclip(self.currentlyPlayingFileName,0.0,self.currentTotalDuration)
     self.updateProgressStatistics()
+
+  def setAB(self,start,end,seekAfter=True):
+    if start<0:
+      start=0
+    if start>self.currentTotalDuration:
+      start=self.currentTotalDuration
+
+    if end<0:
+      end=0
+    if end>self.currentTotalDuration:
+      end=self.currentTotalDuration
+
+    self.currentLoop_a = start
+    self.currentLoop_b = end
+    self.player.ab_loop_a=start
+    self.player.ab_loop_b=end
 
   def addNewSubclip(self,start,end,seekAfter=True):
     if start<0:

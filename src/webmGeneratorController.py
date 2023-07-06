@@ -175,6 +175,8 @@ class WebmGeneratorController:
 
     projectToLoad = None
 
+    self.webmMegeneratorUi = None
+
     if len(initialFiles)==1 and initialFiles[0].upper().strip().endswith('.WEBGPROJ'):
       projectToLoad = initialFiles[0]
       initialFiles=[]
@@ -270,6 +272,7 @@ class WebmGeneratorController:
     print('mergeSelectionController loaded')
 
     self.recentlyPlayed = []
+    self.recentProjects = []
     self.autoConvert = False
 
     try:
@@ -277,8 +280,17 @@ class WebmGeneratorController:
             self.recentlyPlayed.append(line.strip())
     except Exception as e:
         print(e)
+
+    try:
+        for line in open('recentProjects.pl','r').readlines():
+            self.recentProjects.append(line.strip())
+    except Exception as e:
+        print(e)
     
+
     self.webmMegeneratorUi.updateRecentlyPlayed()
+
+    self.webmMegeneratorUi.updateRecentProjects()
 
     if os.path.exists(self.autosaveFilename) and len(self.initialFiles)==0:
       lastSaveData = newSaveData = None
@@ -302,6 +314,17 @@ class WebmGeneratorController:
   def showSlicePlanner(self):
     self.cutselectionUi.showSlicePlanner()
 
+
+  def logProject(self,fn):
+    try:
+        self.recentProjects.remove(fn)
+    except Exception as e:
+        pass
+    self.recentProjects.insert(0,fn)
+    self.recentProjects = self.recentProjects[:20]
+
+    self.webmMegeneratorUi.updateRecentProjects()
+
   def logPlayback(self, fn):
     try:
         self.recentlyPlayed.remove(fn)
@@ -315,6 +338,9 @@ class WebmGeneratorController:
     if self.autoConvert:
         self.mergeSelectionController.autoConvert()
         #self.mergeSelectionController.clearallSubclips()
+
+  def getRecentProjects(self):
+    return self.recentProjects
 
   def getRecentlyPlayed(self):
     return self.recentlyPlayed
@@ -427,6 +453,8 @@ class WebmGeneratorController:
       self.webmMegeneratorUi.setLoadLabel('Loading files...')
 
       def doAsyncLoad(dropfiles,loadOptions):
+        print('doAsyncLoad',dropfiles,loadOptions )
+
         self.cutselectionController.loadFiles(self.cleanInitialFiles(dropfiles,loadOptions=loadOptions))
         self.cutselectionUi.clearVideoMousePress()
         self.webmMegeneratorUi.hideDrop()
@@ -522,21 +550,20 @@ class WebmGeneratorController:
 
     substrings = [x.strip().upper() for x in substrings.split() if len(x.strip())>0]
 
-    print(loadOptions,substrings)
+    print('cleanInitialFiles',loadOptions,substrings)
 
     getStats = False
     if sortKey in ['File Size ascending','File Size descending','Created date ascending','Created date descending',
                    'Modified date ascending','Modified date descending','Access date ascending','Access date descending']:
       getStats = True
 
-
-
     start = time.time()
 
     try:
-      self.webmMegeneratorUi.setLoadLabel('Loading files {}\n(Scanning root folder)'.format(len(finalFiles)))
+      if self.webmMegeneratorUi is not None:
+        self.webmMegeneratorUi.setLoadLabel('Loading files {}\n(Scanning root folder)'.format(len(finalFiles)))
     except Exception as e:
-      pass
+      logging.error("webmMegeneratorUi.setLoadLabel",exc_info=e)
 
     for f in map(os.path.normpath,files):
 
@@ -554,7 +581,7 @@ class WebmGeneratorController:
               self.webmMegeneratorUi.setLoadLabel('Loading files {}\n{}'.format(len(finalFiles),f))
               start = time.time()
           except Exception as e:
-            pass
+            logging.error("cleanInitialFiles filesort",exc_info=e)
       elif os.path.isdir(f):
         for r,dl,fl in os.walk(f):
           if self.shutdown or self.abortLoad:
@@ -574,7 +601,7 @@ class WebmGeneratorController:
                     self.webmMegeneratorUi.setLoadLabel('Loading files {}\n{}\n(Processing {})'.format(len(finalFiles),p,r))
                     start = time.time()
                 except Exception as e:
-                  pass
+                  logging.error("cleanInitialFiles dirsort",exc_info=e)
 
     self.abortLoad=False
 
@@ -712,6 +739,16 @@ class WebmGeneratorController:
                     rp.write(line+'\n')
     except Exception as e:
         logging.error("RecentlyPlayed.pl Played load Exception",exc_info=e)
+
+    try:
+        if len(self.recentProjects) >0:
+            with open('recentProjects.pl','w') as rp:
+                for line in self.recentProjects:
+                    rp.write(line+'\n')
+    except Exception as e:
+        logging.error("recentProjects.pl Played load Exception",exc_info=e)
+
+
 
     self.shutdown = True
     self.cutselectionController.close_ui()

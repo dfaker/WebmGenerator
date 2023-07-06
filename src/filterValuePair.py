@@ -238,9 +238,15 @@ class FilterValuePair(ttk.Frame):
     self.updateCommandButtonStyles()
 
   def checkCtrl(self,e):
-    ctrl  = e and ((e.state & 0x4)  != 0)
-    shift = e and ((e.state & 0x1) != 0)
-    
+    ctrl=False
+    shift=False
+
+    try:
+        ctrl  = e and type(e.state) != str and ((e.state & 0x4)  != 0)
+        shift = e and type(e.state) != str and ((e.state & 0x1)  != 0)
+    except Exception  as e:
+        print(e)
+
     if ctrl and not shift:
       self.entryFilterValueValue.config(increment=self.originalIncrement*10)
     elif shift:

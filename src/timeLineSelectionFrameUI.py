@@ -226,8 +226,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.bind("E",        lambda x: self.controller.jumpClips(1))
     self.timeline_canvas.bind("r",        lambda x: self.controller.randomClip())
     self.timeline_canvas.bind("R",        lambda x: self.controller.randomClip())
+    self.timeline_canvas.bind("<Control-f>",  lambda x: self.controller.search(0))
     self.timeline_canvas.bind("f",        lambda x: self.controller.fastSeek())
-    self.timeline_canvas.bind("<Control-f>",  lambda x:self.controller.search(0))
+    self.timeline_canvas.bind("<Control-r>",  lambda x:self.controller.searchrandom(0))
     self.timeline_canvas.bind("<Control-a>",  lambda x: self.controller.addFullClip())
     self.timeline_canvas.bind("<Control-A>",  lambda x: self.controller.addFullClip())
 
@@ -246,6 +247,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
     self.tempRangePreviewDurationLabel = self.timeline_canvas.create_text(0, 0, text='',fill="#69bfdb")
     self.tempRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#113a47",width=1,outline="#69bfdb", dash=(1, 1, 2, 3, 5, 8))
+
+    self.randRangePreview = self.timeline_canvas.create_rectangle(0,0,0,0,fill="#461147",width=1,outline="#ca56cc")
+
+    
 
     self.canvasSeekPointer    = self.timeline_canvas.create_line(0, 0, 0, self.timeline_canvas.winfo_height(),fill="white")
 
@@ -330,27 +335,21 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
   def acceptAndRandomJump(self,e):
     target = self.controller.fastSeek(centerAfter=True)
-    self.keyboardBlockAtTime(e,pos=target)
+    
+    if self.lastRandomSubclipPos is not None:
+      self.keyboardBlockAtTime(e,pos=self.lastRandomSubclipPos,abonly=False)
+    
+    self.keyboardBlockAtTime(e,pos=target,abonly=True)
+
     self.lastRandomSubclipPos = target
     self.setUiDirtyFlag()
     print('Exit acceptAndRandomJump')
 
   def rejectAndRandomJump(self,e):
-    if jumpRemovelock.acquire(blocking=False):
-        try:
-            print('Entry rejectAndRandomJump')
-            tempPos = self.lastRandomSubclipPos
-            self.keyboardRemoveBlockAtTime(e,pos=tempPos)
-            self.keyboardRemoveBlockAtTime(e)
-            target = self.controller.fastSeek(centerAfter=True)
-            self.lastRandomSubclipPos = target
-            self.keyboardBlockAtTime(e,pos=target)
+    target = self.controller.fastSeek(centerAfter=True)
+    self.keyboardBlockAtTime(e,pos=target,abonly=True)
+    self.lastRandomSubclipPos = target
 
-            print('Exit rejectAndRandomJump')
-            jumpRemovelock.release()
-            
-        except Exception as e:
-            jumpRemovelock.release()
 
   def correctMouseXPosition(self,x):
 
@@ -536,7 +535,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.removeSubclip(mid)
       #self.updateCanvas()
 
-  def keyboardBlockAtTime(self,e,pos=None):
+  def keyboardBlockAtTime(self,e,pos=None,abonly=False):
     
     ctrl  = (e.state & 0x4) != 0
     if ctrl:
@@ -549,7 +548,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       pre = self.defaultSliceDuration*0.5
       post = self.defaultSliceDuration*0.5
       a,b = self.roundToNearestFrame(pos-pre),self.roundToNearestFrame(pos+post)
-      self.controller.addNewSubclip( a,b,seekAfter=False )
+      if abonly:
+        ax,bx = self.secondsToXcoord(a),self.secondsToXcoord(b),
+        self.timeline_canvas.coords(self.randRangePreview,ax,140,bx,150)
+        self.controller.setAB( a,b,seekAfter=False )
+      else:
+        self.controller.addNewSubclip( a,b,seekAfter=False )
       
   def startTempSelection(self,startOverride=None):
     if startOverride is not None:
@@ -590,6 +594,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
 
+    self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
+
+
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(self.seekSpeedSlow if ctrl and shift else self.seekSpeedFast if shift else self.seekSpeedNormal,*self.lastClickedEndpoint)
     else:
@@ -616,6 +623,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     pos = self.controller.getCurrentPlaybackPosition()
     shift = (e.state & 0x1) != 0
     ctrl  = (e.state & 0x4) != 0
+
+    self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
+
 
     if self.lastClickedEndpoint is not None:
       self.incrementEndpointPosition(-self.seekSpeedSlow if ctrl and shift else -self.seekSpeedFast if shift else -self.seekSpeedNormal,*self.lastClickedEndpoint)
@@ -685,6 +695,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.coords(self.canvasSeekPointer, -100,45+55,-100,0 )
     self.timeline_canvas.coords(self.canvasTimestampLabel,-100,45+45)
     self.timeline_canvas.coords(self.tempRangePreview,0,0,0,0)
+    self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
+
     self.timeline_canvas.coords(self.tempRangePreviewDurationLabel,0,0)
     self.previewFrames = {}
     self.timeline_canvas.delete('previewFrame')
@@ -751,6 +763,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def timelineMousewheel(self,e):    
       ctrl  = (e.state & 0x4) != 0
       shift = (e.state & 0x1) != 0
+      self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
+
       if e.y<20:
 
         factor = 0.10
@@ -770,10 +784,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
       ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
 
+      rangeHit=False
       for rid,(sts,ens) in ranges:
         st=self.secondsToXcoord(sts)
         en=self.secondsToXcoord(ens)
         if st-self.handleWidth<=e.x<=en+self.handleWidth and e.y>self.winfo_height()-(self.midrangeHeight+10):
+          rangeHit = True
           targetSeconds = (sts+ens)/2
           if e.delta>0:
             targetSeconds+= 0.1 if shift else 0.01
@@ -813,16 +829,32 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           else:
             # Closer to Start
             newX+=qw
+
+            if self.dragPreviewMode == 'abs':
+                dragoffset = self.dragPreviewPos
+            else:
+                dragoffset = (ens-sts)*(self.dragPreviewPos/100)
+
             if ctrl:
               self.controller.seekTo( ((targetSeconds-((ens-sts)/2))) + dragoffset )
             else:
               self.controller.seekTo( ((targetSeconds+((ens-sts)/2))) - dragoffset )
-
           
           self.correctMouseXPosition(newX)
           break
 
-      else:
+      if shift and not rangeHit:
+          if e.delta>0:
+              if ctrl and shift:
+                self.controller.seekRelative(+self.seekSpeedSlow)
+              else:
+                self.controller.seekRelative(+self.seekSpeedFast)
+          else:
+              if ctrl and shift:
+                self.controller.seekRelative(-self.seekSpeedSlow)
+              else:
+                self.controller.seekRelative(-self.seekSpeedFast)
+      elif not rangeHit:
         newZoomFactor = self.timelineZoomFactor
         if e.delta>0:
           newZoomFactor *= 1.5 if ctrl else 1.01
@@ -845,6 +877,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.controller.seekTo(seconds)
 
   def timelineMousePress(self,e):
+    
+    if e.type in (tk.EventType.ButtonPress,tk.EventType.ButtonRelease):
+        self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
 
     if not self.controller.getIsPlaybackStarted():
       self.timeline_canvas.config(cursor="no")

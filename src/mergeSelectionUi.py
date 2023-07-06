@@ -85,6 +85,7 @@ class EncodeProgress(ttk.Frame):
     self.controller = controller
     self.config(padding='2', relief='raised')
     self.clip = clip
+    self.rid = clip.rid
 
     self.frameEncodeProgressWidget.columnconfigure(0, weight=1)
     self.frameEncodeProgressWidget.columnconfigure(1, weight=1)
@@ -96,6 +97,8 @@ class EncodeProgress(ttk.Frame):
     self.frameEncodeProgressWidget.columnconfigure(7, weight=1)
     self.frameEncodeProgressWidget.columnconfigure(8, weight=1)
     self.frameEncodeProgressWidget.columnconfigure(9, weight=1)
+    self.frameEncodeProgressWidget.columnconfigure(10, weight=0)
+    self.frameEncodeProgressWidget.columnconfigure(11, weight=0)
     self.frameEncodeProgressWidget.rowconfigure(0, weight=1)
 
     self.labelRequestId = ttk.Label(self.frameEncodeProgressWidget)
@@ -112,7 +115,7 @@ class EncodeProgress(ttk.Frame):
       self.labelRequestStatus.drag_source_register("*")
       self.labelRequestStatus.dnd_bind('<<DragInitCmd>>',self.dragInit)
     except Exception as e:
-        print(e)
+      logging.error("DragInitCmd Exception",exc_info=e)
 
     self.labelEncodeStage = ttk.Label(self.frameEncodeProgressWidget)
     self.labelEncodeStage.config(text='Stage: Submitted Idle', relief='flat')
@@ -170,11 +173,22 @@ class EncodeProgress(ttk.Frame):
     self.progressbarPlayButton.config(command=self.playFinal)
     self.progressbarPlayButton.config(style="small.TButton")
 
+
+
+    self.canvasInputCutPreview = ttk.Label(self.frameEncodeProgressWidget)
+    self.canvasInputCutPreview.config(text='No Preview loaded')
+    self.previewImage= self.clip.previewImage.subsample(2, 2)
+    self.canvasInputCutPreview.config(image=self.previewImage)
+    self.canvasInputCutPreview.grid(row=0,column=11,rowspan=3,sticky='nes')
+
     try:
+      self.canvasInputCutPreview.drag_source_register("*")
+      self.canvasInputCutPreview.dnd_bind('<<DragInitCmd>>',self.dragInit)
       self.progressbarPlayButton.drag_source_register("*")
       self.progressbarPlayButton.dnd_bind('<<DragInitCmd>>',self.dragInit)
     except Exception as e:
-        print(e)
+        logging.error("DragInitCmd2 Exception",exc_info=e)
+
 
     self.progressbarOpenContainingFolderButton = ttk.Button(self.frameEncodeProgressWidget)
     self.progressbarOpenContainingFolderButton.config(text='Open folder')
@@ -195,6 +209,11 @@ class EncodeProgress(ttk.Frame):
 
     self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
 
+  def setPreviewImage(self,photoImage):
+    print('setPreviewImage',self.clip.rid)
+    self.previewImage=photoImage.subsample(2, 2)
+    self.canvasInputCutPreview.config(image=self.previewImage)
+
   def openFolder(self):
     if self.finalFilename is not None:
       path,_ = os.path.split(self.finalFilename)
@@ -202,7 +221,7 @@ class EncodeProgress(ttk.Frame):
           try:
             sp.call('explorer.exe /select,"{}"'.format(self.finalFilename))
           except Exception as e:
-            print(e)
+            logging.error("explorer select Exception",exc_info=e)
             os.startfile(path)
       elif platform.system() == "Darwin":
           sp.Popen(["open", path])
@@ -371,7 +390,7 @@ class EncodeProgress(ttk.Frame):
           remaining = (1.0 - currentValue) * (currentKey - oldestKey) / (currentValue - oldestValue)
           self.labelTimeLeft.config(text= format_timedelta(remaining,'{hours_total}:{minutes2}:{seconds2}')+(' left ({:.0%})'.format(percent)))
         except Exception as e:
-          print(e)
+          logging.error("format_timedelta Exception",exc_info=e)
       
       if status is not None:
         self.labelRequestStatus.config(text=status)
@@ -417,6 +436,8 @@ class SequencedVideoEntry(ttk.Frame):
     self.filteraudioexp=sourceClip.filteraudioexp
     self.basename = sourceClip.basename
     self.previewImage=sourceClip.previewImage
+    
+    self.labelSequenceVideoName = None
 
     self.frameSequenceVideoEntry = self
     if direction == 'LEFT_RIGHT':
@@ -511,6 +532,9 @@ class SequencedVideoEntry(ttk.Frame):
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='left')
     elif direction == 'UP_DOWN':
       self.frameSequenceVideoEntry.pack(expand='false', fill='y', side='top')
+    
+    self.queuedPreview = None
+
 
   def getpreviewImg(self):
     return self.sourceClip.previewImage
@@ -578,15 +602,27 @@ class SequencedVideoEntry(ttk.Frame):
     self.previewImage=photoImage
     self.canvasSequencePreview.config(image=self.previewImage)
 
-  def update(self,s,e,filterexp,filteraudioexp,filterexpEnc):
+  def requestQueuedPreviews(self):
+    if self.queuedPreview is not None:
+        self.controller.requestPreviewFrame(*self.queuedPreview)
+    self.queuedPreview = None
+
+
+  def update(self,s,e,filterexp,filteraudioexp,filterexpEnc, requestPreviewFrame=True):
     self.s=s
     self.e=e
     self.filterexp=filterexp
     self.filteraudioexp=filteraudioexp
     self.filterexpEnc = filterexpEnc
-    self.labelSequenceVideoName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
-    self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
+    if self.labelSequenceVideoName is not None:
+        self.labelSequenceVideoName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
+
+    if requestPreviewFrame:
+        self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
+        self.queuedPreview = None
+    else:
+        self.queuedPreview = (self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
 class GridColumn(ttk.Labelframe):
   def __init__(self, master,controller):
@@ -675,14 +711,19 @@ class SelectableVideoEntry(ttk.Frame):
     try:
       self.previewImage = tk.PhotoImage(file=".\\resources\\cutPreview.png")
     except Exception as e:
-      print(e)
+      logging.error("cutPreview PhotoImage Exception",exc_info=e)
 
     self.canvasInputCutPreview = ttk.Label(self.frameInputCutWidget)
     self.canvasInputCutPreview.config(text='No Preview loaded')
     self.canvasInputCutPreview.config(image=self.previewImage)
     self.canvasInputCutPreview.pack(side='top')
 
-    self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
+    self.queuedPreview = None
+
+    if self.controller.syncModal is not None and self.controller.syncModal.isActive:
+        self.queuedPreview = (self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
+    else:
+        self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
     self.buttonInputPreview = ttk.Button(self.frameInputCutWidget)
     self.buttonInputPreview.config(text='preview ⯈')
@@ -696,20 +737,31 @@ class SelectableVideoEntry(ttk.Frame):
 
     self.frameInputCutWidget.config(padding='2', relief='groove', width='200')
     self.frameInputCutWidget.pack(anchor='nw', expand='false', fill='y', side='left')
+    
 
   def setPreviewImage(self,photoImage):
     print('setPreviewImage',self.rid)
     self.previewImage=photoImage
     self.canvasInputCutPreview.config(image=self.previewImage)
 
-  def update(self,s,e,filterexp,filteraudioexp,filterexpEnc):
+  def requestQueuedPreviews(self):
+    if self.queuedPreview is not None:
+        self.controller.requestPreviewFrame(*self.queuedPreview)
+    self.queuedPreview = None
+
+
+  def update(self,s,e,filterexp,filteraudioexp,filterexpEnc, requestPreviewFrame=True):
     self.s=s
     self.e=e
     self.filterexp=filterexp
     self.filteraudioexp=filteraudioexp
     self.filterexpEnc = filterexpEnc
     self.labelInputCutName.config(text='{:0.2f}-{:0.2f} {:0.2f}s'.format(self.s,self.e,self.e-self.s))
-    self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
+    if requestPreviewFrame:
+        self.controller.requestPreviewFrame(self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
+        self.queuedPreview = None
+    else:
+        self.queuedPreview = (self.rid,self.filename,(self.e+self.s)/2,self.filterexp)
 
   def addClipToSequence(self):
     self.controller.addClipToSequence(self)
@@ -756,7 +808,9 @@ class MergeSelectionUi(ttk.Frame):
     self.controller=None
     self.defaultProfile=defaultProfile
     self.globalOptions = globalOptions
+    self.advancedFlags={'forceGifFPS':True}
 
+    
     self.outserScrolledFrame = ScrolledFrame(self, scrolltype='vertical')
     self.outserScrolledFrame.pack(expand='true', fill='both', padx='0', pady='0', side='top')
 
@@ -937,6 +991,8 @@ class MergeSelectionUi(ttk.Frame):
     self.optimizerVar             = tk.StringVar()
 
     self.transDurationVar         = tk.StringVar()
+    self.transDurationVar.set('0.0')
+
     self.transStyleVar            = tk.StringVar()
     self.speedAdjustmentVar       = tk.StringVar() 
     self.audioChannelsVar         = tk.StringVar()
@@ -1031,7 +1087,7 @@ class MergeSelectionUi(ttk.Frame):
             self.outputFormats.append(spec.getDisplayName())
             self.customEncoderspecs[spec.getDisplayName()] = spec
       except Exception as e:
-        print(e)
+        logging.error("customEncoderspecs Exception",exc_info=e)
 
     self.outputFormats += [
       'gif',      
@@ -1581,7 +1637,7 @@ class MergeSelectionUi(ttk.Frame):
     self.selectedColumn = None
     self.player=None
     self.syncModal=None
-    self.advancedFlags={'forceGifFPS':True}
+    
 
   def setIgnoreDrop(self,path):
     self.controller.setIgnoreDrop(path)
@@ -1772,7 +1828,7 @@ class MergeSelectionUi(ttk.Frame):
                 if k.startswith('encoder-option-'):
                     del self.advancedFlags[k]
       except Exception as e:
-        print(e)
+        logging.error("encoder-option- Exception",exc_info=e)
       self.outputFormatValue = tempoutputFormatValue
 
     except:
@@ -1807,8 +1863,16 @@ class MergeSelectionUi(ttk.Frame):
 
     try:
       self.transDurationValue = float(self.transDurationVar.get())
-    except:
-      pass
+      minlen = float('inf')
+      for clip in self.sequencedClips:
+        minlen = min((clip.e-clip.s),minlen)
+        minlen = floor(minlen * 1000)/1000.0
+
+      self.transDurationValue = min(self.transDurationValue,minlen/2)
+      if float(self.transDurationVar.get()) > self.transDurationValue:
+        self.transDurationVar.set(str(self.transDurationValue))
+    except Exception as e:
+      logging.error("transDurationVar Exception",exc_info=e)
 
     try:
       self.transStyleValue = self.transStyleVar.get()
@@ -1914,10 +1978,10 @@ class MergeSelectionUi(ttk.Frame):
         self.encoderProgress.append(encodeProgressWidget)
         outputPrefix = self.filenamePrefixValue
         if self.automaticFileNamingValue:
+          outputPrefix = self.convertFilenameToBaseName(clip.filename)
           if len(self.controller.getLabelForRid(clip.rid)):
-            outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(clip.rid),getBasename=False)
-          else:  
-            outputPrefix = self.convertFilenameToBaseName(clip.filename)
+            outputPrefix += '_'+self.convertFilenameToBaseName(self.controller.getLabelForRid(clip.rid),getBasename=False)
+        
         self.controller.encode(self.encodeRequestId,
                                'STREAMCOPY',
                                encodeSequence,
@@ -2171,19 +2235,19 @@ class MergeSelectionUi(ttk.Frame):
 
     if self.automaticFileNamingVar.get():
       for sv in self.sequencedClips[:1]:       
-        if len(self.controller.getLabelForRid(sv.rid)):
-            self.filenamePrefixVar.set( self.convertFilenameToBaseName(self.controller.getLabelForRid(sv.rid),getBasename=False))
-        else: 
-            self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+          outputPrefix = self.convertFilenameToBaseName(sv.filename)
+          if len(self.controller.getLabelForRid(sv.rid)):
+            outputPrefix += '_'+self.convertFilenameToBaseName(self.controller.getLabelForRid(sv.rid),getBasename=False)
+          self.filenamePrefixVar.set(outputPrefix)
       else:
         namefound=False
         for col in self.gridColumns:
           for sv in col['clips']:
             try:
+              outputPrefix = self.convertFilenameToBaseName(sv.filename)
               if len(self.controller.getLabelForRid(sv.rid)):
-                self.filenamePrefixVar.set( self.convertFilenameToBaseName(self.controller.getLabelForRid(sv.rid),getBasename=False))
-              else: 
-                self.filenamePrefixVar.set( self.convertFilenameToBaseName(sv.filename) )
+                outputPrefix += '_'+self.convertFilenameToBaseName(self.controller.getLabelForRid(sv.rid),getBasename=False)
+              self.filenamePrefixVar.set(outputPrefix)
               namefound = True
               break
             except Exception as e:
@@ -2245,6 +2309,13 @@ class MergeSelectionUi(ttk.Frame):
     for sv in self.sequencedClips:
       if sv.rid==requestId:
         sv.setPreviewImage(photoImage)
+    for prog in self.encoderProgress:
+        if prog.rid == requestId:
+            prog.setPreviewImage(photoImage)
+    for col in self.gridColumns:
+        for sv in col['clips']:
+          if sv.rid==requestId:
+            sv.setPreviewImage(photoImage)
 
     self.scrolledframeInputCustContainer.reposition()
     self.scrolledframeSequenceContainer.reposition()
@@ -2348,8 +2419,7 @@ class MergeSelectionUi(ttk.Frame):
       for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
         for sv in self.sequencedClips:
           if sv.rid==rid and (changedrid is None or changedrid==rid):
-            sv.update(s,e,filterexp,filteraudioexp,filterexpEnc)
-
+            sv.update(s,e,filterexp,filteraudioexp,filterexpEnc,requestPreviewFrame=not (self.syncModal is not None and self.syncModal.isActive))
       try:
         self.syncModal.keepWidth=True
         self.syncModal.valuesChanged=True
@@ -2366,11 +2436,16 @@ class MergeSelectionUi(ttk.Frame):
         if rid not in self.selectableVideos:
           self.selectableVideos[rid] = SelectableVideoEntry(self.selectableVideosContainer,self,filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc)
         elif self.selectableVideos[rid].s != s or self.selectableVideos[rid].e != e or self.selectableVideos[rid].filterexp != filterexp or self.selectableVideos[rid].filteraudioexp != filteraudioexp:
-           self.selectableVideos[rid].update(s,e,filterexp,filteraudioexp,filterexpEnc)
+           self.selectableVideos[rid].update(s,e,filterexp,filteraudioexp,filterexpEnc,requestPreviewFrame=not (self.syncModal is not None and self.syncModal.isActive))
 
         for sv in self.sequencedClips:
           if sv.rid==rid:
-            sv.update(s,e,filterexp,filteraudioexp,filterexpEnc)
+            sv.update(s,e,filterexp,filteraudioexp,filterexpEnc,requestPreviewFrame=not (self.syncModal is not None and self.syncModal.isActive))
+
+        for col in self.gridColumns:
+            for sv in col['clips']:
+              if sv.rid==rid:
+                sv.update(s,e,filterexp,filteraudioexp,filterexpEnc,requestPreviewFrame=not (self.syncModal is not None and self.syncModal.isActive))
 
       for rid in unusedRids:
         self.selectableVideos[rid].destroy()
@@ -2381,6 +2456,9 @@ class MergeSelectionUi(ttk.Frame):
   def tabSwitched(self,tabName):
     if str(self) == tabName:
       self.updateSelectableVideos()
+
+      for v in list(self.selectableVideos.values()) + self.sequencedClips:
+        v.requestQueuedPreviews()
 
       self.scrolledframeInputCustContainer.xview(mode='moveto',value=0)
       self.scrolledframeSequenceContainer.xview(mode='moveto',value=0)
@@ -2470,7 +2548,8 @@ class MergeSelectionUi(ttk.Frame):
       self.clearAllColumns()
       for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s))):
         finalrid = max(int(finalrid),int(clip.rid))
-        if clip.rid > minrid:
+        
+        if int(clip.rid) > int(minrid):
             self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
               SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
             )

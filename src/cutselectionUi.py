@@ -65,8 +65,13 @@ def format_timedelta(value, time_format="{days} days, {hours2}:{minutes2}:{secon
         'years_total': years_total,
     })
 
+placeholderPreviewGrey = None
+placeholderPreviewImage = None
+
 class VideoFilePreview(ttk.Frame):
     def __init__(self, master, parent, filename, *args, **kwargs):
+        global placeholderPreviewGrey, placeholderPreviewImage
+
         ttk.Frame.__init__(self, master)
 
         self.filename = filename
@@ -84,10 +89,15 @@ class VideoFilePreview(ttk.Frame):
         self.labelVideoPreviewLabel = ttk.Label(self.frameVideoFileWidget, justify='center', style="previewImg.TLabel")
         self.labelVideoPreviewLabel.config(text="No Preview Loaded")
 
-        self.previewData = "P5\n200 117\n255\n" + ("0" * 200 * 117)
-        self.labelVideoPreviewImage = tk.PhotoImage(data=self.previewData)
+        self.previewData = ""
+        if placeholderPreviewGrey is None:
+            self.previewData = "P5\n200 117\n255\n" + ("0" * 200 * 117)
+            placeholderPreviewGrey = tk.PhotoImage(data=self.previewData)
+        self.labelVideoPreviewImage = placeholderPreviewGrey
         try:
-          self.labelVideoPreviewImage = tk.PhotoImage(file=".\\resources\\loadingPreview.png")
+          if placeholderPreviewImage is None:
+            placeholderPreviewImage = tk.PhotoImage(file=".\\resources\\loadingPreview.png")
+          self.labelVideoPreviewImage = placeholderPreviewImage
         except Exception as e:
           print(e)
         self.previewRequested = False
@@ -157,6 +167,14 @@ class VideoFilePreview(ttk.Frame):
     def remove(self):
         self.parent.removeVideoFile(self.filename)
 
+
+def binseq(upper,lower):
+    mid = (upper+lower)/2
+    yield mid
+    g1,g2 = binseq(lower,mid), binseq(mid,upper)
+    while 1:
+        for gen in [g1,g2]:
+            yield next(gen)
 
 class CutselectionUi(ttk.Frame):
     def __init__(self, master=None, controller=None,globalOptions={},*args, **kwargs):
@@ -578,7 +596,14 @@ class CutselectionUi(ttk.Frame):
         self.frameRate = None
         self.disableFileWidgets=False
 
-        self.seekpoints = [i/1000 for i in range(1000)]
+        g = binseq(0,1000)
+        self.seekpoints = [next(g)/1000 for i in range(1000)]
+
+
+
+    def searchrandom(self,e):
+        searchStr = self.searchStringVar.get()
+        self.controller.jumpToSearch(searchStr,randomjump=True)
 
     def search(self,e):
         searchStr = self.searchStringVar.get()
@@ -709,21 +734,21 @@ class CutselectionUi(ttk.Frame):
 
     def fastSeek(self,centerAfter=False):
       with fastSeekLock:
-          potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
 
-          if len(potential_seekpoints) == 0:
-            self.seekpoints = [i/1000 for i in range(1000)]
+          if len(self.seekpoints) == 0:
+            g = binseq(0,1000)
+            self.seekpoints = [next(g)/1000 for i in range(1000)]
             print('RESET SEEKPOINTS')
-            
-          potential_seekpoints = [x for x in self.seekpoints if abs(x-(self.getCurrentPlaybackPosition()/self.getTotalDuration()))>0.2 ]
+          
           fn = self.getcurrentFilename()
           ranges = self.getRangesForClip(fn)
           while 1:
-            point = random.choice(potential_seekpoints)
-            self.seekpoints.remove(point)
+            point = self.seekpoints.pop(0)
             clear = True
-            for s,e in ranges:
-                if s<=point<=e:
+            print(point,self.getTotalDuration())
+            for i,(s,e) in ranges:
+                print(s,e)
+                if s<=point*self.getTotalDuration()<=e:
                     clear = False
                     break
             if clear:
@@ -747,35 +772,38 @@ class CutselectionUi(ttk.Frame):
         self.controller.clearVideoRect()
 
     def videomousePress(self,e):
-      if e.type == tk.EventType.ButtonPress:
-        logging.debug('video mouse press start')
-        self.mouseRectDragging=True
-        self.screenMouseRect[0]=e.x
-        self.screenMouseRect[1]=e.y
-      elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and self.mouseRectDragging:
-        logging.debug('video mouse press drag')
-        self.screenMouseRect[2]=e.x
-        self.screenMouseRect[3]=e.y
-        
-        vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
-        vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
+      try:
+          if e.type == tk.EventType.ButtonPress:
+            logging.debug('video mouse press start')
+            self.mouseRectDragging=True
+            self.screenMouseRect[0]=e.x
+            self.screenMouseRect[1]=e.y
+          elif e.type in (tk.EventType.Motion,tk.EventType.ButtonRelease) and self.mouseRectDragging:
+            logging.debug('video mouse press drag')
+            self.screenMouseRect[2]=e.x
+            self.screenMouseRect[3]=e.y
+            
+            vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
+            vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
 
-        self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
-      if e.type == tk.EventType.ButtonRelease:
-        logging.debug('video mouse press release')
-        self.mouseRectDragging=False
-        if self.screenMouseRect[0] is not None and self.screenMouseRect[2] is not None:
-          vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
-          vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
+            self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
+          if e.type == tk.EventType.ButtonRelease:
+            logging.debug('video mouse press release')
+            self.mouseRectDragging=False
+            if self.screenMouseRect[0] is not None and self.screenMouseRect[2] is not None:
+              vx1,vy1 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[0],self.screenMouseRect[1]) 
+              vx2,vy2 = self.controller.screenSpaceToVideoSpace(self.screenMouseRect[2],self.screenMouseRect[3]) 
 
-          self.videoMouseRect=[vx1,vy1,vx2,vy2]
-          self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
-        
-      if self.screenMouseRect[0] is not None and not self.mouseRectDragging and self.screenMouseRect[0]==self.screenMouseRect[2] and self.screenMouseRect[1]==self.screenMouseRect[3]:
-        logging.debug('video mouse rect clear')
-        self.screenMouseRect=[None,None,None,None]
-        self.mouseRectDragging=False
-        self.controller.clearVideoRect()
+              self.videoMouseRect=[vx1,vy1,vx2,vy2]
+              self.controller.setVideoRect(self.screenMouseRect[0],self.screenMouseRect[1],self.screenMouseRect[2],self.screenMouseRect[3],desc='{}x{}'.format(int(abs(vx1-vx2)),int(abs(vy1-vy2))))
+            
+          if self.screenMouseRect[0] is not None and not self.mouseRectDragging and self.screenMouseRect[0]==self.screenMouseRect[2] and self.screenMouseRect[1]==self.screenMouseRect[3]:
+            logging.debug('video mouse rect clear')
+            self.screenMouseRect=[None,None,None,None]
+            self.mouseRectDragging=False
+            self.controller.clearVideoRect()
+      except Exception as e:
+        print('Video not loaded',e)
 
     def getCurrentlySelectedRegion(self):
       return self.frameTimeLineFrame.getCurrentlySelectedRegion()
@@ -1077,7 +1105,8 @@ class CutselectionUi(ttk.Frame):
     def restartForNewFile(self, filename=None):
         self.frameRate = None
         self.frameTimeLineFrame.resetForNewFile()
-        self.seekpoints = [i/100 for i in range(100)]
+        g = binseq(0,1000)
+        self.seekpoints = [next(g)/1000 for i in range(1000)]
         try:
           self.frameVideoPlayerlabel.pack_forget()
         except:
@@ -1127,6 +1156,9 @@ class CutselectionUi(ttk.Frame):
 
     def getInterestMarks(self):
       return self.controller.getInterestMarks()
+
+    def setAB(self, start, end,seekAfter=True):
+        return self.controller.setAB(start, end, seekAfter=seekAfter)
 
     def addNewSubclip(self, start, end,seekAfter=True):
         return self.controller.addNewSubclip(start, end, seekAfter=seekAfter)

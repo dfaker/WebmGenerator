@@ -1702,8 +1702,9 @@ selectableFilters = [
             {"n": "alpha", "d": 1, "type": "float", "range": None, "inc": 0.1, "_commandVar":['Text-size',[['drawtext@{fn}','alpha']]] }
         ],
         "presets":[
+          {"preset_name":"Corner Filename White",       "bordercolor":"black@0.9", "text":"{!filename}", "x":"20","y":"h-(text_h+20)",  "fontsize":"w/10", "fontcolor":"white", "borderw":"5" },
           {"preset_name":"Centered Large White",        "x":"(w/2)-(text_w/2)","y":"(h/2)-(text_h/2)",  "fontsize":"w/7", "fontcolor":"white", "borderw":"10" },
-          {"preset_name":"Centered Large Violet",   "x":"(w/2)-(text_w/2)","y":"(h/2)-(text_h/2)",      "fontsize":"w/7", "fontcolor":"violet","borderw":"10" },
+          {"preset_name":"Centered Large Violet",       "x":"(w/2)-(text_w/2)","y":"(h/2)-(text_h/2)",      "fontsize":"w/7", "fontcolor":"violet","borderw":"10" },
         ]
     },
 

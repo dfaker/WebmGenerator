@@ -233,10 +233,14 @@ class WebmGeneratorUi:
     self.menubar = Menu(self.master)
     
     self.filemenu = Menu(self.menubar, tearoff=0, postcommand=self.updateDownloadCounts)
-    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
+    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('apps'), compound=LEFT)
    
     self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
     self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
+
+    self.recentProjects = Menu(self.menubar, tearoff=0)
+    self.filemenu.add_cascade(label="Recent Projects", menu=self.recentProjects)
+
     self.filemenu.add_separator()
 
     if self.controller.autoSaveExists():
@@ -250,7 +254,7 @@ class WebmGeneratorUi:
     self.recentlyPlayed = Menu(self.menubar, tearoff=0)
     self.filemenu.add_cascade(label="Recently Played", menu=self.recentlyPlayed)
 
-    self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-brands'), compound=LEFT)
+    self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('photography'), compound=LEFT)
     self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
     self.filemenu.add_separator()
     
@@ -352,8 +356,6 @@ class WebmGeneratorUi:
     self.menubar.add_command(label="Checking free space...",state='disabled')
     self.freeSpaceIndex = self.commandmenu.index(END) 
 
-    def toggleCompletedFrame(self):
-        pass
 
     def checkFreeSpaceWorker():
       try:
@@ -517,6 +519,13 @@ class WebmGeneratorUi:
   def toggleAutoconvert(self):
     self.controller.setAutoConvert(self.autoconvertVar.get() == '1')
 
+
+  def updateRecentProjects(self):
+    self.recentProjects.delete( 0, END)
+    for fn in self.controller.getRecentProjects():
+        self.recentProjects.add_command(label=fn, command= lambda f=fn:self.controller.openProject(f))
+
+
   def updateRecentlyPlayed(self):
     self.recentlyPlayed.delete( 0, END)
     for fn in self.controller.getRecentlyPlayed():
@@ -544,9 +553,10 @@ class WebmGeneratorUi:
 
   def setLoadLabel(self,text):
     try:
-      self.dropLabel.configure(text=text,font= ("Helvetica 20"))
-      self.master.update()
-      self.master.update_idletasks()
+      if self.dropLabel:
+          self.dropLabel.configure(text=text,font= ("Helvetica 20"))
+          self.master.update()
+          self.master.update_idletasks()
     except Exception as e:
       print(e) 
 
@@ -570,12 +580,12 @@ class WebmGeneratorUi:
     try:
       self.dropLabel.place_forget()
     except Exception as e:
-      print(e)
+      print('pre-label-creation',e)
 
     try:
       self.dropAbort.place_forget()
     except Exception as e:
-      print(e)  
+      print('pre-label-creation',e)
 
   def abortLoad(self):
     self.controller.abortCurrentLoad()
@@ -811,6 +821,7 @@ class WebmGeneratorUi:
   def openProject(self):
     filename = askopenfilename(title='Open WebmGenerator Project',filetypes=[('WebmGenerator Project','*.webgproj')])
     self.controller.openProject(filename)
+    self.controller.logProject(filename)
 
   def saveProject(self):
     filename = asksaveasfilename(title='Save WebmGenerator Project',filetypes=[('WebmGenerator Project','*.webgproj')])
@@ -818,6 +829,8 @@ class WebmGeneratorUi:
       if not filename.endswith('.webgproj'):
         filename = filename+'.webgproj'
       self.controller.saveProject(filename)
+      self.controller.logProject(filename)
+
 
   def splitStream(self):
     self.controller.splitStream()

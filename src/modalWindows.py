@@ -8,7 +8,7 @@ import re
 import os
 import logging
 import sys
-
+import math
 import threading
 
 try:
@@ -609,6 +609,7 @@ class VideoAudioSync(tk.Frame):
     self.timeline_canvas.grid(row=2,column=0,columnspan=14,sticky="nesw")
     
     self.timeline_canvas.bind("<Button-1>", self.timelineMousePress)
+    self.timeline_canvas.bind("<Button-3>", self.timelineMousePress)
     self.timeline_canvas.bind("<ButtonRelease-1>", self.timelineMousePress)
     self.timeline_canvas.bind("<B1-Motion>", self.timelineMousePress)
 
@@ -703,9 +704,8 @@ class VideoAudioSync(tk.Frame):
     self.labelpostAudioVolume = ttk.Label(self)
     self.labelpostAudioVolume.config(anchor='e',  text='Volume')
     self.labelpostAudioVolume.grid(row=3,column=4,sticky='ew')
-    self.entrypostAudioVolume = ttk.Spinbox(self, textvariable=self.volumeVar,from_=0, 
-                                          to=100, 
-                                          increment=5)
+    self.entrypostAudioVolume = ttk.Scale(self,variable=self.volumeVar,from_=0, to=100)
+
     Tooltip(self.entrypostAudioVolume,text='Audio Volume.')
     self.entrypostAudioVolume.grid(row=3,column=5,sticky='ew')
     self.volumeVar.trace('w',self.valueChangeVolume)
@@ -743,6 +743,12 @@ class VideoAudioSync(tk.Frame):
                                           textvariable=self.fadeVar)
 
     self.entryTransDuration.grid(row=4,column=1,sticky='ew')
+    self.lastTransDurationValue = 0.0
+    try:
+        self.lastTransDurationValue = float(self.fadeVar.get())
+    except Exception as e:
+        pass
+    
     self.fadeVar.trace('w',self.valueChangeCallback)
 
     self.labelPlaybackSpeed = ttk.Label(self)
@@ -787,6 +793,7 @@ class VideoAudioSync(tk.Frame):
     self.dynamicSublipDur = ttk.Checkbutton(self,text='Dynamic Subclip Dur',onvalue=True, offvalue=False,variable=self.dynamicSublipDurVar)
     self.dynamicSublipDur.grid(row=4,column=9,sticky='ew',columnspan=1)
 
+    self.timeline_canvas_last_right_click_x=None
 
     try:
       self.uiParent.attributes('-topmost', True)
@@ -870,6 +877,60 @@ class VideoAudioSync(tk.Frame):
 
     self.recalculateEDLTimings()
 
+    self.timeline_canvas_popup_menu = tk.Menu(self, tearoff=0)
+    self.timeline_canvas_popup_menu.add_command(label="Remove from sequence",command=self.canvasPopupDeleteSubClipCallback)
+    self.timeline_canvas_popup_menu.add_separator()
+    self.timeline_canvas_popup_menu.add_command(label="Double Subclip Length",command=self.canvasPopupDoubleLenSubClipCallback)
+    self.timeline_canvas_popup_menu.add_command(label="Halve Subclip Length",command=self.canvasPopupHalveLenSubClipCallback)
+
+    self.draggingTickIndexSticky=None
+    self.draggingTickOffsetSticky=None
+
+  def canvasPopupDeleteSubClipCallback(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+        blockIndex=0
+        for tx,tidx in self.tickXpos[::-1]:
+          if self.timeline_canvas_last_right_click_x>tx:
+            blockIndex=tidx+1
+            break
+        sv  = self.sequencedClips[blockIndex]
+        sv.destroy()
+        self.sequencedClips.pop(blockIndex)
+        self.valuesChanged=True
+        self.recalculateEDLTimings()
+
+  def canvasPopupDoubleLenSubClipCallback(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+        blockIndex=0
+        for tx,tidx in self.tickXpos[::-1]:
+          if self.timeline_canvas_last_right_click_x>tx:
+            blockIndex=tidx+1
+            break
+        sv  = self.sequencedClips[blockIndex]
+        ots = self.ticktimestamps[blockIndex]
+        dur = sv.e-sv.s
+        self.controller.updateSubclipBoundry(sv,ots,ots+dur,'e',towardsMiddle=self.resizeToMiddleVar.get())
+        self.master.synchroniseCutController(sv.rid,0)
+        self.valuesChanged=True
+        self.recalculateEDLTimings()
+        self.generateSpectrum()
+
+  def canvasPopupHalveLenSubClipCallback(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+        blockIndex=0
+        for tx,tidx in self.tickXpos[::-1]:
+          if self.timeline_canvas_last_right_click_x>tx:
+            blockIndex=tidx+1
+            break
+        sv  = self.sequencedClips[blockIndex]
+        ots = self.ticktimestamps[blockIndex]
+        dur = (sv.e-sv.s)/2
+        self.controller.updateSubclipBoundry(sv,ots,ots-dur,'e',towardsMiddle=self.resizeToMiddleVar.get())
+        self.master.synchroniseCutController(sv.rid,0)
+        self.valuesChanged=True
+        self.recalculateEDLTimings()
+        self.generateSpectrum()
+
   def cleanup(self):
     try:
       self.playerReaperfunc()
@@ -931,7 +992,7 @@ class VideoAudioSync(tk.Frame):
   def secondsToXcoord(self,seconds,update=True,negative=False):
     try:
       center,rangeStart,duration = self.getClampedCenterPosAndRange(update=update,negative=negative)
-      return (((seconds-rangeStart))/duration)*self.winfo_width()
+      return (((seconds-rangeStart))/duration)*(self.winfo_width())
     except Exception as e:
       logging.error('Seconds to x coord Exception',exc_info=e)
       return 0
@@ -1031,7 +1092,18 @@ class VideoAudioSync(tk.Frame):
 
         print(self.visStyle)
 
-        proc = sp.Popen(['ffmpeg', '-y', '-i', cleanFilenameForFfmpeg(self.dubFile.get()), '-filter_complex', "[0:a]atrim={start}:{end},apad=whole_dur={padto},{visStyle}".format(start=orig_startoffset,end=orig_currentTotalDuration+orig_startoffset,padto=orig_currentTotalDuration,width=orig_width,visStyle=self.visStyle.format(start=orig_startoffset,end=orig_currentTotalDuration+orig_startoffset,padto=orig_currentTotalDuration,width=orig_width,visStyle=self.visStyle)), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
+        proc = sp.Popen(['ffmpeg', '-y', '-i', cleanFilenameForFfmpeg(self.dubFile.get()), '-filter_complex', "[0:a]atrim={start}:{end},apad=whole_dur={padto},{visStyle}".format(
+            start=orig_startoffset,
+            end=orig_currentTotalDuration+orig_startoffset,
+            padto=orig_currentTotalDuration,
+            width=orig_width,
+            visStyle=self.visStyle.format(
+                start=orig_startoffset,
+                end=orig_currentTotalDuration+orig_startoffset,
+                padto=orig_currentTotalDuration,
+                width=orig_width,
+                visStyle=self.visStyle)
+            ), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE)
         
 
         outs,errs = proc.communicate()        
@@ -1071,7 +1143,7 @@ class VideoAudioSync(tk.Frame):
     if self.imgo is None:
         self.imgo = np.mean(read_pgm(self.canvasSpectraData )[:,:,:],axis=(0,2))**2
     
-    n= 30
+    n= 40
     for tx,tidx in self.tickXpos[::-1]:
         tx = int(tx)
         xl  = [float(x) for x in self.imgo[tx-n:tx+n]]
@@ -1110,6 +1182,7 @@ class VideoAudioSync(tk.Frame):
           self.timeline_canvas.create_line(xpos+fadeDist, 20+0, 
                                            xpos+fadeDist, 20+200,
                                            fill='blue',tags='dragTick')
+
     self.recalculateEDLTimings()
 
 
@@ -1209,14 +1282,19 @@ class VideoAudioSync(tk.Frame):
     
     self.timeline_canvas.config(cursor="arrow")
 
+    if self.draggingTickIndexSticky is not None:
+        self.timelineMousePress(e)
+
   def setDragDur(self,dur):
     self.controller.setDragDur(dur)
 
   def timelineMousePress(self,e):  
 
+    print('self.draggingTickIndex',self.draggingTickIndex)
+    print('self.draggingTickIndexSticky',self.draggingTickIndexSticky)
     ctrl  = (e.state & 0x4) != 0
     shift = (e.state & 0x1) != 0
-
+    self.player.pause=False
     xpos = e.x
 
     if not shift:
@@ -1240,26 +1318,37 @@ class VideoAudioSync(tk.Frame):
 
 
     if ctrl:
+      dur=0
       if e.type == tk.EventType.ButtonPress:
         self.ctrlDragStartSeconds = pressSeconds
       elif e.type == tk.EventType.ButtonRelease:
         if self.ctrlDragStartSeconds is not None:
           dur = abs(self.ctrlDragStartSeconds-pressSeconds)
-          self.setDragDur(dur)
+          if dur > 0:
+            self.setDragDur(dur)
         self.ctrlDragStartSeconds = None
-      return
+      if dur != 0 and self.ctrlDragStartSeconds is not None:
+        return
 
     self.ctrlDragStartSeconds = None
-
 
     print(e.type)
 
     if e.type == tk.EventType.ButtonPress:
+      print(e)
+
+      if self.draggingTickIndexSticky is not None:
+          self.draggingTickIndexSticky=None
+          self.draggingTickOffsetSticky=None
+
       if 20+20<e.y<20+20+15:
         for tx,tidx in self.tickXpos:
           if tx-6-5-4<e.x<tx+6+5+4:
             self.draggingTickIndex=tidx
-            self.draggingTickOffset=e.x-tx
+            self.draggingTickOffset=e.x-tx    
+            self.draggingTickIndexSticky=tidx
+            self.draggingTickOffsetSticky=e.x-tx
+            break
         else:
           endpc=0
           try:
@@ -1272,6 +1361,8 @@ class VideoAudioSync(tk.Frame):
             if e.x>tlw-6-5-4:
               self.draggingTickIndex=len(self.tickXpos)
               self.draggingTickOffset=e.x-tlw
+              self.draggingTickIndexSticky=len(self.tickXpos)
+              self.draggingTickOffsetSticky=e.x-tx
       elif e.y<20:
         self.rangeHeaderClickStart = self.currentZoomRangeMidpoint-(e.x/self.winfo_width())
       elif 20<e.y<20+5:
@@ -1292,9 +1383,15 @@ class VideoAudioSync(tk.Frame):
             self.master.moveSequencedClipByIndex(tidx+1,-1)
             return
 
+      if e.num==3 and self.draggingTickIndexSticky is None:
+        self.timeline_canvas_last_right_click_x=e.x
+        self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
+        return
+
       print(self.draggingTickIndex)
 
     elif e.type == tk.EventType.Motion:
+      print('Motion',self.draggingTickIndex,self.draggingTickIndexSticky,xpos)
       if self.rangeHeaderClickStart is not None:
         self.currentZoomRangeMidpoint = (e.x/self.winfo_width())+self.rangeHeaderClickStart
         self.recalculateEDLTimings()
@@ -1305,9 +1402,10 @@ class VideoAudioSync(tk.Frame):
             self.timeline_canvas.coords(self.draggingblockTargetRect, tx-5,20,tx+5,30)
             self.timeline_canvas.lift(self.draggingblockTargetRect)
             break
-      elif self.draggingTickIndex is not None:
-        
-
+      elif self.draggingTickIndex is not None or self.draggingTickIndexSticky is not None:
+        if self.draggingTickIndexSticky is not None:
+            self.draggingTickIndex = self.draggingTickIndexSticky
+            self.draggingTickOffset= self.draggingTickOffsetSticky
 
         self.timeline_canvas.delete('dragTick')
         self.timeline_canvas.delete('ticksLine{}'.format(self.draggingTickIndex))
@@ -1357,7 +1455,7 @@ class VideoAudioSync(tk.Frame):
       if self.rangeHeaderClickStart is not None:
         self.rangeHeaderClickStart=None
 
-      if self.draggingTickIndex is not None:
+      if self.draggingTickIndex is not None and self.draggingTickIndexSticky is None:
         self.updateRegionsOnDrag(self.draggingTickIndex,pressSeconds)
         self.draggingTickIndex=None
         try:
@@ -1379,7 +1477,11 @@ class VideoAudioSync(tk.Frame):
 
       if self.rangeHeaderClickStart is None:
         if self.currentTotalDuration is None:
-          self.player.command('seek','0','absolute-percent','exact')
+          try:
+            self.player.command('seek','0','absolute-percent','exact')
+          except Exception as e:
+            print(e)
+            seekFailure=True
         else:
           seekTarget = min(max(0,self.xCoordToSeconds(xpos)),self.currentTotalDuration)
           try:
@@ -1402,7 +1504,11 @@ class VideoAudioSync(tk.Frame):
     if seekFailure:
       self.valuesChanged=True
       self.recalculateEDLTimings()
-      self.player.command('seek',0,'absolute')
+      self.player.pause=False
+      try:
+        self.player.command_async('seek',0,'absolute')
+      except Exception as e:
+        print(e)
 
 
   def handleMpvTimePosChange(self,name,value):
@@ -1437,7 +1543,7 @@ class VideoAudioSync(tk.Frame):
         self.generateSpectrum()
 
   def valueChangeVolume(self,*args):
-    self.player.volume = int(self.volumeVar.get())
+    self.player.volume = int(float(self.volumeVar.get()))
 
   def valueChangeCallback(self,*args):
     if self.player:
@@ -1465,6 +1571,9 @@ class VideoAudioSync(tk.Frame):
     self.generateSpectrum()
 
   def recalculateEDLTimings(self,rid=None,pos=None,seekAfter=None):
+
+    if not self.isActive:
+        return
 
     try:
       self.redrawTimer.cancel()
@@ -1514,15 +1623,14 @@ class VideoAudioSync(tk.Frame):
 
     tickCounter=0
 
-    entries=0
+    entries=[]
     totaldur=0
 
     for sv in self.sequencedClips:
       fn = sv.filename
       start = sv.s
       end = sv.e
-      entries+=1
-      totaldur+=end-start
+      entries.append(end-start)
 
       if rid is not None and rid==sv.rid:
         print(rid,sv.rid)
@@ -1543,8 +1651,12 @@ class VideoAudioSync(tk.Frame):
 
       edlstr += '%{}%{},{},{}\n'.format(len(fn.encode('utf8')),fn,start,end-start)
     
-    if self.dynamicSublipDurVar.get() and entries>0:
-        self.setDragDur(totaldur/entries)
+    if self.dynamicSublipDurVar.get() and len(entries)>0:
+        data = np.array(entries)
+        d = np.abs(data - np.median(data))
+        mdev = np.median(d)
+        s = d/mdev if mdev else np.zeros(len(d))
+        self.setDragDur(data[s<2].mean())
 
     timelineWidth = self.timeline_canvas.winfo_width()
 
@@ -1601,7 +1713,7 @@ class VideoAudioSync(tk.Frame):
       self.timeline_canvas.create_rectangle(txl, yo+0,
                                             tx,  yo+5,
                                             fill=tickColour,tags='ticks')
-      
+
       self.timeline_canvas.create_polygon(tx-6-5,    yo+9, 
                                           tx-6-5,    yo+9+10, 
                                           tx-4,      yo+9+5, 
@@ -1630,12 +1742,17 @@ class VideoAudioSync(tk.Frame):
 
 
       if fadeDist > 0:
+
+        self.timeline_canvas.create_rectangle(tx-fadeDist, yo+0, 
+                                       tx+fadeDist, yo+200,
+                                       fill='blue',stipple='gray12',tags=['ticks','ticksLine{}'.format(idx)])
         self.timeline_canvas.create_line(tx-fadeDist, yo+0, 
                                          tx-fadeDist, yo+200,
                                          fill='blue',tags=['ticks','ticksLine{}'.format(idx)],dash=(2,1))
         self.timeline_canvas.create_line(tx+fadeDist, yo+0, 
                                          tx+fadeDist, yo+200,
                                          fill='blue',tags=['ticks','ticksLine{}'.format(idx)],dash=(2,1))
+
 
       self.timeline_canvas.create_line(tx-6-5-4, yo+5, 
                                        tx-6-5-4, yo+20,

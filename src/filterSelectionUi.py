@@ -1395,7 +1395,7 @@ class FilterSelectionUi(ttk.Frame):
 
 
       keyList= self.activeCommandFilterValuePair.getKeyValues()
-      for timeStamp,value,real in keyList:
+      for timeStamp,value,real in sorted(keyList):
         tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
         ty = heightOffset+(effectiveHeight-(((value-valMin)/valRange)*effectiveHeight))
 
@@ -1411,6 +1411,10 @@ class FilterSelectionUi(ttk.Frame):
 
         lastX,lastY=tx,ty
 
+      if lastX is not None and lastY is not None:
+        self.canvasValueTimeline.create_line(lastX, lastY, self.canvasValueTimeline.winfo_width(), ty,fill="#db6986",tags='KeyValuePoints')
+
+
       posSeconds = self.controller.getCurrentPlaybackPosition()
       for timeStamp,value,real in sorted(keyList,key=lambda lent:abs(lent[0]-posSeconds),reverse=True):
        if real:
@@ -1420,8 +1424,6 @@ class FilterSelectionUi(ttk.Frame):
           self.canvasValueTimeline.create_rectangle(bbox, outline="#69bfdb", fill="#375e6b",tags='ticks')
           self.canvasValueTimeline.create_text(tx, 140,text="{:0.2f}".format(value),fill="white",tags='ticks')
 
-      if lastX is not None and lastY is not None:
-        self.canvasValueTimeline.create_line(lastX, lastY, self.canvasValueTimeline.winfo_width(), ty,fill="#db6986",tags='KeyValuePoints')
 
       modeText='No Mode'
       if self.activeCommandFilterValuePair.videoSpaceAxis in ('yaw','pitch'):

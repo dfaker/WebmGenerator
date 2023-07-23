@@ -43,7 +43,8 @@ buildOptions = dict(packages = ["os"],
                       
                     ,('resources\\cutPreview.png','resources\\cutPreview.png')
                     ,('resources\\loadingPreview.png','resources\\loadingPreview.png')
-                     
+
+                    ,('resources\\icons\\','resources\\icons\\')
                     ,('resources\\cascade\\','resources\\cascade\\')
                     ,('resources\\speechModel\\','resources\\speechModel\\')
                     ,('resources\\voiceModel\\','resources\\voiceModel\\')

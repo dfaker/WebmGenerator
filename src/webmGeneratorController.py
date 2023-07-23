@@ -66,6 +66,7 @@ class WebmGeneratorController:
       "imageWorkers":2,
       "encoderStageThreads":4,
       "maxSizeOptimizationRetries":6,
+      "generateRIDHoverPreviews":False,
       "passCudaFlags":False,
       "tempFolder":'tempVideoFiles',
       "tempDownloadFolder":'tempDownloadedVideoFiles',
@@ -316,6 +317,9 @@ class WebmGeneratorController:
 
 
   def logProject(self,fn):
+    if not os.path.exists(fn):
+        return
+
     try:
         self.recentProjects.remove(fn)
     except Exception as e:
@@ -326,6 +330,8 @@ class WebmGeneratorController:
     self.webmMegeneratorUi.updateRecentProjects()
 
   def logPlayback(self, fn):
+    if not os.path.exists(fn):
+        return
     try:
         self.recentlyPlayed.remove(fn)
     except Exception as e:
@@ -335,9 +341,11 @@ class WebmGeneratorController:
 
     self.webmMegeneratorUi.updateRecentlyPlayed()
 
+    self.requestAutoconvert()
+
+  def requestAutoconvert(self):
     if self.autoConvert:
         self.mergeSelectionController.autoConvert()
-        #self.mergeSelectionController.clearallSubclips()
 
   def getRecentProjects(self):
     return self.recentProjects

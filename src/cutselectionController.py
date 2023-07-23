@@ -184,6 +184,9 @@ class CutselectionController:
             self.addNewSubclip(lastEnd,s,seekAfter=False)
         lastEnd = e
 
+  def requestAutoconvert(self):
+    self.controller.requestAutoconvert()
+
   def splitClipIntoSectionsOfLengthN(self):
     sectionLength = self.ui.askFloat('How long should the secions be?','How long should the secions be? (Seconds)', initialvalue=30)
     if sectionLength is not None and sectionLength >= 0:
@@ -541,7 +544,7 @@ class CutselectionController:
     if len(fileList) > 1000:    
         self.ui.disableFileWidgets=True
     elif len(fileList) > 100:
-      response = self.ui.confirmWithMessage('Disable video listing?','You\'re loading {} files at once, showing these as widgets will affect performance, do you want to disable the file listing widget and just use the "Prev Clip" and "Next Clip" controls?'.format(len(fileList)),icon='warning')
+      response = self.ui.confirmWithMessage('Disable previews in listing?','You\'re loading {} files at once, showing these as widgets will affect performance, do you want to disable the image previews and just show a list of filenames?'.format(len(fileList)),icon='warning')
       if response=='yes':
         self.ui.disableFileWidgets=True
 
@@ -562,7 +565,6 @@ class CutselectionController:
     self.updateProgressStatistics()
 
   def returnPreviewFrame(self,requestId,timestamp,size,responseImage):
-    print('returnPreviewFrame',requestId,timestamp,size)
     self.ui.updateViewPreviewFrame(requestId,responseImage)
 
   def requestPreviewFrame(self,filename,timestamp,size):
@@ -571,6 +573,16 @@ class CutselectionController:
 
   def getcurrentFilename(self):
     return self.currentlyPlayingFileName
+
+  def requestRIDHoverPreviews(self,rid,size,callback, start=None, end=None):
+    if rid == 'V':
+        filename = self.getcurrentFilename()
+        startTime = start
+        Endtime = end
+        self.ffmpegService.requestHoverPreviewFrames(filename,startTime,Endtime,size,0,callback)
+    elif rid is not None:
+        filename,startTime,Endtime = self.videoManager.getDetailsForRangeId(rid)
+        self.ffmpegService.requestHoverPreviewFrames(filename,startTime,Endtime,size,0,callback)
 
   def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
     if self.globalOptions.get('generateTimelineThumbnails',True):
@@ -682,6 +694,9 @@ class CutselectionController:
       self.seekTo(start+((end-start)*0.8))
     self.ui.setUiDirtyFlag(specificRID=newRID)
     return newRID
+
+  def getSurroundingInterestMarks(self,point):
+    return self.videoManager.getSurroundingInterestMarks(self.currentlyPlayingFileName,point)
 
   def expandSublcipToInterestMarks(self,point):
     self.videoManager.expandSublcipToInterestMarks(self.currentlyPlayingFileName,point)

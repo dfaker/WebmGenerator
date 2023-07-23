@@ -112,6 +112,8 @@ for fn in os.listdir(customEncoderDir):
     except Exception as e:
         print('Custom Encode Spec Exception',fn,e)
 
+
+
 class FFmpegService():
 
   def convertFactorToAtempoSequence(self,target_change):
@@ -137,6 +139,7 @@ class FFmpegService():
 
     self.globalOptions=globalOptions
     self.cache={}
+    self.frameCacheQueue = deque([],100)
     self.imageRequestQueue = Queue()
     self.responseRouting = {}
     self.globalStatusCallback=globalStatusCallback
@@ -2166,6 +2169,17 @@ class FFmpegService():
   def encode(self,requestId,mode,seq,options,filenamePrefix,statusCallback):
     self.encodeRequestQueue.put((requestId,mode,seq,options,filenamePrefix,statusCallback))
 
+  def requestHoverPreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
+
+    for timestamp in [startTime,Endtime]:
+        requestKey = (filename+str(timestamp),filename,timestamp,'',frameWidth)
+        self.responseRouting[requestKey]=callback
+        if requestKey in self.cache:
+          callback(filename+str(timestamp),timestamp,frameWidth,self.cache[requestKey])
+        self.imageRequestQueue.put( requestKey )
+
+
+
   def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
     self.lastTimelinePreviewFilenameRequested = filename
     self.timelinePreviewFrameWorkerRequestQueue.put( (filename,startTime,Endtime,frameWidth,timelineWidth,callback) )
@@ -2178,7 +2192,14 @@ class FFmpegService():
     self.imageRequestQueue.put( requestKey )
 
   def postCompletedImageFrame(self,requestKey,responseImage):
+    
     self.cache[requestKey] = responseImage
+    self.frameCacheQueue.append(requestKey)
+    while len(self.frameCacheQueue)>= self.frameCacheQueue.maxlen:
+        kp = self.frameCacheQueue.popleft()
+        if k in self.cache:
+            del self.cache[k]
+
     requestId,filename,timestamp,filters,size = requestKey
     self.responseRouting[requestKey](requestId,timestamp,size,responseImage)
 

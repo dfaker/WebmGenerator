@@ -441,7 +441,6 @@ class EditSubclipModal(tk.Toplevel):
     self.anchorLabel.grid(row=3,column=0,sticky='new',padx=5,pady=5)
     self.anchorOptions = ['Start','Middle','End']
     self.anchorVar   = tk.StringVar(self,'Middle')
-    self.entryanchor = ttk.Spinbox(self,text='',textvariable=self.endtTsVar,from_=float('-1'),to=float('inf'))
     self.entryanchor = ttk.Combobox(self,textvariable=self.anchorVar,values=self.anchorOptions,state='readonly')
     self.entryanchor.grid(row=3,column=1,sticky='new',padx=5,pady=5)
 
@@ -458,6 +457,16 @@ class EditSubclipModal(tk.Toplevel):
     self.durTsVar.trace('w',self.durChange)
     self.nameVar.trace('w',self.nameChange)
     self.blockUpdate = False
+
+    self.entryname.bind('<Return>',self.close)
+    self.entrystartTs.bind('<Return>',self.close)
+    self.entryendTs.bind('<Return>',self.close)
+    self.entrydurTs.bind('<Return>',self.close)
+
+    self.entryname.focus()
+
+  def close(self,*args):
+    self.destroy()
 
   def nameChange(self,*args):
     self.controller.updateLabelForRid(self.rid, self.nameVar.get())
@@ -1604,9 +1613,12 @@ class VideoAudioSync(tk.Frame):
       pass
 
     
-
-    self.timeline_canvas.delete('ticks')
-    self.timeline_canvas.delete('upperticks')
+    try:
+        self.timeline_canvas.delete('ticks')
+        self.timeline_canvas.delete('upperticks')
+    except Exception as e:
+        print(e)
+        return
 
     self.ticktimestamps=[]
     self.tickXpos=[]

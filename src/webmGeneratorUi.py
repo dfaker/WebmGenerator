@@ -25,7 +25,7 @@ try:
 except Exception as e:
     print(e)
 
-RELEASE_NUMVER = 'v3.37.0'
+RELEASE_NUMVER = 'v3.38.0'
 
 class WebmGeneratorUi:
 
@@ -233,29 +233,29 @@ class WebmGeneratorUi:
     self.menubar = Menu(self.master)
     
     self.filemenu = Menu(self.menubar, tearoff=0, postcommand=self.updateDownloadCounts)
-    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('apps'), compound=LEFT)
+    self.filemenu.add_command(label="New Project",  command=self.newProject   ,image=self.iconLookup.get('folder-add-file'), compound=LEFT)
    
-    self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
-    self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('icons8-file-24'), compound=LEFT)
+    self.filemenu.add_command(label="Open Project", command=self.openProject  ,image=self.iconLookup.get('folder-file-project'), compound=LEFT)
+    self.filemenu.add_command(label="Save Project", command=self.saveProject  ,image=self.iconLookup.get('save'), compound=LEFT)
 
     self.recentProjects = Menu(self.menubar, tearoff=0)
-    self.filemenu.add_cascade(label="Recent Projects", menu=self.recentProjects)
+    self.filemenu.add_cascade(label="Recent Projects", menu=self.recentProjects,image=self.iconLookup.get('clock-time'), compound=LEFT)
 
     self.filemenu.add_separator()
 
     if self.controller.autoSaveExists():
-      self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave)
+      self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave, image=self.iconLookup.get('redo'), compound=LEFT)
     else:
-      self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave, state='disabled')
+      self.filemenu.add_command(label="Load last autosave", command=self.controller.loadAutoSave, state='disabled',image=self.iconLookup.get('redo'), compound=LEFT)
 
     self.filemenu.add_separator()
-    self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('file-video-solid'), compound=LEFT)
+    self.filemenu.add_command(label="Load Video from File", command=self.loadVideoFiles,image=self.iconLookup.get('media-film-video'), compound=LEFT)
 
     self.recentlyPlayed = Menu(self.menubar, tearoff=0)
-    self.filemenu.add_cascade(label="Recently Played", menu=self.recentlyPlayed)
+    self.filemenu.add_cascade(label="Recently Played", menu=self.recentlyPlayed,image=self.iconLookup.get('clock-time'), compound=LEFT)
 
-    self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('photography'), compound=LEFT)
-    self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('file-image-solid'), compound=LEFT)
+    self.filemenu.add_command(label="Load Video from youtube-dlp supported url", command=self.loadVideoYTdl,image=self.iconLookup.get('youtube-video'), compound=LEFT)
+    self.filemenu.add_command(label="Load Image as static video", command=self.loadImageFile,image=self.iconLookup.get('photo-image-picture'), compound=LEFT)
     self.filemenu.add_separator()
     
     self.captureSplitmenu = Menu(self.menubar, tearoff=0)
@@ -263,14 +263,15 @@ class WebmGeneratorUi:
     self.captureSplitmenu.add_command(label="Start GDI screengrabber + cpu screen capture", command=self.startScreencap_gdigrab)
     self.captureSplitmenu.add_command(label="Start GDI screengrabber + nvenc screen capture", command=self.startScreencap_gdigrab_nvenc)
     self.captureSplitmenu.add_command(label="Start Desktop Duplication API + nvenc screen capture", command=self.startScreencap_ddagrab)
-    self.filemenu.add_cascade(label="Screen capture", menu=self.captureSplitmenu)
+    self.filemenu.add_cascade(label="Screen capture", menu=self.captureSplitmenu,image=self.iconLookup.get('video-camera-media'), compound=LEFT)
 
     self.filemenu.add_separator()
-    self.filemenu.add_command(label="Extract .srt subtitles from video file", command=self.extractSubs)
+    self.filemenu.add_command(label="Extract .srt subtitles from video file", command=self.extractSubs,image=self.iconLookup.get('alphabet-s'), compound=LEFT)
     self.filemenu.add_separator()
-    self.filemenu.add_command(label="Toggle fullscreen", command=self.toggleFullscreen)
+    self.filemenu.add_command(label="Toggle fullscreen", command=self.toggleFullscreen,image=self.iconLookup.get('maximize-expand'), compound=LEFT)
     self.filemenu.add_separator()
-    self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls)
+
+    self.filemenu.add_command(label="Watch clipboard and automatically add urls", command=self.loadClipboardUrls,image=self.iconLookup.get('copy-duplicate'), compound=LEFT)
     self.filemenu.add_separator()
     self.filemenu.add_command(label="Cancel current youtube-dlp download", command=self.cancelCurrentYoutubeDl)
     self.filemenu.add_command(label="Update youtube-dlp", command=self.updateYoutubeDl)
@@ -346,11 +347,12 @@ class WebmGeneratorUi:
 
     self.commandmenu.add_separator()
 
-    self.commandmenu.add_command(label="Show sequence editor",command=self.showSequencePreview)
+    
+    self.commandmenu.add_command(label="Show sequence editor",command=self.showSequencePreview,image=self.iconLookup.get('more-horizontal'), compound=LEFT)
     self.commandmenu.add_command(label="Show audio slice planner",command=self.showSlicePlanner,state='disabled')
 
     self.commandmenu.add_separator()
-    self.commandmenu.add_checkbutton(label="Toggled completed frame", command=self.toggleCompletedFrame)
+    self.commandmenu.add_command(label="Toggle completed frame", command=self.toggleCompletedFrame,image=self.iconLookup.get('chevrons-right-arrows'), compound=LEFT)
 
 
     self.menubar.add_command(label="Checking free space...",state='disabled')
@@ -483,6 +485,7 @@ class WebmGeneratorUi:
   def toggleCompletedFrame(self):
     self.completeFrame = not self.completeFrame
 
+    self.master.update_idletasks()
     self.frameConverted.rowconfigure(0, weight=1)
     self.frameConverted.columnconfigure(0, weight=1)
     if self.completeFrame:
@@ -491,6 +494,7 @@ class WebmGeneratorUi:
     else:
         self.frameConverted.config(height="200", width="0")
         self.scrolledConverted.grid_forget()
+    self.master.update_idletasks()
 
   def registerComplete(self,label,filename,img=None):
     try:
@@ -741,7 +745,9 @@ class WebmGeneratorUi:
 
   def toggleFullscreen(self):
     self.fullscreen = not self.fullscreen
+    self.master.update_idletasks()
     self.master.attributes("-fullscreen", self.fullscreen)
+    self.master.update_idletasks()
 
   def takeScreenshot(self):
     selectedTab = self.notebook.select()
@@ -912,6 +918,7 @@ class WebmGeneratorUi:
   def toggleBoringMode(self):
     self.boringMode = not self.boringMode
     
+    self.master.update_idletasks()
     if(self.boringMode):
       self.controller.cutselectionController.setVolume(0)
       self.controller.filterSelectionController.setVolume(0)
@@ -928,6 +935,7 @@ class WebmGeneratorUi:
       self.statusFrame.pack(expand=0, fill='x',side='bottom')
       self.master.title('WebmGenerator')
       self.master.config(menu=self.menubar)
+    self.master.update_idletasks()
 
 if __name__ == '__main__':
   import webmGenerator

@@ -438,9 +438,20 @@ class CutselectionUi(ttk.Frame):
         )
         self.labelframeSourceVideos.pack(expand="true", fill="both", side="top")
 
+        self.previewsListview = tk.Listbox(self.videoPreviewContainer)
+        self.previewsscrollbar = tk.Scrollbar(self.videoPreviewContainer)
+        self.previewsscrollbarx = tk.Scrollbar(self.videoPreviewContainer,orient='horizontal')
+         
 
+        self.previewsListview.config(yscrollcommand = self.previewsscrollbar.set,
+                                     xscrollcommand = self.previewsscrollbarx.set)
+        
+        self.previewsscrollbar.config(command = self.previewsListview.yview)
+        self.previewsscrollbarx.config(command = self.previewsListview.xview)
 
+    
 
+        self.previewsListview.bind('<Double-1>', self.switchvideoFromListview)
 
         self.progresspreviewLabel = ttk.Label(self.frameSliceSettings)
         self.progresspreviewLabel.config(text="")
@@ -599,7 +610,13 @@ class CutselectionUi(ttk.Frame):
         g = binseq(0,1000)
         self.seekpoints = [next(g)/1000 for i in range(1000)]
 
-
+    def switchvideoFromListview(self,e):
+        cs = self.previewsListview.curselection()
+        sel = self.previewsListview.get(cs[0])
+        self.playVideoFile(sel)
+        
+    def requestAutoconvert(self):
+        self.controller.requestAutoconvert()
 
     def searchrandom(self,e):
         searchStr = self.searchStringVar.get()
@@ -697,6 +714,9 @@ class CutselectionUi(ttk.Frame):
       self.frameTimeLineFrame.generateWaveStyle=style
       self.frameTimeLineFrame.generateWaveImages = not self.frameTimeLineFrame.generateWaveImages
       self.frameTimeLineFrame.uiDirty = True
+
+    def requestRIDHoverPreviews(self,rid,size,callback,start=None,end=None):
+        self.controller.requestRIDHoverPreviews(rid,size,callback,start=start,end=end)
 
     def requestTimelinePreviewFrames(self,filename,startTime,Endtime,frameWidth,timelineWidth,callback):
       return self.controller.requestTimelinePreviewFrames(filename,startTime,Endtime,frameWidth,timelineWidth,callback)
@@ -925,7 +945,22 @@ class CutselectionUi(ttk.Frame):
         if self.disableFileWidgets:
           for preview in self.previews:
               preview.destroy()
+          
+          try:
+            self.previewsListview.delete(0,'end')
+          except Exception as e:
+            print(e)
+
+          for filename in files:
+            self.previewsListview.insert('end', filename)
+          self.previewsscrollbar.pack(side = 'right', fill = 'both')
+          self.previewsscrollbarx.pack(side = 'bottom', fill = 'both')
+          self.previewsListview.pack(expand=True, side='left', fill='both')
+
         else:
+          self.previewsListview.pack_forget()
+          self.previewsscrollbar.pack_forget()
+          self.previewsscrollbarx.pack_forget()
           currentFiles = set([x.filename for x in self.previews])
 
           for filename in files:
@@ -1112,7 +1147,6 @@ class CutselectionUi(ttk.Frame):
         except:
           pass
 
-
     def getIsPlaybackStarted(self):
         return self.controller.getIsPlaybackStarted()
 
@@ -1162,6 +1196,9 @@ class CutselectionUi(ttk.Frame):
 
     def addNewSubclip(self, start, end,seekAfter=True):
         return self.controller.addNewSubclip(start, end, seekAfter=seekAfter)
+
+    def getSurroundingInterestMarks(self,point):
+       return self.controller.getSurroundingInterestMarks(point)
 
     def expandSublcipToInterestMarks(self, point):
       self.controller.expandSublcipToInterestMarks(point)

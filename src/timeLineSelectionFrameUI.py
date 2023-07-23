@@ -327,6 +327,18 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.image_handle_right_light = tk.PhotoImage(file = os.path.join("resources",'slider_right_light.gif'))
     self.lastRandomSubclipPos = -1
 
+    self.hoverRID = None
+    self.previewRID = None
+    self.previewRIDRequested = False
+    self.startImg = None
+    self.endImg = None
+
+    try:
+        self.prefade0 = tk.PhotoImage(file=".\\resources\\prefade0.png")
+        self.prefade1 = tk.PhotoImage(file=".\\resources\\prefade1.png")
+    except:
+        pass
+
   def stepBackwards(self,e):
     self.controller.stepBackwards()
 
@@ -334,6 +346,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.controller.stepForwards()
 
   def acceptAndRandomJump(self,e):
+
+    ctrl  = (e.state & 0x4) != 0
+    if ctrl:
+        self.controller.randomClip()
+        return
+
     target = self.controller.fastSeek(centerAfter=True)
     
     if self.lastRandomSubclipPos is not None:
@@ -342,8 +360,13 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.keyboardBlockAtTime(e,pos=target,abonly=True)
 
     self.lastRandomSubclipPos = target
+    
+
     self.setUiDirtyFlag()
+    self.controller.requestAutoconvert()
     print('Exit acceptAndRandomJump')
+
+
 
   def rejectAndRandomJump(self,e):
     target = self.controller.fastSeek(centerAfter=True)
@@ -516,6 +539,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.updateCanvas(withLock=False)
 
   def keyboardRemoveBlockAtTime(self,e,pos=None):
+    self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
+
     if self.tempRangeStart is not None:
       if pos is None:
         pos = self.controller.getCurrentPlaybackPosition()
@@ -551,6 +576,18 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if abonly:
         ax,bx = self.secondsToXcoord(a),self.secondsToXcoord(b),
         self.timeline_canvas.coords(self.randRangePreview,ax,140,bx,150)
+
+        self.hoverRID='V'
+        self.previewRID='V'
+
+        self.blockx0=ax
+        self.blockx1=bx
+        self.blocks0=a
+        self.blocks1=b
+
+        self.requestRIDHoverPreviews(self.previewRID)
+        self.previewRIDRequested=True
+
         self.controller.setAB( a,b,seekAfter=False )
       else:
         self.controller.addNewSubclip( a,b,seekAfter=False )
@@ -703,12 +740,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas.delete('waveAsPicImage')
     self.timeline_canvas.delete('fileSpecific')
     self.timeline_canvas.delete('ticks')
+    self.timeline_canvas.delete('hoverFrame')
     self.generateWaveImages = False
     self.generateMotionImages = False
     self.audioToBytesThreadKill=True
     self.audioToBytesThread=None
     self.completedAudioByteDecoded = False
     self.frameRate = None
+    self.lastRandomSubclipPos = None
 
     self.setUiDirtyFlag()
 
@@ -876,6 +915,56 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.lastSeek=seconds
     self.controller.seekTo(seconds)
 
+  def requestRIDPreviewCallback(self,filename,timestamp,frameWidth,frameData):
+    
+    offset = self.handleWidth
+
+    if self.hoverRID == 'V':
+        ridfilename = self.controller.getcurrentFilename()
+        ridend = self.blocks0
+        ridstart = self.blocks1
+        offset=0
+    else:
+        ridfilename,ridend,ridstart = self.controller.controller.videoManager.getDetailsForRangeId(self.hoverRID)
+    
+
+
+    timelineHeight = self.winfo_height()
+
+    if ridstart == timestamp:
+        self.startImg = tk.PhotoImage(data=frameData)
+        st=self.secondsToXcoord(ridstart)
+        iml = self.timeline_canvas.create_image(st+offset,timelineHeight,image=self.startImg,anchor='sw',tags='hoverFrame hoverFramestart')
+        #iml = self.timeline_canvas.create_image(st+offset+self.startImg.width() ,timelineHeight,image=self.prefade0,anchor='se',tags='hoverFrame hoverFramestart')
+
+    if ridend == timestamp:
+        self.endImg   = tk.PhotoImage(data=frameData)
+        en=self.secondsToXcoord(ridend)
+        iml = self.timeline_canvas.create_image(en-offset,timelineHeight,image=self.endImg,anchor='se',tags='hoverFrame hoverFrameend')
+        #iml = self.timeline_canvas.create_image(en-offset-self.startImg.width(),timelineHeight,image=self.prefade1,anchor='sw',tags='hoverFrame hoverFrameend')
+
+    print(filename,timestamp,frameWidth)
+
+
+  def requestRIDHoverPreviews(self,rid,pos='m'):
+    if self.globalOptions.get('generateRIDHoverPreviews',False):
+        
+        if rid == 'V':
+            ridfilename = self.controller.getcurrentFilename()
+            ridend = self.blocks0
+            ridstart = self.blocks1
+        else:
+            ridfilename,ridend,ridstart = self.controller.controller.videoManager.getDetailsForRangeId(self.hoverRID)
+        
+        timelineHeight = self.winfo_height()
+
+        self.controller.requestRIDHoverPreviews(rid,
+                                                (timelineHeight*2,50),
+                                                self.requestRIDPreviewCallback,
+                                                start=ridstart,
+                                                end=ridend
+                                                )
+
   def timelineMousePress(self,e):
     
     if e.type in (tk.EventType.ButtonPress,tk.EventType.ButtonRelease):
@@ -925,6 +1014,33 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if ctrl and self.tempRangeStart is None:
         ctrl_seconds = self.xCoordToSeconds(e.x)
         self.startTempSelection(startOverride=ctrl_seconds)
+
+
+    if self.clickTarget is None:
+            
+        if e.type == tk.EventType.Motion or e.type == tk.EventType.ButtonRelease:
+          if e.y>20:
+            for rid,(sts,ens) in ranges:
+              st=self.secondsToXcoord(sts)
+              en=self.secondsToXcoord(ens)
+              if (st-self.handleWidth)<e.x<(en+self.handleWidth):
+                self.hoverRID = rid
+                break
+            else:
+              self.hoverRID = None
+          else:
+            self.hoverRID = None
+
+        print('self.hoverRID',self.hoverRID)
+
+        if self.hoverRID != self.previewRID:
+            self.previewRID = self.hoverRID
+            if not self.previewRIDRequested:
+                self.requestRIDHoverPreviews(self.previewRID)
+                self.previewRIDRequested = True
+            if self.hoverRID is None:
+                self.timeline_canvas.delete('hoverFrame')
+                self.previewRIDRequested = False
 
 
 
@@ -992,6 +1108,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if pos == 'e':
           self.controller.seekTo( os )
 
+        self.hoverRID = rid
+        self.previewRID = self.hoverRID
+        if self.hoverRID is not None:
+            self.requestRIDHoverPreviews(self.hoverRID,pos=pos)
+            self.previewRIDRequested=True
+
       self.clickTarget = None
       self.rangeHeaderClickStart=None
       if self.globalOptions.get('autoResumeAfterSeek',True):
@@ -1012,7 +1134,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           seconds = self.xCoordToSeconds(e.x)
           self.controller.pause()
           self.seekto(seconds)
-          self.controller.updateStatus('Seeking to {}s'.format(seconds))
+          #self.controller.updateStatus('Seeking to {}s'.format(seconds))
 
           if e.x>self.winfo_width()-2:
             self.currentZoomRangeMidpoint+=0.001
@@ -1180,9 +1302,16 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       
       seekMidpc  = (startpc+endpc)/2
       self.timeline_canvas.coords(self.rangeHeaderActiveMid,seekMidpc*timelineWidth,0,seekMidpc*timelineWidth,20)
+    
+      ticky=0
+      if self.globalOptions.get('generateTimelineThumbnails',True):
+        ticky=45
 
       if self.uiDirty>0:
         self.timeline_canvas.delete('ticks')
+        ticky=0
+        if self.globalOptions.get('generateTimelineThumbnails',True):
+            ticky=45
 
         for ts,interesttype in self.controller.getInterestMarks():
           tx = int(self.secondsToXcoord(ts))
@@ -1197,6 +1326,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         tickStart = int((tickIncrement * round(tickStart/tickIncrement))-tickIncrement)
 
+
+
+
         while 1:
           tickStart+=tickIncrement
           tx = int(self.secondsToXcoord(tickStart))
@@ -1205,12 +1337,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           elif tx>=self.winfo_width():
             break
           else:          
-            tm = self.timeline_canvas.create_line(tx, 45+20, tx, 45+22,fill="white",tags='ticks') 
-            tm = self.timeline_canvas.create_text(tx, 45+30,text=format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}'),fill="white",tags='ticks') 
+            tm = self.timeline_canvas.create_line(tx, ticky+20, tx, ticky+25,fill="white",tags='ticks') 
+            tm_txt = format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}')
+            tm = self.timeline_canvas.create_text(tx-1, ticky+30-1,text=tm_txt,fill="black",tags='ticks') 
+            tm = self.timeline_canvas.create_text(tx+1, ticky+30+1,text=tm_txt,fill="black",tags='ticks')             
+            tm = self.timeline_canvas.create_text(tx, ticky+30,text=tm_txt,fill="white",tags='ticks') 
 
       currentPlaybackX =  self.secondsToXcoord(self.roundToNearestFrame(self.controller.getCurrentPlaybackPosition()))
-      self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,45+55,currentPlaybackX,timelineHeight )
-      self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,45+45)
+      self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,ticky+55,currentPlaybackX,timelineHeight )
+      self.timeline_canvas.coords(self.canvasTimestampLabel,currentPlaybackX,ticky+45)
       self.timeline_canvas.itemconfig(self.canvasTimestampLabel,text=format_timedelta(datetime.timedelta(seconds=round(self.xCoordToSeconds(currentPlaybackX),2)), '{hours_total}:{minutes2}:{seconds:02.2F}'))
       activeRanges=set()
 
@@ -1322,18 +1457,52 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           del self.canvasRegionCache[(rid,name)]
 
   def setUiDirtyFlag(self, specificRID=None, withLock=True):
+
+    pos = 'm'
+    if self.clickTarget is not None:
+        _,pos,_,_ = self.clickTarget
+
     if specificRID is None:
       self.uiDirty = min(max(0,self.uiDirty+1),2)
+      
+      if pos in 'sm':
+        self.timeline_canvas.delete('hoverFrameend')
+      if pos in 'em':
+        self.timeline_canvas.delete('hoverFramestart')
+
+      self.hoverRID=None
+      self.previewRIDRequested = False
     else:
       self.dirtySelectionRanges.add(specificRID)
+      if self.hoverRID == specificRID:
+
+        if pos in 'sm':
+            self.timeline_canvas.delete('hoverFrameend')
+        if pos in 'em':
+            self.timeline_canvas.delete('hoverFramestart')
+
+        self.hoverRID=None
+        self.previewRIDRequested = False
 
   def decrementUiDirtyFlag(self):
     self.uiDirty = min(max(0,self.uiDirty-1),2)
 
-  def canvasPopupAddNewSubClipToInterestMarksCallback(self):
-    self.canvasPopupAddNewSubClipCallback(setDirtyAfter=False)
-    self.canvasPopupExpandSublcipToInterestMarksCallback(setDirtyAfter=False)
-    self.setUiDirtyFlag()
+  def canvasPopupAddNewSubClipToInterestMarksCallback(self,setDirtyAfter=True):
+    a = 0
+    b = 0
+    if self.timeline_canvas_last_right_click_x is not None:
+        cs = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+        a,b = self.controller.getSurroundingInterestMarks(cs)
+
+    newRid = None
+    if a != b:
+        a,b = self.roundToNearestFrame(a),self.roundToNearestFrame(b)
+        newRid = self.controller.addNewSubclip(a,b)
+
+    self.timeline_canvas_last_right_click_x=None
+    if setDirtyAfter and newRid is not None:
+      self.setUiDirtyFlag(specificRID=newRid)
+
 
   def canvasPopupExpandSublcipToInterestMarksCallback(self,setDirtyAfter=True):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -1353,8 +1522,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             self.setUiDirtyFlag(specificRID=rid)
           break
     self.timeline_canvas_last_right_click_x=None
-    
-
 
   def canvasPopupCloneSubClipCallback(self):
     if self.timeline_canvas_last_right_click_x is not None:
@@ -1414,10 +1581,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.controller.addNewInterestMark( self.xCoordToSeconds(self.timeline_canvas_last_right_click_x))
       self.setUiDirtyFlag()
 
-  def canvasPopupAddNewSubClipCallback(self,setDirtyAfter=True):
+  def canvasPopupAddNewSubClipCallback(self,setDirtyAfter=True,defaultSliceDurationOverride=None):
     if self.timeline_canvas_last_right_click_x is not None:
-      pre = self.defaultSliceDuration*0.5
-      post = self.defaultSliceDuration*0.5
+      if defaultSliceDurationOverride is not None:
+          pre = defaultSliceDurationOverride*0.5
+          post = defaultSliceDurationOverride*0.5
+      else:
+          pre = self.defaultSliceDuration*0.5
+          post = self.defaultSliceDuration*0.5
 
       a = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)-pre
       b = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)+post

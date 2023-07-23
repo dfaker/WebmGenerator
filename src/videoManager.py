@@ -1,3 +1,4 @@
+import logging
 
 class VideoManager:
 
@@ -88,6 +89,21 @@ class VideoManager:
     self.subclips.setdefault(filename,{})[self.subClipCounter]=[start,end]
     self.updateCallbacks(rid=self.subClipCounter,pos='s',action='NEW')
     return self.subClipCounter
+
+  def getSurroundingInterestMarks(self,filename,point):
+    s,e = point,point
+
+    try:
+      s = max([x[0] for x in self.interestMarks.get(filename) if x[0]<=s])
+    except Exception as ex:
+      logging.error("expandSublcipToInterestMarks",exc_info=ex)
+    
+    try:
+      e   = min([x[0] for x in self.interestMarks.get(filename) if x[0]>=e])
+    except Exception as ex:
+      logging.error("expandSublcipToInterestMarks",exc_info=ex)
+
+    return s,e
 
   def expandSublcipToInterestMarks(self,filename,point):
     targetRid = None

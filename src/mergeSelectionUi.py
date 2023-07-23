@@ -175,10 +175,14 @@ class EncodeProgress(ttk.Frame):
 
 
 
-    self.canvasInputCutPreview = ttk.Label(self.frameEncodeProgressWidget)
-    self.canvasInputCutPreview.config(text='No Preview loaded')
+    self.canvasInputCutPreview = ttk.Label(self.frameEncodeProgressWidget, style="previewImg.TLabel")
+
+    self.canvasInputCutPreview.config(text=' ')
     self.previewImage= self.clip.previewImage.subsample(2, 2)
     self.canvasInputCutPreview.config(image=self.previewImage)
+
+    self.canvasInputCutPreview['padding']=( (90-self.previewImage.width())//2 ,5)
+
     self.canvasInputCutPreview.grid(row=0,column=11,rowspan=3,sticky='nes')
 
     try:
@@ -212,7 +216,10 @@ class EncodeProgress(ttk.Frame):
   def setPreviewImage(self,photoImage):
     print('setPreviewImage',self.clip.rid)
     self.previewImage=photoImage.subsample(2, 2)
+    print(self.previewImage)
     self.canvasInputCutPreview.config(image=self.previewImage)
+    self.canvasInputCutPreview['padding']=( (90-self.previewImage.width())//2 ,5)
+    
 
   def openFolder(self):
     if self.finalFilename is not None:
@@ -242,10 +249,18 @@ class EncodeProgress(ttk.Frame):
 
       self.player = mpv.MPV(loop='inf',
                             mute=True,
-                            volume=0,
+                            volume=100,
                             autofit_larger='1280')
 
       self.player.play(self.finalFilename)
+
+      def mutetoggle(key_state, key_name, key_char):
+        if 'd-' in key_state:
+            self.player.mute = not self.player.mute
+
+      self.mutetoggle = mutetoggle
+      self.player.register_key_binding("m", mutetoggle)
+      #self.player.register_key_binding("M", mutetoggle)
 
       def quitFunc(key_state, key_name, key_char):
         def playerReaper():
@@ -254,8 +269,9 @@ class EncodeProgress(ttk.Frame):
           self.player=None
           player.terminate()
           player.wait_for_shutdown()
-        self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
-        self.playerReaper.start()
+        if 'd-' in key_state or 'p-' in key_state:
+            self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+            self.playerReaper.start()
 
       self.quitFunc = quitFunc
 
@@ -561,7 +577,7 @@ class SequencedVideoEntry(ttk.Frame):
 
     self.player = mpv.MPV(loop='inf',
                           mute=True,
-                          volume=0,
+                          volume=100,
                           autofit_larger='1280')
 
     self.player.play(self.filename)
@@ -572,6 +588,14 @@ class SequencedVideoEntry(ttk.Frame):
     self.player.start = self.s
     self.player.time_pos  = self.s
 
+    def mutetoggle(key_state, key_name, key_char):
+        if 'd-' in key_state:
+            self.player.mute = not self.player.mute
+
+    self.mutetoggle = mutetoggle
+    self.player.register_key_binding("m", mutetoggle)
+    #self.player.register_key_binding("M", mutetoggle)
+
     def quitFunc(key_state, key_name, key_char):
       def playerReaper():
         print('ReaperKill')
@@ -579,8 +603,9 @@ class SequencedVideoEntry(ttk.Frame):
         self.player=None
         player.terminate()
         player.wait_for_shutdown()
-      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
-      self.playerReaper.start()
+      if 'd-' in key_state or 'p-' in key_state:
+          self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+          self.playerReaper.start()
 
     self.quitFunc = quitFunc
 
@@ -714,7 +739,7 @@ class SelectableVideoEntry(ttk.Frame):
       logging.error("cutPreview PhotoImage Exception",exc_info=e)
 
     self.canvasInputCutPreview = ttk.Label(self.frameInputCutWidget)
-    self.canvasInputCutPreview.config(text='No Preview loaded')
+    self.canvasInputCutPreview.config(text='')
     self.canvasInputCutPreview.config(image=self.previewImage)
     self.canvasInputCutPreview.pack(side='top')
 
@@ -772,7 +797,7 @@ class SelectableVideoEntry(ttk.Frame):
 
     self.player = mpv.MPV(loop='inf',
                           mute=True,
-                          volume=0,
+                          volume=100,
                           autofit_larger='1280')
 
     self.player.play(self.filename)
@@ -782,6 +807,14 @@ class SelectableVideoEntry(ttk.Frame):
     self.player.start = self.s
     self.player.time_pos  = self.s
 
+    def mutetoggle(key_state, key_name, key_char):
+        if 'd-' in key_state:
+            self.player.mute = not self.player.mute
+
+    self.mutetoggle = mutetoggle
+    self.player.register_key_binding("m", mutetoggle)
+    #self.player.register_key_binding("M", mutetoggle) 
+
     def quitFunc(key_state, key_name, key_char):
       def playerReaper():
         print('ReaperKill')
@@ -789,8 +822,10 @@ class SelectableVideoEntry(ttk.Frame):
         self.player=None
         player.terminate()
         player.wait_for_shutdown()
-      self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
-      self.playerReaper.start()
+
+      if 'd-' in key_state or 'p-' in key_state:
+          self.playerReaper = threading.Thread(target=playerReaper,daemon=True)
+          self.playerReaper.start()
 
     self.quitFunc = quitFunc
 

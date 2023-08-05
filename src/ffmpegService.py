@@ -2197,8 +2197,8 @@ class FFmpegService():
     self.frameCacheQueue.append(requestKey)
     while len(self.frameCacheQueue)>= self.frameCacheQueue.maxlen:
         kp = self.frameCacheQueue.popleft()
-        if k in self.cache:
-            del self.cache[k]
+        if kp in self.cache:
+            del self.cache[kp]
 
     requestId,filename,timestamp,filters,size = requestKey
     self.responseRouting[requestKey](requestId,timestamp,size,responseImage)

@@ -52,9 +52,10 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand+=inputsList
 
     if widthReduction>0.0:
-      encodefiltercommand = filtercommand+',[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',{encodeStageFilter},[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction,encodeStageFilter=encodeStageFilter)
     else:
-      encodefiltercommand = filtercommand+',[outv]null[outvfinal]'.format(widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',[outv]null,{encodeStageFilter}[outvfinal]'.format(encodeStageFilter=encodeStageFilter)
+
 
     if options.get('audioChannels') == 'No audio':
       encodefiltercommand+=',[outa]anullsink'
@@ -131,7 +132,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     logging.debug("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
     print("Ffmpeg command: {}".format(' '.join(ffmpegcommand)))
 
-    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+    encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds,pix_fmt='')
     proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
 
     encoderStatusCallback(None,None, lastEncodedBR=br, lastEncodedSize=None, lastBuff=bufsize, lastWR=widthReduction)

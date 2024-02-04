@@ -49,9 +49,9 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand+=inputsList
 
     if widthReduction>0.0:
-      encodefiltercommand = filtercommand+',[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',{encodeStageFilter},[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction,encodeStageFilter=encodeStageFilter)
     else:
-      encodefiltercommand = filtercommand+',[outv]null[outvfinal]'.format(widthReduction=widthReduction)
+      encodefiltercommand = filtercommand+',[outv]null,{encodeStageFilter}[outvfinal]'.format(encodeStageFilter=encodeStageFilter)
 
     if options.get('audioChannels') == 'No audio':
       encodefiltercommand+=',[outa]anullsink'

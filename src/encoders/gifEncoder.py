@@ -3,6 +3,10 @@ import os
 import logging
 import subprocess as sp
 
+from ..ffmpegInfoParser import getVideoInfo
+
+from math import sqrt
+
 from ..encodingUtils import getFreeNameForFileAndLog
 from ..encodingUtils import logffmpegEncodeProgress
 from ..encodingUtils import isRquestCancelled
@@ -62,7 +66,25 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     encoderStatusCallback(None,None,lastEncodedSize=finalSize)
     return finalSize, psnr, returnCode
 
-  initialWidth = options.get('maximumWidth',1280)
+  initialWidth = options.get('maximumWidth',1280) 
+
+  print('initialWidth',initialWidth)
+  print('inputsList',inputsList)
+  try:
+    if len(inputsList) == 2:
+        vi = getVideoInfo(inputsList[1])
+
+        if options.get('forceGifFPS',True):
+            vi.fps = 18
+
+        area = sizeLimitMax/(vi.duration*vi.fps)
+        print('area',area)
+        tw = int(sqrt(area*(vi.width/vi.height)))
+        th = int(sqrt(area*(vi.height/vi.width)))
+        initialWidth = int(max(tw,th)*1.2)
+        print('TARGET WIDTH',initialWidth)
+  except Exception as e:
+    print('TARGET WIDTH Exception',e)
 
   encoderFunction.supportsCRQMode=False
   optimiser = encodeTargetingSize_linear

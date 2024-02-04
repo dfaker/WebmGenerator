@@ -201,6 +201,14 @@ class EncodeProgress(ttk.Frame):
 
     self.frameEncodeProgressWidget.pack(anchor='nw', expand='false',padx=0,pady=5, fill='x', side='top')
 
+    self.popup_menu = tk.Menu(self, tearoff=0)
+
+    self.popup_menu.add_command(label="Remove", command = self.remove )
+    self.popup_menu.add_command(label="Remove and Delete File", command = self.deleteCompleteAndRemove )
+    
+    self.canvasInputCutPreview.bind("<Button-3>",          self.showContextMenu)
+    self.progressbarPlayButton.bind("<Button-3>",          self.showContextMenu)
+
     self.progresspercent = 0
     self.encodeStartTime = None
     self.progressQueue    = deque([],10)
@@ -212,6 +220,18 @@ class EncodeProgress(ttk.Frame):
     self.pix_fmt = 8
 
     self.updateStatus(None, None, requestStatus=None, encodeStage=None, encodePass=None, lastEncodedBR=None, lastEncodedSize=None, lastEncodedPSNR=None, lastBuff=None, lastWR=None)
+
+
+  def deleteCompleteAndRemove(self):
+    if self.finalFilename is not None:
+        try:
+            os.remove(self.finalFilename)
+        except Exception as e:
+            print(e)
+    self.remove()
+
+  def showContextMenu(self,e):
+    self.popup_menu.tk_popup(e.x_root,e.y_root)
 
   def setPreviewImage(self,photoImage):
     print('setPreviewImage',self.clip.rid)
@@ -429,6 +449,7 @@ class EncodeProgress(ttk.Frame):
         self.winfo_toplevel().title('webmGenerator: encoding: {:0.2f}%'.format(percent*100))
 
   def remove(self):
+    self.cancelEncodeRequest()
     if self.progresspercent == 100:
       self.pack_forget()
       del self
@@ -861,7 +882,7 @@ class MergeSelectionUi(ttk.Frame):
                           'Sequence - Join the subclips into a sequence.',
                           'Grid - Pack videos into variably sized grid layouts.',
                           'Stream Copy - Ignore all filters and percorm no conversions, just stream cut and join the clips.',
-                          #'Full Source Reencode - Ignore all filters, timestamps, make no temporary files, just re-encode the full source.',
+                          'Full Source Reencode - Ignore all filters, timestamps, make no temporary files, just re-encode the full source.',
                           ]
 
     self.mergeStyleVar.set(self.mergeStyles[0])
@@ -2096,60 +2117,76 @@ class MergeSelectionUi(ttk.Frame):
 
 
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Sequence':
-      encodeSequence = []
-      self.encodeRequestId+=1
+
+      uniqueSequences = set()
       for clip in self.sequencedClips:
-        definition = (clip.rid,clip.filename,clip.s,clip.e,
-                      nullfilter if disableFilters else clip.filterexp, 
-                      nullfilter if disableFilters else clip.filteraudioexp,
-                      nullfilter if disableFilters else clip.filterexpEnc,
-                      clip.getSpeed())
-        encodeSequence.append(definition)
-      if len(encodeSequence)>0:
-        options={
-          'frameSizeStrategy':self.frameSizeStrategyValue,
-          'maximumSize':self.maximumSizeValue,
-          'initialBitrate':self.initialbitrateValue,
-          'maximumBitrate':self.maxbitrateValue,
-          'maximumWidth':self.maximumWidthValue,
-          'transDuration':self.transDurationValue,
-          'transStyle':self.transStyleValue,
-          'speedAdjustment':self.speedAdjustmentValue,
-          'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
-          'outputFormat':self.outputFormatValue,
-          'audioChannels':self.audioChannels,
-          'audioRate':self.audioRate,
-          'audioMerge':self.audioMerge,
-          'postProcessingFilter':self.postProcessingFilter,
-          'audioOverride':self.audioOverrideValue,
-          'audiOverrideDelay':self.audiOverrideDelayValue,
-          'gridLoopMergeOption':self.gridLoopMergeOption,
-          'minimumPSNR':self.minimumPSNR,
-          'optimizer':self.optimizer,
-          'audioOverrideBias':self.audiOverrideBiasValue,
-          'loopStartAndEnd':self.loopStartAndendValue,
-        }
-        options.update(self.advancedFlags)
+        uniqueSequences.add(self.controller.getSeqGroupForRid(clip.rid))
 
-        encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=clip)
-        self.encoderProgress.append(encodeProgressWidget)
+      uniqueSequences = sorted(list(uniqueSequences))
+      sequenceRepreClip=None
+      for seqid in uniqueSequences:
+          encodeSequence = []
+          self.encodeRequestId+=1
+          for clip in self.sequencedClips:
+            clipseqid = self.controller.getSeqGroupForRid(clip.rid)
+            if clipseqid == seqid:
+                definition = (clip.rid,clip.filename,clip.s,clip.e,
+                              nullfilter if disableFilters else clip.filterexp, 
+                              nullfilter if disableFilters else clip.filteraudioexp,
+                              nullfilter if disableFilters else clip.filterexpEnc,
+                              clip.getSpeed())
+                encodeSequence.append(definition)
+                if sequenceRepreClip is None:
+                  sequenceRepreClip = clip
+                sequenceRepreClip = clip
+          if sequenceRepreClip is None:
+            sequenceRepreClip = clip
 
-        outputPrefix = self.filenamePrefixValue
-        if self.automaticFileNamingValue:
-          try:
-            if len(self.controller.getLabelForRid(self.sequencedClips[0].rid)):
-              outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(self.sequencedClips[0].rid),getBasename=False)
-            else:  
-              outputPrefix = self.convertFilenameToBaseName(self.sequencedClips[0].filename)
-          except:
-            pass
+          if len(encodeSequence)>0:
+            options={
+              'frameSizeStrategy':self.frameSizeStrategyValue,
+              'maximumSize':self.maximumSizeValue,
+              'initialBitrate':self.initialbitrateValue,
+              'maximumBitrate':self.maxbitrateValue,
+              'maximumWidth':self.maximumWidthValue,
+              'transDuration':self.transDurationValue,
+              'transStyle':self.transStyleValue,
+              'speedAdjustment':self.speedAdjustmentValue,
+              'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
+              'outputFormat':self.outputFormatValue,
+              'audioChannels':self.audioChannels,
+              'audioRate':self.audioRate,
+              'audioMerge':self.audioMerge,
+              'postProcessingFilter':self.postProcessingFilter,
+              'audioOverride':self.audioOverrideValue,
+              'audiOverrideDelay':self.audiOverrideDelayValue,
+              'gridLoopMergeOption':self.gridLoopMergeOption,
+              'minimumPSNR':self.minimumPSNR,
+              'optimizer':self.optimizer,
+              'audioOverrideBias':self.audiOverrideBiasValue,
+              'loopStartAndEnd':self.loopStartAndendValue,
+            }
+            options.update(self.advancedFlags)
 
-        self.controller.encode(self.encodeRequestId,
-                               'CONCAT',
-                               encodeSequence,
-                               options.copy(),
-                               outputPrefix,
-                               encodeProgressWidget.updateStatus)
+            encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=sequenceRepreClip)
+            self.encoderProgress.append(encodeProgressWidget)
+
+            outputPrefix = self.filenamePrefixValue
+            if self.automaticFileNamingValue:
+              try:
+                if len(self.controller.getLabelForRid(self.sequencedClips[0].rid)):
+                  outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(self.sequencedClips[0].rid),getBasename=False)
+                else:  
+                  outputPrefix = self.convertFilenameToBaseName(self.sequencedClips[0].filename)
+              except:
+                pass
+
+            self.controller.encode(self.encodeRequestId,
+                                   'CONCAT',
+                                   encodeSequence,
+                                   options.copy(),
+                                   outputPrefix,
+                                   encodeProgressWidget.updateStatus)
 
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Individual Files':
       
@@ -2202,6 +2239,69 @@ class MergeSelectionUi(ttk.Frame):
                                  options.copy(),
                                  outputPrefix,
                                  encodeProgressWidget.updateStatus) 
+    
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Full Source Reencode':
+    
+      uniquefilenames = set()
+      uniqueseq = []
+
+      for clip in self.sequencedClips:
+        if clip.filename not in uniquefilenames:
+            uniquefilenames.add(clip.filename)
+            uniqueseq.append(clip)
+
+      for clip in uniqueseq:
+        encodeSequence = []
+        self.encodeRequestId+=1
+        definition = (clip.rid,clip.filename,None,None,
+                      nullfilter,
+                      nullfilter,
+                      nullfilter,
+                      1)
+        encodeSequence.append(definition)
+        if len(encodeSequence)>0:
+          options={
+            'frameSizeStrategy':self.frameSizeStrategyValue,
+            'maximumSize':self.maximumSizeValue,
+            'initialBitrate':self.initialbitrateValue,
+            'maximumBitrate':self.maxbitrateValue,
+            'maximumWidth':self.maximumWidthValue,
+            'transDuration':0.0,
+            'transStyle':self.transStyleValue,
+            'speedAdjustment':self.speedAdjustmentValue,
+            'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
+            'outputFormat':self.outputFormatValue,
+            'audioChannels':self.audioChannels,
+            'audioRate':self.audioRate,
+            'audioMerge':self.audioMerge,
+            'postProcessingFilter':self.postProcessingFilter,
+            'audioOverride':self.audioOverrideValue,
+            'audiOverrideDelay':self.audiOverrideDelayValue,
+            'gridLoopMergeOption':self.gridLoopMergeOption,
+            'minimumPSNR':self.minimumPSNR,
+            'optimizer':self.optimizer,
+            'audioOverrideBias':self.audiOverrideBiasValue,
+          }
+          options.update(self.advancedFlags)
+
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=clip)
+          self.encoderProgress.append(encodeProgressWidget)
+          outputPrefix = self.filenamePrefixValue
+          if self.automaticFileNamingValue:
+            if len(self.controller.getLabelForRid(clip.rid)):
+              outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(clip.rid),getBasename=False)
+            else:  
+              outputPrefix = self.convertFilenameToBaseName(clip.filename)
+
+          self.controller.encode(self.encodeRequestId,
+                                 'CONCAT',
+                                 encodeSequence,
+                                 options.copy(),
+                                 outputPrefix,
+                                 encodeProgressWidget.updateStatus)
+
+
+
     self.outserScrolledFrame.reposition()
 
 
@@ -2245,10 +2345,17 @@ class MergeSelectionUi(ttk.Frame):
       self.frameMergeStyleSettings.pack_forget()
       self.frameSequenceValues.pack_forget()
       self.profileVar.set('None')
-      self.profileCombo.state(["disabled"]) 
-
-
+      self.profileCombo.state(["disabled"])
+    elif self.mergeStyleVar.get().split('-')[0].strip()=='Full Source Reencode':
+      self.gridSequenceContainer.pack_forget()
+      self.frameGridSettings.pack_forget()
+      self.frameTransDuration.pack_forget()
+      self.frameTransStyle.pack_forget()
+      self.frameTransitionSettings.pack_forget()
+      self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
+      self.profileCombo.state(["!disabled"])
       self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
+      self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
 
       
   def updatedPredictedDuration(self):

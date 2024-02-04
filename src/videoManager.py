@@ -5,10 +5,12 @@ class VideoManager:
   def __init__(self,globalOptions={}):
     self.subclips = {}
     self.labels = {}
+    self.seqGroups = {}
     self.interestMarks = {}
     self.subClipCounter=0
     self.globalOptions=globalOptions
     self.subclipChangeCallbacks=[]
+    self.lastgroup='0'
 
   def updateLabelForClip(self,filename,rid,label):
     self.labels[rid] = label
@@ -18,6 +20,13 @@ class VideoManager:
     print(self.labels)
     return self.labels.get(rid,'')
 
+  def updateSeqGroupForClip(self,filename,rid,groupId):
+    self.seqGroups[rid] = groupId
+    self.lastgroup = groupId
+    print(self.seqGroups)
+
+  def getSeqGroupForClip(self,filename,rid):
+    return self.seqGroups.get(rid,'0')
 
   def addSubclipChangeCallback(self,callback):
     if callback not in self.subclipChangeCallbacks:
@@ -88,6 +97,7 @@ class VideoManager:
     start,end = sorted([start,end])
     self.subclips.setdefault(filename,{})[self.subClipCounter]=[start,end]
     self.updateCallbacks(rid=self.subClipCounter,pos='s',action='NEW')
+    self.updateSeqGroupForClip(filename,self.subClipCounter,self.lastgroup)
     return self.subClipCounter
 
   def getSurroundingInterestMarks(self,filename,point):

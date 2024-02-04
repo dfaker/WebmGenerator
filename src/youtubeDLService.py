@@ -51,7 +51,7 @@ class YTDLService():
     def downloadFunc():
       while 1:
         try:
-          url,fileLimit,username,password,useCookies,browserCookies,qualitySort,callback = self.downloadRequestQueue.get()
+          url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback = self.downloadRequestQueue.get()
           self.cancelEvent.clear()
           self.splitEvent.clear()
 
@@ -89,6 +89,9 @@ class YTDLService():
             elif len(password)>0:
               extraFlags.extend(['--video-password', password])
 
+            if len(code2Factor)>0:
+                extraFlags.extend(['--twofactor', code2Factor])
+
             if fileLimit>0:
               extraFlags.extend(['--max-downloads',str(fileLimit)])
 
@@ -96,7 +99,7 @@ class YTDLService():
               extraFlags.extend(['--cookies','cookies.txt'])
 
             if len(browserCookies)>0:
-              extraFlags.extend(['--cookies-from-browser',browserCookies])
+              extraFlags.extend(['--cookies','--cookies-from-browser',browserCookies])
 
             if len(qualitySort)>0 and qualitySort.upper() != 'DEFAULT':
               extraFlags.extend(['-f',qualitySort])
@@ -160,7 +163,7 @@ class YTDLService():
                 break
 
               if c in (b'\n',b'\r'):
-
+                print(l)
 
 
 
@@ -283,11 +286,11 @@ class YTDLService():
   def togglePreview(self,toggleValue):
     self.pushPreview = toggleValue
 
-  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,callback):
-    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,qualitySort,callback))
+  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback):
+    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback))
 
   def update(self):
-    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None,None))
+    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None,None,None))
 
   def cancelCurrentYoutubeDl(self):
     self.cancelEvent.set()

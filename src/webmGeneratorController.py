@@ -98,7 +98,7 @@ class WebmGeneratorController:
       'mp4NvencTuneParam':'hq',
       'mp4NvencPresetParam':'hq',
       'mp4Libx264TuneParam':'slower',
-    
+
       "cutsTabPlayerBackgroundColour":"#282828",
       "filtersTabPlayerBackgroundColour":"#282828",
       "autoLoadLastAutosave":False,
@@ -137,6 +137,8 @@ class WebmGeneratorController:
       "seekSpeedNormal":1.0,
       "seekSpeedFast":5.0,
       "seekSpeedSlow":0.1,
+
+      "initialseekpc":0,
     }
 
     if os.path.exists(self.configFileName) and os.path.isfile(self.configFileName):
@@ -181,7 +183,14 @@ class WebmGeneratorController:
     if len(initialFiles)==1 and initialFiles[0].upper().strip().endswith('.WEBGPROJ'):
       projectToLoad = initialFiles[0]
       initialFiles=[]
-    
+
+    self.startPoint=0
+    if len(initialFiles) == 2:
+        try:
+            self.startPoint = float(initialFiles[-1].strip())
+        except:
+            pass
+
     self.initialFiles = self.cleanInitialFiles(initialFiles)
     
     try:
@@ -242,7 +251,8 @@ class WebmGeneratorController:
                                                          self.ytdlService,
                                                          self.voiceActivityService,
                                                          self,
-                                                         self.globalOptions)
+                                                         self.globalOptions,
+                                                         self.startPoint)
     print('cutselectionController loaded')
 
     self.filterSelectionController = FilterSelectionController(self,

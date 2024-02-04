@@ -7,9 +7,12 @@ import os
 import logging
 import time
 
+from .modalWindows import youtubeDLModalState
+
+
 class CutselectionController:
 
-  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,controller,globalOptions={}):
+  def __init__(self,ui,initialFiles,videoManager,ffmpegService,ytdlService,voiceActivityService,controller,globalOptions={},initialSeek=0):
     self.globalOptions=globalOptions
     self.randomlyPlayedFiles = set()
     self.ui = ui
@@ -20,6 +23,7 @@ class CutselectionController:
     self.voiceActivityService = voiceActivityService
     self.loopMode='Loop current'
     self.controller = controller
+    self.initialSeek = initialSeek
 
     self.initialisePlayer()
     self.files=[]
@@ -305,6 +309,7 @@ class CutselectionController:
                           autoload_files='no',
                           cover_art_auto='no',
                           audio_file_auto='no',
+                          start='{}%'.format(self.globalOptions.get('initialseekpc',0)),
                           sub_auto='no')
 
     if self.globalOptions.get('disableSubtitlesInPlayers',True):
@@ -426,10 +431,14 @@ class CutselectionController:
 
     self.updateProgressStatistics()
 
-  def playVideoFile(self,filename,startTimestamp):
+  def playVideoFile(self,filename,startTimestamp=0):
     self.currentTotalDuration=None
     self.currentTimePos=None
-    self.player.start=startTimestamp
+    if startTimestamp == 0:
+        self.player.start = '{}%'.format(self.globalOptions.get('initialseekpc',0))
+    else:
+        self.player.start = startTimestamp
+    
     self.player.play(filename)
     self.player.command('load-script',os.path.join('src','screenspacetools.lua'))
     self.currentlyPlayingFileName=filename
@@ -524,10 +533,17 @@ class CutselectionController:
     self.loadFiles([filename])
 
   def loadVideoYTdlFromClipboard(self,url):
-    self.ytdlService.loadUrl(url,0,'','',False,'','default',self.returnYTDLDownlaodedVideo)
+    username = youtubeDLModalState['varUsername']
+    password = youtubeDLModalState['varPassword']
+    browserCookies = youtubeDLModalState['varBrowserCookies']
+    code2factor = youtubeDLModalState['var2factor']
 
-  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort):
-    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,self.returnYTDLDownlaodedVideo)
+
+
+    self.ytdlService.loadUrl(url,0,username,password,False,browserCookies,'default',code2factor,self.returnYTDLDownlaodedVideo)
+
+  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor):
+    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,self.returnYTDLDownlaodedVideo)
 
   def returnImageLoadAsVideo(self,filename):
     self.loadFiles([os.path.abspath(filename)])
@@ -559,7 +575,8 @@ class CutselectionController:
 
         self.files.append(file_for_load)
         if self.currentlyPlayingFileName is None:
-          self.playVideoFile(file_for_load,0)
+          self.playVideoFile(file_for_load,self.initialSeek)
+          self.initialSeek=0
 
     self.ui.updateFileListing(self.files[:])
     self.updateProgressStatistics()
@@ -598,6 +615,14 @@ class CutselectionController:
   def updateLabelForRid(self,rid,label):
     filename = self.getcurrentFilename()
     self.videoManager.updateLabelForClip(filename,rid,label)
+
+  def updateSeqGroupForRid(self,rid,groupId):
+    filename = self.getcurrentFilename()
+    self.videoManager.updateSeqGroupForClip(filename,rid,groupId)
+
+  def getSeqGroupForRid(self,rid):
+    filename = self.getcurrentFilename()
+    return self.videoManager.getSeqGroupForClip(filename,rid)
 
   def getLabelForRid(self,rid):
     filename = self.getcurrentFilename()

@@ -766,19 +766,19 @@ class FFmpegService():
       encodeStageFilterList = []
 
 
-      for i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
-        if filterexpEnc is not None and len(filterexpEnc)>0 and filterexpEnc != 'null':
-          encodeStageFilterList.append(filterexpEnc)
+      fullReencode = False
 
-        expectedTimes.append(e-s)
-        speedAdjustments.append(clipSpeed)
-        videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
-        infoOut[rid] = videoInfo
+      if len(seqClips) == 1:
+        rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed = seqClips[0]
+        if s is None and e is None:
+            fullReencode = True
+            fileSequence.append(clipfilename)
 
-        videoh=videoInfo.height
-        videow=videoInfo.width
-
-        clipDimensions.append((videow,videoh))
+      fadeDuration=0.25
+      try:
+        fadeDuration= float(options.get('transDuration',0.5))
+      except Exception as e:
+        logging.error("invalid fade duration",exc_info =e)
 
       speedAdjustment = 1.0
       try:
@@ -787,196 +787,221 @@ class FFmpegService():
       except Exception as e:
         logging.error("invalid speed Adjustment",exc_info =e)
 
-      interpolateSpeedAdjustment = True
-      try:
-        interpolateSpeedAdjustment = bool(options.get('speedAdjustmentInterploate',True))
-      except Exception as e:
-        logging.error("invalid speed Adjustment",exc_info =e)
+      if not fullReencode:
 
-      totalExpectedFinalLength=sum(expectedTimes)
+          for i,(rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed) in enumerate(seqClips):
+            if filterexpEnc is not None and len(filterexpEnc)>0 and filterexpEnc != 'null':
+              encodeStageFilterList.append(filterexpEnc)
 
-      expectedTimes.append(sum(expectedTimes)*(1/speedAdjustment))
-      totalExpectedEncodedSeconds = sum(expectedTimes)
-      totalEncodedSeconds = 0
-      shortestClipLength = float('inf')
+            expectedTimes.append(e-s)
+            speedAdjustments.append(clipSpeed)
+            videoInfo = getVideoInfo(cleanFilenameForFfmpeg(clipfilename))
+            infoOut[rid] = videoInfo
+
+            videoh=videoInfo.height
+            videow=videoInfo.width
+
+            clipDimensions.append((videow,videoh))
+
+          interpolateSpeedAdjustment = True
+          try:
+            interpolateSpeedAdjustment = bool(options.get('speedAdjustmentInterploate',True))
+          except Exception as e:
+            logging.error("invalid speed Adjustment",exc_info =e)
+
+          totalExpectedFinalLength=sum(expectedTimes)
+
+          expectedTimes.append(sum(expectedTimes)*(1/speedAdjustment))
+          totalExpectedEncodedSeconds = sum(expectedTimes)
+          totalEncodedSeconds = 0
+          shortestClipLength = float('inf')
 
 
 
-      for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filteraudioexp,filterexpEnc,clipSpeed)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
-        shortestClipLength = min(shortestClipLength, etime)
-        if filterexp=='':
-          filterexp='null'  
+          for i,(etime,(videow,videoh),(rid,clipfilename,start,end,filterexp,filteraudioexp,filterexpEnc,clipSpeed)) in enumerate(zip(expectedTimes,clipDimensions,seqClips)):
+            shortestClipLength = min(shortestClipLength, etime)
+            if filterexp=='':
+              filterexp='null'  
 
-        basename = os.path.basename(clipfilename)
-        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
+            basename = os.path.basename(clipfilename)
+            basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
-        if 'subtitles=filename=' in  filterexp:
+            if 'subtitles=filename=' in  filterexp:
 
-          m = hashlib.md5()
-          m.update(filterexp.encode('utf8'))
-          m.update(filteraudioexp.encode('utf8'))
-          m.update(filterexpEnc.encode('utf8'))
-          filterHash = m.hexdigest()[:10]
+              m = hashlib.md5()
+              m.update(filterexp.encode('utf8'))
+              m.update(filteraudioexp.encode('utf8'))
+              m.update(filterexpEnc.encode('utf8'))
+              filterHash = m.hexdigest()[:10]
 
-          subfilename = filterexp.split('subtitles=filename=')[1].split(':force_style=')[0]
-          subfilenameStrip = subfilename.replace("'",'')
-          subOutname = os.path.join( tempPathname,'{}_{}_{}_{}_{}_{}_{}.srt'.format(i,basename,start,end,filterHash,runNumber,clipSpeed) )
+              subfilename = filterexp.split('subtitles=filename=')[1].split(':force_style=')[0]
+              subfilenameStrip = subfilename.replace("'",'')
+              subOutname = os.path.join( tempPathname,'{}_{}_{}_{}_{}_{}_{}.srt'.format(i,basename,start,end,filterHash,runNumber,clipSpeed) )
 
-          trimSRTfile(subfilenameStrip.replace('\\:',':'),subOutname,start,end)
-                    
-          cleanSubPath = os.path.abspath(subOutname).replace('\\','/').replace(':','\\:')
-          filterexp = filterexp.replace(subfilenameStrip,cleanSubPath)
+              trimSRTfile(subfilenameStrip.replace('\\:',':'),subOutname,start,end)
+                        
+              cleanSubPath = os.path.abspath(subOutname).replace('\\','/').replace(':','\\:')
+              filterexp = filterexp.replace(subfilenameStrip,cleanSubPath)
 
-          print(subfilenameStrip)
-          print(subOutname)
-          print(filterexp)
+              print(subfilenameStrip)
+              print(subOutname)
+              print(filterexp)
 
-        #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
+            #scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720
 
-        filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
-        filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
-        
-        if options.get('forceFPS',-1)>0:
-          filterexp += ',fps={}'.format(options.get('forceFPS',-1))
-        
+            filterexp+=",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
+            filterexp += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
+            
+            if options.get('forceFPS',-1)>0:
+              filterexp += ',fps={}'.format(options.get('forceFPS',-1))
+            
 
-        try:
-          os.path.exists(tempPathname) or os.mkdir(tempPathname)
-        except Exception as e:
-          logging.error(msg)
+            try:
+              os.path.exists(tempPathname) or os.mkdir(tempPathname)
+            except Exception as e:
+              logging.error(msg)
 
-        m = hashlib.md5()
-        m.update(filterexp.encode('utf8'))
-        m.update(filteraudioexp.encode('utf8'))
-        m.update(filterexpEnc.encode('utf8'))
-        m.update(options.get('audioChannels','').encode('utf8'))
-        filterHash = m.hexdigest()[:10]
+            m = hashlib.md5()
+            m.update(filterexp.encode('utf8'))
+            m.update(filteraudioexp.encode('utf8'))
+            m.update(filterexpEnc.encode('utf8'))
+            m.update(options.get('audioChannels','').encode('utf8'))
+            filterHash = m.hexdigest()[:10]
 
-        key = (rid,clipfilename,start,end,filterexp,filteraudioexp,filterexpEnc)
-        basename = os.path.basename(clipfilename)
-        basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
+            key = (rid,clipfilename,start,end,filterexp,filteraudioexp,filterexpEnc)
+            basename = os.path.basename(clipfilename)
+            basename = ''.join([x for x in basename if x in string.digits+string.ascii_letters+' -_'])[:50]
 
-        outname = '{}_{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber,int(usNVHWenc))
-        outname = os.path.join( tempPathname,outname )
+            outname = '{}_{}_{}_{}_{}_{}_{}.mp4'.format(i,basename,start,end,filterHash,runNumber,int(usNVHWenc))
+            outname = os.path.join( tempPathname,outname )
 
-        preciseDurations[outname] = end-start
+            preciseDurations[outname] = end-start
 
-        if os.path.exists(outname):
-          processed[key]=outname
-          fileSequence.append(processed[key])
-          totalEncodedSeconds+=etime
-          statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-          self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+            if os.path.exists(outname):
+              processed[key]=outname
+              fileSequence.append(processed[key])
+              totalEncodedSeconds+=etime
+              statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+              self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
 
-        elif key not in processed:
-          statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
-          self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
-          
-          cuda_flags = []
+            elif key not in processed:
+              statusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
+              self.globalStatusCallback('Cutting clip {}'.format(i+1), totalEncodedSeconds/totalExpectedEncodedSeconds)
+              
+              cuda_flags = []
 
-          audioChannels = '1'
-          if 'Stereo' in options.get('audioChannels',''):
-            audioChannels = '2'
+              audioChannels = '1'
+              if 'Stereo' in options.get('audioChannels',''):
+                audioChannels = '2'
 
-          intermediatePixelFormat = self.globalOptions.get('intermediatePixelFormat',"yuv420p10le")
+              intermediatePixelFormat = self.globalOptions.get('intermediatePixelFormat',"yuv420p10le")
 
-          if usNVHWenc:
-            if self.globalOptions.get('passCudaFlags',False):
-              cuda_flags = ['-hwaccel', 'cuda']
-            slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'losslesshp','-pix_fmt',intermediatePixelFormat]
-            filterexp += ',format='+intermediatePixelFormat
-          else:
-            slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast','-pix_fmt',intermediatePixelFormat]
+              if usNVHWenc:
+                if self.globalOptions.get('passCudaFlags',False):
+                  cuda_flags = ['-hwaccel', 'cuda']
+                slice_encoder_preset = ['-c:v', 'h264_nvenc' , '-preset', 'losslesshp','-pix_fmt',intermediatePixelFormat]
+                filterexp += ',format='+intermediatePixelFormat
+              else:
+                slice_encoder_preset = ['-c:v', 'libx264' , '-preset', 'veryfast','-pix_fmt',intermediatePixelFormat]
 
-          if infoOut[rid].hasaudio:
-            comvcmd = ['ffmpeg','-y' ]+cuda_flags+[                                
-                       '-ss', str(start)
-                      ,'-i', cleanFilenameForFfmpeg(clipfilename)
-                      ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp+'[vo],'+filteraudioexp+'[ao]' ] + slice_encoder_preset + [
-                       '-crf', '0'
-                      ,'-map', '[vo]', '-map', '[ao]'
-                      ,'-ac', audioChannels,outname]
-          else:
-            comvcmd = ['ffmpeg','-y'  ]+cuda_flags+[
-                       '-f', 'lavfi', '-i', 'anullsrc'                                
-                      ,'-ss', str(start)
-                      ,'-i', cleanFilenameForFfmpeg(clipfilename)
-                      ,'-t', str(end-start)
-                      ,'-filter_complex', filterexp+'[vo],'+filteraudioexp+'[ao]' ] + slice_encoder_preset + [
-                       '-crf', '0'
-                      ,'-map', '[vo]', '-map', '[ao]' 
-                      ,'-shortest'
-                      ,'-ac', audioChannels,outname]
+              if infoOut[rid].hasaudio:
+                comvcmd = ['ffmpeg','-y' ]+cuda_flags+[                                
+                           '-ss', str(start)
+                          ,'-i', cleanFilenameForFfmpeg(clipfilename)
+                          ,'-t', str(end-start)
+                          ,'-filter_complex', filterexp+'[vo],'+filteraudioexp+'[ao]' ] + slice_encoder_preset + [
+                           '-crf', '0'
+                          ,'-map', '[vo]', '-map', '[ao]'
+                          ,'-ac', audioChannels,outname]
+              else:
+                comvcmd = ['ffmpeg','-y'  ]+cuda_flags+[
+                           '-f', 'lavfi', '-i', 'anullsrc'                                
+                          ,'-ss', str(start)
+                          ,'-i', cleanFilenameForFfmpeg(clipfilename)
+                          ,'-t', str(end-start)
+                          ,'-filter_complex', filterexp+'[vo],'+filteraudioexp+'[ao]' ] + slice_encoder_preset + [
+                           '-crf', '0'
+                          ,'-map', '[vo]', '-map', '[ao]' 
+                          ,'-shortest'
+                          ,'-ac', audioChannels,outname]
 
-          print('')
-          print(filterexp)
-          print(filteraudioexp)
-          print(comvcmd)
-          print('')
+              print('')
+              print(filterexp)
+              print(filteraudioexp)
+              print(comvcmd)
+              print('')
 
-          proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-          
-          currentEncodedTotal=0
-          ln=b''
-          while 1:
-              c = proc.stderr.read(1)
-              if isRquestCancelled(requestId):
-                proc.kill()
-                outs, errs = proc.communicate()
-                try:
-                  os.remove(outname)
-                except:
-                  pass
-                return
-              if len(c)==0:
-                break
-              if c == b'\r':
-                logging.debug(ln)
-                print(ln)
-                for p in ln.split(b' '):
-                  if b'time=' in p:
+              proc = sp.Popen(comvcmd,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
+              
+              currentEncodedTotal=0
+              ln=b''
+              while 1:
+                  c = proc.stderr.read(1)
+                  if isRquestCancelled(requestId):
+                    proc.kill()
+                    outs, errs = proc.communicate()
                     try:
-                      pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
-                      currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
-                      if currentEncodedTotal>0:
-                        statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
-                        self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
-                    except Exception as e:
-                      logging.error("Clip cutting exception",exc_info =e)
-                ln=b''
-              ln+=c
-          proc.communicate()
-          totalEncodedSeconds+=etime
-          statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
-          self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                      os.remove(outname)
+                    except:
+                      pass
+                    return
+                  if len(c)==0:
+                    break
+                  if c == b'\r':
+                    logging.debug(ln)
+                    print(ln)
+                    for p in ln.split(b' '):
+                      if b'time=' in p:
+                        try:
+                          pt = datetime.strptime(p.split(b'=')[-1].decode('utf8'),'%H:%M:%S.%f')
+                          currentEncodedTotal = pt.microsecond/1000000 + pt.second + pt.minute*60 + pt.hour*3600
+                          if currentEncodedTotal>0:
+                            statusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                            self.globalStatusCallback('Cutting clip {}'.format(i+1), (currentEncodedTotal+totalEncodedSeconds)/totalExpectedEncodedSeconds)
+                        except Exception as e:
+                          logging.error("Clip cutting exception",exc_info =e)
+                    ln=b''
+                  ln+=c
+              proc.communicate()
+              totalEncodedSeconds+=etime
+              statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
+              self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
-          processed[key]=outname
-          fileSequence.append(outname)
-        else:
-          fileSequence.append(processed[key])
-          totalEncodedSeconds+=etime
-          statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
-          self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+              processed[key]=outname
+              fileSequence.append(outname)
+            else:
+              fileSequence.append(processed[key])
+              totalEncodedSeconds+=etime
+              statusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
+              self.globalStatusCallback('Cutting clip {}'.format(i+1),(totalEncodedSeconds)/totalExpectedEncodedSeconds )
 
-      fadeDuration=0.25
-      try:
-        fadeDuration= float(options.get('transDuration',0.5))
-      except Exception as e:
-        logging.error("invalid fade duration",exc_info =e)
 
-      sizeMatchMode = 'PAD'
-      if 'center crop' in options.get('frameSizeStrategy',''):
-        sizeMatchMode = 'CROP'
 
-      dimensionsSet = set()
-      fpsSet        = set()
-      tbnSet        = set()
-      
-      in_maxWidth  = 0
-      in_minWidth  = float('inf')
-      in_maxHeight = 0
-      in_minHeight = float('inf')
+          sizeMatchMode = 'PAD'
+          if 'center crop' in options.get('frameSizeStrategy',''):
+            sizeMatchMode = 'CROP'
+
+          dimensionsSet = set()
+          fpsSet        = set()
+          tbnSet        = set()
+          
+          in_maxWidth  = 0
+          in_minWidth  = float('inf')
+          in_maxHeight = 0
+          in_minHeight = float('inf')
+
+      else:
+
+          dimensionsSet = set()
+          fpsSet        = set()
+          tbnSet        = set()
+          
+          in_maxWidth  = 0
+          in_minWidth  = float('inf')
+          in_maxHeight = 0
+          in_minHeight = float('inf')
+
+          totalEncodedSeconds = 0
 
       for clipfilename in fileSequence:
 
@@ -985,6 +1010,14 @@ class FFmpegService():
         in_maxHeight = max(in_maxHeight, videoh)
         in_minHeight = min(in_minHeight, videoh)
         
+        if fullReencode:
+            expectedTimes.append(videoInfo.duration)
+            totalExpectedEncodedSeconds = sum(expectedTimes)*2
+            totalExpectedFinalLength=sum(expectedTimes)
+            totalEncodedSeconds += videoInfo.duration
+            preciseDurations[clipfilename] = videoInfo.duration
+
+
         videow=videoInfo.width
         in_maxWidth  = max(in_maxWidth, videow)
         in_minWidth  = min(in_minWidth, videow)
@@ -1284,6 +1317,9 @@ class FFmpegService():
       else:
         encodeStageFilter = 'null'
 
+      if fullReencode:
+        encodeStageFilter += ",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
+        encodeStageFilter += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
 
       finalEncoder(inputsList, 
                    outputPathName,

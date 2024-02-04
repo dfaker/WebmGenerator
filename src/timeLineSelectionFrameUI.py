@@ -888,12 +888,20 @@ class TimeLineSelectionFrameUI(ttk.Frame):
                 self.controller.seekRelative(+self.seekSpeedSlow)
               else:
                 self.controller.seekRelative(+self.seekSpeedFast)
+              self.currentZoomRangeMidpoint= self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
+              self.setUiDirtyFlag()
+
           else:
               if ctrl and shift:
                 self.controller.seekRelative(-self.seekSpeedSlow)
               else:
                 self.controller.seekRelative(-self.seekSpeedFast)
+              self.currentZoomRangeMidpoint= self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
+              self.setUiDirtyFlag()
+
+
       elif not rangeHit:
+
         newZoomFactor = self.timelineZoomFactor
         if e.delta>0:
           newZoomFactor *= 1.5 if ctrl else 1.01
@@ -902,7 +910,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           newZoomFactor *= 0.666 if ctrl  else 0.99
           self.setUiDirtyFlag()
         newZoomFactor = min(max(1,newZoomFactor),150)
+        
+
         if newZoomFactor == self.timelineZoomFactor:
+          self.currentZoomRangeMidpoint= self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
           return
           self.setUiDirtyFlag()
         self.timelineZoomFactor=newZoomFactor

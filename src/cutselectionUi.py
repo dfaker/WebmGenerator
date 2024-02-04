@@ -1022,9 +1022,9 @@ class CutselectionUi(ttk.Frame):
       modal = YoutubeDLModal(master=self,controller=self,initialUrl=defaultUrl)
       modal.mainloop()
       
-    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort):
+    def loadVideoYTdlCallback(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor):
       if url is not None and len(url)>0:
-        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort)
+        self.controller.loadVideoYTdl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor)
 
 
     def displayrunVoiceActivityDetectionmodal(self,useRange=False,rangeStart=None,rangeEnd=None):

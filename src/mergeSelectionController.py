@@ -46,6 +46,9 @@ class MergeSelectionController:
   def getLabelForRid(self, rid):
     return self.videoManager.getLabelForClip('',rid)
 
+  def getSeqGroupForRid(self, rid):
+    return self.videoManager.getSeqGroupForClip('',rid)
+
   def autoConvert(self):
     self.ui.updateSelectableVideos()
     self.ui.clearSequence(includeProgress=False)

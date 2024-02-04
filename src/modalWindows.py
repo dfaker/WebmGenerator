@@ -10,6 +10,7 @@ import logging
 import sys
 import math
 import threading
+import json
 
 try:
   from .encodingUtils import cleanFilenameForFfmpeg
@@ -444,6 +445,7 @@ class EditSubclipModal(tk.Toplevel):
     self.entryanchor = ttk.Combobox(self,textvariable=self.anchorVar,values=self.anchorOptions,state='readonly')
     self.entryanchor.grid(row=3,column=1,sticky='new',padx=5,pady=5)
 
+
     self.durTsLabel = ttk.Label(self)
     self.durTsLabel.config(text='Duration')
     self.durTsLabel.grid(row=4,column=0,sticky='new',padx=5,pady=5)
@@ -452,10 +454,22 @@ class EditSubclipModal(tk.Toplevel):
     self.entrydurTs = ttk.Spinbox(self,text='',textvariable=self.durTsVar,from_=float('-1'),to=float('inf'))
     self.entrydurTs.grid(row=4,column=1,sticky='new',padx=5,pady=5)
 
+
+    self.sequenceGroupLabel = ttk.Label(self)
+    self.sequenceGroupLabel.config(text='Sequence Group')
+    self.sequenceGroupLabel.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+
+    self.sequenceGroupVar   = tk.StringVar(self,'0')
+    self.sequenceGroupVar.set(self.controller.getSeqGroupForRid(self.rid))
+    self.sequenceGroup = ttk.Spinbox(self,text='',textvariable=self.sequenceGroupVar,from_=float('0'),to=float('inf'),increment=1)
+    self.sequenceGroup.grid(row=5,column=1,sticky='new',padx=5,pady=5)
+
     self.startTsVar.trace('w',self.startChange)
     self.endtTsVar.trace('w',self.endChange)
     self.durTsVar.trace('w',self.durChange)
     self.nameVar.trace('w',self.nameChange)
+    self.sequenceGroupVar.trace('w',self.seqGroupChange)
+
     self.blockUpdate = False
 
     self.entryname.bind('<Return>',self.close)
@@ -470,6 +484,9 @@ class EditSubclipModal(tk.Toplevel):
 
   def nameChange(self,*args):
     self.controller.updateLabelForRid(self.rid, self.nameVar.get())
+
+  def seqGroupChange(self,*args):
+    self.controller.updateSeqGroupForRid(self.rid, self.sequenceGroupVar.get())
 
   def startChange(self,*args):
     self.controller.updatePointForRid(self.rid,'s',float(self.startTsVar.get()))
@@ -2323,6 +2340,7 @@ youtubeDLModalState = {
   'varPlayListLimit':'',
   'varUsername':'',
   'varPassword':'',
+  'var2factor':'',
   'useCookies':0,
   'varBrowserCookies':''
 
@@ -2365,6 +2383,7 @@ class YoutubeDLModal(tk.Toplevel):
     self.labelUsername.config(text='Username')
     self.labelUsername.grid(row=2,column=0,sticky='new',padx=5,pady=5)
     self.varUsername   = tk.StringVar(self,'')
+    self.varUsername.set(youtubeDLModalState['varUsername'])
     self.entryUsername = ttk.Entry(self,textvariable=self.varUsername)
     self.entryUsername.grid(row=2,column=1,sticky='new',padx=5,pady=5)
 
@@ -2372,42 +2391,59 @@ class YoutubeDLModal(tk.Toplevel):
     self.labelPassword.config(text='Password')
     self.labelPassword.grid(row=3,column=0,sticky='new',padx=5,pady=5)
     self.varPassword   = tk.StringVar(self,'')
+    self.varPassword.set(youtubeDLModalState['varPassword'])
     self.entryPassword = ttk.Entry(self,textvariable=self.varPassword)
     self.entryPassword.grid(row=3,column=1,sticky='new',padx=5,pady=5)
 
+    self.label2Factor = ttk.Label(self)
+    self.label2Factor.config(text='2FactorCode')
+    self.label2Factor.grid(row=4,column=0,sticky='new',padx=5,pady=5)
+    self.var2Factor   = tk.StringVar(self,'')
+    self.var2Factor.set(youtubeDLModalState['var2factor'])
+    self.entry2Factor = ttk.Entry(self,textvariable=self.var2Factor)
+    self.entry2Factor.grid(row=4,column=1,sticky='new',padx=5,pady=5)
+
     self.labelCookies = ttk.Label(self)
     self.labelCookies.config(text='Use cookies.txt')
-    self.labelCookies.grid(row=4,column=0,sticky='new',padx=5,pady=5)
+    self.labelCookies.grid(row=5,column=0,sticky='new',padx=5,pady=5)
     
     self.useCookies = tk.IntVar(self,0)
     self.entryCookies =  ttk.Checkbutton(self,text='Send credentials from cookies.txt',var=self.useCookies)
     if not os.path.exists('cookies.txt'):
       self.entryCookies['state']='disabled'
       self.entryCookies['text']='cookies.txt not found.'
-
-    self.entryCookies.grid(row=4,column=1,sticky='new',padx=5,pady=5)
+    self.entryCookies.grid(row=5,column=1,sticky='new',padx=5,pady=5)
 
     self.labelBrowserCookies = ttk.Label(self)
     self.labelBrowserCookies.config(text='Get Cookies from Browser')
-    self.labelBrowserCookies.grid(row=5,column=0,sticky='new',padx=5,pady=5)
+    self.labelBrowserCookies.grid(row=6,column=0,sticky='new',padx=5,pady=5)
     self.varBrowserCookies   = tk.StringVar(self,'')
+    self.varBrowserCookies.set(youtubeDLModalState['varBrowserCookies'])
     self.entryBrowserCookies =  ttk.Combobox(self,textvariable=self.varBrowserCookies)
     self.entryBrowserCookies.config(values=['brave', 'chrome', 'chromium', 'edge', 'firefox', 'opera', 'safari', 'vivaldi'])
-    self.entryBrowserCookies.grid(row=5,column=1,sticky='new',padx=5,pady=5)
+    self.entryBrowserCookies.grid(row=6,column=1,sticky='new',padx=5,pady=5)
 
 
     self.labelQualitySort = ttk.Label(self)
     self.labelQualitySort.config(text='Video quality selection rule')
-    self.labelQualitySort.grid(row=6,column=0,sticky='new',padx=5,pady=5)
+    self.labelQualitySort.grid(row=7,column=0,sticky='new',padx=5,pady=5)
     self.varQualitySort   = tk.StringVar(self,'default')
     self.entryQualitySort =  ttk.Combobox(self,textvariable=self.varQualitySort)
     self.entryQualitySort.config(values=['default', 'bestvideo+bestaudio/best', 'bestvideo*+bestaudio/best', 'best'])
-    self.entryQualitySort.grid(row=6,column=1,sticky='new',padx=5,pady=5)
+    self.entryQualitySort.grid(row=7,column=1,sticky='new',padx=5,pady=5)
 
+    
+    self.credsCmd = ttk.Button(self)
+    self.credsCmd.config(text='Load credentials from ytdlpCreds.json',command=self.setCreds)
+    self.credsCmd.grid(row=8,column=0,columnspan=2,sticky='nesw')
+
+    if not os.path.exists('ytdlpCreds.json'):
+      self.credsCmd['state']='disabled'
+      self.credsCmd['text']='ytdlpCreds.json not found.'
 
     self.downloadCmd = ttk.Button(self)
     self.downloadCmd.config(text='Download',command=self.download)
-    self.downloadCmd.grid(row=7,column=0,columnspan=2,sticky='nesw')
+    self.downloadCmd.grid(row=9,column=0,columnspan=2,sticky='nesw')
     self.rowconfigure(5, weight=1)
 
     self.entryUrl.focus()
@@ -2415,6 +2451,17 @@ class YoutubeDLModal(tk.Toplevel):
     self.entryUrl.icursor('end')
 
     self.resizable(False, False) 
+
+  def setCreds(self):
+    try:
+        data = json.load(open('ytdlpCreds.json','r'))
+        self.varUsername.set(data.get('username',''))
+        self.varPassword.set(data.get('password',''))
+        self.var2Factor.set(data.get('twofactor',''))
+        self.varBrowserCookies.set(data.get('browserCookies',''))
+
+    except Exception as e:
+        print('e')
 
   def download(self):
     url=self.varUrl.get()
@@ -2424,14 +2471,20 @@ class YoutubeDLModal(tk.Toplevel):
     useCookies = bool(self.useCookies.get())
     browserCookies=self.varBrowserCookies.get()
     qualitySort=self.varQualitySort.get()
+    code2Factor = self.var2Factor.get()
+
+    youtubeDLModalState['varUsername'] = username
+    youtubeDLModalState['varPassword'] = password
+    youtubeDLModalState['varBrowserCookies'] = browserCookies
+    youtubeDLModalState['var2factor'] = code2Factor
+
 
     try:
       fileLimit = int(float(self.varPlayListLimit.get()))
     except Exception as e:
       print(e)
-    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies,qualitySort)
+    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor)
     self.destroy()
-
 
 
 class PerfectLoopScanModal(tk.Toplevel):

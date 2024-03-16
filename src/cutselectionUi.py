@@ -14,7 +14,14 @@ import logging
 import time
 import subprocess as sp
 
-from .modalWindows import PerfectLoopScanModal, YoutubeDLModal, TimestampModal, VoiceActivityDetectorModal, Tooltip, CutSpecificationPlanner, EditSubclipModal
+from .modalWindows import (PerfectLoopScanModal, 
+                           YoutubeDLModal, 
+                           TimestampModal, 
+                           VoiceActivityDetectorModal, 
+                           Tooltip, 
+                           CutSpecificationPlanner, 
+                           EditSubclipModal, 
+                           FindMatchingSoundsModal)
 
 from .timeLineSelectionFrameUI import TimeLineSelectionFrameUI
 
@@ -1108,6 +1115,13 @@ class CutselectionUi(ttk.Frame):
       t.start()
       tk.messagebox.showinfo(title="Watching clipboard", message="Monitoring clipboard for urls, any urls copied will be downloaded with youtube-dl.\nClick 'OK' to stop watching.")
       windowRef.cliprunWatch=False
+
+    def findSimilarSounds(self,startTime,endTime,limit,distance):
+        self.controller.findSimilarSounds(self,startTime,endTime,limit,distance)
+
+    def canvasPopupSimilarSounds(self, rid):
+        smm = FindMatchingSoundsModal(master=self,controller=self.controller, rid=rid)
+        smm.mainloop()
 
     def loadVideoFiles(self):
       initialdir=self.controller.getGlobalOptions().get('defaultVideoFolder','.')

@@ -104,6 +104,55 @@ def debounce(wait_time,max_gap):
 
     return decorator
 
+audioProcessingSampleRate = 4000
+realtimeAudoProcessing = True
+from scipy.signal import find_peaks
+
+
+def detectBeats(audio_samples, sample_rate, window_length_secs=10, n_peaks=3):
+    # Ensure the input is a numpy array of type uint8
+    audio_samples = np.asarray(audio_samples, dtype=np.uint8)
+    
+    # Calculate the window size in samples
+    window_size = int(window_length_secs * sample_rate)
+    
+    # Calculate the step size for the moving window
+    # This example uses a step size of half the window size for 50% overlap
+    step_size = window_size // 2
+    
+    # Initialize an empty list to hold the frequency spike indices for each window
+    windowed_frequency_spikes = []
+    
+    # Iterate over the audio samples with a moving window
+    for start in range(0, len(audio_samples) - window_size + 1, step_size):
+        # Extract the current window of audio samples
+        window = audio_samples[start:start + window_size]
+        
+        # Compute the FFT of the window
+        fft_result = np.fft.fft(window)
+        
+        # Compute the magnitude of the FFT result
+        magnitude = np.abs(fft_result)
+        
+        # Find peaks in the magnitude of the FFT result
+        peaks, properties = find_peaks(magnitude,prominence=(None, None))
+
+        # If there are fewer peaks than n_peaks, return all peaks
+        if len(peaks) <= n_peaks:
+            top_peaks = peaks
+        else:
+            # Sort peaks by their prominence
+            prominences = properties['prominences']
+            sorted_indices = np.argsort(prominences)[::-1]  # Sort in descending order
+            top_indices = sorted_indices[:n_peaks]
+            top_peaks = peaks[top_indices]
+        
+        # Store the top peaks (frequency spikes) for this window
+        for peak in top_peaks:
+            windowed_frequency_spikes.append(peak+start)
+    
+    return windowed_frequency_spikes
+
 class TimeLineSelectionFrameUI(ttk.Frame):
 
 
@@ -157,6 +206,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Add new interest mark",command=self.canvasPopupAddNewInterestMarkCallback)
     self.timeline_canvas_popup_menu.add_separator()
 
+
     self.perfectLoopMenu = tk.Menu(self, tearoff=0)
 
 
@@ -164,8 +214,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.perfectLoopMenu.add_command(label="Move Center on highest inter-frame difference to Start",command=lambda : self.canvasPopupReCenterOnInterFrameDistance('start'))
     self.perfectLoopMenu.add_command(label="Move Center on highest inter-frame difference to Middle",command=lambda : self.canvasPopupReCenterOnInterFrameDistance('mid'))
     self.perfectLoopMenu.add_command(label="Move Center on highest inter-frame difference to End",command=lambda : self.canvasPopupReCenterOnInterFrameDistance('end'))
-
-
 
     self.perfectLoopMenu.add_separator()
 
@@ -185,6 +233,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Edit subclip",command=self.canvasPopupRangeProperties)
 
     self.rangePropertiesEntry = self.timeline_canvas_popup_menu.index(tk.END) 
+
+    self.timeline_canvas_popup_menu.add_command(label="Find Similar Sounds",command=self.canvasPopupSimilarSounds)
+    
+    self.similarSoundsEntry = self.timeline_canvas_popup_menu.index(tk.END) 
+
+
 
     self.timeline_canvas_last_right_click_x=None
     self.timeline_canvas_last_right_click_range=None
@@ -296,6 +350,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.lastFilenameForAudioToBytesRequest = None
     self.audioByteValuesReadLock = threading.Lock()
     self.audioByteValues        = []
+    self.beats                  = []
     self.latestAudioByteDecoded = 0
     self.completedAudioByteDecoded = False
     self.audioToBytesThread     = None
@@ -332,6 +387,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.previewRIDRequested = False
     self.startImg = None
     self.endImg = None
+
+    self.lastSpectraStart = None 
+    self.lastSpectraZoomFactor = None
+    self.SpectraImage = None
+
 
     try:
         self.prefade0 = tk.PhotoImage(file=".\\resources\\prefade0.png")
@@ -393,14 +453,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def processFileAudioToBytes(self,filename,totalDuration,style='SPEECH'):
     print('processFileAudioToBytes ENTRY')
     import subprocess as sp
-    sampleRate = 4000
+    sampleRate = audioProcessingSampleRate
     if self.generateWaveStyle == 'SPEECH':
       proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/speechModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     elif self.generateWaveStyle == 'VOICE':
       proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'arnndn=resources/voiceModel/model.rnnn,loudnorm=I=-16:TP=-1.5:LRA=11,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
     else:
       proc = sp.Popen(['ffmpeg', '-i', filename,  '-ac', '1', '-filter:a', 'compand,highpass=f=200,lowpass=f=3000,aresample={}:async=1'.format(sampleRate), '-map', '0:a', '-c:a', 'pcm_u8', '-f', 'data', '-'],stdout=sp.PIPE,stderr=sp.DEVNULL)
-    
+    self.audioByteValues=np.ones((int(totalDuration*sampleRate)),np.uint8)*127
     n=0
     self.completedAudioByteDecoded = False
     while 1:
@@ -418,8 +478,14 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         self.latestAudioByteDecoded = n/sampleRate
       except Exception as e:
         print(e)
+
+      if realtimeAudoProcessing and n%(sampleRate*50)==0 and n > 1:
+        self.beats = detectBeats(self.audioByteValues, sampleRate)#, window_size_ms=50, smoothing_window_ms=50, threshold_factor=1.5, merge_window_ms=100)
+
       self.audioByteValuesReadLock.release()
     proc.communicate()
+
+    self.beats = detectBeats(self.audioByteValues, sampleRate)#, window_size_ms=50, smoothing_window_ms=50, threshold_factor=1.5, merge_window_ms=100)
 
     if self.audioToBytesThreadKill:
       self.audioToBytesThreadKill=False
@@ -430,6 +496,7 @@ class TimeLineSelectionFrameUI(ttk.Frame):
     self.audioToBytesThread = None
 
   def generateImageSections(self,filename,startpc,endpc,totalDuration,outputWidth):
+    print('generateImageSections')
     args = (filename,startpc,endpc,totalDuration,outputWidth)
 
     completeOnLastPass=False
@@ -440,12 +507,15 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       self.audioByteValuesReadLock.acquire()
       if self.completedAudioByteDecoded:
         completeOnLastPass = True
+
       tempsamples = np.array(self.audioByteValues,np.uint8)
+      #tempsamples = self.audioByteValues
+
       self.audioByteValuesReadLock.release()
 
-      
       if args != self.lastWavePicSectionsRequested:
         return
+
 
       background = np.ones((40,outputWidth,1),np.uint8)*30
       
@@ -465,7 +535,12 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           sampleszMax = int((sampleszMax/255)*40)
           sampleszMin = tempsamples[samp0:samp1].min()-1
           sampleszMin = int((sampleszMin/255)*40)
-          background[sampleszMin:sampleszMax,x,0]=250
+          background[sampleszMin:sampleszMax,x,0]=200
+          
+          for b in self.beats:
+            if samp0 < b <= samp1:
+                background[0:255,x,0]=255
+
         except Exception as e:
           print('Audio spectra norm Exception',e)
         if args != self.lastWavePicSectionsRequested:
@@ -475,7 +550,9 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       for row in background:
         rowdata = []
         for dtum in row:
-          if dtum[0] > 30:
+          if dtum[0] == 255:
+            rowdata.append('{c}{b}{b}'.format(c=chr(255),b=chr(20)))
+          elif dtum[0] > 30:
             rowdata.append('{c}{c}{b}'.format(c=chr(int(dtum[0]*0.8)),b=chr(int(dtum[0]))))
           else:
             rowdata.append('{c}{c}{c}'.format(c=chr(int(dtum[0]))))
@@ -500,6 +577,75 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if completeOnLastPass:
         self.wavePicSectionsThread = None
         return
+
+  def generateImageSections(self,filename,startpc,endpc,totalDuration,outputWidth):
+    args = (filename,startpc,endpc,totalDuration,outputWidth)
+
+    completeOnLastPass=False
+    while 1:
+        startTS = totalDuration*startpc
+        endTS   = totalDuration*endpc
+
+        if self.lastSpectraStart is not None and self.SpectraImage is not None:
+            if self.lastSpectraStart != startTS and self.lastSpectraZoomFactor == self.timelineZoomFactor:
+                oldx = self.secondsToXcoord(self.lastSpectraStart)
+                self.timeline_canvas.coords(self.SpectraImage,oldx,45)
+
+        #self.audioByteValuesReadLock.acquire()
+        if self.completedAudioByteDecoded:
+            completeOnLastPass = True
+
+        indSt = int(math.floor(len(self.audioByteValues)*(startTS / totalDuration )))
+        indEn = int(math.floor(len(self.audioByteValues)*(endTS   / totalDuration )))
+
+        tempsamples = np.array(self.audioByteValues[indSt:indEn],np.uint8)
+  
+        #self.audioByteValuesReadLock.release()
+
+        if args != self.lastWavePicSectionsRequested:
+            return
+
+        proc = sp.Popen(['ffmpeg', '-y',  '-f', 'u8', '-i', 'pipe:0', '-filter_complex', "{visStyle}".format(
+            start=startTS,
+            end=endTS,
+            padto=totalDuration,
+            width=outputWidth,
+            visStyle="showspectrumpic=s={width}x120:legend=0:fscale=lin:scale=cbrt".format(
+
+                width=outputWidth
+                )
+            ), '-c:v', 'ppm', '-f', 'rawvideo', '-'],stdout=sp.PIPE,stdin=sp.PIPE)
+
+        outs,errs = proc.communicate(input = tempsamples.tobytes())        
+
+        if args != self.lastWavePicSectionsRequested:
+            return
+
+        if self.waveAsPicImage is None:
+            self.waveAsPicImage = tk.PhotoImage(data=outs)
+        else:
+            self.waveAsPicImage.config(data=outs)
+
+        if self.SpectraImage is None:
+            self.SpectraImage = self.timeline_canvas.create_image(0,45,image=self.waveAsPicImage,anchor='nw',tags='waveAsPicImage')
+            self.timeline_canvas.lower(self.SpectraImage)
+        else:
+            self.timeline_canvas.coords(self.SpectraImage,0,45)
+
+
+        self.lastSpectraStart = startTS 
+        self.lastSpectraZoomFactor = self.timelineZoomFactor
+
+
+        time.sleep(0.1)
+
+        if self.completedAudioByteDecoded and not completeOnLastPass:
+            completeOnLastPass = True
+            continue
+
+        if completeOnLastPass:
+            self.wavePicSectionsThread = None
+            return
 
   def clearCurrentlySelectedRegion(self):
     self.tempRangeStart=None
@@ -802,6 +948,8 @@ class TimeLineSelectionFrameUI(ttk.Frame):
   def timelineMousewheel(self,e):    
       ctrl  = (e.state & 0x4) != 0
       shift = (e.state & 0x1) != 0
+      alt   = (e.state & 0x20000) != 0
+
       self.timeline_canvas.coords(self.randRangePreview,0,0,0,0)
 
       if e.y<20:
@@ -830,10 +978,23 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         if st-self.handleWidth<=e.x<=en+self.handleWidth and e.y>self.winfo_height()-(self.midrangeHeight+10):
           rangeHit = True
           targetSeconds = (sts+ens)/2
+          
+          jumpspeed = 0.01
+          print(shift,alt)
+          if shift:
+            jumpspeed = 0.1
+
+          if alt:
+            jumpspeed = 1.0
+
+          if shift and alt:
+            jumpspeed = 10.0
+
           if e.delta>0:
-            targetSeconds+= 0.1 if shift else 0.01
+            targetSeconds+= jumpspeed
           else:
-            targetSeconds-= 0.1 if shift else 0.01
+            targetSeconds-= jumpspeed
+
           self.controller.pause()
           try:
               self.resumeplaybackTimer.cancel()
@@ -909,13 +1070,25 @@ class TimeLineSelectionFrameUI(ttk.Frame):
         else:
           newZoomFactor *= 0.666 if ctrl  else 0.99
           self.setUiDirtyFlag()
-        newZoomFactor = min(max(1,newZoomFactor),150)
         
+        maxzoom = 150
+        try:
+            maxzoom = int(self.controller.getTotalDuration())
+        except:
+            pass
+
+        newZoomFactor = min(max(1,newZoomFactor),maxzoom)
+        
+
+
 
         if newZoomFactor == self.timelineZoomFactor:
           self.currentZoomRangeMidpoint= self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
           return
-          self.setUiDirtyFlag()
+
+        newZoomRangeMidpoint= self.controller.getCurrentPlaybackPosition()/self.controller.getTotalDuration()
+        self.currentZoomRangeMidpoint = (self.currentZoomRangeMidpoint+newZoomRangeMidpoint)/2
+
         self.timelineZoomFactor=newZoomFactor
 
   @debounce(0.1,0.5)
@@ -1041,8 +1214,6 @@ class TimeLineSelectionFrameUI(ttk.Frame):
               self.hoverRID = None
           else:
             self.hoverRID = None
-
-        print('self.hoverRID',self.hoverRID)
 
         if self.hoverRID != self.previewRID:
             self.previewRID = self.hoverRID
@@ -1211,8 +1382,11 @@ class TimeLineSelectionFrameUI(ttk.Frame):
 
         if self.timeline_canvas_last_right_click_range is None:
           self.timeline_canvas_popup_menu.entryconfigure(self.rangePropertiesEntry, state='disabled')
+          self.timeline_canvas_popup_menu.entryconfigure(self.similarSoundsEntry, state='disabled')
+            
         else:
           self.timeline_canvas_popup_menu.entryconfigure(self.rangePropertiesEntry, state='normal')
+          self.timeline_canvas_popup_menu.entryconfigure(self.similarSoundsEntry, state='normal')
 
         self.timeline_canvas_popup_menu.tk_popup(e.x_root,e.y_root)
 
@@ -1288,10 +1462,10 @@ class TimeLineSelectionFrameUI(ttk.Frame):
           if self.wavePicSectionsThread is not None:
             self.wavePicSectionsThread.cancel()
             self.wavePicSectionsThread = None
-          self.wavePicSectionsThread = threading.Timer(0.2, self.generateImageSections,args=newWaveAsPicRequest)
+          self.wavePicSectionsThread = threading.Timer(0.0, self.generateImageSections,args=newWaveAsPicRequest)
           self.wavePicSectionsThread.daemon=True
-          self.wavePicSectionsThread.start()
           self.lastWavePicSectionsRequested = newWaveAsPicRequest
+          self.wavePicSectionsThread.start()
 
       for ts,(frameWidth,frameData) in list(self.previewFrames.items()):
         previewName = ('previewFrame',ts)
@@ -1332,27 +1506,35 @@ class TimeLineSelectionFrameUI(ttk.Frame):
             tm = self.timeline_canvas.create_polygon(tx-5, 45+40,tx+5, 45+40, tx, 45+45,fill="green",tags='ticks')
 
         self.tickmarks=[]
-        tickStart = self.xCoordToSeconds(0)
-        tickIncrement=  (self.xCoordToSeconds(timelineWidth)-self.xCoordToSeconds(0))/20
-
-        tickStart = int((tickIncrement * round(tickStart/tickIncrement))-tickIncrement)
 
 
-
-
+        initialzoom = self.timelineZoomFactor
         while 1:
-          tickStart+=tickIncrement
-          tx = int(self.secondsToXcoord(tickStart))
-          if tx<0:
-            pass
-          elif tx>=self.winfo_width():
-            break
-          else:          
-            tm = self.timeline_canvas.create_line(tx, ticky+20, tx, ticky+25,fill="white",tags='ticks') 
-            tm_txt = format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}')
-            tm = self.timeline_canvas.create_text(tx-1, ticky+30-1,text=tm_txt,fill="black",tags='ticks') 
-            tm = self.timeline_canvas.create_text(tx+1, ticky+30+1,text=tm_txt,fill="black",tags='ticks')             
-            tm = self.timeline_canvas.create_text(tx, ticky+30,text=tm_txt,fill="white",tags='ticks') 
+            ticksdone = False
+            tickStart = self.xCoordToSeconds(0)
+            tickIncrement=  (self.xCoordToSeconds(timelineWidth)-self.xCoordToSeconds(0))/20
+            tickStart = int((tickIncrement * round(tickStart/tickIncrement))-tickIncrement)
+            while 1:
+              
+              if initialzoom != self.timelineZoomFactor:
+                initialzoom = self.timelineZoomFactor
+                break
+
+              tickStart+=tickIncrement
+              tx = int(self.secondsToXcoord(tickStart))
+              if tx<0:
+                pass
+              elif tx>=self.winfo_width():
+                ticksdone = True
+                break
+              else:          
+                tm = self.timeline_canvas.create_line(tx, ticky+20, tx, ticky+25,fill="white",tags='ticks') 
+                tm_txt = format_timedelta(  datetime.timedelta(seconds=round(self.xCoordToSeconds(tx))), '{hours_total}:{minutes2}:{seconds:02.2F}')
+                tm = self.timeline_canvas.create_text(tx-1, ticky+30-1,text=tm_txt,fill="black",tags='ticks') 
+                tm = self.timeline_canvas.create_text(tx+1, ticky+30+1,text=tm_txt,fill="black",tags='ticks')             
+                tm = self.timeline_canvas.create_text(tx, ticky+30,text=tm_txt,fill="white",tags='ticks') 
+            if ticksdone:
+                break
 
       currentPlaybackX =  self.secondsToXcoord(self.roundToNearestFrame(self.controller.getCurrentPlaybackPosition()))
       self.timeline_canvas.coords(self.canvasSeekPointer, currentPlaybackX,ticky+55,currentPlaybackX,timelineHeight )
@@ -1689,6 +1871,25 @@ class TimeLineSelectionFrameUI(ttk.Frame):
       if selectedRange is not None:
         self.controller.canvasPopupRangeProperties(rid)
     self.timeline_canvas_last_right_click_x=None
+
+  def canvasPopupSimilarSounds(self):
+    if self.timeline_canvas_last_right_click_x is not None:
+      selectedRange = None
+      ranges = self.controller.getRangesForClip(self.controller.getcurrentFilename())
+      mid   = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x)
+      lower = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x-self.handleWidth)
+      upper = self.xCoordToSeconds(self.timeline_canvas_last_right_click_x+self.handleWidth)
+      for rid,(s,e) in list(ranges):
+        if s<mid<e:
+          selectedRange=rid
+          break
+        if lower<e<upper or lower<s<upper:
+          selectedRange=rid
+          break
+      if selectedRange is not None:
+        self.controller.canvasPopupSimilarSounds(rid)
+    self.timeline_canvas_last_right_click_x=None
+
 
 if __name__ == '__main__':
   import webmGenerator

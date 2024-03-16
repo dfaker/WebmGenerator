@@ -24,7 +24,7 @@ import platform
 
 try:
     from tkinterdnd2 import Tk as TkinterDnDTk
-    from tkinterdnd2 import COPY, DND_FILES
+    from tkinterdnd2 import COPY, DND_FILES, DND_TEXT
 except Exception as e:
     print(e)
 
@@ -256,10 +256,11 @@ class EncodeProgress(ttk.Frame):
           sp.Popen(["xdg-open", path])
 
   def dragInit(self,e):
+
     if self.finalFilename is not None:
       fbin = '{{{}}}'.format(os.path.abspath(self.finalFilename))
-      #self.controller.setIgnoreDrop(fbin)
       return (COPY, DND_FILES, fbin)
+
 
   def playFinal(self):
     if self.finalFilename is not None:
@@ -298,7 +299,15 @@ class EncodeProgress(ttk.Frame):
       self.player.register_key_binding("q", quitFunc)
       self.player.register_key_binding("Q", quitFunc)        
       self.player.register_key_binding("CLOSE_WIN", quitFunc)
-      
+
+      def seekPlayer(player,offset):
+        player.command('seek',str(5*offset),'relative')
+
+      self.player.register_key_binding("WHEEL_UP",   lambda s,n,c,p=self.player,o=1:seekPlayer(p,o))
+      self.player.register_key_binding("WHEEL_DOWN", lambda s,n,c,p=self.player,o=-1:seekPlayer(p,o))
+
+
+
   def cancelEncodeRequest(self):
     self.cancelled = True
     self.progressbarEncodeProgressLabel.config(style="Red.Horizontal.TProgressbar")
@@ -450,6 +459,7 @@ class EncodeProgress(ttk.Frame):
 
   def remove(self):
     self.cancelEncodeRequest()
+    self.finalFilename    = None
     if self.progresspercent == 100:
       self.pack_forget()
       del self
@@ -634,6 +644,13 @@ class SequencedVideoEntry(ttk.Frame):
     self.player.register_key_binding("Q", quitFunc)        
     self.player.register_key_binding("CLOSE_WIN", quitFunc)
 
+    def seekPlayer(player,offset):
+        player.command('seek',str(5*offset),'relative')
+
+    self.player.register_key_binding("WHEEL_UP",   lambda s,n,c,p=self.player,o=1:seekPlayer(p,o))
+    self.player.register_key_binding("WHEEL_DOWN", lambda s,n,c,p=self.player,o=-1:seekPlayer(p,o))
+
+
   def moveForwards(self):
     self.controller.moveSequencedClip(self,1)    
 
@@ -764,6 +781,14 @@ class SelectableVideoEntry(ttk.Frame):
     self.canvasInputCutPreview.config(image=self.previewImage)
     self.canvasInputCutPreview.pack(side='top')
 
+    try:
+      self.canvasInputCutPreview.drag_source_register("*")
+      self.canvasInputCutPreview.dnd_bind('<<DragInitCmd>>',self.dragInit)
+    except Exception as e:
+        logging.error("DragInitCmd2 Exception",exc_info=e)
+
+
+
     self.queuedPreview = None
 
     if self.controller.syncModal is not None and self.controller.syncModal.isActive:
@@ -783,7 +808,10 @@ class SelectableVideoEntry(ttk.Frame):
 
     self.frameInputCutWidget.config(padding='2', relief='groove', width='200')
     self.frameInputCutWidget.pack(anchor='nw', expand='false', fill='y', side='left')
-    
+
+
+  def dragInit(self,e):
+      return (COPY, DND_TEXT, ''+ os.path.basename(self.filename).rpartition('.')[0]+'')    
 
   def setPreviewImage(self,photoImage):
     print('setPreviewImage',self.rid)
@@ -853,6 +881,13 @@ class SelectableVideoEntry(ttk.Frame):
     self.player.register_key_binding("q", quitFunc)
     self.player.register_key_binding("Q", quitFunc)        
     self.player.register_key_binding("CLOSE_WIN", quitFunc)
+
+    def seekPlayer(player,offset):
+        player.command('seek',str(5*offset),'relative')
+
+    self.player.register_key_binding("WHEEL_UP",   lambda s,n,c,p=self.player,o=1:seekPlayer(p,o))
+    self.player.register_key_binding("WHEEL_DOWN", lambda s,n,c,p=self.player,o=-1:seekPlayer(p,o))
+
 
 
 class MergeSelectionUi(ttk.Frame):
@@ -961,6 +996,11 @@ class MergeSelectionUi(ttk.Frame):
     self.addAllClipsbutton.config(command=self.addAllClipsInTimelineOrder)
     self.addAllClipsbutton.config(style="small.TButton")
     self.addAllClipsbutton.pack(expand='true', fill='x', padx='0', pady='3', side='left')
+
+    self.addAllClipsRidbutton = ttk.Button(self.addAddClipsFrame,text=' Add all clips in Creation order ')
+    self.addAllClipsRidbutton.config(command=self.addAllClipsInRIDOrder)
+    self.addAllClipsRidbutton.config(style="small.TButton")
+    self.addAllClipsRidbutton.pack(expand='false', fill='x', padx='0', pady='3', side='right')
 
     self.addAllClipsRandombutton = ttk.Button(self.addAddClipsFrame,text=' Add all clips in random order ')
     self.addAllClipsRandombutton.config(command=self.addAllClipsInRandomOrder)
@@ -1693,7 +1733,23 @@ class MergeSelectionUi(ttk.Frame):
     self.selectedColumn = None
     self.player=None
     self.syncModal=None
+
+    try:
+      self.buttonSequenceEncode.drag_source_register("*")
+      self.buttonSequenceEncode.dnd_bind('<<DragInitCmd>>',self.dragInit)
+    except Exception as e:
+        logging.error("DragInitCmd2 Exception",exc_info=e)
+
+
+  def dragInit(self,e):
     
+      fbins = []
+      for epw in self.encoderProgress:
+        if epw.finalFilename is not None:
+            print(epw.finalFilename)
+            fbin = '{{{}}}'.format(os.path.abspath(epw.finalFilename))
+            fbins.append(fbin)
+      return (COPY, DND_FILES, ' '.join(fbins))
 
   def setIgnoreDrop(self,path):
     self.controller.setIgnoreDrop(path)
@@ -2357,6 +2413,9 @@ class MergeSelectionUi(ttk.Frame):
       self.scrolledframeSequenceContainer.pack(expand='true', fill='both', padx='0', pady='0', side='top')
       self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
 
+    self.updateSelectableVideos()
+    for v in list(self.selectableVideos.values()) + self.sequencedClips:
+        v.requestQueuedPreviews()
       
   def updatedPredictedDuration(self):
     totalTime=0
@@ -2545,6 +2604,11 @@ class MergeSelectionUi(ttk.Frame):
 
   def videoSubclipDurationChangeCallback(self,rid=None,pos=None,action='UPDATE'):
     if self.syncModal is not None and self.syncModal.isActive:
+      
+      refreshMode = 'CLIPS'
+      if self.mergeStyleVar.get().split('-')[0].strip()=='Full Source Reencode':
+        refreshMode = 'VIDEOS'
+
       if action == 'NEW':
         self.updateSelectableVideos()        
         self.addClipToSequence(self.selectableVideos[rid])
@@ -2558,7 +2622,7 @@ class MergeSelectionUi(ttk.Frame):
             self.removeSequencedClip(clip)
 
       changedrid=rid
-      for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
+      for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(refreshMode),key=lambda x:(x[0],x[2]) ):
         for sv in self.sequencedClips:
           if sv.rid==rid and (changedrid is None or changedrid==rid):
             sv.update(s,e,filterexp,filteraudioexp,filterexpEnc,requestPreviewFrame=not (self.syncModal is not None and self.syncModal.isActive))
@@ -2572,7 +2636,12 @@ class MergeSelectionUi(ttk.Frame):
 
   def updateSelectableVideos(self):
       unusedRids=set(self.selectableVideos.keys())
-      for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(),key=lambda x:(x[0],x[2]) ):
+
+      refreshMode = 'CLIPS'
+      if self.mergeStyleVar.get().split('-')[0].strip()=='Full Source Reencode':
+        refreshMode = 'VIDEOS'
+
+      for filename,rid,s,e,filterexp,filteraudioexp,filterexpEnc in sorted(self.controller.getFilteredClips(refreshMode),key=lambda x:(x[0],x[2]) ):
         if rid in self.selectableVideos:
           unusedRids.remove(rid)
         if rid not in self.selectableVideos:
@@ -2663,7 +2732,17 @@ class MergeSelectionUi(ttk.Frame):
       for clip in smartOrder:
         self.addClipToSequence(clip)
 
-
+  def addAllClipsInRIDOrder(self):
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
+      self.clearAllColumns()
+      for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:x.rid)):
+        self.gridColumns[ind%len(self.gridColumns)]['clips'].append(
+          SequencedVideoEntry(self.gridColumns[ind%len(self.gridColumns)]['column'],self,clip,direction='UP_DOWN'),
+        )
+    else:
+      self.clearSequence()
+      for clip in sorted(self.selectableVideos.values(),key=lambda x:x.rid):
+        self.addClipToSequence(clip)
 
   def addAllClipsInRandomOrder(self):
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
@@ -2686,6 +2765,7 @@ class MergeSelectionUi(ttk.Frame):
 
   def addAllClipsInTimelineOrder(self,minrid=-1,clearProgress=True):
     finalrid = int(minrid)
+
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Grid':
       self.clearAllColumns()
       for ind,clip in enumerate(sorted(self.selectableVideos.values(),key=lambda x:(x.filename,x.s))):
@@ -2701,6 +2781,7 @@ class MergeSelectionUi(ttk.Frame):
         finalrid = max(int(finalrid),int(clip.rid))
         if int(clip.rid) > int(minrid):
             self.addClipToSequence(clip)
+
     return finalrid
 
 

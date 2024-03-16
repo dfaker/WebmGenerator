@@ -162,6 +162,8 @@ class YTDLService():
               if len(c)==0:
                 break
 
+              acceptedFinalFormats = ['.mp4']
+
               if c in (b'\n',b'\r'):
                 print(l)
 
@@ -199,29 +201,29 @@ class YTDLService():
 
                 if b'[download] Destination:' in l:
                   finalName = l.replace(b'[download] Destination: ',b'').strip()
-                  if b'.mp4' in finalName:
+                  if finalName.endswith(b'.mp4'):
                     seenFiles.add(finalName)
                 if b'[ffmpeg] Merging formats into' in l:
                   finalName = l.split(b'"')[-2].strip()
-                  if b'.mp4' in finalName:
+                  if finalName.endswith(b'.mp4'):
                     seenFiles.add(finalName)
                     self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
                     logging.debug("Download complete {}".format(finalName))
                 if b'[Merger] Merging formats into' in l:
                   finalName = l.split(b'"')[-2].strip()
-                  if b'.mp4' in finalName:
+                  if finalName.endswith(b'.mp4'):
                     seenFiles.add(finalName)
                     self.globalStatusCallback('Download complete {}'.format(finalName),1.0)
                     logging.debug("Download complete {}".format(finalName))
 
                 if b'[download]' in l and b' has already been downloaded and merged' in l:
                   finalName = l.replace(b' has already been downloaded and merged',b'').replace(b'[download] ',b'').strip()
-                  if b'.mp4' in finalName:
+                  if finalName.endswith(b'.mp4'):
                     seenFiles.add(finalName)
                     self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
                 elif b'[download]' in l and b' has already been downloaded' in l:
                   finalName = l.replace(b' has already been downloaded',b'').replace(b'[download] ',b'').strip()
-                  if b'.mp4' in finalName:
+                  if finalName.endswith(b'.mp4'):
                     seenFiles.add(finalName)
                     self.globalStatusCallback('Download already complete {}'.format(finalName),1.0)
 
@@ -248,8 +250,23 @@ class YTDLService():
                 if finalName is not None:
                   for seenfilename in seenFiles:
                     if seenfilename not in emittedFiles and len(seenfilename)>0 and seenfilename != finalName:
-                      emitName = seenfilename.decode('utf8')
 
+                      emitName = seenfilename.decode('utf8')
+                      if emitName.endswith('.mp4') and '.fhls' not in emitName:
+                          self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
+                          if os.path.exists(emitName):
+                            callback(os.path.abspath(emitName))
+                            emittedFiles.add(seenfilename)
+                          else:
+                            callback(os.path.abspath(emitName+'.part'))
+                            emittedFiles.add(seenfilename)
+
+                l=b''
+            if len(seenFiles)>0:
+              for seenfilename in seenFiles:
+                if seenfilename not in emittedFiles and len(seenfilename)>0:
+                  emitName = seenfilename.decode('utf8')
+                  if emitName.endswith('.mp4') and '.fhls' not in emitName:
                       self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
                       if os.path.exists(emitName):
                         callback(os.path.abspath(emitName))
@@ -257,19 +274,6 @@ class YTDLService():
                       else:
                         callback(os.path.abspath(emitName+'.part'))
                         emittedFiles.add(seenfilename)
-
-                l=b''
-            if len(seenFiles)>0:
-              for seenfilename in seenFiles:
-                if seenfilename not in emittedFiles and len(seenfilename)>0:
-                  emitName = seenfilename.decode('utf8')
-                  self.globalStatusCallback('Download complete {}'.format(emitName),1.0)
-                  if os.path.exists(emitName):
-                    callback(os.path.abspath(emitName))
-                    emittedFiles.add(seenfilename)
-                  else:
-                    callback(os.path.abspath(emitName+'.part'))
-                    emittedFiles.add(seenfilename)
 
           else:
             self.globalStatusCallback('Download failed {}'.format(url),1.0)

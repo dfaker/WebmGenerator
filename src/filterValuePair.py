@@ -105,6 +105,7 @@ class FilterValuePair(ttk.Frame):
     self.n = self.param['n']
     self.vmin,self.vmax = float('-inf'),float('inf')
     self.rectProp = param.get('rectProp')
+    self.rectPropGroup = param.get('rectPropGroup')
     if param.get('rectProp') is not None:
       self.controller.registerRectProp(param.get('rectProp'),self.valueVar,param.get('type','int'))
 
@@ -287,11 +288,37 @@ class FilterValuePair(ttk.Frame):
     else:
       self.interpVar.set(self.commandInterpolationMode)
 
+  def cycleSelectedPropertySameGroup(self):
+    self.controller.cycleSelectedPropertySameGroup(self)
+
   def cycleSelectedProperty(self):
     self.controller.cycleSelectedProperty(self)
 
   def clearKeyValues(self):
     self.keyValues={}
+
+  def getBoundingBox(self,seconds):
+    box = self.controller.getBoundingBox(seconds)
+    print(box)
+    return box
+
+  def getPredictedValue(self,seconds):
+    kvs = self.getKeyValues()
+
+    lower = [(k,v) for k,v,_ in kvs if k<seconds][-1:]
+    upper = [(k,v) for k,v,_ in sorted(kvs,reverse=True) if k>seconds][-1:]
+
+    if len(lower)==1 and len(upper)==1:
+        neighbourRange    = upper[0][1]-lower[0][1]
+        neighbourDuration = upper[0][0]-lower[0][0]
+        percent = (seconds-lower[0][0])/neighbourDuration
+        return self.convertKeyValueToType(  lower[0][1]+(neighbourRange*percent) )
+    elif len(lower)==1:
+        return self.convertKeyValueToType( lower[0][1])
+    elif len(upper)==1:
+        return self.convertKeyValueToType( upper[0][1])
+    else:
+        return self.convertKeyValueToType(self.convertKeyValueToType(self.valueVar.get()))
 
   def addKeyValue(self,seconds,value=None,useIncrementMultiplier=False,isAsoluteValue=False):
     try:
@@ -346,6 +373,17 @@ class FilterValuePair(ttk.Frame):
       return sorted(self.keyValues.keys())[0]==seconds
     else:
       return False
+
+  def incrementAllKeyValues(self,valueOffset,useIncrementMultiplier=True,isAsoluteValue=False):
+    for seconds in self.keyValues:
+      if isAsoluteValue:
+        newval = (valueOffset*(self.param['inc'] if useIncrementMultiplier else 1))
+      else:
+        newval = self.keyValues[seconds]+(valueOffset*(self.param['inc'] if useIncrementMultiplier else 1))
+      newval = max(min(newval,self.vmax),self.vmin)
+      self.keyValues[seconds] = self.convertKeyValueToType(newval)
+    self.valueUpdated()
+
 
   def incrementKeyValue(self,seconds,valueOffset,useIncrementMultiplier=True,isAsoluteValue=False):
     if seconds in self.keyValues:

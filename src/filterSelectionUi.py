@@ -22,6 +22,8 @@ from .modalWindows import Tooltip
 
 from math import atan2,pi
 
+import numpy as np
+
 from threading import Lock
 
 specCounter=0
@@ -29,6 +31,7 @@ def getSpecificationNumber():
   global specCounter
   specCounter+=1
   return specCounter
+
 
 class FilterSpecification(ttk.Frame):
   def __init__(self, master,controller,spec, filterId, *args, **kwargs):
@@ -406,6 +409,25 @@ class FilterSpecification(ttk.Frame):
   def packself(self):
     self.frameFilterDetailsWidget.pack(expand='false', fill='x', side='top')
 
+  def getBoundingBox(self,seconds):
+    box = {"x":None,"y":None,"w":None,"h":None}
+    for fvp in self.filterValuePairs:
+        if fvp.param.get('n') in box:
+            box[fvp.param.get('n')] = fvp.getPredictedValue(seconds)
+    return box
+
+  def cycleSelectedPropertySameGroup(self,activeValuePair):
+    enableablefilters = [x for x in self.filterValuePairs if x.commandVarEnabled]
+    activeInd = enableablefilters.index(activeValuePair)
+    if activeValuePair.rectPropGroup is None:
+        return
+
+    for offset in range(0,len(enableablefilters)*2):
+        nextEnabledFilter = enableablefilters[(activeInd+offset)%len(enableablefilters)]
+        if nextEnabledFilter != activeValuePair and activeValuePair.rectPropGroup == nextEnabledFilter.rectPropGroup:
+          nextEnabledFilter.toggleTimelineSelection()
+          break
+
   def cycleSelectedProperty(self,activeValuePair):
     enableablefilters = [x for x in self.filterValuePairs if x.commandVarEnabled]
     activeInd = enableablefilters.index(activeValuePair)
@@ -725,6 +747,10 @@ class FilterSelectionUi(ttk.Frame):
     self.submenuMap = {}
 
     basicFilters=[]
+    self.referenceFrame = None
+    self.tracker = None
+    self.trackerOffsetX = 0
+    self.trackerOffsetY = 0
 
     quickFilters = [x.strip().upper() for x in globalOptions.get('quickFilters','').split(',') if len(x.strip())>0]
     
@@ -853,6 +879,9 @@ class FilterSelectionUi(ttk.Frame):
     self.mouseRectDragging=False
     self.videoMouseRect=[None,None,None,None]
     self.screenMouseRect=[None,None,None,None]
+    self.sketch = []
+    self.sketching = False
+    self.sketchstart = False
 
 
     self.video_canvas_popup_menu = tk.Menu(self, tearoff=0)
@@ -863,6 +892,9 @@ class FilterSelectionUi(ttk.Frame):
     self.video_canvas_popup_menu.add_command(label="Set target position for X and Y warping."  ,command=lambda :self.addRegistrationMark("tvec"))
     self.video_canvas_popup_menu.add_separator()
     self.video_canvas_popup_menu.add_command(label="Clear Registration Marks"               ,command=lambda :self.addRegistrationMark("clear"))
+    self.video_canvas_popup_menu.add_separator()
+    self.video_canvas_popup_menu.add_command(label="Start Sketch",command=lambda :self.startSketch())
+    self.video_canvas_popup_menu.add_command(label="Stop Sketch",command=lambda :self.stopSketch())
 
     self.video_canvas_popup_menu.add_separator()
 
@@ -902,6 +934,8 @@ class FilterSelectionUi(ttk.Frame):
     self.timeline_canvas_popup_menu.add_command(label="Add key value",command=self.addKeyValue)
     self.timeline_canvas_popup_menu.add_command(label="Remove key value",command=self.removeKeyValue)
     self.timeline_canvas_popup_menu.add_command(label="Clear all key values",command=self.clearKeyValues)
+    self.timeline_canvas_popup_menu.add_command(label="Clear all Group key values",command=self.clearAllGrpupKeyValues)
+
 
     self.frameValueTimelineFrame = ttk.Frame(self.frameFilterFrame)
     
@@ -920,7 +954,16 @@ class FilterSelectionUi(ttk.Frame):
     self.canvasValueTimeline.bind("d",        self.keyboardD)
     self.canvasValueTimeline.bind("i",        self.keyboardI)
     self.canvasValueTimeline.bind("n",        self.keyboardN)
+    self.canvasValueTimeline.bind("X",        self.keyboardN)
     self.canvasValueTimeline.bind("c",        self.keyboardC)
+    self.canvasValueTimeline.bind("s",        self.keyboardS)
+
+    self.canvasValueTimeline.bind("r",        self.keyboardR)
+
+
+    self.canvasValueTimeline.bind("a",        self.autoShift)
+    self.canvasValueTimeline.bind("A",        self.autoShift)
+
 
     self.canvasValueTimeline.focus_set()
 
@@ -972,6 +1015,100 @@ class FilterSelectionUi(ttk.Frame):
     self.timelineFileIndex=0    
     self.keyValueSeparation=3
 
+  def keyboardR(self,e):
+    try:
+        import cv2
+    except Exception as e:
+        print(e)
+        return
+
+    self.referenceFrame = self.controller.getCurrentPlaybackPosition()
+    self.tracker        = cv2.TrackerCSRT_create()
+    ss1,divisor = self.controller.getScreenshot( self.normaliseTimestamp( self.referenceFrame ),'null')
+    
+    selectRectBox = None
+    if self.videoMouseRect != [None,None,None,None]:
+        mouseRectbox = {'x':self.videoMouseRect[0],
+               'y':self.videoMouseRect[1],
+               'w':self.videoMouseRect[2],
+               'h':self.videoMouseRect[3]}
+    
+    currentFilterbox = None
+    if self.activeCommandFilterValuePair is not None:
+        currentFilterbox = self.activeCommandFilterValuePair.getBoundingBox( self.referenceFrame )
+
+    self.trackerOffsetX = 0
+    self.trackerOffsetY = 0
+
+    if selectRectBox is not None and currentFilterbox is None:
+        bbox = selectRectBox
+        self.tracker.init(ss1, tuple([int(bbox['x']),int(bbox['y']),
+                                      int(bbox['w']),int(bbox['h'])]))
+    elif selectRectBox is None and currentFilterbox is not None:
+        bbox = currentFilterbox
+        self.tracker.init(ss1, tuple([int(bbox['x']),int(bbox['y']),
+                                      int(bbox['w']),int(bbox['h'])]))
+    elif selectRectBox is not None and currentFilterbox is not None:
+        bbox = selectRectBox
+        fbox = currentFilterbox
+        self.tracker.init(ss1, tuple([int(bbox['x']),int(bbox['y']),
+                                      int(bbox['w']),int(bbox['h'])]))
+
+        self.trackerOffsetX = int(fbox['x'])-int(bbox['x'])
+        self.trackerOffsetY = int(fbox['y'])-int(bbox['y'])
+
+
+  def autoShift(self,e):
+    ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
+
+    if self.tracker is None:
+        self.keyboardR(e)
+
+    print('autoShift')
+    if self.activeCommandFilterValuePair is None or self.tracker is None:
+        return
+
+
+    self.recaculateFilters("autoshift")
+    posSeconds = self.controller.getCurrentPlaybackPosition()
+
+    if self.normaliseTimestamp( posSeconds ) > self.controller.playerEnd:
+        return
+
+    ss1,divisor = self.controller.getScreenshot( self.normaliseTimestamp( posSeconds ),'null')
+
+    retval, bbox = self.tracker.update(ss1)
+    if retval:
+        x1, y1, w, h = bbox
+       
+        x1 += self.trackerOffsetX
+        y1 += self.trackerOffsetY
+
+        print(x1, y1, w, h)
+
+        if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
+            self.incrementAtCurrentPlaybackPosition(x1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True) 
+        elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
+            self.incrementAtCurrentPlaybackPosition(y1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True)
+
+        self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
+        if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
+            self.incrementAtCurrentPlaybackPosition(x1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True) 
+        elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
+            self.incrementAtCurrentPlaybackPosition(y1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True)
+
+        self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
+        if shift:
+            self.handleSeek(e,1)
+            self.after(1500,lambda : self.autoShift(e))
+
+        if ctrl:
+            self.keyboardN(e)
+
+
   def getStringValue(self,valueToken):
     return self.controller.getStringValue(valueToken)
 
@@ -1019,23 +1156,33 @@ class FilterSelectionUi(ttk.Frame):
 
           self.incrementAtCurrentPlaybackPosition(angle*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=isAsoluteValue,applyImmediate=True)
       else:
-        if isAsoluteValue:
-          if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
-            self.incrementAtCurrentPlaybackPosition(x1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True) 
-          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
-            self.incrementAtCurrentPlaybackPosition(y1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True)
-        else:
-          if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
-            self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True) 
-          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
-            self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
 
-          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'pitch' and abs(vertD) > 0.1:
-            print('pitch',vertD)
-            self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
-          elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'yaw' and abs(horizD) > 0.1:
-            self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
-            print('pitch',horizD)
+        for usealternate in [False,True]:
+            if usealternate:
+                original = self.activeCommandFilterValuePair
+                self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+                if original == self.activeCommandFilterValuePair:
+                    return
+
+            if isAsoluteValue:
+              if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
+                self.incrementAtCurrentPlaybackPosition(x1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True) 
+              elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
+                self.incrementAtCurrentPlaybackPosition(y1*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=True,applyImmediate=True)
+            else:
+              if self.activeCommandFilterValuePair.videoSpaceAxis ==  'x':
+                self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True) 
+              elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'y':
+                self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+              elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'pitch' and abs(vertD) > 0.1:
+                print('pitch',vertD)
+                self.incrementAtCurrentPlaybackPosition(vertD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+              elif self.activeCommandFilterValuePair.videoSpaceAxis ==  'yaw' and abs(horizD) > 0.1:
+                self.incrementAtCurrentPlaybackPosition(horizD*self.activeCommandFilterValuePair.videoSpaceSign,False,useIncrementMultiplier=False,isAsoluteValue=False,applyImmediate=True)
+                print('pitch',horizD)
+
+            if usealternate:
+                self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
 
 
   def addDetectedFaceRectCallback(self,sourceFile,timestamp,faces):
@@ -1113,6 +1260,12 @@ class FilterSelectionUi(ttk.Frame):
   def alignDetectedEyes(self):
     self.controller.getFaceBoundingRect(self.alignDetectedEyesFaceRectCallback)
 
+
+
+  def keyboardS(self,e):
+    if self.activeCommandFilterValuePair is not None:
+        self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
   def keyboardC(self,e):
     if self.activeCommandFilterValuePair is not None:
       self.activeCommandFilterValuePair.cycleSelectedProperty()
@@ -1170,12 +1323,67 @@ class FilterSelectionUi(ttk.Frame):
     else:
       self.controller.stepRelative(-1)
 
+
   def keyboardUp(self,e):
+    ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
     self.incrementAtCurrentPlaybackPosition(1,e)
+    if ctrl and shift:
+        originalValue = self.activeCommandFilterValuePair 
+        if self.activeCommandFilterValuePair is not None:
+            self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+            if originalValue != self.activeCommandFilterValuePair:
+                self.incrementAtCurrentPlaybackPosition(0,e) 
+                self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
 
   def keyboardDown(self,e):
+    ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
     self.incrementAtCurrentPlaybackPosition(-1,e)
-  
+    if ctrl and shift:
+        originalValue = self.activeCommandFilterValuePair 
+        if self.activeCommandFilterValuePair is not None:
+            self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+            if originalValue != self.activeCommandFilterValuePair:
+                self.incrementAtCurrentPlaybackPosition(0,e) 
+                self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
+
+  def keyboardLeft(self,e):
+    ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
+    
+    if ctrl and shift:
+
+        originalValue = self.activeCommandFilterValuePair 
+        self.incrementAtCurrentPlaybackPosition(0,e) 
+        if self.activeCommandFilterValuePair is not None:
+            self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+            if originalValue != self.activeCommandFilterValuePair:
+                self.incrementAtCurrentPlaybackPosition(-1,e)
+                self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
+    else:
+        self.handleSeek(e,-0.5)
+    
+  def keyboardRight(self,e):
+    ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
+
+    if ctrl and shift:
+
+        originalValue = self.activeCommandFilterValuePair
+        self.incrementAtCurrentPlaybackPosition(0,e) 
+        if self.activeCommandFilterValuePair is not None:
+            self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+            if originalValue != self.activeCommandFilterValuePair:
+                self.incrementAtCurrentPlaybackPosition(1,e)
+                self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+
+    else:
+        self.handleSeek(e,0.5)
+
 
 
   def incrementAtCurrentPlaybackPosition(self,increment,e,useIncrementMultiplier=True,isAsoluteValue=False,applyImmediate=False):
@@ -1198,11 +1406,7 @@ class FilterSelectionUi(ttk.Frame):
         
       self.refreshtimeLineForNewClip()
 
-  def keyboardLeft(self,e):
-    self.handleSeek(e,-0.5)
-    
-  def keyboardRight(self,e):
-    self.handleSeek(e,0.5)
+
 
   def pause(self):
     self.controller.pause()
@@ -1213,7 +1417,11 @@ class FilterSelectionUi(ttk.Frame):
   def keyboardN(self,e):
     self.controller.pause()
     points = [0,self.controller.getClipDuration()]
-    
+
+    if self.activeCommandFilterValuePair is None:
+      self.seekToTimelinePoint(0.1)
+      self.refreshtimeLineForNewClip()
+
     existingPoints = sorted([x[0] for x in self.activeCommandFilterValuePair.getKeyValues() if x[2]])
 
     if len(existingPoints) < 1 or existingPoints[0] > 0.2:
@@ -1230,8 +1438,13 @@ class FilterSelectionUi(ttk.Frame):
       self.refreshtimeLineForNewClip()
 
   def handleSeek(self,e,increment):
-    ctrl  = (e.state & 0x4) != 0
-    shift = (e.state & 0x1) != 0
+    ctrl = False
+    shift = False
+
+    if e is not None:
+        ctrl  = (e.state & 0x4) != 0
+        shift = (e.state & 0x1) != 0
+
 
     if shift:
       self.controller.seekRelative(increment)
@@ -1258,6 +1471,14 @@ class FilterSelectionUi(ttk.Frame):
       self.activeCommandFilterValuePair.clearKeyValues()   
       self.refreshtimeLineForNewClip() 
 
+  def clearAllGrpupKeyValues(self):
+    if self.activeCommandFilterValuePair is not None:
+      self.activeCommandFilterValuePair.clearKeyValues()   
+      self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+      self.activeCommandFilterValuePair.clearKeyValues()   
+      self.activeCommandFilterValuePair.cycleSelectedPropertySameGroup()
+      self.refreshtimeLineForNewClip() 
+
   def addKeyValue(self):
     secondsClicked = (self.timeline_canvas_last_right_click_x/self.canvasValueTimeline.winfo_width())*self.controller.getClipDuration()
     if self.activeCommandFilterValuePair is not None:
@@ -1280,22 +1501,29 @@ class FilterSelectionUi(ttk.Frame):
 
   def timelineMousewheel(self,e):
     ctrl  = (e.state & 0x4) != 0
+    shift = (e.state & 0x1) != 0
     duration      = self.controller.getClipDuration()
     secondsClicked = (e.x/self.canvasValueTimeline.winfo_width())*self.controller.getClipDuration()
     
     if self.activeCommandFilterValuePair is not None:
-      for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues():
-        if real:
-          tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
-          if e.x-self.keyValueSeparation<tx<e.x+self.keyValueSeparation:
-            if e.delta>0:
-              self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,10 if ctrl else 1)
-            else:
-              self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,-10 if ctrl else -1)
-            self.refreshtimeLineForNewClip()
-            self.timeline_canvas_last_right_click_x=e.x
-            self.controller.seekToPercent(self.timeline_canvas_last_right_click_x/self.canvasValueTimeline.winfo_width())
-            break
+      if shift:
+        if e.delta>0:
+          self.activeCommandFilterValuePair.incrementAllKeyValues(10 if ctrl else 1)
+        else:
+          self.activeCommandFilterValuePair.incrementAllKeyValues(-10 if ctrl else -1)
+      else:
+          for timeStamp,value,real in self.activeCommandFilterValuePair.getKeyValues():
+            if real:
+              tx = int((timeStamp/duration)*self.canvasValueTimeline.winfo_width())
+              if e.x-self.keyValueSeparation<tx<e.x+self.keyValueSeparation:
+                if e.delta>0:
+                  self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,10 if ctrl else 1)
+                else:
+                  self.activeCommandFilterValuePair.incrementKeyValue(timeStamp,-10 if ctrl else -1)
+                self.refreshtimeLineForNewClip()
+                self.timeline_canvas_last_right_click_x=e.x
+                self.controller.seekToPercent(self.timeline_canvas_last_right_click_x/self.canvasValueTimeline.winfo_width())
+                break
 
   def setActiveTimeLineValue(self,activeValuePair):
     for flt in self.filterSpecifications:
@@ -1584,11 +1812,42 @@ class FilterSelectionUi(ttk.Frame):
       except:
         pass
 
+
+  def startSketch(self):
+    self.sketch = []
+    self.sketching = True
+    self.sketchstart = False
+    self.controller.updateSketch(self.sketch)
+
+  def stopSketch(self):
+    self.sketching = False
+    self.sketchstart = False
+    self.controller.updateSketch(self.sketch)
+
   def videomousePress(self,e):
       shift = (e.state & 0x1) != 0
       ctrl  = (e.state & 0x4) != 0
       
-      if self.vrPanStartSet:
+      if self.sketching:
+        sx,sy = self.controller.screenSpaceToVideoSpace(e.x,e.y)
+        linemode = 1
+
+        if e.type == tk.EventType.ButtonPress:
+            self.sketch.append([sx,sy,sx,sy,linemode])
+            self.sketchstart = True
+            self.controller.updateSketch(self.sketch)
+        elif e.type == tk.EventType.Motion and self.sketchstart:
+            self.sketch[-1][2] = sx
+            self.sketch[-1][3] = sy
+            self.controller.updateSketch(self.sketch)
+        elif e.type == tk.EventType.ButtonRelease:
+            self.sketch[-1][2] = sx
+            self.sketch[-1][3] = sy
+            self.sketchstart = False
+            self.controller.updateSketch(self.sketch)
+        return
+
+      elif self.vrPanStartSet:
         if e.type == tk.EventType.Motion:
           x1,y1 = self.controller.screenSpaceToVideoSpace(int((self.playerContainerFrame.winfo_rootx())+(self.playerContainerFrame.winfo_width()/2)),
                                                           int((self.playerContainerFrame.winfo_y()+self.playerContainerFrame.winfo_rooty())+(self.playerContainerFrame.winfo_height()/2)) )
@@ -1657,7 +1916,11 @@ class FilterSelectionUi(ttk.Frame):
         elif  e.type == tk.EventType.ButtonPress:
           x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
           self.applyVectorOffset(x2,y2,0,0,isAsoluteValue=True)        
-      
+        elif  e.type == tk.EventType.Motion:
+          x2,y2 = self.controller.screenSpaceToVideoSpace(e.x,e.y)
+          self.applyVectorOffset(x2,y2,0,0,isAsoluteValue=True)  
+
+
       else:
 
         videoOriginX,videoOriginY,videoMaxX,videoMaxY = self.controller.getvideoOSDExtents()

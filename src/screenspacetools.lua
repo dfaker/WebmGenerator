@@ -6,6 +6,7 @@ local regmarks = {};
 
 local registrationAss = "";
 local mouseAss = "";
+local sketchAss = "";
 local cropAss = "";
 local vectorAss = "";
 
@@ -299,7 +300,7 @@ end
 
 function draw_merged_ssa()
     local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
-    mp.set_osd_ass(osd_w, osd_h, cropAss .. registrationAss .. vectorAss .. mouseAss )
+    mp.set_osd_ass(osd_w, osd_h, cropAss .. registrationAss .. vectorAss .. sketchAss .. mouseAss )
 end
 
 
@@ -310,10 +311,10 @@ function screenspacetools_mouse_cross(x,y)
     else
         ass = assdraw.ass_new()
 
-        ass:pos(0,0)
         ass:new_event()
+        ass:pos(0, 0)
         ass:draw_start()
-        ass:pos(0,0)
+        ass:pos(0, 0)
 
         ass:append(ass_set_color(1, "00000000"))
         ass:append(ass_set_color(3, "0000ffff"))
@@ -332,8 +333,56 @@ function screenspacetools_mouse_cross(x,y)
     draw_merged_ssa()
 end
 
+local function eval(s)
+    return assert(load(s))()
+end
+
+local function str2obj(s)
+    return eval("return " .. s)
+end
+
+
+function screenspacetools_sketch(lines)
+    local osd_w, osd_h = mp.get_property("osd-width"), mp.get_property("osd-height")
+
+    ass = assdraw.ass_new()
+
+    local linesobj = str2obj(lines)
+
+    ass:pos(0,0)
+    ass:new_event()
+    ass:draw_start()
+    ass:pos(0,0)
+
+    ass:append(ass_set_color(1, "00000000"))
+    ass:append(ass_set_color(3, "0000ffff"))
+    ass:append("{\\bord2}")
+
+    for k, v in pairs(linesobj) do
+      local x1 = v[1];
+      local y1 = v[2];
+      local x2 = v[3];
+      local y2 = v[4];
+      local style = v[5];
+
+
+      ass:move_to(tonumber(x1),      tonumber(y1))
+      ass:line_to(tonumber(x2),      tonumber(y2))      
+    end
+
+
+    ass:pos(0,0)
+    ass:draw_stop()
+
+    sketchAss = ass.text
+    draw_merged_ssa()
+end
+
 mp.register_script_message("screenspacetools_rect",  screenspacetools_rect)
 mp.register_script_message("screenspacetools_clear", screenspacetools_clear)
 mp.register_script_message("screenspacetools_regMark", screenspacetools_regMark)
 mp.register_script_message("screenspacetools_drawVector", screenspacetools_drawVector)
 mp.register_script_message("screenspacetools_mouse_cross", screenspacetools_mouse_cross)
+mp.register_script_message("screenspacetools_sketch", screenspacetools_sketch)
+
+

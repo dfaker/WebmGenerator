@@ -2976,6 +2976,78 @@ class OptionsDialog(tk.Toplevel):
         print(e)
     print(valueKey)
 
+
+
+
+class FindMatchingSoundsModal(tk.Toplevel):
+  def __init__(self, master=None, controller=None, rid=None, *args):
+    tk.Toplevel.__init__(self, master)
+
+    self.title('Find Matching Sounds')
+    self.style = ttk.Style()
+    self.style.theme_use('clam')
+    self.minsize(600,100)
+
+    self.controller = controller
+    self.rid = rid
+    self.s=0
+    self.e=0
+
+    self.columnconfigure(0, weight=0)
+    self.columnconfigure(1, weight=1)
+
+    self.rowconfigure(0, weight=0)
+    self.rowconfigure(1, weight=0)
+    self.rowconfigure(2, weight=0)
+    self.rowconfigure(3, weight=0)
+
+    self.grab_set()
+    self.title('Find Matching Sounds {}'.format(rid))
+    
+    if controller is not None:
+        self.s, self.e = self.controller.getRangeDetails(rid)
+
+    self.maxMatchLabel = ttk.Label(self)
+    self.maxMatchLabel.config(text='Max match count')
+    self.maxMatchLabel.grid(row=1,column=0,sticky='new',padx=5,pady=5)
+
+    self.maxMatchVar   = tk.StringVar(self,str('10'))
+    self.entrymaxMatch = ttk.Spinbox(self,text='',textvariable=self.maxMatchVar,from_=1,to=float('inf'))
+    self.entrymaxMatch.grid(row=1,column=1,sticky='new',padx=5,pady=5)
+
+    self.minDistLabel = ttk.Label(self)
+    self.minDistLabel.config(text='Min Distance (seconds)')
+    self.minDistLabel.grid(row=2,column=0,sticky='new',padx=5,pady=5)
+
+    self.minDistVar   = tk.StringVar(self,str(5))
+    self.entryminDist = ttk.Spinbox(self,text='',textvariable=self.minDistVar,from_=0,to=float('inf'))
+    self.entryminDist.grid(row=2,column=1,sticky='new',padx=5,pady=5)
+
+    self.useLastLabel = ttk.Label(self)
+    self.useLastLabel.config(text='Re-use last source sample for search')
+    self.useLastLabel.grid(row=3,column=0,sticky='new',padx=0,pady=0)
+    self.useLastVar   = tk.IntVar(self,0)
+    self.useLastVar.set(0)
+    self.useLastCheck =  ttk.Checkbutton(self,text='',var=self.useLastVar)
+    self.useLastCheck.grid(row=3,column=1,sticky='new',padx=0,pady=0)
+
+    self.findButton = ttk.Button(self,text='Find similar sounds',command=self.findSimilarAudio)
+    self.findButton.grid(row=4,column=0,columnspan=2,sticky='nesw')
+
+  def findSimilarAudio(self,*args):
+    s,e = self.s, self.e
+
+    if self.useLastVar.get() == 1:
+        s,e = 0,0
+    
+    self.controller.findSimilarSounds(self.s,self.e,int(self.maxMatchVar.get()),int(self.minDistVar.get()))
+    self.destroy()
+
+  def close(self,*args):
+    self.destroy()
+
+
+
 if __name__ == "__main__":
-  app = AdvancedEncodeFlagsModal()
+  app = FindMatchingSoundsModal()
   app.mainloop()

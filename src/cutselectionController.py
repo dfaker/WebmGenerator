@@ -811,6 +811,16 @@ class CutselectionController:
         cropCoords = (x1,y1,x2-x1,y2-y1)
       self.ffmpegService.findRangeforLoop( self.currentlyPlayingFileName,secondsCenter,minSeconds,maxSeconds,cropCoords,self.foundLoopCallback )
 
+  def similarSoundCallback(self,filename,mse,tslist):
+    for s,e in tslist:
+        self.videoManager.registerNewSubclip(filename,s,e)
+    self.ui.setUiDirtyFlag()
+
+  def findSimilarSounds(self,startTime,endTime,limit,distance):
+    if self.currentlyPlayingFileName is not None:
+        self.ffmpegService.findSimilarSounds( self.currentlyPlayingFileName,startTime,endTime,limit,distance,self.similarSoundCallback )
+
+
   def sceneChangeCallback(self,filename,timestamp,timestampEnd=None,kind='Mark'):
     if kind == 'Mark':
       self.videoManager.addNewInterestMark(filename,timestamp,kind='sceneChange')

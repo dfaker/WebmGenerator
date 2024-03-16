@@ -134,6 +134,10 @@ class FilterSelectionController:
     d = e-s
     return d
 
+  def getScreenshot(self,ts,filters):
+    shot = self.ffmpegService.getFilteredScreenshot(self.currentlyPlayingFileName,ts,filters)
+    return shot
+
   def getTemplateListing(self):
     return self.templates.items()
 
@@ -250,6 +254,10 @@ class FilterSelectionController:
 
   def clearVideoRect(self):
     self.player.command('script-message','screenspacetools_clear')
+
+  def updateSketch(self,sketch):
+    sketchstr = json.dumps(sketch).replace('[','{').replace(']','}')
+    self.player.command('script-message','screenspacetools_sketch',sketchstr)
 
   def getVideoDimensions(self):
     osd_w = self.player.width

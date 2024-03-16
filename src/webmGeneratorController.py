@@ -500,6 +500,8 @@ class WebmGeneratorController:
 
   def globalKeyCallback(self,evt):
     ctrl  = (evt.state & 0x4) != 0
+    shift = (evt.state & 0x1) != 0
+    
     if ctrl:
       if evt.keysym=='q':
         self.root.destroy()
@@ -508,6 +510,10 @@ class WebmGeneratorController:
       elif evt.keysym=='b':
         self.webmMegeneratorUi.toggleBoringMode()
         self.mergeSelectionUi.toggleBoringMode(self.webmMegeneratorUi.boringMode)
+
+    if ctrl and shift and evt.keysym == 'question':
+        tabName = self.webmMegeneratorUi.getTabName()
+        self.webmMegeneratorUi.toggleHelpFor(tabName)
 
     self.cutselectionController.handleGlobalKeyEvent(evt)
 

@@ -749,6 +749,26 @@ class WebmGeneratorUi:
     self.master.attributes("-fullscreen", self.fullscreen)
     self.master.update_idletasks()
 
+
+  def toggleHelpFor(self,tabName):
+    self.boringMode = not self.boringMode
+
+    self.master.update_idletasks()
+    if(self.boringMode):
+      self.controller.cutselectionController.setVolume(0)
+      self.controller.filterSelectionController.setVolume(0)
+      self.notebook.pack_forget()
+      self.statusFrame.pack_forget()
+    else:
+      self.notebook.pack(expand=1, fill='both')
+      self.statusFrame.pack(expand=0, fill='x',side='bottom')
+      self.master.title('WebmGenerator')
+      self.master.config(menu=self.menubar)
+    self.master.update_idletasks()
+
+  def getTabName(self):
+    return self.notebook.select()
+
   def takeScreenshot(self):
     selectedTab = self.notebook.select()
     self.controller.takeScreenshotToFile(selectedTab)

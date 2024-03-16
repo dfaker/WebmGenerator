@@ -1,6 +1,49 @@
 [
 
 
+{
+ "support": "...",
+ "category": "Frame and pixel reordering",
+ "name": "tiltandshift",
+ "filter": "tiltandshift",
+ "kind": "V->V",
+ "desc": "Generate a tilt-and-shift'd video.",
+ "params": [
+
+   {
+    "n": "tilt",
+    "d": 1,
+    "type": "int",
+    "range": [
+     0,
+     1
+    ],
+    "inc": 1
+   },
+
+  {
+    "n": "start",
+    "type": "cycle",
+    "d": "none",
+    "cycle": [
+    "none",
+    "frame",
+    "black"
+   ]
+  },
+  {
+    "n": "end",
+    "type": "cycle",
+    "d": "none",
+    "cycle": [
+    "none",
+    "frame",
+    "black"
+   ]
+  }
+ ]
+},
+
  {
   "support": "..C",
   "category": "N->A",

@@ -38,7 +38,6 @@ from .subtitleCutter import trimSRTfile
 from .ffmpegInfoParser import getVideoInfo
 from .masonry import Brick,Stack
 
-
 import subprocess as sp
 import numpy as np
 from collections import defaultdict, deque
@@ -90,6 +89,56 @@ def lucas_kanade_np(im1, im2, win=2):
 
     return mag.max()-mag.mean()
 
+mfccs = None
+lastmfccfilename = ''
+lastmfccsSr = 0
+lastsampleToFind = None
+
+def find_similar_regions(filename, start_sec, end_sec, num_matches=30, min_distance_sec=1):
+    global mfccs, lastmfccfilename, lastsampleToFind, ccsr
+
+    import librosa
+    
+    if mfccs is None or filename != lastmfccfilename: 
+        audio, ccsr = librosa.load(filename, sr=None)
+        mfccs = librosa.feature.mfcc(y=audio, sr=ccsr)
+        lastmfccfilename = filename
+
+
+    start_frame = librosa.time_to_frames(start_sec, sr=ccsr)
+    end_frame = librosa.time_to_frames(end_sec, sr=ccsr)
+    
+    if lastsampleToFind is not None and start == 0 and end == 0:
+        target_mfccs = lastsampleToFind
+    else:
+        target_mfccs = mfccs[:, start_frame:end_frame]
+    
+    lastsampleToFind = target_mfccs
+
+    window_length = end_frame - start_frame
+    min_distance_frames = librosa.time_to_frames(min_distance_sec, sr=ccsr)
+    similarities = []
+    for i in range(mfccs.shape[1] - window_length + 1):
+        if abs(i - start_frame) < min_distance_frames or abs(i + window_length - end_frame) < min_distance_frames:
+            continue
+        window_mfccs = mfccs[:, i:i+window_length]
+        distance = np.linalg.norm(target_mfccs - window_mfccs)
+        similarities.append((distance, i, i+window_length))
+
+    similarities.sort(key=lambda x: x[0])
+
+    final_matches = []
+    for distance, start, end in similarities:
+        if all(abs(start - prev_start) >= min_distance_frames and abs(end - prev_end) >= min_distance_frames 
+               for prev_start, prev_end in final_matches):
+            final_matches.append((start, end))
+            if len(final_matches) == num_matches:
+                break
+    similar_regions = [(librosa.frames_to_time(start, sr=ccsr),
+                        librosa.frames_to_time(end, sr=ccsr)) for start, end in final_matches]
+
+    return similar_regions
+
 encoderMap = {
    'webm:VP8':webmvp8Encoder
   ,'webm:VP9':webmvp9Encoder
@@ -112,6 +161,27 @@ for fn in os.listdir(customEncoderDir):
     except Exception as e:
         print('Custom Encode Spec Exception',fn,e)
 
+isEnvencSupportedFlag = None
+def isEnvencSupported():
+    
+    global isEnvencSupportedFlag
+
+    if isEnvencSupportedFlag is not None:
+        return isEnvencSupportedFlag
+
+    proc = sp.Popen(['ffmpeg', '-loglevel', 'error', '-f', 'lavfi', 
+                     '-i', 'color=black:s=1080x1080', '-vframes', '1', 
+                     '-an', '-c:v', 'hevc_nvenc', '-f', 'null', '-'],stdout=sp.PIPE, stderr=sp.PIPE)
+    outs,errs = proc.communicate()
+    resp = (outs+errs).strip()
+
+    if len(resp) == 0:
+        isEnvencSupportedFlag = True
+        logging.debug("hevc_nvenc support confirmed!")
+    else:
+        isEnvencSupportedFlag = False
+        logging.debug("hevc_nvenc not supported!")
+    return isEnvencSupportedFlag
 
 
 class FFmpegService():
@@ -134,6 +204,28 @@ class FFmpegService():
     else:
         atempos.append(target_change)
     return ','.join(['atempo={}'.format(i) for i in atempos])
+
+  def getFilteredScreenshot(self,filename,timestamp,filters,n='a'):
+      
+      popen_params = {
+        "bufsize": 10 ** 5,
+        "stdout": sp.PIPE
+      }
+
+      vi = getVideoInfo(filename,filters)
+      
+      print("filters")
+      print(filters)
+
+      divisor = 1
+
+      cmd1=['ffmpeg','-y',"-loglevel", "quiet",'-filter_complex',filters,'-ss',str(timestamp),'-i',cleanFilenameForFfmpeg(filename), "-pix_fmt", "rgb24", '-vframes', '1', "-f","image2pipe","-an","-pix_fmt","bgr24","-vcodec","rawvideo","-vsync", "vfr","-"]
+     
+      f1 = np.frombuffer(sp.Popen(cmd1,**popen_params).stdout.read(), dtype="uint8")
+      f1.shape = (vi.height,vi.width,3)
+
+      return f1,divisor
+
 
   def __init__(self,globalStatusCallback=print,imageWorkerCount=2,encodeWorkerCount=1,statsWorkerCount=1,globalOptions={}):
 
@@ -749,6 +841,7 @@ class FFmpegService():
                    totalExpectedEncodedSeconds, 
                    statusCallback, requestId=requestId, globalOptions=self.globalOptions)
 
+
     def encodeConcat(tempPathname,outputPathName,runNumber,requestId,mode,seqClips,options,filenamePrefix,statusCallback):
 
       expectedTimes = []
@@ -759,7 +852,7 @@ class FFmpegService():
       preciseDurations = {}
       infoOut={}
 
-      usNVHWenc = self.globalOptions.get('alwaysForcenvEncIntermediateFiles',False) or ('_Nvenc' in options.get('outputFormat','mp4:x264') and self.globalOptions.get('nvEncIntermediateFiles',True))
+      usNVHWenc = isEnvencSupported() and self.globalOptions.get('alwaysForcenvEncIntermediateFiles',False) or ('_Nvenc' in options.get('outputFormat','mp4:x264') and self.globalOptions.get('nvEncIntermediateFiles',True))
 
       fadeStartToEnd = options.get('fadeStartToEnd',True)
 
@@ -1375,8 +1468,19 @@ class FFmpegService():
           filename,requestType,options,callback = self.statsRequestQueue.get()
           print(requestType,options)
           
+          if requestType =='SimilarSounds':
+            
+            filename=options.get('filename')
+            start=options.get('start')
+            end=options.get('end')
+            limit=options.get('limit')
+            distance=options.get('distance')
+            similar_regions = find_similar_regions(filename, start, end, num_matches=limit, min_distance_sec=distance)
+            print(similar_regions)
 
-          if requestType =='MaxInterFrameMove':
+            callback(filename,1,similar_regions)
+
+          elif requestType =='MaxInterFrameMove':
 
 
             logging.debug('inter frame move start')
@@ -2296,7 +2400,15 @@ class FFmpegService():
                                                            minSeconds=minSeconds,
                                                            maxSeconds=maxSeconds,
                                                            cropRect=cropRect),callback) )
-    
+
+  def findSimilarSounds(self,filename,start,end,limit,distance,callback):
+    self.statsRequestQueue.put( (filename,'SimilarSounds',dict(filename=filename,
+                                                           start=start,
+                                                           end=end,
+                                                           limit=limit,
+                                                           distance=distance),callback))
+
+
   def fullLoopSearch(self,filename,duration,callback,midThreshold=30,minLength=1,maxLength=5,timeSkip=1,threshold=30,addCuts=True,useRange=False,rangeStart=None,rangeEnd=None,ifdmode=False,selectionMode='bestFirst'):
     self.statsRequestQueue.put( (filename,'FullLoopSearch',dict(filename=filename,
                                                                 duration=duration,

@@ -99,8 +99,17 @@ class MergeSelectionController:
   def getDefaultPostFilter(self):
     return self.globalOptions.get('defaultPostProcessingFilter','')
 
-  def getFilteredClips(self):
-    return self.filterController.getClipsWithFilters()
+  def getFilteredClips(self, mode):
+    if mode == 'CLIPS':
+        return self.filterController.getClipsWithFilters()
+    else:
+        videos = []
+        n=90001
+        for filename in self.cutController.files:
+            n+=1
+            videos.append((filename,n,0,1,'null', 'null', 'null'))
+        return videos
+
 
   def requestPreviewFrame(self,rid,filename,timestamp,filterexp,size,callback):
     print('requestPreviewFrame',rid,filename,timestamp)

@@ -68,6 +68,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "x",
+                "rectPropGroup":"dstBoxPos",
                 "videoSpaceAxis":"x",
                 "videoSpaceSign":1,
                 "inc": 1,
@@ -79,6 +80,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
+                "rectPropGroup":"dstBoxPos",
                 "videoSpaceAxis":"y",
                 "videoSpaceSign":1,
                 "inc": 1,
@@ -130,8 +132,9 @@ selectableFilters = [
                 "type": "int",
                 "range": None,
                 "rectProp": "x",
+                "rectPropGroup":"sourceCoords",
                 "videoSpaceAxis":"x",
-                "videoSpaceSign":1,
+                "videoSpaceSign":1,                
                 "inc": 1,
                 "commandVar":['Crop-X',[['crop@{fn}','x']]]
             },
@@ -141,6 +144,7 @@ selectableFilters = [
                 "type": "int",
                 "range": None,
                 "rectProp": "y",
+                "rectPropGroup":"sourceCoords",
                 "videoSpaceAxis":"y",
                 "videoSpaceSign":1,
                 "inc": 1,
@@ -201,28 +205,28 @@ selectableFilters = [
         "params": [
             {
                 "n": "top",
-                "d": 10,
+                "d": "ih/2",
                 "type": "float",
                 "range": [0,None],
                 "inc": 1,
             },
             {
                 "n": "right",
-                "d": 10,
+                "d": "iw/2",
                 "type": "float",
                 "range": [0,None],
                 "inc": 1,
             },
             {
                 "n": "bottom",
-                "d": 10,
+                "d": "ih/2",
                 "type": "float",
                 "range": [0,None],
                 "inc": 1,
             },
             {
                 "n": "left",
-                "d": 10,
+                "d": "iw/2",
                 "type": "float",
                 "range": [0,None],
                 "inc": 1,
@@ -349,79 +353,6 @@ selectableFilters = [
 
 
     {
-        "name": "Zoom Lens",
-        "desc": "Zoom on a region of the video and overlay it.",
-        "category":['Overlay, text and masks'],
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]null[bg{fn}],[vina{fn}]crop@{fn}=w={w}:h={h}:x={x}:y={y},lenscorrection=cx={cx}:cy={cy}:k1={lensk1}:k2={lensk2}:i=bilinear[fg{fn}],[bg{fn}][fg{fn}]overlay@{fn}=x={x}:y={y}:alpha=premultiplied",
-        "params": [ 
-            {
-                "n": "x",
-                "d": 0,
-                "type": "float",
-                "range": None,
-                "rectProp": "x",
-                "inc": 1,
-                "commandVar":['Crop-X',[['crop@{fn}','x'],['overlay@{fn}','x']]]
-            },
-            {
-                "n": "y",
-                "d": 0,
-                "type": "float",
-                "range": None,
-                "rectProp": "y",
-                "inc": 1,
-                "commandVar":['Crop-Y',[['crop@{fn}','y'],['overlay@{fn}','y']]]
-            },
-            {
-                "n": "w",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "w",
-                "inc": 1
-            },
-            {
-                "n": "h",
-                "d": 100,
-                "type": "float",
-                "range": None,
-                "rectProp": "h",
-                "inc": 1
-            },
-            
-            {
-                "n": "cx",
-                "d": 0.5,
-                "type": "float",
-                "range": [0,1],
-                "inc": 0.01
-            },
-            {
-                "n": "cy",
-                "d": 0.5,
-                "type": "float",
-                "range": [0,1],
-                "inc": 0.01
-            },
-
-            {
-                "n": "lensk1",
-                "d": 0,
-                "type": "float",
-                "range": [-1, 1],
-                "inc": 0.01,
-            },
-            {
-                "n": "lensk2",
-                "d": 0,
-                "type": "float",
-                "range": [-1, 1],
-                "inc": 0.01,
-            }
-        ],
-    },
-
-    {
         "name": "Zoom PiP",
         "desc": "Zoom on a region of the video and overlay it.",
         "category":['Overlay, text and masks'],
@@ -489,22 +420,211 @@ selectableFilters = [
         ],
     },
 
+
     {
-        "name": "Hue Outside Area",
+        "name": "Zoom PiP Feathered Squircle",
+        "desc": "Zoom on a region of the video and overlay it.",
+        "category":['Basic','Overlay, text and masks'],
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]null[bg{fn}],[vina{fn}]setpts=PTS+{start_Trim}/TB,crop@{fn}=w={w}:h={h}:x={x}:y={y},scale@{fn}=iw*{zoom}:ih*{zoom}[fg{fn}],[fg{fn}]split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}],[bg{fn}][cutout{fn}]overlay@{fn}=x={outX}:y={outY}",
+        "params": [ 
+            {
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "videoSpaceAxis":"x",
+                "videoSpaceSign":1,
+                "rectProp": "x",
+                "rectPropGroup":"srcBoxPos",
+                "inc": 1,
+                "commandVar":['Crop-X',[['crop@{fn}','x']]]
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "videoSpaceAxis":"y",
+                "videoSpaceSign":1,
+                "rectProp": "y",
+                "rectPropGroup":"srcBoxPos",
+                "inc": 1,
+                "commandVar":['Crop-Y',[['crop@{fn}','y']]]
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+                "commandVar":['Crop-W',[['crop@{fn}','w']]]
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+                "commandVar":['Crop-h',[['crop@{fn}','h']]]
+            },
+            {
+                "n": "zoom",
+                "d": 1,
+                "type": "float",
+                "range": [0, None],
+                "inc": 0.1,
+            },
+            {
+                "n": "outX",
+                "d": 1,
+                "type": "int",
+                "videoSpaceAxis":"x",
+                "videoSpaceSign":1,
+                "range": None,
+                "rectPropGroup":"dstBoxPos",
+                "inc": 1,
+                "commandVar":['Overlay-x',[['overlay@{fn}','x']]]
+            },
+            {
+                "n": "outY",
+                "d": 1,
+                "type": "int",
+                "videoSpaceAxis":"y",
+                "videoSpaceSign":1,
+                "range": None,
+                "rectPropGroup":"dstBoxPos",
+                "inc": 1,
+                "commandVar":['Overlay-Y',[['overlay@{fn}','y']]]
+            },
+            {
+                "n": "radius",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "blur",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "start_Trim",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            
+        ],
+    },
+
+
+
+    {
+        "name": "Gaussian Blur Outside Area with Squircle Mask",
         "desc": "Select a region, and apply hue adjustment to everything outside it.",
         "category":['Overlay, text and masks'],
         "timelineSupport":True,
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]hue=h={h}:s={s}:b={b}[bg{fn}],[vina{fn}]crop={w}:{ch}:{x}:{y}[fg{fn}],[bg{fn}][fg{fn}]overlay={x}:{y}",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]gblur={strength}:steps={steps}[bg{fn}],[vina{fn}]crop@{fn}={w}:{h}:{x}:{y}[fg{fn}], [fg{fn}]format=rgba,split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]format=rgba,alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}]  ,[bg{fn}][cutout{fn}]overlay@{fn}={x}:{y}",
         "params": [
-            {"n": "h", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
-            {"n": "s", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
-            {"n": "b", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},     
+            {
+                "n": "strength",
+                "d": 20,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },
+            {
+                "n": "steps",
+                "d": 1,
+                "type": "int",
+                "range": None,
+                "inc": 1,
+            },     
+            {
+
+                "n": "x",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "rectPropGroup":"boxpos",
+                "videoSpaceAxis":"x",
+                "videoSpaceSign":1,
+                "inc": 1,
+                "commandVar":['Box-X',[['crop@{fn}','x'],['overlay@{fn}','x']]]
+            },
+            {
+                "n": "y",
+                "d": 0,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "rectPropGroup":"boxpos",
+                "videoSpaceAxis":"y",
+                "videoSpaceSign":1,
+                "inc": 1,
+                "commandVar":['Box-Y',[['crop@{fn}','y'],['overlay@{fn}','y']]]
+            },
+            {
+                "n": "w",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+                "commandVar":['Box-Width',[['crop@{fn}','w']]]
+            },
+            {
+                "n": "h",
+                "d": 100,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+                "commandVar":['Box-Height',[['crop@{fn}','h']]]
+            },
+            {
+                "n": "radius",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "blur",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            }
+        ],
+    },
+
+
+
+    {
+        "name": "Hue Outside Area with Squircle Mask",
+        "desc": "Select a region, and apply hue adjustment to everything outside it.",
+        "category":['Overlay, text and masks'],
+        "timelineSupport":True,
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vinb{fn}]hue=h={ch}:s={cs}:b={cb}[bg{fn}],[vina{fn}]crop={w}:{h}:{x}:{y}[fg{fn}], [fg{fn}]format=rgba,split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]format=rgba,alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}]  ,[bg{fn}][cutout{fn}]overlay={x}:{y}",
+        "params": [
+            {"n": "ch", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
+            {"n": "cs", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
+            {"n": "cb", "d": 0, "type": "float", "range": [-10, 10], "inc": 0.2},     
             {
                 "n": "x",
                 "d": 0,
                 "type": "float",
                 "range": None,
                 "rectProp": "x",
+                "rectPropGroup":"boxpos",
                 "inc": 1,
             },
             {
@@ -513,6 +633,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
+                "rectPropGroup":"boxpos",
                 "inc": 1,
             },
             {
@@ -524,12 +645,26 @@ selectableFilters = [
                 "inc": 1,
             },
             {
-                "n": "ch",
+                "n": "h",
                 "d": 100,
                 "type": "float",
                 "range": None,
                 "rectProp": "h",
                 "inc": 1,
+            },
+            {
+                "n": "radius",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "blur",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
             }
         ],
     },
@@ -661,11 +796,11 @@ selectableFilters = [
     },
 
     {
-        "name": "Hue Inside Area",
+        "name": "Hue Inside Area with Squircle Mask",
         "desc":"Select a region, and apply hue adjustment limited to that region.",
         "category":['Overlay, text and masks'],
         "timelineSupport":True,
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},hue=h={ch}:s={cs}:b={cb}[fg{fn}],[vinb{fn}][fg{fn}]overlay={x}:{y}",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop={w}:{h}:{x}:{y},hue=h={ch}:s={cs}:b={cb}[fg{fn}],  [fg{fn}]format=rgba,split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]format=rgba,alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}] ,[vinb{fn}][cutout{fn}]overlay={x}:{y}",
         "params": [
             {"n": "ch", "d": 0, "type": "float", "range": [0, 360], "inc": 0.0174533},
             {"n": "cs", "d": 2, "type": "float", "range": [-10, 10], "inc": 0.2},
@@ -705,6 +840,20 @@ selectableFilters = [
                 "range": None,
                 "rectProp": "h",
                 "inc": 1,
+            },
+            {
+                "n": "radius",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "blur",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
             }
         ],
     },
@@ -799,11 +948,11 @@ selectableFilters = [
 
 
   {
-        "name": "Gaussian Blur Area",
+        "name": "Gaussian Blur Area with Squircle Mask",
         "desc":"Select a region, and apply Gaussian Blur limited to that region.",
         "category":['Overlay, text and masks'],
         "timelineSupport":True,
-        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop@{fn}=w={w}:h={h}:x={x}:y={y},gblur={strength}:steps={steps}[fg{fn}],[vinb{fn}][fg{fn}]overlay@{fn}={x}:{y}",
+        "filter": "null[vin{fn}],[vin{fn}]split=2[vina{fn}][vinb{fn}],[vina{fn}]crop@{fn}=w={w}:h={h}:x={x}:y={y},gblur={strength}:steps={steps}[fg{fn}], [fg{fn}]format=rgba,split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]format=rgba,alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}] ,[vinb{fn}][cutout{fn}]overlay@{fn}={x}:{y}",
         "params": [
             {
                 "n": "strength",
@@ -826,6 +975,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "x",
+                "rectPropGroup": "boxpos",
                 "videoSpaceAxis":"x",
                 "videoSpaceSign":1,
                 "inc": 1,
@@ -837,6 +987,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
+                "rectPropGroup": "boxpos",
                 "videoSpaceAxis":"y",
                 "videoSpaceSign":1,
                 "inc": 1,
@@ -859,6 +1010,20 @@ selectableFilters = [
                 "rectProp": "h",
                 "inc": 1,
                 "commandVar":['Box-Height',[['crop@{fn}','h']]]
+            },
+            {
+                "n": "radius",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "blur",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
             }
         ],
     },
@@ -1084,6 +1249,7 @@ selectableFilters = [
                 "videoSpaceAxis":"x",
                 "videoSpaceSign":1,
                 "rectProp": "x",
+                "rectPropGroup":"dstBoxPos",
                 "inc": 1,
                 "commandVar":['Overlay-X',[['overlay@{fn}','x']]]
             },
@@ -1100,6 +1266,7 @@ selectableFilters = [
                 "type": "float",
                 "range": None,
                 "rectProp": "y",
+                "rectPropGroup":"dstBoxPos",
                 "videoSpaceAxis":"y",
                 "videoSpaceSign":1,
                 "inc": 1,
@@ -1226,6 +1393,101 @@ selectableFilters = [
                 "range": [0.0, 1.0],
                 "inc": 0.01,
             },
+        ],
+    },
+
+
+    {
+        "name": "Overlay with Delay and Squircle Mask",
+        "category":['Overlay, text and masks'],
+        "desc":"Overlay a source on top of the input with synchronization.",
+        "timelineSupport":True,
+        "filter":        "setpts=PTS+{bg_start_Trim}/TB[vin{fn}],movie='{source}':loop=1:seek_point={seek_point},setpts=PTS+{overlay_start_Trim}/TB,scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],   [pwm{fn}]split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]format=argb,alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}], [vin{fn}][cutout{fn}]overlay=x={x}:y={y}",
+        "filterPreview": "setpts=PTS+{bg_start_Trim}/TB[vin{fn}],movie='{source}':seek_point={seek_point},setpts=PTS+{overlay_start_Trim}/TB,scale={w}:{h},rotate=a={angle}:out_w=rotw({angle}):out_h=roth({angle}):fillcolor=none,format=argb,colorchannelmixer=aa={alpha}[pwm{fn}],          [pwm{fn}]split=2[fga{fn}][fgb{fn}],[fga{fn}]trim=end_frame=1,geq=r=0:g=0:b=0:a='255 * (1 - min(1, max(0, (pow(pow(abs((X - W / 2) / (W / 2)), {radius}) + pow(abs((Y - H / 2) / (H / 2)), {radius}), 1/{radius}) * max(W, H) / 2 - (max(W, H) / 2 - {blur})) / {blur})))'[fgmask{fn}],[fgmask{fn}]format=argb,alphaextract[fgmaskgs{fn}],[fgb{fn}][fgmaskgs{fn}]alphamerge[cutout{fn}], [vin{fn}][cutout{fn}]overlay=x={x}:y={y}",
+        "params": [
+            {"n": "source", "d": "resources/logo.png", "type": "file", "fileCategory":"image"},
+            {
+                "n": "x",
+                "d": 5,
+                "type": "float",
+                "range": None,
+                "rectProp": "x",
+                "inc": 1,
+            },
+            {
+                "n": "y",
+                "d": 5,
+                "type": "float",
+                "range": None,
+                "rectProp": "y",
+                "inc": 1,
+            },
+            {
+                "n": "w",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "w",
+                "inc": 1,
+            },
+            {
+                "n": "h",
+                "d": -1,
+                "type": "float",
+                "range": None,
+                "rectProp": "h",
+                "inc": 1,
+            },
+            {
+                "n": "angle",
+                "d": 0.0,
+                "type": "float",
+                "range": [-6.28319, 6.28319],
+                "inc": 0.0174533,
+            },
+            {
+                "n": "bg_start_Trim",
+                "d": 0.0,
+                "type": "float",
+                "range": [None, None],
+                "inc": 0.01,
+            },
+            {
+                "n": "overlay_start_Trim",
+                "d": 0.0,
+                "type": "float",
+                "range": [None, None],
+                "inc": 0.01,
+            },
+            {
+                "n": "seek_point",
+                "d": 0.0,
+                "type": "float",
+                "range": [None, None],
+                "inc": 0.01,
+            },
+
+            {
+                "n": "alpha",
+                "d": 1.0,
+                "type": "float",
+                "range": [0.0, 1.0],
+                "inc": 0.01,
+            },
+            {
+                "n": "radius",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            },
+            {
+                "n": "blur",
+                "d": 1,
+                "type": "float",
+                "range": None,
+                "inc": 0.1
+            }
         ],
     },
 

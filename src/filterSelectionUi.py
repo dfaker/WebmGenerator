@@ -1017,7 +1017,8 @@ class FilterSelectionUi(ttk.Frame):
 
   def keyboardR(self,e):
     try:
-        import cv2
+        pass
+        #import cv2
     except Exception as e:
         print(e)
         return

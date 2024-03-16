@@ -106,52 +106,11 @@ def debounce(wait_time,max_gap):
 
 audioProcessingSampleRate = 4000
 realtimeAudoProcessing = True
-from scipy.signal import find_peaks
+
 
 
 def detectBeats(audio_samples, sample_rate, window_length_secs=10, n_peaks=3):
-    # Ensure the input is a numpy array of type uint8
-    audio_samples = np.asarray(audio_samples, dtype=np.uint8)
-    
-    # Calculate the window size in samples
-    window_size = int(window_length_secs * sample_rate)
-    
-    # Calculate the step size for the moving window
-    # This example uses a step size of half the window size for 50% overlap
-    step_size = window_size // 2
-    
-    # Initialize an empty list to hold the frequency spike indices for each window
-    windowed_frequency_spikes = []
-    
-    # Iterate over the audio samples with a moving window
-    for start in range(0, len(audio_samples) - window_size + 1, step_size):
-        # Extract the current window of audio samples
-        window = audio_samples[start:start + window_size]
-        
-        # Compute the FFT of the window
-        fft_result = np.fft.fft(window)
-        
-        # Compute the magnitude of the FFT result
-        magnitude = np.abs(fft_result)
-        
-        # Find peaks in the magnitude of the FFT result
-        peaks, properties = find_peaks(magnitude,prominence=(None, None))
-
-        # If there are fewer peaks than n_peaks, return all peaks
-        if len(peaks) <= n_peaks:
-            top_peaks = peaks
-        else:
-            # Sort peaks by their prominence
-            prominences = properties['prominences']
-            sorted_indices = np.argsort(prominences)[::-1]  # Sort in descending order
-            top_indices = sorted_indices[:n_peaks]
-            top_peaks = peaks[top_indices]
-        
-        # Store the top peaks (frequency spikes) for this window
-        for peak in top_peaks:
-            windowed_frequency_spikes.append(peak+start)
-    
-    return windowed_frequency_spikes
+    return []
 
 class TimeLineSelectionFrameUI(ttk.Frame):
 

@@ -82,6 +82,7 @@ class EncodeProgress(ttk.Frame):
 
     self.encodeRequestId = encodeRequestId
     self.cancelled = False
+    self.iscomplete = False
     self.controller = controller
     self.config(padding='2', relief='raised')
     self.clip = clip
@@ -408,6 +409,7 @@ class EncodeProgress(ttk.Frame):
     
     if finalFilename is not None:
       self.finalFilename = finalFilename
+      self.iscomplete = True
       self.controller.registerComplete(self.finalFilename,clip=self.clip)
 
     if percent is not None:
@@ -1859,7 +1861,8 @@ class MergeSelectionUi(ttk.Frame):
       self.syncModal.recalculateEDLTimings()
     if includeProgress:
         for e in self.encoderProgress:
-          e.remove()
+          if e.iscomplete or e.cancelled:
+            e.remove()
 
   def profileChanged(self,*args):
     profileName = self.profileVar.get()

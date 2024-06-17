@@ -304,7 +304,6 @@ class CutselectionController:
                           loop='inf',
                           mute=True,
                           volume=0,
-                          background=self.globalOptions.get('cutsTabPlayerBackgroundColour','#282828'),
                           autofit_larger='1280',
                           autoload_files='no',
                           cover_art_auto='no',
@@ -314,6 +313,16 @@ class CutselectionController:
 
     if self.globalOptions.get('disableSubtitlesInPlayers',True):
       self.player.subtitles=False
+
+    try:
+        self.player.background=self.globalOptions.get('cutsTabPlayerBackgroundColour','#282828')
+    except:
+        pass
+
+    try:
+        self.player.background_color=self.globalOptions.get('cutsTabPlayerBackgroundColour','#282828')
+    except:
+        pass
 
     self.player.observe_property('time-pos',          self.handleMpvTimePosChange)
     self.player.observe_property('duration',          self.handleMpvDurationChange)
@@ -542,8 +551,8 @@ class CutselectionController:
 
     self.ytdlService.loadUrl(url,0,username,password,False,browserCookies,'default',code2factor,self.returnYTDLDownlaodedVideo)
 
-  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor):
-    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,self.returnYTDLDownlaodedVideo)
+  def loadVideoYTdl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,retrycount=0):
+    self.ytdlService.loadUrl(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,self.returnYTDLDownlaodedVideo,retrycount=0)
 
   def returnImageLoadAsVideo(self,filename):
     self.loadFiles([os.path.abspath(filename)])

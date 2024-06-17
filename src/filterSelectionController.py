@@ -35,13 +35,24 @@ class FilterSelectionController:
                           loglevel='info',
                           loop='inf',
                           mute=True,
-                          background=globalOptions.get('filtersTabPlayerBackgroundColour','#282828'),
                           cursor_autohide="always",
                           autofit_larger='1280',
                           autoload_files='no',
                           cover_art_auto='no',
                           audio_file_auto='no',
                           sub_auto='no')
+
+
+    try:
+        self.player.background=self.globalOptions.get('filtersTabPlayerBackgroundColour','#282828')
+    except:
+        pass
+
+    try:
+        self.player.background_color=self.globalOptions.get('filtersTabPlayerBackgroundColour','#282828')
+    except:
+        pass
+
 
     if self.globalOptions.get('disableSubtitlesInPlayers',True):
       self.player.subtitles=False

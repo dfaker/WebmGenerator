@@ -51,7 +51,8 @@ class YTDLService():
     def downloadFunc():
       while 1:
         try:
-          url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback = self.downloadRequestQueue.get()
+          url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback,retrycount = self.downloadRequestQueue.get()
+          
           self.cancelEvent.clear()
           self.splitEvent.clear()
 
@@ -71,7 +72,6 @@ class YTDLService():
                 self.globalStatusCallback('yt-dlp upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),0.0)
             self.globalStatusCallback('yt-dlp upgrade {}'.format(l.decode('utf8',errors='ignore').strip()),1.0)
             continue
-
 
           cutPassName=0
           while streamHasBeenCut:
@@ -99,12 +99,12 @@ class YTDLService():
               extraFlags.extend(['--cookies','cookies.txt'])
 
             if len(browserCookies)>0:
-              extraFlags.extend(['--cookies','--cookies-from-browser',browserCookies])
+              extraFlags.extend(['--cookies-from-browser',browserCookies])
 
             if len(qualitySort)>0 and qualitySort.upper() != 'DEFAULT':
               extraFlags.extend(['-f',qualitySort])
 
-
+            print(extraFlags)
 
             if hasattr(os.sys, 'winver'):
               proc = sp.Popen(['yt-dlp','--ignore-errors','--keep-video','--restrict-filenames']+extraFlags+[url,'-o',outfolder,'--merge-output-format','mp4'],creationflags=sp.CREATE_NEW_PROCESS_GROUP,stderr=sp.STDOUT,stdout=sp.PIPE,bufsize=10 ** 5)
@@ -290,11 +290,11 @@ class YTDLService():
   def togglePreview(self,toggleValue):
     self.pushPreview = toggleValue
 
-  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback):
-    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback))
+  def loadUrl(self,url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback,retrycount=0):
+    self.downloadRequestQueue.put((url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,callback,retrycount))
 
   def update(self):
-    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None,None,None))
+    self.downloadRequestQueue.put(('UPDATE',None,None,None,None,None,None,None,None,None))
 
   def cancelCurrentYoutubeDl(self):
     self.cancelEvent.set()

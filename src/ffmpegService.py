@@ -18,6 +18,7 @@ import json
 import numpy as np
 
 from .encoders.gifEncoder     import encoder as gifEncoder
+from .encoders.gifskiEncoder  import encoder as gifskiEncoder
 from .encoders.apngEncoder    import encoder as apngEncoder
 from .encoders.mp4x264Encoder import encoder as mp4x264Encoder
 from .encoders.webmvp8Encoder import encoder as webmvp8Encoder
@@ -147,6 +148,7 @@ encoderMap = {
   ,'mp4:H265_Nvenc':mp4H265NvencEncoder
   ,'mp4:AV1':mp4AV1Encoder
   ,'gif':gifEncoder
+  ,'gifski':gifskiEncoder
   ,'apng':apngEncoder
 }
 
@@ -861,11 +863,19 @@ class FFmpegService():
 
       fullReencode = False
 
+      singlestart = None
+      singleEnd  =  None
+
       if len(seqClips) == 1:
         rid,clipfilename,s,e,filterexp,filteraudioexp,filterexpEnc,clipSpeed = seqClips[0]
         if s is None and e is None:
             fullReencode = True
             fileSequence.append(clipfilename)
+        elif filterexp=='' and filteraudioexp=='' and filterexpEnc=='':
+            singlestart=s
+            singleEnd=e
+            fullReencode = True
+            fileSequence.append(clipfilename)            
 
       fadeDuration=0.25
       try:
@@ -1103,7 +1113,15 @@ class FFmpegService():
         in_maxHeight = max(in_maxHeight, videoh)
         in_minHeight = min(in_minHeight, videoh)
         
-        if fullReencode:
+        if fullReencode and singlestart is not None and singleEnd is not None:
+
+            expectedTimes.append(singleEnd-singlestart)
+            totalExpectedEncodedSeconds = sum(expectedTimes)*2
+            totalExpectedFinalLength=sum(expectedTimes)
+            totalEncodedSeconds += singleEnd-singlestart
+            preciseDurations[clipfilename] = singleEnd-singlestart
+
+        elif fullReencode:
             expectedTimes.append(videoInfo.duration)
             totalExpectedEncodedSeconds = sum(expectedTimes)*2
             totalExpectedFinalLength=sum(expectedTimes)
@@ -1410,9 +1428,20 @@ class FFmpegService():
       else:
         encodeStageFilter = 'null'
 
+      
+
       if fullReencode:
         encodeStageFilter += ",scale='if(gte(iw,ih),max(0,min({maxDim},iw)),-2):if(gte(iw,ih),-2,max(0,min({maxDim},ih)))':flags=bicubic".format(maxDim=options.get('maximumWidth',1280))
         encodeStageFilter += ',pad=ceil(iw/2)*2:ceil(ih/2)*2'
+
+      startEndTimestamps=None
+
+
+      if fullReencode and singlestart is not None and singleEnd is not None:
+        startEndTimestamps = (singlestart,singleEnd)
+
+
+      print('!!!!!!!!!!startEndTimestamps!!!!',startEndTimestamps)
 
       finalEncoder(inputsList, 
                    outputPathName,
@@ -1421,7 +1450,7 @@ class FFmpegService():
                    options, 
                    totalEncodedSeconds, 
                    totalExpectedEncodedSeconds, 
-                   statusCallback, requestId=requestId, encodeStageFilter=encodeStageFilter, globalOptions=self.globalOptions)
+                   statusCallback, requestId=requestId, encodeStageFilter=encodeStageFilter, globalOptions=self.globalOptions, startEndTimestamps=startEndTimestamps)
 
 
     def encodeWorker():

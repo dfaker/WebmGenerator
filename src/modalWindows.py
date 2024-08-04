@@ -2282,58 +2282,72 @@ class TimestampModal(tk.Toplevel):
     self.entryTimestamps.select_range(0, 'end')
     self.entryTimestamps.icursor('end')
 
-    self.start = None
-    self.end   = None
+    self.ranges = []
 
     self.valueUpdated()
 
   def valueUpdated(self,*args):
-    self.start = None
-    self.end   = None
+
+    self.ranges = []
+
+
+    rawRange = self.varTimestamps.get()
     isIsNegative = bool(self.varnegativeTS.get())
     self.downloadCmd.config(state='disabled')
-    rawRange = self.varTimestamps.get()
+
+    sourceStrings = []
+
+    if ',' in rawRange:
+        sourceStrings = [s for s in rawRange.split(',')]
+    else:
+        sourceStrings = [rawRange]
+
 
     multipliers = [1,60,60*60,60*60*60]
 
-    startTS=0
-    endTS=0
+    for part in sourceStrings:
+        startTS=0
+        endTS=0
+        if part is not None:
+          startText = ""
+          endText   = ""
 
-    if rawRange is not None:
-      startText = ""
-      endText   = ""
+          isStart = True
+          for char in part.strip():
+            if char in '1234567890.:':
+              if isStart:
+                startText += char
+              else:
+                endText += char
+            else:
+              isStart=False
 
-      isStart = True
-      for char in rawRange.strip():
-        if char in '1234567890.:':
-          if isStart:
-            startText += char
-          else:
-            endText += char
-        else:
-          isStart=False
+          if len(startText)>0 and len(endText)>0:
+            for mult,val in zip(multipliers,startText.split(':')[::-1]):
+              startTS += mult*float(val)
+            for mult,val in zip(multipliers,endText.split(':')[::-1]):
+              endTS += mult*float(val)
 
-      if len(startText)>0 and len(endText)>0:
-        for mult,val in zip(multipliers,startText.split(':')[::-1]):
-          startTS += mult*float(val)
-        for mult,val in zip(multipliers,endText.split(':')[::-1]):
-          endTS += mult*float(val)
+          if (startTS != 0 or endTS != 0) and endTS != startTS:
+            startTS,endts = sorted([startTS,endTS])
+            
+            if isIsNegative:
+                startTS = self.videoDuration-startTS
+                endTS = self.videoDuration-endTS
+            
+            self.ranges.append((startTS,endTS))
 
 
-    if (startTS != 0 or endTS != 0) and endTS != startTS:
-      self.start = startTS
-      self.end   = endTS     
-      if isIsNegative:
-        self.start = self.videoDuration-startTS
-        self.end   = self.videoDuration-endTS
-      self.start,self.end = sorted([self.start,self.end])
-      self.downloadCmd.config(state='normal',text='Add SubClip from {}s to {}s ({}s)'.format(self.start,self.end,self.end-self.start))
+
+    if len(self.ranges) > 0:
+        self.downloadCmd.config(state='normal',text='Add {} SubClips from {}s to {}s ({}s)'.format(len(self.ranges),self.ranges[0][0],self.ranges[-1][1],self.ranges[-1][1]-self.ranges[0][0]))
+
     else:
       self.downloadCmd.config(state='disabled',text='Add SubClip')
 
   def addSublcip(self):
-    if self.start != None and self.end != None:
-      self.controller.addNewSubclip(max(self.start,0), min(self.end,self.videoDuration))
+    for s,e in self.ranges:
+      self.controller.addNewSubclip(max(s,0), min(e,self.videoDuration))
 
 
 youtubeDLModalState = {
@@ -2432,10 +2446,17 @@ class YoutubeDLModal(tk.Toplevel):
     self.entryQualitySort.config(values=['default', 'bestvideo+bestaudio/best', 'bestvideo*+bestaudio/best', 'best'])
     self.entryQualitySort.grid(row=7,column=1,sticky='new',padx=5,pady=5)
 
-    
+    self.labelStreamRetry = ttk.Label(self)
+    self.labelStreamRetry.config(text='Stream retry count.')
+    self.labelStreamRetry.grid(row=8,column=0,sticky='new',padx=5,pady=5)
+    self.varStreamRetry   = tk.StringVar(self,'0')
+    self.entryStreamRetry = ttk.Entry(self,textvariable=self.varStreamRetry)
+    self.entryStreamRetry.grid(row=8,column=1,sticky='new',padx=5,pady=5)
+
+
     self.credsCmd = ttk.Button(self)
     self.credsCmd.config(text='Load credentials from ytdlpCreds.json',command=self.setCreds)
-    self.credsCmd.grid(row=8,column=0,columnspan=2,sticky='nesw')
+    self.credsCmd.grid(row=9,column=0,columnspan=2,sticky='nesw')
 
     if not os.path.exists('ytdlpCreds.json'):
       self.credsCmd['state']='disabled'
@@ -2443,7 +2464,7 @@ class YoutubeDLModal(tk.Toplevel):
 
     self.downloadCmd = ttk.Button(self)
     self.downloadCmd.config(text='Download',command=self.download)
-    self.downloadCmd.grid(row=9,column=0,columnspan=2,sticky='nesw')
+    self.downloadCmd.grid(row=10,column=0,columnspan=2,sticky='nesw')
     self.rowconfigure(5, weight=1)
 
     self.entryUrl.focus()
@@ -2478,12 +2499,17 @@ class YoutubeDLModal(tk.Toplevel):
     youtubeDLModalState['varBrowserCookies'] = browserCookies
     youtubeDLModalState['var2factor'] = code2Factor
 
+    retrycount = 0
+    try:
+        retrycount=int(float(self.varStreamRetry.get()))
+    except Exception as e:
+        print(e)
 
     try:
       fileLimit = int(float(self.varPlayListLimit.get()))
     except Exception as e:
       print(e)
-    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor)
+    self.controller.loadVideoYTdlCallback(url,fileLimit,username,password,useCookies,browserCookies,qualitySort,code2Factor,retrycount)
     self.destroy()
 
 

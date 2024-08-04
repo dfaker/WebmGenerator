@@ -106,7 +106,7 @@ def getFreeNameForFileAndLog(filenamePrefix, extension, initialFileN=1):
 
       fileN+=1
 
-def logffmpegEncodeProgress(proc, processLabel, initialEncodedSeconds, totalExpectedEncodedSeconds, statusCallback, passNumber=0, requestId=None, tempVideoPath=None, options={}):
+def logffmpegEncodeProgress(proc, processLabel, initialEncodedSeconds, totalExpectedEncodedSeconds, statusCallback, framesink=None, passNumber=0, requestId=None, tempVideoPath=None, options={}):
   currentEncodedTotal=0
   psnr = None
   ln=b''
@@ -135,7 +135,10 @@ def logffmpegEncodeProgress(proc, processLabel, initialEncodedSeconds, totalExpe
         proc.kill()
         outs,  errs = proc.communicate()
         return 0, 0
+      if proc.stderr is None:
+        break
       c = proc.stderr.read(1)
+
       if len(c)==0:
         break
       if c == b'\r':
@@ -207,6 +210,12 @@ def logffmpegEncodeProgress(proc, processLabel, initialEncodedSeconds, totalExpe
       ln+=c
     except Exception as e:
       logging.error("Encode progress Exception", exc_info=e)
+
+
+
+  if framesink is not None:
+    framesink.stdin.write(proc.stdout.read())
+    framesink.communicate()
 
   outs,  errs = proc.communicate()
 

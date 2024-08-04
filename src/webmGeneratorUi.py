@@ -25,7 +25,7 @@ try:
 except Exception as e:
     print(e)
 
-RELEASE_NUMVER = 'v3.41.1'
+RELEASE_NUMVER = 'v3.40.0'
 
 class WebmGeneratorUi:
 

@@ -587,15 +587,18 @@ class WebmGeneratorController:
       if self.webmMegeneratorUi is not None:
         self.webmMegeneratorUi.setLoadLabel('Loading files {}\n(Scanning root folder)'.format(len(finalFiles)))
     except Exception as e:
-      logging.error("webmMegeneratorUi.setLoadLabel",exc_info=e)
+      logging.error("webmMegeneratorUi.setLoadLabel",exc_info=e)    
 
+    allowedTypes = ['video','image/gif']
+    
     for f in map(os.path.normpath,files):
 
       if os.path.isfile(f):
         if self.shutdown or self.abortLoad:
           break
         g = mimetypes.guess_type(f)
-        if g is not None and g[0] is not None and 'video' in g[0] and all([x in f.upper() for x in substrings]):
+        
+        if g is not None and g[0] is not None and any(t in g[0] for t in allowedTypes) and all([x in f.upper() for x in substrings]):
           key = None
           if getStats:
             key = os.stat(f)
@@ -615,7 +618,7 @@ class WebmGeneratorController:
             if os.path.isfile(p):
 
               g = mimetypes.guess_type(p)
-              if g is not None and g[0] is not None and 'video' in g[0] and all([x in p.upper() for x in substrings]):
+              if g is not None and g[0] is not None and any(t in g[0] for t in allowedTypes) and all([x in p.upper() for x in substrings]):
                 key = None
                 if getStats:
                   key = os.stat(p)

@@ -920,6 +920,7 @@ class MergeSelectionUi(ttk.Frame):
                           'Grid - Pack videos into variably sized grid layouts.',
                           'Stream Copy - Ignore all filters and percorm no conversions, just stream cut and join the clips.',
                           'Full Source Reencode - Ignore all filters, timestamps, make no temporary files, just re-encode the full source.',
+                          'Clip Reencode - Ignore all filters, make no temporary files, just re-encode the full source segements.',
                           ]
 
     self.mergeStyleVar.set(self.mergeStyles[0])
@@ -1188,7 +1189,8 @@ class MergeSelectionUi(ttk.Frame):
         logging.error("customEncoderspecs Exception",exc_info=e)
 
     self.outputFormats += [
-      'gif',      
+      'gif',
+      'gifski',      
       'apng',
     ]
 
@@ -2299,6 +2301,58 @@ class MergeSelectionUi(ttk.Frame):
                                  outputPrefix,
                                  encodeProgressWidget.updateStatus) 
     
+
+    if self.mergeStyleVar.get().split('-')[0].strip() == 'Clip Reencode':
+      for clip in self.sequencedClips:
+        encodeSequence = []
+        self.encodeRequestId+=1
+        definition = (clip.rid,clip.filename,clip.s,clip.e,
+                      nullfilter,
+                      nullfilter,
+                      nullfilter,
+                      1)
+        encodeSequence.append(definition)
+        if len(encodeSequence)>0:
+          options={
+            'frameSizeStrategy':self.frameSizeStrategyValue,
+            'maximumSize':self.maximumSizeValue,
+            'initialBitrate':self.initialbitrateValue,
+            'maximumBitrate':self.maxbitrateValue,
+            'maximumWidth':self.maximumWidthValue,
+            'transDuration':0.0,
+            'transStyle':self.transStyleValue,
+            'speedAdjustment':self.speedAdjustmentValue,
+            'speedAdjustmentInterploate':self.interpolateSpeedChangeValue,
+            'outputFormat':self.outputFormatValue,
+            'audioChannels':self.audioChannels,
+            'audioRate':self.audioRate,
+            'audioMerge':self.audioMerge,
+            'postProcessingFilter':self.postProcessingFilter,
+            'audioOverride':self.audioOverrideValue,
+            'audiOverrideDelay':self.audiOverrideDelayValue,
+            'gridLoopMergeOption':self.gridLoopMergeOption,
+            'minimumPSNR':self.minimumPSNR,
+            'optimizer':self.optimizer,
+            'audioOverrideBias':self.audiOverrideBiasValue,
+          }
+          options.update(self.advancedFlags)
+
+          encodeProgressWidget = EncodeProgress(self.labelframeEncodeProgress,encodeRequestId=self.encodeRequestId,controller=self,targetSize=self.maximumSizeValue,clip=clip)
+          self.encoderProgress.append(encodeProgressWidget)
+          outputPrefix = self.filenamePrefixValue
+          if self.automaticFileNamingValue:
+            if len(self.controller.getLabelForRid(clip.rid)):
+              outputPrefix = self.convertFilenameToBaseName(self.controller.getLabelForRid(clip.rid),getBasename=False)
+            else:  
+              outputPrefix = self.convertFilenameToBaseName(clip.filename)
+
+          self.controller.encode(self.encodeRequestId,
+                                 'CONCAT',
+                                 encodeSequence,
+                                 options.copy(),
+                                 outputPrefix,
+                                 encodeProgressWidget.updateStatus) 
+
     if self.mergeStyleVar.get().split('-')[0].strip() == 'Full Source Reencode':
     
       uniquefilenames = set()
@@ -2375,7 +2429,7 @@ class MergeSelectionUi(ttk.Frame):
       self.frameMergeStyleSettings.pack(fill='x', ipadx='0', side='top')
       self.profileCombo.state(["!disabled"])
       self.frameSequenceValues.pack(anchor='nw', expand='true', fill='both', ipady='3', side='left')
-    elif self.mergeStyleVar.get().split('-')[0].strip()=='Individual Files':
+    elif self.mergeStyleVar.get().split('-')[0].strip()=='Individual Files' or self.mergeStyleVar.get().split('-')[0].strip()=='Clip Reencode':
       self.gridSequenceContainer.pack_forget()
       self.frameGridSettings.pack_forget()
       self.frameTransDuration.pack_forget()

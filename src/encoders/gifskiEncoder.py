@@ -23,6 +23,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     sizeLimitMax = options.get('maximumSize')*1024*1024
     sizeLimitMin = sizeLimitMax*(1.0-globalOptions.get('allowableTargetSizeUnderrun',0.25))
 
+  intervideoFileName,interlogFilePath, interfilterFilePath, intertempVideoFilePath, intervideoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'mp4', requestId)
   videoFileName,logFilePath,filterFilePath,tempVideoFilePath,videoFilePath = getFreeNameForFileAndLog(filenamePrefix, 'gif', requestId)
 
   def encoderStatusCallback(text,percentage,**kwargs):
@@ -36,10 +37,10 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if options.get('forceGifFPS',True):
       gifFPSLimit='fps=18,'
 
-    giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1,scale=\'max({}\\,min({}\\,iw)):-1\':flags=area,{}split[pal1][outvpal],[pal1]palettegen=stats_mode=diff[plt],[outvpal][plt]paletteuse=dither=floyd_steinberg:[outvgif],[outa]anullsink'.format(0,width,gifFPSLimit)
+    giffiltercommand = filtercommand+',[outv]scale=w=iw*sar:h=ih,setsar=sar=1/1[outvgif],[outa]anullsink'
 
 
-    with open(filterFilePath,'wb') as filterFile:
+    with open(interfilterFilePath,'wb') as filterFile:
       filterFile.write(giffiltercommand.encode('utf8'))
 
     ffmpegcommand=[]
@@ -55,29 +56,35 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     else:
         ffmpegcommand+=inputsList
 
-    ffmpegcommand+=['-filter_complex_script',filterFilePath]
+    ffmpegcommand+=['-filter_complex_script',interfilterFilePath]
     ffmpegcommand+=['-map','[outvgif]']
-
-    if startEndTimestamps is None:
-        ffmpegcommand+=["-shortest"
-                       ,"-copyts"
-                       ,"-start_at_zero"]
-
-
-    ffmpegcommand+=["-vsync", 'passthrough'
-                   ,"-stats"
-                   ,"-an"
-                   ,'-psnr'
-                   ,"-sn",tempVideoFilePath]
+    ffmpegcommand+=['-pix_fmt', 'yuv444p' 
+                   ,'-f', "yuv4mpegpipe"
+                   ,'-strict', '-1'
+                   ,"-sn",'-']
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)
 
-    proc = sp.Popen(ffmpegcommand,stderr=sp.PIPE,stdin=sp.DEVNULL,stdout=sp.DEVNULL)
-    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,passNumber=0,requestId=requestId,tempVideoPath=tempVideoFilePath,options=options)
+    proc = sp.Popen(ffmpegcommand,stderr=sp.DEVNULL,stdin=sp.DEVNULL,stdout=sp.PIPE)
+    proc2 = sp.Popen(['gifski', '-o', tempVideoFilePath, '--extra', '--width', str(width), '-'],stdin=sp.PIPE)
+
+    psnr, returnCode = logffmpegEncodeProgress(proc,'Pass {} {} {}'.format(passNumber,passReason,videoFileName),totalEncodedSeconds,totalExpectedEncodedSeconds,encoderStatusCallback,framesink=proc2,passNumber=0,requestId=requestId,tempVideoPath=tempVideoFilePath,options=options)
+
+    encoderStatusCallback('Encoding gifski '+videoFileName,0.80)
+
+
+    encoderStatusCallback('Encoding gifski final'+videoFileName,0.9)
+
+    psnr,returnCode = 100,0
+
     if isRquestCancelled(requestId):
       return 0, psnr, returnCode
+
     finalSize = os.stat(tempVideoFilePath).st_size
     encoderStatusCallback(None,None,lastEncodedSize=finalSize)
+
+    encoderStatusCallback('Encoding gifski final'+videoFileName,0.95)
+
     return finalSize, psnr, returnCode
 
   initialWidth = options.get('maximumWidth',1280) 

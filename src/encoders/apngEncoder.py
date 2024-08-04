@@ -10,7 +10,7 @@ from ..encodingUtils import isRquestCancelled
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,encodeStageFilter='null',requestId=None,globalOptions={},packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,encodeStageFilter='null',requestId=None,globalOptions={},packageglobalStatusCallback=print,startEndTimestamps=None):
 
   if options.get('maximumSize') == 0.0:
     sizeLimitMax = float('inf')
@@ -34,14 +34,27 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=inputsList
+    
+    s,e = None,None
+    if startEndTimestamps is not None:
+        s,e = startEndTimestamps
+        ffmpegcommand+=['-ss', str(s)]
+        ffmpegcommand+=inputsList
+        ffmpegcommand+=['-to', str(e-s)]
+    else:
+        ffmpegcommand+=inputsList
+
     ffmpegcommand+=['-plays', '0']
     ffmpegcommand+=['-filter_complex_script',filterFilePath]
     ffmpegcommand+=['-map','[outvgif]']
+
+
+    if startEndTimestamps is None:
+        ffmpegcommand+=["-shortest"
+                       ,"-copyts"
+                       ,"-start_at_zero"]
+
     ffmpegcommand+=["-vsync", 'passthrough'
-                   ,"-shortest" 
-                   ,"-copyts"
-                   ,"-start_at_zero"
                    ,"-stats"
                    ,"-an"
                    ,'-psnr'

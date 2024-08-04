@@ -14,7 +14,7 @@ from ..webmGeneratorUi import RELEASE_NUMVER
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print,startEndTimestamps=None):
   
   audoBitrate = 8
   try:
@@ -53,7 +53,15 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=inputsList
+
+    s,e = None,None
+    if startEndTimestamps is not None:
+        s,e = startEndTimestamps
+        ffmpegcommand+=['-ss', str(s)]
+        ffmpegcommand+=inputsList
+        ffmpegcommand+=['-to', str(e-s)]
+    else:
+        ffmpegcommand+=inputsList
 
     if widthReduction>0.0:
       encodefiltercommand = filtercommand+',[outv]{encodeStageFilter},scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(encodeStageFilter=encodeStageFilter,widthReduction=widthReduction)
@@ -132,11 +140,19 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     if 'Copy' in options.get('audioChannels',''):
       audioCodec = []
 
-    ffmpegcommand+=["-shortest", "-copyts"
-                   ,"-start_at_zero", "-c:v","libvpx-vp9"] + audioCodec + [
-                    "-stats","-pix_fmt","yuv420p"
-                   ,"-threads", str(threadCount)
-                   ,"-auto-alt-ref", "6", "-lag-in-frames", "25"]
+
+
+    if startEndTimestamps is None:
+        ffmpegcommand+=["-shortest", "-copyts"
+                       ,"-start_at_zero", "-c:v","libvpx-vp9"] + audioCodec + [
+                        "-stats","-pix_fmt","yuv420p"
+                       ,"-threads", str(threadCount)
+                       ,"-auto-alt-ref", "6", "-lag-in-frames", "25"]
+    else:
+        ffmpegcommand+=["-c:v","libvpx-vp9"] + audioCodec + [
+                        "-stats","-pix_fmt","yuv420p"
+                       ,"-threads", str(threadCount)
+                       ,"-auto-alt-ref", "6", "-lag-in-frames", "25"]
 
     if not cqMode:
       #ffmpegcommand += ["-bufsize", str(bufsize)]

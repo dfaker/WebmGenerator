@@ -10,7 +10,7 @@ from ..encodingUtils import isRquestCancelled
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print,startEndTimestamps=None):
 
   audoBitrate = 8
   try:
@@ -46,10 +46,21 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
 
+
+
+
+
     if globalOptions.get('passCudaFlags',False):
       ffmpegcommand+=['-hwaccel', 'cuda']
 
-    ffmpegcommand+=inputsList
+    s,e = None,None
+    if startEndTimestamps is not None:
+        s,e = startEndTimestamps
+        ffmpegcommand+=['-ss', str(s)]
+        ffmpegcommand+=inputsList
+        ffmpegcommand+=['-to', str(e-s)]
+    else:
+        ffmpegcommand+=inputsList
 
     if widthReduction>0.0:
       encodefiltercommand = filtercommand+',{encodeStageFilter},[outv]scale=iw*(1-{widthReduction}):ih*(1-{widthReduction}):flags=bicubic[outvfinal]'.format(widthReduction=widthReduction,encodeStageFilter=encodeStageFilter)
@@ -73,8 +84,6 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       ffmpegcommand+=['-filter_complex_script',filterFilePath]
       ffmpegcommand+=['-map','[outvfinal]','-map','[outa]']
 
-
-
     if passPhase==1:
       ffmpegcommand+=['-pass', '1', '-passlogfile', logFilePath ]
     elif passPhase==2:
@@ -84,10 +93,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
       bufsize = 3000000
 
     threadCount = globalOptions.get('encoderStageThreads',4)
-    ffmpegcommand+=["-shortest"
-                   ,"-copyts"
-                   ,"-start_at_zero"
-                   ,"-c:v","h264_nvenc" 
+    
+    if startEndTimestamps is None:
+        ffmpegcommand+=["-shortest"
+                       ,"-copyts"
+                       ,"-start_at_zero"]
+
+
+    ffmpegcommand+=["-c:v","h264_nvenc"
                    ,"-stats"
                    ,"-max_muxing_queue_size", "9999"
                    ,"-preset", "slow"

@@ -48,7 +48,7 @@ class SpecVideoEncoder:
         spec = json.load(open(self.specFilename))
         return spec['extension']+':'+spec['name']
 
-    def __call__(self, inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
+    def __call__(self, inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print,startEndTimestamps=None):
       
       spec = json.load(open(self.specFilename))
       specOptions = globalOptions.copy()

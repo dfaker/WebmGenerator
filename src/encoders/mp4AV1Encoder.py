@@ -10,7 +10,7 @@ from ..encodingUtils import isRquestCancelled
 from ..optimisers.nelderMead import encodeTargetingSize as encodeTargetingSize_nelder_mead
 from ..optimisers.linear     import encodeTargetingSize as encodeTargetingSize_linear
 
-def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print):
+def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, totalEncodedSeconds, totalExpectedEncodedSeconds, statusCallback,requestId=None,encodeStageFilter='null',globalOptions={},packageglobalStatusCallback=print,startEndTimestamps=None):
   
   audoBitrate = 8
   try:
@@ -46,7 +46,17 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     
     ffmpegcommand=[]
     ffmpegcommand+=['ffmpeg' ,'-y']
-    ffmpegcommand+=inputsList
+
+
+
+    s,e = None,None
+    if startEndTimestamps is not None:
+        s,e = startEndTimestamps
+        ffmpegcommand+=['-ss', str(s)]
+        ffmpegcommand+=inputsList
+        ffmpegcommand+=['-to', str(e-s)]
+    else:
+        ffmpegcommand+=inputsList
 
 
 
@@ -96,9 +106,14 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     except Exception as e:
       print(e)
 
+    if startEndTimestamps is None:
+        ffmpegcommand+=["-shortest"
+                       ,"-copyts"
+                       ,"-start_at_zero"]
 
-    ffmpegcommand+=["-shortest", "-slices", "8", "-copyts"
-                   ,"-start_at_zero", "-c:v","libsvtav1"] + audioCodec + [
+
+    ffmpegcommand+=["-slices", "8"
+                   ,"-c:v","libsvtav1"] + audioCodec + [
                     "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25','-g', '300'
                    ,'-psnr','-cpu-used','0','-row-mt', '1',  '-preset', str(presetNum)

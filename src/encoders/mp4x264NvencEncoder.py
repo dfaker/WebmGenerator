@@ -113,7 +113,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-temporal-aq", "1" 
                    ,"-rc-lookahead", "20"
                    ,"-crf"  ,'17'
-                   ,'-psnr'
+                   ,'-flags','+psnr'
                    ,"-vsync","vfr"
                    ,"-movflags","+faststart"]
 

@@ -67,7 +67,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     ffmpegcommand+=["-vsync", 'passthrough'
                    ,"-stats"
                    ,"-an"
-                   ,'-psnr'
+                   ,'-flags','+psnr'
                    ,"-sn",tempVideoFilePath]
 
     encoderStatusCallback('Encoding final '+videoFileName,(totalEncodedSeconds)/totalExpectedEncodedSeconds)

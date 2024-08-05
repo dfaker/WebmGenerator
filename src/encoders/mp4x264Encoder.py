@@ -101,7 +101,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-crf"  ,'17'
                    ,"-preset", globalOptions.get('mp4Libx264TuneParam',"slower")
                    ,"-tune", "film"
-                   ,'-psnr'
+                   ,'-flags','+psnr'
                    ,"-vsync","vfr"
                    ,"-movflags","+faststart"]
 

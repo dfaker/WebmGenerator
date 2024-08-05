@@ -103,7 +103,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-tune", globalOptions.get('mp4NvencTuneParam','hq')
                    ,"-preset", globalOptions.get('mp4NvencPresetParam','hq')
                    ,"-crf"  ,'17'
-                   ,'-psnr'
+                   ,'-flags','+psnr'
                    ,"-vsync","vfr"
                    ,"-movflags","+faststart"]
 

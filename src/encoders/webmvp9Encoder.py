@@ -168,7 +168,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
     else:
       ffmpegcommand+=["-quality","good"]
 
-    ffmpegcommand+=['-psnr', '-row-mt', '1', '-tile-columns', str(tileColumns), "-tile-rows", "0"
+    ffmpegcommand+=['-flags','+psnr', '-row-mt', '1', '-tile-columns', str(tileColumns), "-tile-rows", "0"
                    ,"-arnr-maxframes", "7","-arnr-strength", "5"
                    ,"-aq-mode", "0", "-tune-content", "film", "-enable-tpl", "1", "-frame-parallel", "0"
                    ,"-metadata", 'Title={}'.format(filenamePrefix.replace('-','-') + metadataSuffix) ]

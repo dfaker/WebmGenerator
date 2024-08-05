@@ -116,7 +116,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
                    ,"-c:v","libsvtav1"] + audioCodec + [
                     "-stats","-pix_fmt","yuv420p","-bufsize", str(bufsize)
                    ,"-threads", str(threadCount),"-crf"  ,'25','-g', '300'
-                   ,'-psnr','-cpu-used','0','-row-mt', '1',  '-preset', str(presetNum)
+                   ,'-flags','+psnr','-cpu-used','0','-row-mt', '1',  '-preset', str(presetNum)
                    ,"-metadata", 'title={}'.format(filenamePrefix.replace('-',' -') + metadataSuffix) ]
     
     if sizeLimitMax == 0.0:

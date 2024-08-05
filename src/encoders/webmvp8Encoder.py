@@ -118,7 +118,7 @@ def encoder(inputsList, outputPathName,filenamePrefix, filtercommand, options, t
 
     ffmpegcommand+=["-threads", str(threadCount),"-crf"  ,str(crf)
                    ,"-auto-alt-ref", "1", "-lag-in-frames", str(globalOptions.get('vp8lagInFrames',25))
-                   ,"-deadline","best",'-slices','8','-cpu-used','16','-psnr','-movflags','+faststart','-f','webm'
+                   ,"-deadline","best",'-slices','8','-cpu-used','16','-flags','+psnr','-movflags','+faststart','-f','webm'
                    ,"-metadata", 'title={}'.format(filenamePrefix + metadataSuffix)
                    ,"-metadata", 'WritingApp=WebmGenerator {}'.format(RELEASE_NUMVER)
                    ,"-metadata", 'DateUTC={}'.format(datetime.datetime.utcnow().isoformat() )

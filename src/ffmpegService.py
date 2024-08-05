@@ -1330,17 +1330,13 @@ class FFmpegService():
           
           preciseDur = preciseDurations[v]
           audioOverride      = options.get('audioOverride',None)
-
-          if audioOverride is None:
-            if mode == 'CONCAT' and len(dimensionsSet) > 1:
-              filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd},setpts=PTS-STARTPTS[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
-            else:            
-              filterPeProcess += '[{i}:v]setpts=PTS-STARTPTS,tpad=stop=100:stop_mode=clone,trim=start=0:end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)
-          else:
-            if mode == 'CONCAT' and len(dimensionsSet) > 1:
-              filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd},setpts=PTS-STARTPTS[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
-            else:            
-              filterPeProcess += '[{i}:v]setpts=PTS-STARTPTS,tpad=stop=100:stop_mode=clone,trim=start=0:end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)
+         
+          if mode == 'CONCAT' and len(dimensionsSet) > 1:
+            #filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd},setpts=PTS-STARTPTS[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
+            filterPeProcess += "[{i}:v]scale={in_maxWidth}:{in_maxHeight}:force_original_aspect_ratio=decrease:flags=bicubic,pad={in_maxWidth}:{in_maxHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1:1,{fpsCmd}[{i}vsc],".format(in_maxWidth=in_maxWidth,in_maxHeight=in_maxHeight,i=vi,fpsCmd=fpsCmd)
+          else:           
+            #filterPeProcess += '[{i}:v]setpts=PTS-STARTPTS,tpad=stop=100:stop_mode=clone,trim=end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)
+            filterPeProcess += '[{i}:v]tpad=stop=100:stop_mode=clone,trim=end={preciseDur}[{i}vsc],'.format(i=vi,preciseDur=preciseDur)          
 
           clipSpeedAdjustment = 1.0
           try:

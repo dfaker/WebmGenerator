@@ -11,7 +11,7 @@ class MergeSelectionController:
     self.ffmpegService=ffmpegService
     self.filterController=filterController
     self.cutController=cutController
-    self.profileSpecPath = 'customEncodeProfiles'
+    self.profileSpecPath = 'customEncodeprofiles'
     self.controller = controller
     self.maxAutoconvert = -1
 

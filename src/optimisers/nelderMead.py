@@ -253,7 +253,7 @@ def encodeTargetingSize(encoderFunction,tempFilename,outputFilename,initialDepen
 
 
 
-    print("Optimzation pass complete - score: {} bitrate:{} widthReduction:{}  finalSize:{}  psnr:{}  ".format(score,bitrate,widthReduction,finalSize,lastpsnr))
+    print("Optimization pass complete - score: {} bitrate:{} widthReduction:{}  finalSize:{}  psnr:{}  ".format(score,bitrate,widthReduction,finalSize,lastpsnr))
 
     isAcceptable = (sizeLimitMin<finalSize<=sizeLimitMax and lastpsnr is not None and lastpsnr > minimumPSNR ) 
 
